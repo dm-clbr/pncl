@@ -4,7 +4,7 @@ import { Resend } from "resend";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const TO_EMAIL = "dm@clbr.com";
-const FROM_EMAIL = "no-reply@pncl.com";
+const FROM_EMAIL = "no-reply@thepncl.com";
 
 const SOURCE_LABELS: Record<string, string> = {
   "agent-application-homepage": "Agent Application",
