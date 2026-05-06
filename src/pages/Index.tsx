@@ -8,7 +8,7 @@ import AgentApplicationModal from "@/components/AgentApplicationModal";
 import { trackPageView } from "@/lib/analytics";
 
 const heroImages = [
-  "/arches-pncl.png"
+  "/arches-pncl.webp"
 ];
 
 const marqueeItems = [
@@ -59,10 +59,10 @@ const carriers: { name: string; logo?: React.ReactNode }[] = [
 ];
 
 const cultureCards = [
-  { num: "01", title: "The Culture", desc: "A team-first environment where collaboration beats competition and every agent has a voice.", img: "/pncl1.png" },
-  { num: "02", title: "The Training", desc: "World-class onboarding, weekly masterclasses, and one-on-one mentorship from top producers.", img: "/pncl2.png" },
-  { num: "03", title: "The Lifestyle", desc: "Flexibility to work on your terms. Build a career that fits your life — not the other way around.", img: "/pncl3.png" },
-  { num: "04", title: "The Growth", desc: "Clear paths to leadership. Whether you want to be a top agent or build your own team, we'll get you there.", img: "/pncl4.png" },
+  { num: "01", title: "The Culture", desc: "A team-first environment where collaboration beats competition and every agent has a voice.", img: "/pncl1.webp" },
+  { num: "02", title: "The Training", desc: "World-class onboarding, weekly masterclasses, and one-on-one mentorship from top producers.", img: "/pncl2.webp" },
+  { num: "03", title: "The Lifestyle", desc: "Flexibility to work on your terms. Build a career that fits your life — not the other way around.", img: "/pncl3.webp" },
+  { num: "04", title: "The Growth", desc: "Clear paths to leadership. Whether you want to be a top agent or build your own team, we'll get you there.", img: "/pncl4.webp" },
 ];
 
 function WhyIcon({ type }: { type: string }) {
