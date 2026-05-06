@@ -3,7 +3,7 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const TO_EMAIL = "leads@pncl.com";
+const TO_EMAIL = "dm@clbr.com";
 const FROM_EMAIL = "no-reply@pncl.com";
 
 const SOURCE_LABELS: Record<string, string> = {
