@@ -15,6 +15,7 @@ const SOURCE_LABELS: Record<string, string> = {
   "family-protection-lp": "Family Protection",
   "mortgage-quiz": "Mortgage Quiz",
   "contact-page": "Contact Page",
+  "agent-onboarding": "Agent Onboarding",
 };
 
 function buildEmailHtml(data: Record<string, string>): string {

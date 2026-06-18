@@ -12,6 +12,8 @@ import About from "./pages/About.tsx";
 import Contact from "./pages/Contact.tsx";
 import LifeInsurance from "./pages/LifeInsurance.tsx";
 import FinalExpense from "./pages/FinalExpense.tsx";
+import AgentOnboarding from "./pages/AgentOnboarding.tsx";
+import OnboardingSuccess from "./pages/OnboardingSuccess.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -32,6 +34,8 @@ const App = () => (
           <Route path="/contact" element={<Contact />} />
           <Route path="/life-insurance" element={<LifeInsurance />} />
           <Route path="/final-expense" element={<FinalExpense />} />
+          <Route path="/onboarding" element={<AgentOnboarding />} />
+          <Route path="/onboarding/success/:onboardingId" element={<OnboardingSuccess />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -10,6 +10,13 @@ build/
 .env.local
 .env.*.local
 
+# Google service account keys (never commit)
+*-service-account*.json
+google-service-account.json
+employee-onboarding-*.json
+.secrets/
+supabase/.temp/
+
 # Logs
 *.log
 npm-debug.log*

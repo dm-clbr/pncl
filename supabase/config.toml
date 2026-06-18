@@ -1,0 +1,15 @@
+# A string used to distinguish different Supabase projects on the same host. Defaults to the
+# working directory name when running `supabase init`.
+project_id = "pncl"
+
+[api]
+enabled = true
+
+[functions.submit-onboarding]
+verify_jwt = false
+
+[functions.get-onboarding-status]
+verify_jwt = false
+
+[functions.reveal-onboarding-credentials]
+verify_jwt = false

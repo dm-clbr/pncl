@@ -41,14 +41,13 @@ export default function SiteNav({ onCtaClick }: SiteNavProps) {
           <PNCLLogo height={28} />
         </Link>
         <ul className="nav-links">
-          <li><a onClick={() => handleNavClick("about")}>About</a></li>
+          <li><Link to="/about">About</Link></li>
           <li><a onClick={() => handleNavClick("offer")}>What We Offer</a></li>
           <li><a onClick={() => handleNavClick("stats")}>Stats</a></li>
-          <li><a onClick={() => handleNavClick("culture")}>Culture</a></li>
-          <li><Link to="/about">Our Story</Link></li>
+          <li><a onClick={() => handleNavClick("thrive")}>Culture</a></li>
           <li><Link to="/contact">Contact</Link></li>
           <li>
-            <button className="nav-cta" onClick={onCtaClick || (() => handleNavClick("cta"))}>
+            <button className="nav-cta" onClick={onCtaClick || (() => handleNavClick("apply"))}>
               Become an Agent
             </button>
           </li>
@@ -68,14 +67,13 @@ export default function SiteNav({ onCtaClick }: SiteNavProps) {
           </button>
         </div>
         <ul className="mobile-menu-links">
-          <li><a onClick={() => { setMenuOpen(false); handleNavClick("about"); }}>About</a></li>
+          <li><Link to="/about" onClick={() => setMenuOpen(false)}>About</Link></li>
           <li><a onClick={() => { setMenuOpen(false); handleNavClick("offer"); }}>What We Offer</a></li>
           <li><a onClick={() => { setMenuOpen(false); handleNavClick("stats"); }}>Stats</a></li>
-          <li><a onClick={() => { setMenuOpen(false); handleNavClick("culture"); }}>Culture</a></li>
-          <li><Link to="/about" onClick={() => setMenuOpen(false)}>Our Story</Link></li>
+          <li><a onClick={() => { setMenuOpen(false); handleNavClick("thrive"); }}>Culture</a></li>
           <li><Link to="/contact" onClick={() => setMenuOpen(false)}>Contact</Link></li>
           <li>
-            <button className="nav-cta" onClick={() => { setMenuOpen(false); (onCtaClick || (() => handleNavClick("cta")))(); }}>
+            <button className="nav-cta" onClick={() => { setMenuOpen(false); (onCtaClick || (() => handleNavClick("apply")))(); }}>
               Become an Agent
             </button>
           </li>
