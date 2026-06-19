@@ -15,6 +15,27 @@ import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 import "@/styles/home2.css";
 
+const PORTAL_SOCIAL_LINKS = [
+  {
+    id: "facebook",
+    label: "Facebook",
+    href: "https://www.facebook.com/profile.php?id=61588062292202",
+    iconSrc: "/fb.svg",
+  },
+  {
+    id: "instagram",
+    label: "Instagram",
+    href: "https://www.instagram.com/thepncl_/",
+    iconSrc: "/insta.svg",
+  },
+  {
+    id: "linkedin",
+    label: "LinkedIn",
+    href: "https://www.linkedin.com/company/the-pncl/?viewAsMember=true",
+    iconSrc: "/linkedin.svg",
+  },
+] as const;
+
 function PortalSubLink({ link }: { link: PortalLink }) {
   const content = (
     <>
@@ -134,7 +155,7 @@ export default function PortalDashboard() {
           {referralLink && (
             <button type="button" className="portal-banner" onClick={handleCopyReferralLink}>
               <span className="portal-banner-icon" aria-hidden="true">
-                <Link2 size={28} />
+                <Link2 size={22} />
               </span>
               <span className="portal-banner-copy">
                 <strong>Referral link ready</strong>
@@ -182,6 +203,28 @@ export default function PortalDashboard() {
               <LogOut size={18} strokeWidth={2.5} aria-hidden="true" />
               Sign out
             </button>
+
+            <div className="portal-socials">
+              {PORTAL_SOCIAL_LINKS.map((link) => (
+                <a
+                  key={link.id}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="portal-social-link"
+                  aria-label={link.label}
+                >
+                  <span
+                    className="portal-social-icon"
+                    style={{
+                      WebkitMaskImage: `url(${link.iconSrc})`,
+                      maskImage: `url(${link.iconSrc})`,
+                    }}
+                    aria-hidden="true"
+                  />
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       </main>
