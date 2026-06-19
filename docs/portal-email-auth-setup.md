@@ -48,14 +48,30 @@ supabase secrets set PNCL_SITE_URL=http://localhost:8080
 # Production: PNCL_SITE_URL=https://your-domain.com
 ```
 
-### 4. Email delivery
+### 4. Email delivery (Resend)
 
-Supabase must be able to send activation emails to `@thepncl.com` inboxes.
+All emails are sent through **Resend** — no Supabase SMTP required.
 
-- **Supabase built-in email** — fine for testing, unreliable in production
-- **Custom SMTP** (recommended) — Supabase → Project Settings → Auth → SMTP
+| Email type | Where it runs | Env var |
+|------------|---------------|---------|
+| Lead form notifications | Vercel `api/submit.ts` | `RESEND_API_KEY` on Vercel |
+| Portal activation invites | Supabase Edge Functions | `RESEND_API_KEY` as Supabase secret |
 
-Activation emails are sent via `inviteUserByEmail` immediately after Google Workspace email creation.
+Set the Supabase secret (use the same Resend API key as Vercel):
+
+```bash
+supabase secrets set RESEND_API_KEY=re_your_key_here
+```
+
+Optional overrides:
+
+```bash
+supabase secrets set PNCL_FROM_EMAIL=no-reply@thepncl.com PNCL_FROM_NAME=PNCL
+```
+
+Ensure **`thepncl.com`** is verified in [Resend → Domains](https://resend.com/domains).
+
+Activation emails are sent via `generateLink` + Resend immediately after Google Workspace email creation.
 
 ---
 
@@ -89,7 +105,7 @@ Deploy with:
 
 | Symptom | Likely fix |
 |---------|------------|
-| No activation email received | Configure SMTP; check spam; use **Resend portal activation email** on success page |
+| No activation email received | Set `RESEND_API_KEY` Supabase secret; verify `thepncl.com` in Resend; check spam; use **Resend portal activation email** on success page |
 | Activation link goes to wrong URL | Set `PNCL_SITE_URL` secret to match your app host |
 | "Invalid or expired" on activate page | Resend activation email; open the latest link |
 | Portal login says email not confirmed | Complete activation via email link first |
@@ -104,5 +120,6 @@ Deploy with:
 - [ ] Redirect URLs include `/onboarding/activate`
 - [ ] `PNCL_SITE_URL` secret set
 - [ ] `submit-onboarding` and `setup-portal-account` deployed
-- [ ] SMTP configured (production)
+- [ ] `RESEND_API_KEY` set on Vercel (lead forms) and Supabase (portal activation)
+- [ ] `thepncl.com` verified in Resend
 - [ ] Full onboarding flow tested end-to-end

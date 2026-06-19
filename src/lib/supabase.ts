@@ -9,12 +9,17 @@ export function isSupabaseAuthConfigured(): boolean {
   return Boolean(supabaseUrl && supabaseAnonKey);
 }
 
-export function getSupabaseClient(): SupabaseClient {
+export function getSupabaseConfig(): { url: string; anonKey: string } {
   if (!supabaseUrl || !supabaseAnonKey) {
     throw new Error("Supabase is not configured");
   }
+  return { url: supabaseUrl, anonKey: supabaseAnonKey };
+}
+
+export function getSupabaseClient(): SupabaseClient {
+  const { url, anonKey } = getSupabaseConfig();
   if (!client) {
-    client = createClient(supabaseUrl, supabaseAnonKey, {
+    client = createClient(url, anonKey, {
       auth: {
         detectSessionInUrl: true,
         persistSession: true,

@@ -16,3 +16,6 @@ verify_jwt = false
 
 [functions.setup-portal-account]
 verify_jwt = false
+
+[functions.resend-portal-confirmation]
+verify_jwt = true

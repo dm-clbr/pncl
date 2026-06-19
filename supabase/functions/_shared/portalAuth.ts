@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logOnboarding } from "./logger.ts";
+import { sendPortalActivationEmail } from "./resend.ts";
 
 export interface ProvisionPortalAccountInput {
   email: string;
@@ -83,9 +84,13 @@ async function sendPortalInvite(
     source: "agent_onboarding",
   };
 
-  const { data, error } = await supabase.auth.admin.inviteUserByEmail(input.email, {
-    redirectTo,
-    data: userMetadata,
+  const { data, error } = await supabase.auth.admin.generateLink({
+    type: "invite",
+    email: input.email,
+    options: {
+      redirectTo,
+      data: userMetadata,
+    },
   });
 
   if (error) {
@@ -101,6 +106,15 @@ async function sendPortalInvite(
     throw new Error("Unable to provision portal account");
   }
 
+  const activationUrl = data.properties?.action_link;
+  if (!activationUrl) {
+    logOnboarding("portal_invite_link_missing", {
+      onboardingId: input.onboardingId,
+      email: input.email,
+    }, "error");
+    throw new Error("Unable to generate portal activation link");
+  }
+
   const { error: metadataError } = await supabase.auth.admin.updateUserById(data.user.id, {
     app_metadata: appMetadata,
   });
@@ -113,14 +127,53 @@ async function sendPortalInvite(
     }, "warn");
   }
 
+  await sendPortalActivationEmail({
+    to: input.email,
+    firstName: input.firstName,
+    activationUrl,
+  });
+
   logOnboarding("portal_invite_sent", {
     onboardingId: input.onboardingId,
     email: input.email,
     supabaseUserId: data.user.id,
     redirectTo,
+    delivery: "resend",
   });
 
   return data.user.id;
+}
+
+export async function sendPortalConfirmationEmail(
+  supabase: SupabaseClient,
+  email: string,
+  firstName: string,
+): Promise<void> {
+  const redirectTo = getPortalActivateUrl();
+
+  const { data, error } = await supabase.auth.admin.generateLink({
+    type: "invite",
+    email,
+    options: { redirectTo },
+  });
+
+  if (error) {
+    logOnboarding("portal_confirmation_resend_failed", { email, error: error.message }, "error");
+    throw new Error(error.message);
+  }
+
+  const activationUrl = data.properties?.action_link;
+  if (!activationUrl) {
+    throw new Error("Unable to generate portal activation link");
+  }
+
+  await sendPortalActivationEmail({
+    to: email,
+    firstName,
+    activationUrl,
+  });
+
+  logOnboarding("portal_confirmation_resent", { email, redirectTo, delivery: "resend" });
 }
 
 export async function provisionPortalAccount(

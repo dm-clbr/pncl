@@ -52,5 +52,14 @@ supabase secrets set \
   CREDENTIAL_ENCRYPTION_KEY="$CREDENTIAL_ENCRYPTION_KEY" \
   GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY="$PRIVATE_KEY"
 
+if [[ -n "${RESEND_API_KEY:-}" ]]; then
+  supabase secrets set RESEND_API_KEY="$RESEND_API_KEY"
+else
+  echo ""
+  echo "Note: RESEND_API_KEY not set — portal activation emails require it."
+  echo "  export RESEND_API_KEY=re_your_key_here"
+  echo "  supabase secrets set RESEND_API_KEY=\$RESEND_API_KEY"
+fi
+
 echo "Done. Deploy functions with:"
 echo "  supabase functions deploy submit-onboarding get-onboarding-status reveal-onboarding-credentials"

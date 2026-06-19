@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { getSupabaseClient, isSupabaseAuthConfigured } from "@/lib/supabase";
+import { getSupabaseClient, getSupabaseConfig, isSupabaseAuthConfigured } from "@/lib/supabase";
 
 const ALLOWED_EMAIL_DOMAIN = "thepncl.com";
 
@@ -85,14 +85,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resendConfirmationEmail = useCallback(async (email: string) => {
     const supabase = getSupabaseClient();
-    const { error } = await supabase.auth.resend({
-      type: "signup",
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/portal`,
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      throw new Error("You must be signed in to resend a confirmation email.");
+    }
+
+    const { url, anonKey } = getSupabaseConfig();
+    const response = await fetch(
+      `${url.replace(/\/$/, "")}/functions/v1/resend-portal-confirmation`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: anonKey,
+        },
       },
-    });
-    if (error) throw error;
+    );
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message ?? "Unable to resend confirmation email.");
+    }
   }, []);
 
   const signOut = useCallback(async () => {
