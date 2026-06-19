@@ -289,3 +289,23 @@ export async function createWorkspaceUser(input: CreateWorkspaceUserInput): Prom
 
   return user.id as string;
 }
+
+const DEFAULT_MAILBOX_READY_DELAY_MS = 30_000;
+
+function getMailboxReadyDelayMs(): number {
+  const raw = Deno.env.get("PNCL_MAILBOX_READY_DELAY_MS");
+  if (raw === undefined || raw === "") return DEFAULT_MAILBOX_READY_DELAY_MS;
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed < 0) return DEFAULT_MAILBOX_READY_DELAY_MS;
+  return parsed;
+}
+
+/** Pause after Workspace user creation so inbound mail routing is live before Resend delivers. */
+export async function waitForWorkspaceMailboxReady(email: string): Promise<void> {
+  const delayMs = getMailboxReadyDelayMs();
+  if (delayMs === 0) return;
+
+  logOnboarding("google_mailbox_ready_wait_started", { email, delayMs });
+  await new Promise((resolve) => setTimeout(resolve, delayMs));
+  logOnboarding("google_mailbox_ready_wait_completed", { email, delayMs });
+}

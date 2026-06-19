@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { generateAvailableWorkspaceEmail } from "../_shared/email.ts";
-import { createWorkspaceUser } from "../_shared/googleWorkspace.ts";
+import { createWorkspaceUser, waitForWorkspaceMailboxReady } from "../_shared/googleWorkspace.ts";
 import { logOnboarding } from "../_shared/logger.ts";
 import {
   getServiceClient,
@@ -113,6 +113,8 @@ serve(async (req) => {
         email: workspaceEmail,
         temporaryPassword,
       });
+
+      await waitForWorkspaceMailboxReady(workspaceEmail);
 
       finalStatus = "ready";
       let supabaseUserId: string | null = null;
