@@ -30,6 +30,14 @@ export function readStoredReferralId(): string | null {
   }
 }
 
+export function clearStoredReferralId(): void {
+  try {
+    sessionStorage.removeItem(REFERRAL_STORAGE_KEY);
+  } catch {
+    // Ignore storage failures in private browsing.
+  }
+}
+
 export async function getReferrerInfo(referrerId: string): Promise<ReferrerInfo> {
   if (!isSupabaseConfigured()) {
     throw new Error("Referral lookup is not configured");

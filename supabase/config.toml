@@ -19,3 +19,6 @@ verify_jwt = false
 
 [functions.resend-portal-confirmation]
 verify_jwt = true
+
+[functions.get-referrer-info]
+verify_jwt = false

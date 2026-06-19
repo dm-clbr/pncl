@@ -86,6 +86,50 @@ export function isValidReferrerUserId(value: string): boolean {
   return UUID_PATTERN.test(value);
 }
 
+function resolveReferrerDisplayName(
+  metadata: Record<string, unknown> | undefined,
+  email: string,
+): string | null {
+  const fullName = metadata?.full_name;
+  if (typeof fullName === "string" && fullName.trim()) {
+    return fullName.trim();
+  }
+
+  const firstName = metadata?.first_name;
+  const lastName = metadata?.last_name;
+  if (typeof firstName === "string" && firstName.trim()) {
+    const last = typeof lastName === "string" ? lastName.trim() : "";
+    return [firstName.trim(), last].filter(Boolean).join(" ");
+  }
+
+  const localPart = email.split("@")[0]?.trim();
+  return localPart || null;
+}
+
+async function findOnboardingReferrerName(
+  supabase: SupabaseClient,
+  filters: { supabaseUserId?: string; workspaceEmail?: string },
+): Promise<string | null> {
+  let query = supabase
+    .from("onboarding_records")
+    .select("legal_name")
+    .not("status", "eq", "failed")
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  if (filters.supabaseUserId) {
+    query = query.eq("supabase_user_id", filters.supabaseUserId);
+  } else if (filters.workspaceEmail) {
+    query = query.eq("workspace_email", filters.workspaceEmail);
+  } else {
+    return null;
+  }
+
+  const { data: record } = await query.maybeSingle();
+  const legalName = record?.legal_name;
+  return typeof legalName === "string" && legalName.trim() ? legalName.trim() : null;
+}
+
 export async function resolveReferrer(
   supabase: SupabaseClient,
   referrerUserId: string,
@@ -94,17 +138,11 @@ export async function resolveReferrer(
     return null;
   }
 
-  const { data: record } = await supabase
-    .from("onboarding_records")
-    .select("legal_name, supabase_user_id, status")
-    .eq("supabase_user_id", referrerUserId)
-    .in("status", ["ready", "credentials_viewed"])
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (record?.legal_name) {
-    return { id: referrerUserId, name: record.legal_name };
+  const onboardingName = await findOnboardingReferrerName(supabase, {
+    supabaseUserId: referrerUserId,
+  });
+  if (onboardingName) {
+    return { id: referrerUserId, name: onboardingName };
   }
 
   const { data: userData, error } = await supabase.auth.admin.getUserById(referrerUserId);
@@ -118,12 +156,19 @@ export async function resolveReferrer(
     return null;
   }
 
-  const fullName = userData.user.user_metadata?.full_name;
-  if (typeof fullName !== "string" || !fullName.trim()) {
+  const onboardingNameByEmail = await findOnboardingReferrerName(supabase, {
+    workspaceEmail: email,
+  });
+  if (onboardingNameByEmail) {
+    return { id: referrerUserId, name: onboardingNameByEmail };
+  }
+
+  const name = resolveReferrerDisplayName(userData.user.user_metadata, email);
+  if (!name) {
     return null;
   }
 
-  return { id: referrerUserId, name: fullName.trim() };
+  return { id: referrerUserId, name };
 }
 
 const US_STATES = new Set([

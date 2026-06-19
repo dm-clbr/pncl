@@ -4,6 +4,7 @@ import OnboardingLayout from "@/components/OnboardingLayout";
 import { submitOnboarding, isSupabaseConfigured } from "@/lib/onboarding-api";
 import {
   getReferrerInfo,
+  clearStoredReferralId,
   persistReferralId,
   readStoredReferralId,
   REFERRAL_PARAM,
@@ -372,7 +373,10 @@ export default function AgentOnboarding() {
       })
       .catch(() => {
         if (cancelled) return;
-        toast.error("This referral link is invalid or expired.");
+        clearStoredReferralId();
+        if (refFromUrl) {
+          toast.error("This referral link is invalid or expired.");
+        }
       });
 
     return () => {
