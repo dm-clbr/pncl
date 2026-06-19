@@ -341,8 +341,19 @@ export default function Index() {
         <div className="wrap care-stack">
           <div className="care-visual reveal">
             <div className="ph care-video">
-              <video autoPlay muted loop playsInline preload="metadata" aria-label="PNCL agents">
-                <source src="/pncl-agents-2026.mp4" type="video/mp4" />
+              <video
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+                aria-label="PNCL agents"
+                poster="https://vz-db1532c9-ef4.b-cdn.net/3b0c4b43-8a73-49c4-8009-c8de3f4007f6/thumbnail.jpg"
+              >
+                <source
+                  src="https://vz-db1532c9-ef4.b-cdn.net/3b0c4b43-8a73-49c4-8009-c8de3f4007f6/play_720p.mp4"
+                  type="video/mp4"
+                />
               </video>
               <span className="label">PNCL Agents — 2026</span>
             </div>
