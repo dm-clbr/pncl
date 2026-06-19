@@ -213,14 +213,22 @@ export default function OnboardingSuccess() {
             </div>
           )}
           <p className="lead">
-            {portalInviteSent
-              ? <>A portal activation link was sent to <strong>{email}</strong>. Open it from your PNCL inbox to confirm your email and create your portal password.</>
-              : "Your PNCL email is ready. Reveal your Gmail sign-in instructions below."}
+            {portalInviteSent ? (
+              <>
+                A portal activation link was sent to <strong>{email}</strong>. Sign in to Gmail first,
+                then open it from your PNCL inbox to confirm your email and create your portal password.
+              </>
+            ) : (
+              <>
+                Your PNCL email is ready. Reveal your Gmail sign-in instructions below, then use
+                the button to send your portal activation link to <strong>{email}</strong>.
+              </>
+            )}
           </p>
           <ol className="onboarding-steps">
             <li>Reveal and save your temporary Gmail sign-in details</li>
             <li>Sign in to Gmail and set your Google password</li>
-            <li>Open the portal activation email and create your portal password</li>
+            <li>Open the portal activation email in your PNCL inbox and create your portal password</li>
           </ol>
           <button
             type="button"
@@ -231,17 +239,19 @@ export default function OnboardingSuccess() {
           >
             {revealing ? "Loading…" : <>Reveal Gmail Sign-In <span className="arr">→</span></>}
           </button>
-          {portalInviteSent && (
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={handleResendInvite}
-              disabled={resendingInvite}
-              style={{ marginTop: "0.75rem" }}
-            >
-              {resendingInvite ? "Sending…" : "Resend portal activation email"}
-            </button>
-          )}
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={handleResendInvite}
+            disabled={resendingInvite}
+            style={{ marginTop: "0.75rem" }}
+          >
+            {resendingInvite
+              ? "Sending…"
+              : portalInviteSent
+                ? "Resend portal activation email"
+                : "Send portal activation email"}
+          </button>
           <p className="onboarding-help-text">
             If you close this page before saving your temporary password, contact PNCL support or an admin for a password reset.
           </p>
@@ -284,9 +294,9 @@ export default function OnboardingSuccess() {
           )}
           <ol className="onboarding-steps">
             <li>Open Gmail and sign in with your temporary password</li>
-            <li>If Google asks for phone verification, click <strong>Try another way</strong> and use your personal email</li>
+            <li>If Google asks for phone verification, click <strong>Try another way</strong></li>
             <li>Create your new Google password when prompted</li>
-            <li>Open the portal activation email in this inbox to finish onboarding</li>
+            <li>Open the portal activation email in your PNCL inbox to finish onboarding</li>
           </ol>
           <div className="onboarding-action-row" style={{ marginTop: "0.75rem" }}>
             <a
@@ -297,20 +307,23 @@ export default function OnboardingSuccess() {
             >
               Open Gmail <span className="arr">→</span>
             </a>
-            {portalInviteSent && (
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={handleResendInvite}
-                disabled={resendingInvite}
-              >
-                {resendingInvite ? "Sending…" : "Resend portal activation email"}
-              </button>
-            )}
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={handleResendInvite}
+              disabled={resendingInvite}
+            >
+              {resendingInvite
+                ? "Sending…"
+                : portalInviteSent
+                  ? "Resend portal activation email"
+                  : "Send portal activation email"}
+            </button>
           </div>
           <p className="onboarding-help-text">
-            Your portal activation link was sent to this PNCL inbox. Click it to confirm your email, set your portal password, and sign in automatically.
-            Google may ask for phone verification on first sign-in — use <strong>Try another way</strong> and verify with the personal email you provided during onboarding.
+            Your portal activation link was sent to your PNCL inbox. Click it to confirm your email,
+            set your portal password, and sign in automatically.
+            Google may ask for phone verification on first sign-in — use <strong>Try another way</strong> if needed.
           </p>
         </>
       )}

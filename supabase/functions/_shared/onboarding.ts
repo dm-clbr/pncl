@@ -52,6 +52,8 @@ export interface OnboardingRecord {
   credentials_viewed_at: string | null;
   google_user_id: string | null;
   supabase_user_id: string | null;
+  referrer_user_id: string | null;
+  personal_email: string | null;
   google_creation_error: string | null;
   group_assignment_error: string | null;
   created_at: string;
@@ -63,7 +65,6 @@ export interface SubmitOnboardingPayload {
   firstName: string;
   lastName: string;
   phoneNumber: string;
-  personalEmail: string;
   dateOfBirth: string;
   ssn: string;
   stateOfResidence: string;
@@ -71,6 +72,58 @@ export interface SubmitOnboardingPayload {
   hasLicense: string;
   npn?: string;
   hasEoInsurance: string;
+  referrerUserId?: string;
+}
+
+export interface ReferrerInfo {
+  id: string;
+  name: string;
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function isValidReferrerUserId(value: string): boolean {
+  return UUID_PATTERN.test(value);
+}
+
+export async function resolveReferrer(
+  supabase: SupabaseClient,
+  referrerUserId: string,
+): Promise<ReferrerInfo | null> {
+  if (!isValidReferrerUserId(referrerUserId)) {
+    return null;
+  }
+
+  const { data: record } = await supabase
+    .from("onboarding_records")
+    .select("legal_name, supabase_user_id, status")
+    .eq("supabase_user_id", referrerUserId)
+    .in("status", ["ready", "credentials_viewed"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (record?.legal_name) {
+    return { id: referrerUserId, name: record.legal_name };
+  }
+
+  const { data: userData, error } = await supabase.auth.admin.getUserById(referrerUserId);
+  if (error || !userData.user) {
+    return null;
+  }
+
+  const emailDomain = getEmailDomain();
+  const email = userData.user.email?.toLowerCase() ?? "";
+  if (!email.endsWith(`@${emailDomain}`) || !userData.user.email_confirmed_at) {
+    return null;
+  }
+
+  const fullName = userData.user.user_metadata?.full_name;
+  if (typeof fullName !== "string" || !fullName.trim()) {
+    return null;
+  }
+
+  return { id: referrerUserId, name: fullName.trim() };
 }
 
 const US_STATES = new Set([
@@ -108,15 +161,6 @@ export function validateSubmitPayload(body: unknown): SubmitOnboardingPayload {
   }
   const phoneNumber = `${phoneDigits.slice(0, 3)}-${phoneDigits.slice(3, 6)}-${phoneDigits.slice(6)}`;
 
-  const personalEmail = normalizeRequiredString(data.personalEmail, "personalEmail").toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(personalEmail)) {
-    throw new Error("Personal email must be a valid email address");
-  }
-  const emailDomain = Deno.env.get("PNCL_EMAIL_DOMAIN") ?? "thepncl.com";
-  if (personalEmail.endsWith(`@${emailDomain}`)) {
-    throw new Error(`Personal email cannot be a @${emailDomain} address`);
-  }
-
   const dateOfBirth = normalizeRequiredString(data.dateOfBirth, "dateOfBirth");
   if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateOfBirth)) {
     throw new Error("Date of birth must use mm/dd/yyyy format");
@@ -138,13 +182,15 @@ export function validateSubmitPayload(body: unknown): SubmitOnboardingPayload {
   const hasLicense = normalizeYesNo(data.hasLicense, "hasLicense");
   const hasEoInsurance = normalizeYesNo(data.hasEoInsurance, "hasEoInsurance");
   const npn = typeof data.npn === "string" ? data.npn.trim() : "";
+  const referrerUserId = typeof data.referrerId === "string" && isValidReferrerUserId(data.referrerId)
+    ? data.referrerId
+    : undefined;
 
   return {
     legalName,
     firstName,
     lastName,
     phoneNumber,
-    personalEmail,
     dateOfBirth,
     ssn,
     stateOfResidence,
@@ -152,6 +198,7 @@ export function validateSubmitPayload(body: unknown): SubmitOnboardingPayload {
     hasLicense,
     npn: npn || undefined,
     hasEoInsurance,
+    referrerUserId,
   };
 }
 

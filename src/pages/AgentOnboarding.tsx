@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import OnboardingLayout from "@/components/OnboardingLayout";
 import { submitOnboarding, isSupabaseConfigured } from "@/lib/onboarding-api";
+import {
+  getReferrerInfo,
+  persistReferralId,
+  readStoredReferralId,
+  REFERRAL_PARAM,
+} from "@/lib/referral";
 import { toast } from "sonner";
 import { trackPageView } from "@/lib/analytics";
 
@@ -16,7 +22,6 @@ const US_STATES = [
 interface OnboardingData {
   legalName: string;
   phoneNumber: string;
-  personalEmail: string;
   dateOfBirth: string;
   ssn: string;
   stateOfResidence: string;
@@ -53,14 +58,6 @@ const STEPS: Step[] = [
     subtitle: "Please use dashes: 111-222-3333",
     type: "tel",
     placeholder: "111-222-3333",
-    required: true,
-  },
-  {
-    key: "personalEmail",
-    question: "Personal email",
-    subtitle: "Your personal email (Gmail, iCloud, etc.) — used for Google sign-in recovery, not your @thepncl.com address.",
-    type: "text",
-    placeholder: "you@gmail.com",
     required: true,
   },
   {
@@ -149,10 +146,6 @@ function isValidPhone(phone: string): boolean {
   return /^\d{3}-\d{3}-\d{4}$/.test(phone);
 }
 
-function isValidPersonalEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && !email.toLowerCase().endsWith("@thepncl.com");
-}
-
 function isValidSsn(ssn: string): boolean {
   return /^\d{3}-\d{2}-\d{4}$/.test(ssn);
 }
@@ -186,7 +179,6 @@ function formatReviewValue(key: StepKey, value: string): string {
 const EMPTY_DATA: OnboardingData = {
   legalName: "",
   phoneNumber: "",
-  personalEmail: "",
   dateOfBirth: "",
   ssn: "",
   stateOfResidence: "",
@@ -196,14 +188,39 @@ const EMPTY_DATA: OnboardingData = {
   hasEoInsurance: "",
 };
 
+const UPLINE_STEP_INDEX = STEPS.findIndex((step) => step.key === "uplineNetwork");
+
+function isUplineStep(index: number): boolean {
+  return index === UPLINE_STEP_INDEX;
+}
+
+function getNextStepIndex(from: number, skipUpline: boolean): number {
+  let next = from + 1;
+  if (skipUpline && isUplineStep(next)) {
+    next += 1;
+  }
+  return next;
+}
+
+function getPreviousStepIndex(from: number, skipUpline: boolean): number {
+  let prev = from - 1;
+  if (skipUpline && isUplineStep(prev)) {
+    prev -= 1;
+  }
+  return prev;
+}
+
 export default function AgentOnboarding() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [started, setStarted] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [data, setData] = useState<OnboardingData>(EMPTY_DATA);
   const [transitioning, setTransitioning] = useState(false);
   const [loading, setLoading] = useState(false);
   const [returnToReview, setReturnToReview] = useState(false);
+  const [referrerId, setReferrerId] = useState<string | null>(null);
+  const [referralLocked, setReferralLocked] = useState(false);
 
   const totalSteps = STEPS.length + 1;
   const isReviewStep = started && currentStep === STEPS.length;
@@ -216,9 +233,6 @@ export default function AgentOnboarding() {
     if (step.required && !currentValue.trim()) return "This field is required.";
     if (step.key === "phoneNumber" && currentValue && !isValidPhone(currentValue)) {
       return "Please use the format 111-222-3333.";
-    }
-    if (step.key === "personalEmail" && currentValue && !isValidPersonalEmail(currentValue)) {
-      return "Enter a valid personal email (not @thepncl.com).";
     }
     if (step.key === "ssn" && currentValue && !isValidSsn(currentValue)) {
       return "Please use the format 111-22-3333.";
@@ -243,7 +257,7 @@ export default function AgentOnboarding() {
   const advance = () => {
     setTransitioning(true);
     setTimeout(() => {
-      setCurrentStep((s) => s + 1);
+      setCurrentStep((s) => getNextStepIndex(s, referralLocked));
       setTransitioning(false);
     }, 350);
   };
@@ -274,7 +288,10 @@ export default function AgentOnboarding() {
 
     setLoading(true);
     try {
-      const result = await submitOnboarding(formData);
+      const result = await submitOnboarding({
+        ...formData,
+        referrerId: referrerId ?? undefined,
+      });
       navigate(
         `/onboarding/success/${result.onboardingId}?token=${encodeURIComponent(result.handoffToken)}`,
         { replace: true },
@@ -336,6 +353,33 @@ export default function AgentOnboarding() {
     trackPageView("agent-onboarding");
   }, []);
 
+  useEffect(() => {
+    const refFromUrl = searchParams.get(REFERRAL_PARAM)?.trim() ?? "";
+    const refId = refFromUrl || readStoredReferralId();
+    if (!refId || !isSupabaseConfigured()) {
+      return;
+    }
+
+    let cancelled = false;
+
+    getReferrerInfo(refId)
+      .then((referrer) => {
+        if (cancelled) return;
+        persistReferralId(referrer.id);
+        setReferrerId(referrer.id);
+        setReferralLocked(true);
+        setData((prev) => ({ ...prev, uplineNetwork: referrer.name }));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        toast.error("This referral link is invalid or expired.");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams]);
+
   if (!started) {
     // intro only
   } else if (!isReviewStep && !step) {
@@ -374,13 +418,15 @@ export default function AgentOnboarding() {
                     {formatReviewValue(reviewStep.key, data[reviewStep.key])}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  className="onboarding-review-edit"
-                  onClick={() => goToStep(index, true)}
-                >
-                  Edit
-                </button>
+                {!(referralLocked && reviewStep.key === "uplineNetwork") && (
+                  <button
+                    type="button"
+                    className="onboarding-review-edit"
+                    onClick={() => goToStep(index, true)}
+                  >
+                    Edit
+                  </button>
+                )}
               </li>
             ))}
           </ul>
@@ -412,7 +458,11 @@ export default function AgentOnboarding() {
             Step {currentStep + 1} of {totalSteps}
           </span>
           <h2 className="h3">{step.question}</h2>
-          {step.subtitle && <p className="lead">{step.subtitle}</p>}
+          {step.key === "uplineNetwork" && referralLocked ? (
+            <p className="lead">You were referred by {data.uplineNetwork}. This is already set for your application.</p>
+          ) : (
+            step.subtitle && <p className="lead">{step.subtitle}</p>
+          )}
 
           {step.type === "yesno" && (
             <div className="onboarding-options">
@@ -455,40 +505,42 @@ export default function AgentOnboarding() {
             <div className="onboarding-actions">
               <div className="onboarding-field" style={{ width: "100%" }}>
                 <label htmlFor="step-input" className="sr-only">{step.question}</label>
-                <input
-                  id="step-input"
-                  key={step.key}
-                  type={step.key === "ssn" ? "password" : step.key === "personalEmail" ? "email" : "text"}
-                  inputMode={
-                    step.key === "dateOfBirth" || step.key === "phoneNumber" || step.key === "ssn"
-                      ? "numeric"
-                      : step.key === "personalEmail"
-                        ? "email"
-                        : undefined
-                  }
-                  placeholder={step.placeholder}
-                  value={currentValue}
-                  onChange={(e) => handleInputChange(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  autoFocus
-                  autoComplete={
-                    step.key === "legalName"
-                      ? "name"
-                      : step.key === "phoneNumber"
-                        ? "tel"
-                        : step.key === "personalEmail"
-                          ? "email"
-                          : "off"
-                  }
-                />
-                {validationError && <p className="onboarding-error">{validationError}</p>}
+                {step.key === "uplineNetwork" && referralLocked ? (
+                  <p className="onboarding-locked-value">{data.uplineNetwork}</p>
+                ) : (
+                  <>
+                    <input
+                      id="step-input"
+                      key={step.key}
+                      type={step.key === "ssn" ? "password" : "text"}
+                      inputMode={
+                        step.key === "dateOfBirth" || step.key === "phoneNumber" || step.key === "ssn"
+                          ? "numeric"
+                          : undefined
+                      }
+                      placeholder={step.placeholder}
+                      value={currentValue}
+                      onChange={(e) => handleInputChange(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      autoFocus
+                      autoComplete={
+                        step.key === "legalName"
+                          ? "name"
+                          : step.key === "phoneNumber"
+                            ? "tel"
+                            : "off"
+                      }
+                    />
+                    {validationError && <p className="onboarding-error">{validationError}</p>}
+                  </>
+                )}
               </div>
               <button
                 type="button"
                 className="btn btn-accent"
                 onClick={handleSubmit}
-                disabled={!canAdvance || loading}
-                style={{ opacity: canAdvance && !loading ? 1 : 0.4 }}
+                disabled={(step.key === "uplineNetwork" && referralLocked ? false : !canAdvance) || loading}
+                style={{ opacity: (step.key === "uplineNetwork" && referralLocked) || (canAdvance && !loading) ? 1 : 0.4 }}
               >
                 {returnToReview
                   ? <>Save & return <span className="arr">→</span></>
@@ -508,7 +560,7 @@ export default function AgentOnboarding() {
                   setReturnToReview(false);
                   goToStep(STEPS.length);
                 } else {
-                  setCurrentStep((s) => s - 1);
+                  setCurrentStep((s) => getPreviousStepIndex(s, referralLocked));
                 }
               }}
             >

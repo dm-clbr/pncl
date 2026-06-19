@@ -206,7 +206,7 @@ export interface CreateWorkspaceUserInput {
   lastName: string;
   email: string;
   temporaryPassword: string;
-  recoveryEmail: string;
+  recoveryEmail?: string;
   orgUnitPath?: string;
 }
 
@@ -217,7 +217,7 @@ function getFallbackRecoveryEmail(): string {
 }
 
 export async function createWorkspaceUser(input: CreateWorkspaceUserInput): Promise<string> {
-  const recoveryEmail = input.recoveryEmail || getFallbackRecoveryEmail();
+  const recoveryEmail = input.recoveryEmail?.trim() || getFallbackRecoveryEmail();
   if (!recoveryEmail) {
     throw new Error("Missing recovery email for Google Workspace user");
   }

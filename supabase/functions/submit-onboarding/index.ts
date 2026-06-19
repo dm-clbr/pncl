@@ -5,6 +5,7 @@ import { createWorkspaceUser } from "../_shared/googleWorkspace.ts";
 import { logOnboarding } from "../_shared/logger.ts";
 import {
   getServiceClient,
+  resolveReferrer,
   validateSubmitPayload,
 } from "../_shared/onboarding.ts";
 import { provisionPortalAccount } from "../_shared/portalAuth.ts";
@@ -36,9 +37,21 @@ serve(async (req) => {
       hasLicense: payload.hasLicense,
       hasEoInsurance: payload.hasEoInsurance,
       hasNpn: Boolean(payload.npn),
+      hasReferrer: Boolean(payload.referrerUserId),
     });
 
     const supabase = getServiceClient();
+
+    let uplineNetwork = payload.uplineNetwork;
+    let referrerUserId: string | null = null;
+
+    if (payload.referrerUserId) {
+      const referrer = await resolveReferrer(supabase, payload.referrerUserId);
+      if (referrer) {
+        uplineNetwork = referrer.name;
+        referrerUserId = referrer.id;
+      }
+    }
 
     const handoffToken = generateHandoffToken();
     const handoffTokenHash = await hashHandoffToken(handoffToken);
@@ -64,10 +77,11 @@ serve(async (req) => {
         date_of_birth: payload.dateOfBirth,
         ssn_encrypted: ssnEncrypted,
         state_of_residence: payload.stateOfResidence,
-        upline_network: payload.uplineNetwork,
+        upline_network: uplineNetwork,
         has_license: payload.hasLicense,
         npn: payload.npn ?? null,
         has_eo_insurance: payload.hasEoInsurance,
+        referrer_user_id: referrerUserId,
         workspace_email: workspaceEmail,
         status: "creating_email",
         handoff_token_hash: handoffTokenHash,
@@ -98,7 +112,6 @@ serve(async (req) => {
         lastName: payload.lastName,
         email: workspaceEmail,
         temporaryPassword,
-        recoveryEmail: payload.personalEmail,
       });
 
       finalStatus = "ready";

@@ -10,7 +10,6 @@ import {
 export interface SubmitOnboardingInput {
   legalName: string;
   phoneNumber: string;
-  personalEmail: string;
   dateOfBirth: string;
   ssn: string;
   stateOfResidence: string;
@@ -18,6 +17,7 @@ export interface SubmitOnboardingInput {
   hasLicense: string;
   npn: string;
   hasEoInsurance: string;
+  referrerId?: string;
 }
 
 export interface SubmitOnboardingResponse {
@@ -86,7 +86,6 @@ export async function submitOnboarding(
     body: JSON.stringify({
       legalName: input.legalName,
       phoneNumber: input.phoneNumber,
-      personalEmail: input.personalEmail,
       dateOfBirth: input.dateOfBirth,
       ssn: input.ssn,
       stateOfResidence: input.stateOfResidence,
@@ -94,6 +93,7 @@ export async function submitOnboarding(
       hasLicense: input.hasLicense,
       npn: input.npn || undefined,
       hasEoInsurance: input.hasEoInsurance,
+      referrerId: input.referrerId,
     }),
   });
 

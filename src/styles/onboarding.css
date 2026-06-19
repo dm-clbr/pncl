@@ -75,7 +75,7 @@
   padding: 0;
   text-align: left;
   border: 1px solid rgba(240, 237, 228, 0.1);
-  border-radius: 2px;
+  border-radius: var(--radius);
   overflow: hidden;
 }
 
@@ -177,7 +177,7 @@
   padding: 1rem 1.5rem;
   background: transparent;
   border: 1px solid rgba(240, 237, 228, 0.2);
-  border-radius: 2px;
+  border-radius: var(--radius);
   color: var(--bone);
   font-family: var(--ff-sans);
   font-size: 1rem;
@@ -257,6 +257,15 @@
   font-size: 0.85rem;
   color: #f87171;
   margin-top: 0.5rem;
+}
+
+.home2-page.onboarding-page .onboarding-locked-value {
+  font-family: var(--ff-sans);
+  font-size: clamp(1.1rem, 2vw, 1.35rem);
+  font-weight: 600;
+  color: var(--bone);
+  padding: 12px 2px;
+  border-bottom: 1px solid rgba(240, 237, 228, 0.2);
   text-align: center;
 }
 
@@ -306,7 +315,7 @@
   display: inline-flex;
   align-items: center;
   padding: 0.35rem 0.75rem;
-  border-radius: 2px;
+  border-radius: var(--radius);
   font-family: var(--ff-mono);
   font-size: 11px;
   letter-spacing: 0.14em;
@@ -339,7 +348,7 @@
   gap: 0.35rem;
   padding: 1rem 1.1rem;
   margin: 1rem 0;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: rgba(240, 237, 228, 0.04);
   border: 1px solid rgba(240, 237, 228, 0.1);
   text-align: left;
@@ -399,7 +408,7 @@
 .home2-page.onboarding-page .onboarding-error-block {
   margin-top: 1.5rem;
   padding: 1rem 1.1rem;
-  border-radius: 2px;
+  border-radius: var(--radius);
   background: rgba(248, 113, 113, 0.08);
   border: 1px solid rgba(248, 113, 113, 0.2);
   font-size: 0.9rem;

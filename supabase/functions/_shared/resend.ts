@@ -64,7 +64,7 @@ export function buildPortalActivationEmailHtml(input: {
         <p>${greeting}</p>
         <p>
           Your PNCL company email is ready. Click the button below to confirm your email
-          and create your portal password.
+          and create your portal password. You will sign in with your @thepncl.com address.
         </p>
         <p style="margin:28px 0;">
           <a href="${input.activationUrl}"

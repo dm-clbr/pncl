@@ -14,7 +14,7 @@ echo "==> Pushing database migrations..."
 supabase db push
 
 echo "==> Deploying Edge Functions..."
-supabase functions deploy submit-onboarding get-onboarding-status reveal-onboarding-credentials setup-portal-account resend-portal-confirmation
+supabase functions deploy submit-onboarding get-onboarding-status reveal-onboarding-credentials setup-portal-account resend-portal-confirmation get-referrer-info
 
 echo ""
 echo "Deploy complete. Test onboarding at: http://localhost:8080/onboarding"

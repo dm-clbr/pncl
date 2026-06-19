@@ -24,7 +24,6 @@ const pillars = [
     pk: "Compensation",
     title: "Aggressive Compensation",
     desc: "Our agents earn what they deserve. PNCL runs one of the most competitive compensation structures in the industry — because your work should pay off.",
-    vis: "arch" as const,
     label: "Compensation Plan",
   },
   {
@@ -32,7 +31,6 @@ const pillars = [
     pk: "Income Streams",
     title: "Three Types of Income",
     desc: "Build real wealth through direct sales commissions, override income from team production, and long-term renewals that pay you for years.",
-    vis: "stone" as const,
     label: "Direct · Override · Renewal",
   },
   {
@@ -40,7 +38,6 @@ const pillars = [
     pk: "Leads",
     title: "Innovative Lead Program",
     desc: "Access real-time, exclusive leads from our proprietary system. No cold-calling — just qualified prospects who are ready to talk.",
-    vis: "screen-lockup" as const,
     label: "Live Lead Feed",
   },
   {
@@ -48,7 +45,6 @@ const pillars = [
     pk: "Technology",
     title: "A Smarter CRM",
     desc: "Our AI-integrated CRM streamlines your workflow, automates follow-ups, and surfaces the insights you need to close more deals.",
-    vis: "screen-crm" as const,
     label: "PNCL Platform",
   },
 ];
@@ -94,43 +90,10 @@ function PMarkSymbol() {
   );
 }
 
-function PillarVisual({ type, label }: { type: (typeof pillars)[number]["vis"]; label: string }) {
-  if (type === "arch") {
-    return (
-      <div className="vis ph img-arch">
-        <div className="bands" />
-        <svg className="mark-wm" style={{ right: "6%", bottom: "8%", width: "34%" }}>
-          <use href="#pmark" />
-        </svg>
-        <span className="label">{label}</span>
-      </div>
-    );
-  }
-  if (type === "stone") {
-    return (
-      <div className="vis ph img-stone">
-        <div className="relief" />
-        <span className="label">{label}</span>
-      </div>
-    );
-  }
-  if (type === "screen-lockup") {
-    return (
-      <div className="vis ph img-screen">
-        <div className="glow">
-          <span className="lockup">
-            <PNCLLogo height={14} />
-          </span>
-        </div>
-        <span className="label">{label}</span>
-      </div>
-    );
-  }
+function PillarVisual({ num, label }: { num: string; label: string }) {
   return (
-    <div className="vis ph img-screen">
-      <div className="glow">
-        <span style={{ fontFamily: "var(--ff-mono)", fontSize: 11, color: "var(--accent)" }}>AI · CRM</span>
-      </div>
+    <div className="vis ph img-pillar">
+      <img src={`/${num}.png`} alt={label} loading="lazy" />
       <span className="label">{label}</span>
     </div>
   );
@@ -139,24 +102,32 @@ function PillarVisual({ type, label }: { type: (typeof pillars)[number]["vis"]; 
 function ThriveVisual({ type, label }: { type: (typeof thriveItems)[number]["vis"]; label: string }) {
   if (type === "arch") {
     return (
-      <div className="vis ph img-arch">
-        <div className="bands" />
+      <div className="vis ph img-photo">
+        <img src="/reps.png" alt="PNCL team training session" loading="lazy" />
         <span className="label">{label}</span>
       </div>
     );
   }
   if (type === "stone") {
     return (
-      <div className="vis ph img-stone">
-        <div className="relief" />
+      <div className="vis ph img-photo">
+        <img src="/growith.png" alt="PNCL team planning growth strategy" loading="lazy" />
         <span className="label">{label}</span>
       </div>
     );
   }
   if (type === "portrait") {
     return (
-      <div className="vis ph img-portrait">
-        <div className="sil" />
+      <div className="vis ph img-photo">
+        <img src="/PNCL BEACH.png" alt="PNCL agent working remotely at a resort" loading="lazy" />
+        <span className="label">{label}</span>
+      </div>
+    );
+  }
+  if (type === "screen-masterclass") {
+    return (
+      <div className="vis ph img-macbook">
+        <img src="/MACBOOK PNCL.png" alt="PNCL agent onboarding on MacBook" loading="lazy" />
         <span className="label">{label}</span>
       </div>
     );
@@ -367,7 +338,15 @@ export default function Index() {
       </div>
 
       <section className="care" id="why">
-        <div className="wrap grid">
+        <div className="wrap care-stack">
+          <div className="care-visual reveal">
+            <div className="ph care-video">
+              <video autoPlay muted loop playsInline preload="metadata" aria-label="PNCL agents">
+                <source src="/pncl-agents-2026.mp4" type="video/mp4" />
+              </video>
+              <span className="label">PNCL Agents — 2026</span>
+            </div>
+          </div>
           <div className="care-copy reveal">
             <span className="eyebrow">Our Philosophy</span>
             <h2 className="h2">At PNCL,<br />we care about you.</h2>
@@ -375,13 +354,6 @@ export default function Index() {
               We built PNCL on one belief: people come first. When agents feel supported, valued, and equipped, they don&apos;t just sell policies — they change lives. Our mission is to build the most empowering environment in insurance, where your growth is the priority.
             </p>
             <div className="pp-badge">People <span className="gt">&gt;</span> Profit</div>
-          </div>
-          <div className="care-visual reveal">
-            <div className="ph img-portrait" style={{ position: "absolute", inset: 0 }}>
-              <svg className="mark-wm" style={{ right: "-6%", bottom: "-4%", width: "60%" }}><use href="#pmark" /></svg>
-              <div className="sil" />
-              <span className="label">PNCL Agents — 2026</span>
-            </div>
           </div>
         </div>
       </section>
@@ -400,7 +372,7 @@ export default function Index() {
                 <h3 className="h3">{p.title}</h3>
                 <p>{p.desc}</p>
               </div>
-              <PillarVisual type={p.vis} label={p.label} />
+              <PillarVisual num={p.num} label={p.label} />
             </div>
           ))}
         </div>
