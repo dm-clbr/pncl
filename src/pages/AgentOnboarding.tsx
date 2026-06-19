@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import OnboardingLayout from "@/components/OnboardingLayout";
 import { submitOnboarding, isSupabaseConfigured } from "@/lib/onboarding-api";
 import { toast } from "sonner";
 import { trackPageView } from "@/lib/analytics";
@@ -15,6 +16,7 @@ const US_STATES = [
 interface OnboardingData {
   legalName: string;
   phoneNumber: string;
+  personalEmail: string;
   dateOfBirth: string;
   ssn: string;
   stateOfResidence: string;
@@ -51,6 +53,14 @@ const STEPS: Step[] = [
     subtitle: "Please use dashes: 111-222-3333",
     type: "tel",
     placeholder: "111-222-3333",
+    required: true,
+  },
+  {
+    key: "personalEmail",
+    question: "Personal email",
+    subtitle: "Your personal email (Gmail, iCloud, etc.) — used for Google sign-in recovery, not your @thepncl.com address.",
+    type: "text",
+    placeholder: "you@gmail.com",
     required: true,
   },
   {
@@ -139,6 +149,10 @@ function isValidPhone(phone: string): boolean {
   return /^\d{3}-\d{3}-\d{4}$/.test(phone);
 }
 
+function isValidPersonalEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && !email.toLowerCase().endsWith("@thepncl.com");
+}
+
 function isValidSsn(ssn: string): boolean {
   return /^\d{3}-\d{2}-\d{4}$/.test(ssn);
 }
@@ -154,9 +168,25 @@ function isValidDate(dob: string): boolean {
   return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 }
 
+function maskSsn(ssn: string): string {
+  const match = ssn.match(/^\d{3}-\d{2}-(\d{4})$/);
+  if (!match) return ssn || "—";
+  return `•••-••-${match[1]}`;
+}
+
+function formatReviewValue(key: StepKey, value: string): string {
+  if (!value.trim()) {
+    if (key === "npn") return "Not provided";
+    return "—";
+  }
+  if (key === "ssn") return maskSsn(value);
+  return value;
+}
+
 const EMPTY_DATA: OnboardingData = {
   legalName: "",
   phoneNumber: "",
+  personalEmail: "",
   dateOfBirth: "",
   ssn: "",
   stateOfResidence: "",
@@ -173,16 +203,22 @@ export default function AgentOnboarding() {
   const [data, setData] = useState<OnboardingData>(EMPTY_DATA);
   const [transitioning, setTransitioning] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [returnToReview, setReturnToReview] = useState(false);
 
-  const step = STEPS[currentStep];
-  const progress = started ? ((currentStep + 1) / STEPS.length) * 100 : 0;
-  const currentValue = data[step.key];
+  const totalSteps = STEPS.length + 1;
+  const isReviewStep = started && currentStep === STEPS.length;
+  const step = isReviewStep ? null : STEPS[currentStep];
+  const progress = started ? ((currentStep + 1) / totalSteps) * 100 : 0;
+  const currentValue = step ? data[step.key] : "";
 
   const validationError = useMemo(() => {
-    if (step.type === "yesno" || step.type === "select") return null;
+    if (!step || step.type === "yesno" || step.type === "select") return null;
     if (step.required && !currentValue.trim()) return "This field is required.";
     if (step.key === "phoneNumber" && currentValue && !isValidPhone(currentValue)) {
       return "Please use the format 111-222-3333.";
+    }
+    if (step.key === "personalEmail" && currentValue && !isValidPersonalEmail(currentValue)) {
+      return "Enter a valid personal email (not @thepncl.com).";
     }
     if (step.key === "ssn" && currentValue && !isValidSsn(currentValue)) {
       return "Please use the format 111-22-3333.";
@@ -194,7 +230,9 @@ export default function AgentOnboarding() {
   }, [step, currentValue]);
 
   const canAdvance =
-    step.type === "yesno"
+    !step
+      ? false
+      : step.type === "yesno"
       ? !!currentValue
       : step.type === "select"
         ? !!currentValue
@@ -208,6 +246,24 @@ export default function AgentOnboarding() {
       setCurrentStep((s) => s + 1);
       setTransitioning(false);
     }, 350);
+  };
+
+  const goToStep = (index: number, fromReview = false) => {
+    setReturnToReview(fromReview);
+    setTransitioning(true);
+    setTimeout(() => {
+      setCurrentStep(index);
+      setTransitioning(false);
+    }, 350);
+  };
+
+  const finishStep = () => {
+    if (returnToReview) {
+      setReturnToReview(false);
+      goToStep(STEPS.length);
+      return;
+    }
+    advance();
   };
 
   const performSubmit = async (formData: OnboardingData) => {
@@ -233,18 +289,13 @@ export default function AgentOnboarding() {
   };
 
   const handleYesNo = (value: string) => {
-    const nextData = { ...data, [step.key]: value };
-    setData(nextData);
-    if (currentStep === STEPS.length - 1) {
-      setTimeout(() => performSubmit(nextData), 200);
-      return;
-    }
-    setTimeout(advance, 200);
+    setData((prev) => ({ ...prev, [step!.key]: value }));
+    setTimeout(finishStep, 200);
   };
 
   const handleSelect = (value: string) => {
-    setData((prev) => ({ ...prev, [step.key]: value }));
-    setTimeout(advance, 200);
+    setData((prev) => ({ ...prev, [step!.key]: value }));
+    setTimeout(finishStep, 200);
   };
 
   const handleInputChange = (raw: string) => {
@@ -256,14 +307,14 @@ export default function AgentOnboarding() {
   };
 
   const handleSubmit = async () => {
-    if (!canAdvance) return;
+    if (!step || !canAdvance) return;
 
-    if (currentStep < STEPS.length - 1) {
-      advance();
+    if (currentStep < STEPS.length - 1 || returnToReview) {
+      finishStep();
       return;
     }
 
-    await performSubmit(data);
+    advance();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -285,137 +336,187 @@ export default function AgentOnboarding() {
     trackPageView("agent-onboarding");
   }, []);
 
-  if (!step) return null;
+  if (!started) {
+    // intro only
+  } else if (!isReviewStep && !step) {
+    return null;
+  }
 
   return (
-    <div className="quiz-container">
-      <div className="quiz-progress-bar">
-        <div className="quiz-progress-fill" style={{ width: `${progress}%` }} />
-      </div>
-
-      <div className="quiz-brand">
-        <Link to="/" className="quiz-brand-link">PNCL</Link>
-      </div>
-
+    <OnboardingLayout progress={started ? progress : undefined} wide={isReviewStep}>
       {!started && (
-        <div className="quiz-card quiz-fade-in">
-          <div className="quiz-card-inner">
-            <h2 className="quiz-question" style={{ fontSize: "1.6rem" }}>
-              PNCL New Agent Onboarding
-            </h2>
-            <p className="quiz-subtitle">
-              This form is used to initiate the PNCL onboarding process. Please fill out completely with accurate information.
-            </p>
-            <button type="button" className="quiz-cta-btn" onClick={() => setStarted(true)} style={{ marginTop: "1.5rem" }}>
-              Get Started →
-            </button>
-          </div>
+        <div className="onboarding-step">
+          <span className="eyebrow">New Agent</span>
+          <h2 className="h2">PNCL Agent Onboarding</h2>
+          <p className="lead">
+            This form initiates the PNCL onboarding process. Please fill out completely with accurate information.
+          </p>
+          <button type="button" className="btn btn-accent btn-lg" onClick={() => setStarted(true)}>
+            Get Started <span className="arr">→</span>
+          </button>
         </div>
       )}
 
-      {started && (
-        <div className={`quiz-card ${transitioning ? "quiz-fade-out" : "quiz-fade-in"}`}>
-          <div className="quiz-card-inner">
-            <span className="quiz-step-label">
-              Step {currentStep + 1} of {STEPS.length}
-            </span>
-            <h2 className="quiz-question" style={{ fontSize: "1.5rem" }}>
-              {step.question}
-            </h2>
-            {step.subtitle && <p className="quiz-subtitle">{step.subtitle}</p>}
+      {started && isReviewStep && (
+        <div className={`onboarding-step ${transitioning ? "out" : ""}`}>
+          <span className="eyebrow">Review</span>
+          <h2 className="h3">Check your answers</h2>
+          <p className="lead">
+            Review everything below. Tap Edit to change an answer before submitting.
+          </p>
 
-            {step.type === "yesno" && (
-              <div className="quiz-options">
-                {loading && currentStep === STEPS.length - 1 && (
-                  <p className="quiz-subtitle">Submitting…</p>
-                )}
-                {step.options!.map((opt) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    className={`quiz-option-btn ${currentValue === opt ? "selected" : ""}`}
-                    onClick={() => handleYesNo(opt)}
-                    disabled={loading}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {step.type === "select" && (
-              <div className="quiz-form-single">
-                <select
-                  value={currentValue}
-                  onChange={(e) => handleSelect(e.target.value)}
-                  className="quiz-input quiz-input-large onboarding-select"
-                  autoFocus
+          <ul className="onboarding-review-list">
+            {STEPS.map((reviewStep, index) => (
+              <li key={reviewStep.key} className="onboarding-review-row">
+                <div className="onboarding-review-content">
+                  <span className="onboarding-review-label">{reviewStep.question}</span>
+                  <span className="onboarding-review-value">
+                    {formatReviewValue(reviewStep.key, data[reviewStep.key])}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="onboarding-review-edit"
+                  onClick={() => goToStep(index, true)}
                 >
-                  <option value="" disabled>
-                    Choose your state
-                  </option>
-                  {step.options!.map((state) => (
-                    <option key={state} value={state}>
-                      {state}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+                  Edit
+                </button>
+              </li>
+            ))}
+          </ul>
 
-            {(step.type === "text" || step.type === "tel") && (
-              <div className="quiz-form-single">
+          <div className="onboarding-actions">
+            <button
+              type="button"
+              className="btn btn-accent"
+              onClick={() => performSubmit(data)}
+              disabled={loading}
+            >
+              {loading ? "Submitting…" : <>Submit Application <span className="arr">→</span></>}
+            </button>
+          </div>
+
+          <button
+            type="button"
+            className="onboarding-back"
+            onClick={() => goToStep(STEPS.length - 1)}
+          >
+            ← Back
+          </button>
+        </div>
+      )}
+
+      {started && !isReviewStep && step && (
+        <div className={`onboarding-step ${transitioning ? "out" : ""}`}>
+          <span className="eyebrow">
+            Step {currentStep + 1} of {totalSteps}
+          </span>
+          <h2 className="h3">{step.question}</h2>
+          {step.subtitle && <p className="lead">{step.subtitle}</p>}
+
+          {step.type === "yesno" && (
+            <div className="onboarding-options">
+              {step.options!.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  className={`onboarding-option ${currentValue === opt ? "selected" : ""}`}
+                  onClick={() => handleYesNo(opt)}
+                  disabled={loading}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {step.type === "select" && (
+            <div className="onboarding-field">
+              <label htmlFor="state-select">State</label>
+              <select
+                id="state-select"
+                value={currentValue}
+                onChange={(e) => handleSelect(e.target.value)}
+                autoFocus
+              >
+                <option value="" disabled>
+                  Choose your state
+                </option>
+                {step.options!.map((state) => (
+                  <option key={state} value={state}>
+                    {state}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {(step.type === "text" || step.type === "tel") && (
+            <div className="onboarding-actions">
+              <div className="onboarding-field" style={{ width: "100%" }}>
+                <label htmlFor="step-input" className="sr-only">{step.question}</label>
                 <input
+                  id="step-input"
                   key={step.key}
-                  type={step.key === "ssn" ? "password" : "text"}
+                  type={step.key === "ssn" ? "password" : step.key === "personalEmail" ? "email" : "text"}
                   inputMode={
                     step.key === "dateOfBirth" || step.key === "phoneNumber" || step.key === "ssn"
                       ? "numeric"
-                      : undefined
+                      : step.key === "personalEmail"
+                        ? "email"
+                        : undefined
                   }
                   placeholder={step.placeholder}
                   value={currentValue}
                   onChange={(e) => handleInputChange(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="quiz-input quiz-input-large"
                   autoFocus
                   autoComplete={
                     step.key === "legalName"
                       ? "name"
                       : step.key === "phoneNumber"
                         ? "tel"
-                        : "off"
+                        : step.key === "personalEmail"
+                          ? "email"
+                          : "off"
                   }
                 />
                 {validationError && <p className="onboarding-error">{validationError}</p>}
-                <button
-                  type="button"
-                  className="quiz-cta-btn"
-                  onClick={handleSubmit}
-                  disabled={!canAdvance || loading}
-                  style={{ opacity: canAdvance && !loading ? 1 : 0.4 }}
-                >
-                  {loading
-                    ? "Submitting…"
-                    : currentStep === STEPS.length - 1
-                      ? "Submit →"
-                      : "Continue →"}
-                </button>
               </div>
-            )}
-
-            {currentStep > 0 && (
               <button
                 type="button"
-                className="onboarding-back"
-                onClick={() => setCurrentStep((s) => s - 1)}
+                className="btn btn-accent"
+                onClick={handleSubmit}
+                disabled={!canAdvance || loading}
+                style={{ opacity: canAdvance && !loading ? 1 : 0.4 }}
               >
-                ← Back
+                {returnToReview
+                  ? <>Save & return <span className="arr">→</span></>
+                  : currentStep === STEPS.length - 1
+                    ? <>Review <span className="arr">→</span></>
+                    : <>Continue <span className="arr">→</span></>}
               </button>
-            )}
-          </div>
+            </div>
+          )}
+
+          {(currentStep > 0 || returnToReview) && (
+            <button
+              type="button"
+              className="onboarding-back"
+              onClick={() => {
+                if (returnToReview) {
+                  setReturnToReview(false);
+                  goToStep(STEPS.length);
+                } else {
+                  setCurrentStep((s) => s - 1);
+                }
+              }}
+            >
+              ← {returnToReview ? "Back to review" : "Back"}
+            </button>
+          )}
         </div>
       )}
-    </div>
+    </OnboardingLayout>
   );
 }

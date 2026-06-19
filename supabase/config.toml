@@ -13,3 +13,6 @@ verify_jwt = false
 
 [functions.reveal-onboarding-credentials]
 verify_jwt = false
+
+[functions.setup-portal-account]
+verify_jwt = false

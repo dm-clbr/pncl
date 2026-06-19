@@ -46,6 +46,7 @@ export default function SiteNav({ onCtaClick }: SiteNavProps) {
           <li><a onClick={() => handleNavClick("stats")}>Stats</a></li>
           <li><a onClick={() => handleNavClick("thrive")}>Culture</a></li>
           <li><Link to="/contact">Contact</Link></li>
+          <li><Link to="/portal/login">Agent Login</Link></li>
           <li>
             <button className="nav-cta" onClick={onCtaClick || (() => handleNavClick("apply"))}>
               Become an Agent
@@ -72,6 +73,7 @@ export default function SiteNav({ onCtaClick }: SiteNavProps) {
           <li><a onClick={() => { setMenuOpen(false); handleNavClick("stats"); }}>Stats</a></li>
           <li><a onClick={() => { setMenuOpen(false); handleNavClick("thrive"); }}>Culture</a></li>
           <li><Link to="/contact" onClick={() => setMenuOpen(false)}>Contact</Link></li>
+          <li><Link to="/portal/login" onClick={() => setMenuOpen(false)}>Agent Login</Link></li>
           <li>
             <button className="nav-cta" onClick={() => { setMenuOpen(false); (onCtaClick || (() => handleNavClick("apply")))(); }}>
               Become an Agent

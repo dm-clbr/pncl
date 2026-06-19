@@ -7,6 +7,7 @@ import {
   type OnboardingRecord,
 } from "../_shared/onboarding.ts";
 import { validateHandoffToken } from "../_shared/security.ts";
+import { logOnboarding } from "../_shared/logger.ts";
 
 const TERMINAL_STATUSES = new Set([
   "ready",
@@ -24,6 +25,8 @@ function buildStatusResponse(record: OnboardingRecord) {
     return {
       status: "failed",
       message: "We couldn’t finish creating your PNCL email.",
+      email,
+      error: record.google_creation_error ?? undefined,
     };
   }
 
@@ -40,6 +43,7 @@ function buildStatusResponse(record: OnboardingRecord) {
       email,
       credentialsViewed: true,
       gmailUrl,
+      portalInviteSent: Boolean(record.supabase_user_id),
       message: "Temporary sign-in details have already been viewed.",
     };
   }
@@ -50,6 +54,7 @@ function buildStatusResponse(record: OnboardingRecord) {
       email,
       credentialsViewed: false,
       gmailUrl,
+      portalInviteSent: Boolean(record.supabase_user_id),
       message: "Your PNCL email is ready.",
     };
   }
@@ -74,6 +79,7 @@ serve(async (req) => {
     const token = url.searchParams.get("token");
 
     if (!id || !token) {
+      logOnboarding("status_request_invalid", { reason: "missing_id_or_token" }, "warn");
       return errorResponse("Missing onboarding id or token", 400, "invalid_request");
     }
 
@@ -85,15 +91,18 @@ serve(async (req) => {
       .maybeSingle();
 
     if (error || !record) {
+      logOnboarding("status_record_not_found", { onboardingId: id }, "warn");
       return errorResponse("Onboarding record not found", 404, "not_found");
     }
 
     const tokenValid = await validateHandoffToken(token, record.handoff_token_hash);
     if (!tokenValid) {
+      logOnboarding("status_invalid_token", { onboardingId: id }, "warn");
       return errorResponse("Invalid sign-in handoff token.", 403, "invalid_token");
     }
 
     if (isTokenExpired(record.handoff_token_expires_at)) {
+      logOnboarding("status_token_expired", { onboardingId: id, status: record.status }, "warn");
       if (record.status !== "credentials_viewed" && record.status !== "expired") {
         await supabase
           .from("onboarding_records")
@@ -107,9 +116,18 @@ serve(async (req) => {
       });
     }
 
-    return jsonResponse(buildStatusResponse(record as OnboardingRecord));
+    const statusResponse = buildStatusResponse(record as OnboardingRecord);
+    logOnboarding("status_returned", {
+      onboardingId: id,
+      status: statusResponse.status,
+      workspaceEmail: record.workspace_email ?? null,
+      googleCreationError: record.google_creation_error ?? null,
+    });
+
+    return jsonResponse(statusResponse);
   } catch (error) {
-    console.error("get-onboarding-status failed", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    logOnboarding("status_request_failed", { error: message }, "error");
     return errorResponse("Unable to fetch onboarding status", 500);
   }
 });

@@ -1,0 +1,435 @@
+/* Onboarding — matches home2 design system */
+
+.home2-page.onboarding-page {
+  min-height: 100svh;
+  background: var(--ink);
+  color: var(--bone);
+}
+
+.home2-page.onboarding-page header.nav .bar {
+  padding-top: 18px;
+  padding-bottom: 18px;
+}
+
+.home2-page.onboarding-page .onboarding-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(240, 237, 228, 0.08);
+  z-index: 1001;
+}
+
+.home2-page.onboarding-page .onboarding-progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.5s var(--ease);
+}
+
+.home2-page.onboarding-page .onboarding-main {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(100px, 14vh, 130px) var(--pad) clamp(48px, 8vh, 80px);
+  position: relative;
+  overflow: hidden;
+}
+
+.home2-page.onboarding-page .onboarding-main::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: url("/rockTexture.png") center / cover no-repeat;
+  opacity: 0.35;
+  mix-blend-mode: overlay;
+}
+
+.home2-page.onboarding-page .onboarding-main::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(90% 80% at 20% 90%, rgba(194, 78, 28, 0.12) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(22, 22, 22, 0.5) 0%, transparent 35%, transparent 70%, rgba(22, 22, 22, 0.6) 100%);
+}
+
+.home2-page.onboarding-page .onboarding-panel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 560px;
+  text-align: center;
+}
+
+.home2-page.onboarding-page .onboarding-panel-wide {
+  max-width: 640px;
+}
+
+.home2-page.onboarding-page .onboarding-review-list {
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  text-align: left;
+  border: 1px solid rgba(240, 237, 228, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.home2-page.onboarding-page .onboarding-review-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  background: rgba(240, 237, 228, 0.03);
+  border-bottom: 1px solid rgba(240, 237, 228, 0.08);
+}
+
+.home2-page.onboarding-page .onboarding-review-row:last-child {
+  border-bottom: none;
+}
+
+.home2-page.onboarding-page .onboarding-review-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.home2-page.onboarding-page .onboarding-review-label {
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--space);
+}
+
+.home2-page.onboarding-page .onboarding-review-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--bone);
+  word-break: break-word;
+}
+
+.home2-page.onboarding-page .onboarding-review-edit {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--accent-bright);
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  transition: color 0.25s;
+}
+
+.home2-page.onboarding-page .onboarding-review-edit:hover {
+  color: var(--bone);
+}
+
+.home2-page.onboarding-page .onboarding-step {
+  animation: onboarding-fade-in 0.45s var(--ease) forwards;
+}
+
+.home2-page.onboarding-page .onboarding-step.out {
+  animation: onboarding-fade-out 0.35s var(--ease) forwards;
+}
+
+@keyframes onboarding-fade-in {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes onboarding-fade-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(-12px); }
+}
+
+.home2-page.onboarding-page .onboarding-step .eyebrow {
+  margin-bottom: 1.25rem;
+}
+
+.home2-page.onboarding-page .onboarding-step h2 {
+  margin-bottom: 0.75rem;
+}
+
+.home2-page.onboarding-page .onboarding-step .lead {
+  margin-bottom: 2rem;
+  color: var(--steel);
+}
+
+.home2-page.onboarding-page .onboarding-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.home2-page.onboarding-page .onboarding-option {
+  display: block;
+  width: 100%;
+  padding: 1rem 1.5rem;
+  background: transparent;
+  border: 1px solid rgba(240, 237, 228, 0.2);
+  border-radius: 2px;
+  color: var(--bone);
+  font-family: var(--ff-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s var(--ease);
+  text-align: center;
+}
+
+.home2-page.onboarding-page .onboarding-option:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(194, 78, 28, 0.08);
+}
+
+.home2-page.onboarding-page .onboarding-option.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--bone);
+}
+
+.home2-page.onboarding-page .onboarding-option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.home2-page.onboarding-page .onboarding-field {
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+
+.home2-page.onboarding-page .onboarding-field label {
+  display: block;
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--space);
+  margin-bottom: 9px;
+}
+
+.home2-page.onboarding-page .onboarding-field input,
+.home2-page.onboarding-page .onboarding-field select {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(240, 237, 228, 0.2);
+  color: var(--bone);
+  font-family: var(--ff-sans);
+  font-size: clamp(1.1rem, 2vw, 1.35rem);
+  padding: 12px 2px;
+  transition: border-color 0.3s;
+  text-align: center;
+}
+
+.home2-page.onboarding-page .onboarding-field select {
+  cursor: pointer;
+  appearance: none;
+  text-align-last: center;
+}
+
+.home2-page.onboarding-page .onboarding-field select option {
+  background: var(--ink);
+  color: var(--bone);
+}
+
+.home2-page.onboarding-page .onboarding-field input:focus,
+.home2-page.onboarding-page .onboarding-field select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.home2-page.onboarding-page .onboarding-field input::placeholder {
+  color: var(--arsenic);
+}
+
+.home2-page.onboarding-page .onboarding-error {
+  font-size: 0.85rem;
+  color: #f87171;
+  margin-top: 0.5rem;
+  text-align: center;
+}
+
+.home2-page.onboarding-page .onboarding-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.home2-page.onboarding-page .onboarding-actions .btn {
+  min-width: 220px;
+  justify-content: center;
+}
+
+.home2-page.onboarding-page .onboarding-back {
+  margin-top: 1.5rem;
+  background: none;
+  border: none;
+  color: var(--space);
+  font-family: var(--ff-sans);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.25s;
+}
+
+.home2-page.onboarding-page .onboarding-back:hover {
+  color: var(--bone);
+}
+
+.home2-page.onboarding-page .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Success / status screens */
+.home2-page.onboarding-page .onboarding-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 2px;
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.home2-page.onboarding-page .onboarding-status-badge.tone-pending {
+  background: rgba(240, 237, 228, 0.08);
+  color: var(--steel);
+}
+
+.home2-page.onboarding-page .onboarding-status-badge.tone-ready {
+  background: rgba(194, 78, 28, 0.2);
+  color: var(--accent-bright);
+}
+
+.home2-page.onboarding-page .onboarding-status-badge.tone-error {
+  background: rgba(248, 113, 113, 0.12);
+  color: #fca5a5;
+}
+
+.home2-page.onboarding-page .onboarding-status-badge.tone-neutral {
+  background: rgba(157, 162, 179, 0.12);
+  color: var(--space);
+}
+
+.home2-page.onboarding-page .onboarding-email-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1rem 1.1rem;
+  margin: 1rem 0;
+  border-radius: 2px;
+  background: rgba(240, 237, 228, 0.04);
+  border: 1px solid rgba(240, 237, 228, 0.1);
+  text-align: left;
+}
+
+.home2-page.onboarding-page .onboarding-email-label {
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--space);
+}
+
+.home2-page.onboarding-page .onboarding-email-block strong {
+  font-size: 1.05rem;
+  word-break: break-all;
+}
+
+.home2-page.onboarding-page .onboarding-password {
+  font-family: var(--ff-mono);
+}
+
+.home2-page.onboarding-page .onboarding-steps {
+  text-align: left;
+  margin: 1.25rem 0 1.5rem;
+  padding-left: 1.25rem;
+  color: var(--steel);
+  line-height: 1.7;
+}
+
+.home2-page.onboarding-page .onboarding-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.home2-page.onboarding-page .onboarding-help-text {
+  margin-top: 1.25rem;
+  font-size: 0.82rem;
+  color: var(--steel);
+  line-height: 1.55;
+}
+
+.home2-page.onboarding-page .onboarding-help-text a {
+  color: var(--accent-bright);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.25s;
+}
+
+.home2-page.onboarding-page .onboarding-help-text a:hover {
+  color: var(--bone);
+}
+
+.home2-page.onboarding-page .onboarding-error-block {
+  margin-top: 1.5rem;
+  padding: 1rem 1.1rem;
+  border-radius: 2px;
+  background: rgba(248, 113, 113, 0.08);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  font-size: 0.9rem;
+  color: var(--steel);
+  line-height: 1.6;
+  text-align: left;
+}
+
+.home2-page.onboarding-page .onboarding-error-block code {
+  font-family: var(--ff-mono);
+  font-size: 0.8rem;
+  color: var(--bone);
+}
+
+.home2-page.onboarding-page .onboarding-spinner {
+  width: 36px;
+  height: 36px;
+  margin: 1.5rem auto 0;
+  border-radius: 50%;
+  border: 3px solid rgba(240, 237, 228, 0.12);
+  border-top-color: var(--accent);
+  animation: onboarding-spin 0.8s linear infinite;
+}
+
+@keyframes onboarding-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 560px) {
+  .home2-page.onboarding-page header.nav .btn-ghost {
+    display: none;
+  }
+}

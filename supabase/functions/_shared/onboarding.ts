@@ -51,6 +51,7 @@ export interface OnboardingRecord {
   temporary_password_encrypted: string | null;
   credentials_viewed_at: string | null;
   google_user_id: string | null;
+  supabase_user_id: string | null;
   google_creation_error: string | null;
   group_assignment_error: string | null;
   created_at: string;
@@ -62,6 +63,7 @@ export interface SubmitOnboardingPayload {
   firstName: string;
   lastName: string;
   phoneNumber: string;
+  personalEmail: string;
   dateOfBirth: string;
   ssn: string;
   stateOfResidence: string;
@@ -106,6 +108,15 @@ export function validateSubmitPayload(body: unknown): SubmitOnboardingPayload {
   }
   const phoneNumber = `${phoneDigits.slice(0, 3)}-${phoneDigits.slice(3, 6)}-${phoneDigits.slice(6)}`;
 
+  const personalEmail = normalizeRequiredString(data.personalEmail, "personalEmail").toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(personalEmail)) {
+    throw new Error("Personal email must be a valid email address");
+  }
+  const emailDomain = Deno.env.get("PNCL_EMAIL_DOMAIN") ?? "thepncl.com";
+  if (personalEmail.endsWith(`@${emailDomain}`)) {
+    throw new Error(`Personal email cannot be a @${emailDomain} address`);
+  }
+
   const dateOfBirth = normalizeRequiredString(data.dateOfBirth, "dateOfBirth");
   if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateOfBirth)) {
     throw new Error("Date of birth must use mm/dd/yyyy format");
@@ -133,6 +144,7 @@ export function validateSubmitPayload(body: unknown): SubmitOnboardingPayload {
     firstName,
     lastName,
     phoneNumber,
+    personalEmail,
     dateOfBirth,
     ssn,
     stateOfResidence,

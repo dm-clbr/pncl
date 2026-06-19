@@ -10,6 +10,7 @@ import {
   decryptTemporaryPassword,
   validateHandoffToken,
 } from "../_shared/security.ts";
+import { logOnboarding } from "../_shared/logger.ts";
 
 serve(async (req) => {
   const cors = handleCors(req);
@@ -25,6 +26,7 @@ serve(async (req) => {
     const token = typeof body?.token === "string" ? body.token : "";
 
     if (!id || !token) {
+      logOnboarding("reveal_request_invalid", { reason: "missing_id_or_token" }, "warn");
       return errorResponse("Missing onboarding id or token", 400, "invalid_request");
     }
 
@@ -63,10 +65,12 @@ serve(async (req) => {
     }
 
     if (onboarding.status !== "ready" && onboarding.status !== "email_created") {
+      logOnboarding("reveal_not_ready", { onboardingId: id, status: onboarding.status }, "warn");
       return errorResponse("Credentials are not ready yet.", 409, "credentials_not_ready");
     }
 
     if (!onboarding.workspace_email || !onboarding.temporary_password_encrypted) {
+      logOnboarding("reveal_unavailable", { onboardingId: id, status: onboarding.status }, "warn");
       return errorResponse("Temporary credentials are unavailable.", 409, "credentials_unavailable");
     }
 
@@ -86,9 +90,11 @@ serve(async (req) => {
       .is("credentials_viewed_at", null);
 
     if (updateError) {
-      console.error("Failed to mark credentials as viewed", updateError);
+      logOnboarding("reveal_db_update_failed", { onboardingId: id, error: updateError.message }, "error");
       return errorResponse("Unable to reveal credentials", 500);
     }
+
+    logOnboarding("reveal_succeeded", { onboardingId: id, workspaceEmail: onboarding.workspace_email });
 
     return jsonResponse({
       email: onboarding.workspace_email,
@@ -97,7 +103,8 @@ serve(async (req) => {
       gmailUrl: buildGmailUrl(onboarding.workspace_email),
     });
   } catch (error) {
-    console.error("reveal-onboarding-credentials failed", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+    logOnboarding("reveal_request_failed", { error: message }, "error");
     return errorResponse("Unable to reveal credentials", 500);
   }
 });

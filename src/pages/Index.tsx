@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import Home2HeroCanvas from "@/components/Home2HeroCanvas";
+import PNCLLogo from "@/components/PNCLLogo";
 import { submitLead } from "@/lib/web3forms";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
@@ -117,10 +118,8 @@ function PillarVisual({ type, label }: { type: (typeof pillars)[number]["vis"]; 
     return (
       <div className="vis ph img-screen">
         <div className="glow">
-          <span className="lockup" style={{ fontSize: 14 }}>
-            <svg>
-              <use href="#pmark" />
-            </svg>
+          <span className="lockup">
+            <PNCLLogo height={14} />
           </span>
         </div>
         <span className="label">{label}</span>
@@ -305,8 +304,7 @@ export default function Index() {
       <header className={`nav${navScrolled ? " scrolled" : ""}`} id="nav">
         <div className="bar">
           <a href="#top" className="lockup" aria-label="PNCL home">
-            <svg><use href="#pmark" /></svg>
-            <span className="word">PNCL<sup>©</sup></span>
+            <PNCLLogo height={24} />
           </a>
           <nav className="navlinks">
             <a href="#offer">What We Offer</a>
@@ -314,6 +312,7 @@ export default function Index() {
             <a href="#carriers">Carriers</a>
             <a href="#thrive">Culture</a>
             <a href="#apply">Apply</a>
+            <Link to="/portal/login">Agent Login</Link>
           </nav>
           <a href="#apply" className="btn btn-accent">Become an Agent <span className="arr">→</span></a>
           <button type="button" className="burger" aria-label="Open menu" onClick={() => setMenuOpen(true)}>
@@ -329,6 +328,7 @@ export default function Index() {
         <a href="#carriers" onClick={closeMenu}>Carriers</a>
         <a href="#thrive" onClick={closeMenu}>Culture</a>
         <a href="#apply" onClick={closeMenu}>Apply</a>
+        <Link to="/portal/login" onClick={closeMenu}>Agent Login</Link>
         <a href="#apply" className="btn btn-accent" onClick={closeMenu}>Become an Agent →</a>
       </div>
 
@@ -553,7 +553,7 @@ export default function Index() {
         <div className="wrap">
           <div className="foot-top">
             <div className="foot-brand">
-              <span className="lockup"><svg><use href="#pmark" /></svg><span className="word">PNCL<sup>©</sup></span></span>
+              <span className="lockup"><PNCLLogo height={28} /></span>
               <p>Empowering agents with the tools, training, and culture to build thriving careers in insurance.</p>
             </div>
             <div className="foot-col">
@@ -573,7 +573,7 @@ export default function Index() {
             <div className="foot-col">
               <h4>Agents</h4>
               <a href="#apply">Become an Agent</a>
-              <a href="https://score.insure" target="_blank" rel="noopener noreferrer">Agent Login</a>
+              <a href="/portal">Agent Login</a>
               <a href="https://www.thepinnaclelifegroup.com/events" target="_blank" rel="noopener noreferrer">Training</a>
               <a href="https://www.thepinnaclelifegroup.com" target="_blank" rel="noopener noreferrer">Resources</a>
             </div>

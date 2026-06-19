@@ -14,6 +14,11 @@ import LifeInsurance from "./pages/LifeInsurance.tsx";
 import FinalExpense from "./pages/FinalExpense.tsx";
 import AgentOnboarding from "./pages/AgentOnboarding.tsx";
 import OnboardingSuccess from "./pages/OnboardingSuccess.tsx";
+import OnboardingActivate from "./pages/OnboardingActivate.tsx";
+import PortalLogin from "./pages/PortalLogin.tsx";
+import PortalDashboard from "./pages/PortalDashboard.tsx";
+import ProtectedRoute from "./components/ProtectedRoute.tsx";
+import { AuthProvider } from "./contexts/AuthContext.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -24,6 +29,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <AuthProvider>
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/mortgage-protection" element={<MortgageProtection />} />
@@ -36,9 +42,20 @@ const App = () => (
           <Route path="/final-expense" element={<FinalExpense />} />
           <Route path="/onboarding" element={<AgentOnboarding />} />
           <Route path="/onboarding/success/:onboardingId" element={<OnboardingSuccess />} />
+          <Route path="/onboarding/activate" element={<OnboardingActivate />} />
+          <Route path="/portal/login" element={<PortalLogin />} />
+          <Route
+            path="/portal"
+            element={
+              <ProtectedRoute>
+                <PortalDashboard />
+              </ProtectedRoute>
+            }
+          />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

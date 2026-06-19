@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
+import OnboardingLayout from "@/components/OnboardingLayout";
 import {
   buildGmailUrl,
   getOnboardingStatus,
   revealOnboardingCredentials,
+  resendPortalInvite,
   type OnboardingStatus,
   type OnboardingStatusResponse,
   type RevealCredentialsResponse,
@@ -52,12 +54,15 @@ export default function OnboardingSuccess() {
   const [statusData, setStatusData] = useState<OnboardingStatusResponse | null>(null);
   const [revealed, setRevealed] = useState<RevealCredentialsResponse | null>(null);
   const [revealing, setRevealing] = useState(false);
+  const [resendingInvite, setResendingInvite] = useState(false);
   const [pollError, setPollError] = useState<string | null>(null);
   const pollingRef = useRef<number | null>(null);
 
   const viewState = resolveViewState(statusData, revealed);
   const email = revealed?.email ?? statusData?.email ?? "";
   const gmailUrl = revealed?.gmailUrl ?? statusData?.gmailUrl ?? (email ? buildGmailUrl(email) : "");
+  const portalInviteSent = statusData?.portalInviteSent ?? false;
+  const showCredentials = viewState === "revealed" || viewState === "viewed";
 
   const fetchStatus = useCallback(async () => {
     if (!onboardingId || !token) {
@@ -80,6 +85,14 @@ export default function OnboardingSuccess() {
     document.title = "PNCL Email Setup";
     trackPageView("employee-onboarding-success");
   }, []);
+
+  useEffect(() => {
+    if (statusData?.status !== "failed") return;
+
+    console.error(
+      `[pncl-onboarding] setup_failed | onboardingId=${onboardingId ?? ""} | workspaceEmail=${statusData.email ?? ""} | error=${statusData.error ?? "unknown"}`,
+    );
+  }, [statusData, onboardingId]);
 
   useEffect(() => {
     if (!onboardingId || !token) return;
@@ -142,159 +155,207 @@ export default function OnboardingSuccess() {
     }
   };
 
+  const handleResendInvite = async () => {
+    if (!onboardingId || !token) return;
+
+    setResendingInvite(true);
+    try {
+      await resendPortalInvite(onboardingId, token);
+      toast.success("Portal activation email sent. Check your PNCL inbox and spam folder.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to resend portal activation email.");
+    } finally {
+      setResendingInvite(false);
+    }
+  };
+
   if (!onboardingId || !token) {
     return (
-      <OnboardingShell>
+      <OnboardingLayout>
         <StatusBadge tone="error">Invalid Link</StatusBadge>
-        <h1 className="onboarding-success-title">This onboarding link is incomplete.</h1>
-        <p className="onboarding-success-copy">Please return to the onboarding form or contact PNCL support.</p>
-        <Link to="/onboarding" className="quiz-cta-btn">Back to Onboarding</Link>
-      </OnboardingShell>
+        <h2 className="h3" style={{ margin: "1rem 0" }}>This onboarding link is incomplete.</h2>
+        <p className="lead">Please return to the onboarding form or contact PNCL support.</p>
+        <Link to="/onboarding" className="btn btn-accent" style={{ marginTop: "1.5rem" }}>
+          Back to Onboarding <span className="arr">→</span>
+        </Link>
+      </OnboardingLayout>
     );
   }
 
   return (
-    <OnboardingShell>
+    <OnboardingLayout>
+      <div className="onboarding-step">
       {viewState === "loading" && (
         <>
           <StatusBadge tone="pending">Loading</StatusBadge>
-          <h1 className="onboarding-success-title">Checking your PNCL account…</h1>
-          <p className="onboarding-success-copy">Please wait while we load your onboarding status.</p>
+          <h2 className="h3" style={{ margin: "1rem 0" }}>Checking your PNCL account…</h2>
+          <p className="lead">Please wait while we load your onboarding status.</p>
         </>
       )}
 
       {viewState === "creating" && (
         <>
           <StatusBadge tone="pending">Creating Email</StatusBadge>
-          <h1 className="onboarding-success-title">Creating your PNCL email…</h1>
-          <p className="onboarding-success-copy">We&apos;re setting up your company account now.</p>
+          <h2 className="h3" style={{ margin: "1rem 0" }}>Creating your PNCL email…</h2>
+          <p className="lead">We&apos;re setting up your company email and portal account now.</p>
           <div className="onboarding-spinner" aria-hidden="true" />
         </>
       )}
 
       {viewState === "ready" && (
         <>
-          <StatusBadge tone="ready">Ready</StatusBadge>
-          <h1 className="onboarding-success-title">Your PNCL email is ready.</h1>
+          <StatusBadge tone="ready">Email Ready</StatusBadge>
+          <h2 className="h3" style={{ margin: "1rem 0" }}>Your PNCL email is ready.</h2>
           {email && (
             <div className="onboarding-email-block">
               <span className="onboarding-email-label">Email</span>
               <strong>{email}</strong>
             </div>
           )}
-          <p className="onboarding-success-copy">
-            For security, your temporary sign-in instructions will only be shown once.
-            After signing in, Google will ask you to create your own password.
+          <p className="lead">
+            {portalInviteSent
+              ? <>A portal activation link was sent to <strong>{email}</strong>. Open it from your PNCL inbox to confirm your email and create your portal password.</>
+              : "Your PNCL email is ready. Reveal your Gmail sign-in instructions below."}
           </p>
+          <ol className="onboarding-steps">
+            <li>Reveal and save your temporary Gmail sign-in details</li>
+            <li>Sign in to Gmail and set your Google password</li>
+            <li>Open the portal activation email and create your portal password</li>
+          </ol>
           <button
             type="button"
-            className="quiz-cta-btn"
+            className="btn btn-accent"
             onClick={handleReveal}
             disabled={revealing}
+            style={{ marginTop: "0.5rem" }}
           >
-            {revealing ? "Loading…" : "Reveal Sign-In Instructions"}
+            {revealing ? "Loading…" : <>Reveal Gmail Sign-In <span className="arr">→</span></>}
           </button>
+          {portalInviteSent && (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={handleResendInvite}
+              disabled={resendingInvite}
+              style={{ marginTop: "0.75rem" }}
+            >
+              {resendingInvite ? "Sending…" : "Resend portal activation email"}
+            </button>
+          )}
           <p className="onboarding-help-text">
             If you close this page before saving your temporary password, contact PNCL support or an admin for a password reset.
           </p>
         </>
       )}
 
-      {viewState === "revealed" && revealed && (
+      {showCredentials && (
         <>
-          <StatusBadge tone="ready">Sign-In Ready</StatusBadge>
-          <h1 className="onboarding-success-title">Temporary sign-in instructions</h1>
-          <div className="onboarding-email-block">
-            <span className="onboarding-email-label">Email</span>
-            <strong>{revealed.email}</strong>
-          </div>
-          <div className="onboarding-email-block">
-            <span className="onboarding-email-label">Temporary password</span>
-            <strong className="onboarding-password">{revealed.temporaryPassword}</strong>
-          </div>
-          <ol className="onboarding-steps">
-            <li>Click &ldquo;Open Gmail&rdquo;</li>
-            <li>Sign in with your PNCL email and temporary password</li>
-            <li>Create your new password when Google asks</li>
-            <li>Save your new password somewhere safe</li>
-          </ol>
-          <div className="onboarding-action-row">
-            <button type="button" className="onboarding-secondary-btn" onClick={() => copyText(revealed.email, "Email")}>
-              Copy Email
-            </button>
-            <button
-              type="button"
-              className="onboarding-secondary-btn"
-              onClick={() => copyText(revealed.temporaryPassword, "Temporary password")}
-            >
-              Copy Temporary Password
-            </button>
-          </div>
-          <a href={revealed.gmailUrl} target="_blank" rel="noopener noreferrer" className="quiz-cta-btn">
-            Open Gmail
-          </a>
-          <p className="onboarding-help-text">
-            For security, these temporary sign-in details will only be shown once.
-            After you sign in, Google will ask you to create your own password.
-          </p>
-        </>
-      )}
-
-      {viewState === "viewed" && (
-        <>
-          <StatusBadge tone="neutral">Already Viewed</StatusBadge>
-          <h1 className="onboarding-success-title">Sign-in details already viewed</h1>
-          <p className="onboarding-success-copy">
-            Your temporary sign-in details have already been viewed.
-            Please contact PNCL support or an admin if you need a password reset.
-          </p>
-          {gmailUrl && (
-            <a href={gmailUrl} target="_blank" rel="noopener noreferrer" className="quiz-cta-btn">
-              Open Gmail
-            </a>
+          <StatusBadge tone="ready">Gmail Sign-In</StatusBadge>
+          <h2 className="h3" style={{ margin: "1rem 0" }}>Sign in to your PNCL email</h2>
+          {revealed && (
+            <>
+              <div className="onboarding-email-block">
+                <span className="onboarding-email-label">Email</span>
+                <strong>{revealed.email}</strong>
+              </div>
+              <div className="onboarding-email-block">
+                <span className="onboarding-email-label">Temporary password</span>
+                <strong className="onboarding-password">{revealed.temporaryPassword}</strong>
+              </div>
+              <div className="onboarding-action-row">
+                <button type="button" className="btn btn-ghost" onClick={() => copyText(revealed.email, "Email")}>
+                  Copy Email
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => copyText(revealed.temporaryPassword, "Temporary password")}
+                >
+                  Copy Temporary Password
+                </button>
+              </div>
+            </>
           )}
+          {viewState === "viewed" && email && !revealed && (
+            <div className="onboarding-email-block">
+              <span className="onboarding-email-label">Email</span>
+              <strong>{email}</strong>
+            </div>
+          )}
+          <ol className="onboarding-steps">
+            <li>Open Gmail and sign in with your temporary password</li>
+            <li>If Google asks for phone verification, click <strong>Try another way</strong> and use your personal email</li>
+            <li>Create your new Google password when prompted</li>
+            <li>Open the portal activation email in this inbox to finish onboarding</li>
+          </ol>
+          <div className="onboarding-action-row" style={{ marginTop: "0.75rem" }}>
+            <a
+              href={revealed?.gmailUrl ?? gmailUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-accent"
+            >
+              Open Gmail <span className="arr">→</span>
+            </a>
+            {portalInviteSent && (
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={handleResendInvite}
+                disabled={resendingInvite}
+              >
+                {resendingInvite ? "Sending…" : "Resend portal activation email"}
+              </button>
+            )}
+          </div>
+          <p className="onboarding-help-text">
+            Your portal activation link was sent to this PNCL inbox. Click it to confirm your email, set your portal password, and sign in automatically.
+            Google may ask for phone verification on first sign-in — use <strong>Try another way</strong> and verify with the personal email you provided during onboarding.
+          </p>
         </>
       )}
 
       {viewState === "failed" && (
         <>
           <StatusBadge tone="error">Setup Failed</StatusBadge>
-          <h1 className="onboarding-success-title">We couldn&apos;t finish creating your PNCL email.</h1>
-          <p className="onboarding-success-copy">
+          <h2 className="h3" style={{ margin: "1rem 0" }}>We couldn&apos;t finish creating your PNCL email.</h2>
+          <p className="lead">
             Please contact PNCL support or an admin for help.
           </p>
-          <Link to="/contact" className="quiz-cta-btn">Contact Support</Link>
+          {import.meta.env.DEV && (statusData?.error || statusData?.email || onboardingId) && (
+            <p
+              className="onboarding-error"
+              style={{ marginTop: "1rem", textAlign: "left", fontSize: "0.85rem", whiteSpace: "pre-wrap" }}
+            >
+              {onboardingId && <>Onboarding ID: {onboardingId}{"\n"}</>}
+              {statusData?.email && <>Email: {statusData.email}{"\n"}</>}
+              {statusData?.error && <>Error: {statusData.error}</>}
+            </p>
+          )}
+          <Link to="/contact" className="btn btn-accent" style={{ marginTop: "1rem" }}>
+            Contact Support <span className="arr">→</span>
+          </Link>
         </>
       )}
 
       {viewState === "expired" && (
         <>
           <StatusBadge tone="error">Link Expired</StatusBadge>
-          <h1 className="onboarding-success-title">This sign-in link has expired.</h1>
-          <p className="onboarding-success-copy">
+          <h2 className="h3" style={{ margin: "1rem 0" }}>This sign-in link has expired.</h2>
+          <p className="lead">
             Please contact PNCL support or an admin to get a new temporary password.
           </p>
-          <Link to="/contact" className="quiz-cta-btn">Contact Support</Link>
+          <Link to="/contact" className="btn btn-accent" style={{ marginTop: "1rem" }}>
+            Contact Support <span className="arr">→</span>
+          </Link>
         </>
       )}
 
       {pollError && viewState !== "failed" && viewState !== "expired" && (
         <p className="onboarding-error" style={{ marginTop: "1rem" }}>{pollError}</p>
       )}
-    </OnboardingShell>
-  );
-}
-
-function OnboardingShell({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="quiz-container">
-      <div className="quiz-brand">
-        <Link to="/" className="quiz-brand-link">PNCL</Link>
       </div>
-      <div className="quiz-card quiz-fade-in onboarding-success-card">
-        <div className="quiz-card-inner">{children}</div>
-      </div>
-    </div>
+    </OnboardingLayout>
   );
 }
 

@@ -1,6 +1,16 @@
+import {
+  logOnboardingReveal,
+  logOnboardingStatusError,
+  logOnboardingStatusPoll,
+  logOnboardingSubmitError,
+  logOnboardingSubmitStarted,
+  logOnboardingSubmitSuccess,
+} from "./onboarding-logger";
+
 export interface SubmitOnboardingInput {
   legalName: string;
   phoneNumber: string;
+  personalEmail: string;
   dateOfBirth: string;
   ssn: string;
   stateOfResidence: string;
@@ -14,6 +24,8 @@ export interface SubmitOnboardingResponse {
   onboardingId: string;
   handoffToken: string;
   status: OnboardingStatus;
+  workspaceEmail?: string;
+  error?: string;
 }
 
 export type OnboardingStatus =
@@ -31,6 +43,7 @@ export interface OnboardingStatusResponse {
   email?: string;
   credentialsViewed?: boolean;
   gmailUrl?: string;
+  portalInviteSent?: boolean;
   error?: string;
 }
 
@@ -65,12 +78,15 @@ function getHeaders(): HeadersInit {
 export async function submitOnboarding(
   input: SubmitOnboardingInput,
 ): Promise<SubmitOnboardingResponse> {
+  logOnboardingSubmitStarted(input.legalName);
+
   const response = await fetch(getFunctionUrl("submit-onboarding"), {
     method: "POST",
     headers: getHeaders(),
     body: JSON.stringify({
       legalName: input.legalName,
       phoneNumber: input.phoneNumber,
+      personalEmail: input.personalEmail,
       dateOfBirth: input.dateOfBirth,
       ssn: input.ssn,
       stateOfResidence: input.stateOfResidence,
@@ -83,8 +99,15 @@ export async function submitOnboarding(
 
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.message ?? "Unable to submit onboarding");
+    const message = data.message ?? "Unable to submit onboarding";
+    logOnboardingSubmitError(message, { httpStatus: response.status });
+    throw new Error(message);
   }
+
+  logOnboardingSubmitSuccess(data.onboardingId, data.status, {
+    workspaceEmail: data.workspaceEmail ?? "",
+    error: data.error ?? "",
+  });
   return data;
 }
 
@@ -103,8 +126,16 @@ export async function getOnboardingStatus(
 
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.message ?? "Unable to fetch onboarding status");
+    const message = data.message ?? "Unable to fetch onboarding status";
+    logOnboardingStatusError(id, message);
+    throw new Error(message);
   }
+
+  logOnboardingStatusPoll(id, data.status, {
+    workspaceEmail: data.email ?? "",
+    error: data.error ?? "",
+    message: data.message ?? "",
+  });
   return data;
 }
 
@@ -120,11 +151,37 @@ export async function revealOnboardingCredentials(
 
   const data = await response.json();
   if (!response.ok) {
-    const err = new Error(data.message ?? "Unable to reveal credentials") as Error & {
+    const message = data.message ?? "Unable to reveal credentials";
+    logOnboardingReveal(id, "error", message);
+    const err = new Error(message) as Error & {
       code?: string;
     };
     err.code = data.error;
     throw err;
+  }
+
+  logOnboardingReveal(id, "success");
+  return data;
+}
+
+export interface SetupPortalAccountResponse {
+  email: string;
+  message: string;
+}
+
+export async function resendPortalInvite(
+  id: string,
+  token: string,
+): Promise<SetupPortalAccountResponse> {
+  const response = await fetch(getFunctionUrl("setup-portal-account"), {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify({ id, token }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message ?? "Unable to resend portal activation email");
   }
   return data;
 }

@@ -35,7 +35,7 @@ export default function SiteFooter() {
           <h4>Agents</h4>
           <ul>
             <li><a href="/#apply">Become an Agent</a></li>
-            <li><a href="https://score.insure" target="_blank" rel="noopener noreferrer">Agent Login</a></li>
+            <li><Link to="/portal">Agent Login</Link></li>
             <li><a href="https://www.thepinnaclelifegroup.com/events" target="_blank" rel="noopener noreferrer">Training</a></li>
             <li><a href="https://www.thepinnaclelifegroup.com" target="_blank" rel="noopener noreferrer">Resources</a></li>
           </ul>

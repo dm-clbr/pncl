@@ -1,15 +1,13 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { generateAvailableWorkspaceEmail } from "../_shared/email.ts";
-import {
-  addUserToGroups,
-  createWorkspaceUser,
-  getGroupsForRole,
-} from "../_shared/googleWorkspace.ts";
+import { createWorkspaceUser } from "../_shared/googleWorkspace.ts";
+import { logOnboarding } from "../_shared/logger.ts";
 import {
   getServiceClient,
   validateSubmitPayload,
 } from "../_shared/onboarding.ts";
+import { provisionPortalAccount } from "../_shared/portalAuth.ts";
 import {
   encryptTemporaryPassword,
   generateHandoffToken,
@@ -25,8 +23,21 @@ serve(async (req) => {
     return errorResponse("Method not allowed", 405);
   }
 
+  const requestId = crypto.randomUUID();
+
   try {
+    logOnboarding("submit_request_received", { requestId });
+
     const payload = validateSubmitPayload(await req.json());
+    logOnboarding("submit_payload_validated", {
+      requestId,
+      legalName: payload.legalName,
+      stateOfResidence: payload.stateOfResidence,
+      hasLicense: payload.hasLicense,
+      hasEoInsurance: payload.hasEoInsurance,
+      hasNpn: Boolean(payload.npn),
+    });
+
     const supabase = getServiceClient();
 
     const handoffToken = generateHandoffToken();
@@ -40,6 +51,8 @@ serve(async (req) => {
       payload.firstName,
       payload.lastName,
     );
+
+    logOnboarding("submit_workspace_email_generated", { requestId, workspaceEmail });
 
     const { data: record, error: insertError } = await supabase
       .from("onboarding_records")
@@ -65,11 +78,19 @@ serve(async (req) => {
       .single();
 
     if (insertError || !record) {
-      console.error("Failed to create onboarding record", insertError);
+      logOnboarding(
+        "submit_db_insert_failed",
+        { requestId, workspaceEmail, error: insertError?.message ?? "no record returned" },
+        "error",
+      );
       return errorResponse("Unable to create onboarding record", 500);
     }
 
+    const onboardingId = record.id;
+    logOnboarding("submit_db_record_created", { requestId, onboardingId, workspaceEmail });
+
     let finalStatus = "creating_email";
+    let failureError: string | undefined;
 
     try {
       const googleUserId = await createWorkspaceUser({
@@ -77,49 +98,87 @@ serve(async (req) => {
         lastName: payload.lastName,
         email: workspaceEmail,
         temporaryPassword,
+        recoveryEmail: payload.personalEmail,
       });
 
-      await supabase
-        .from("onboarding_records")
-        .update({
-          status: "email_created",
-          google_user_id: googleUserId,
-        })
-        .eq("id", record.id);
-
-      const groupError = await addUserToGroups(
-        workspaceEmail,
-        getGroupsForRole("Agent"),
-      );
-
       finalStatus = "ready";
-      await supabase
+      let supabaseUserId: string | null = null;
+      let portalProvisionError: string | undefined;
+
+      try {
+        supabaseUserId = await provisionPortalAccount(supabase, {
+          email: workspaceEmail,
+          legalName: payload.legalName,
+          firstName: payload.firstName,
+          lastName: payload.lastName,
+          onboardingId,
+        });
+      } catch (portalError) {
+        portalProvisionError = portalError instanceof Error
+          ? portalError.message
+          : "Portal account provisioning failed";
+        logOnboarding(
+          "submit_portal_provision_failed",
+          { requestId, onboardingId, workspaceEmail, error: portalProvisionError },
+          "error",
+        );
+      }
+
+      const { error: updateError } = await supabase
         .from("onboarding_records")
         .update({
           status: "ready",
-          group_assignment_error: groupError,
+          google_user_id: googleUserId,
+          supabase_user_id: supabaseUserId,
         })
-        .eq("id", record.id);
+        .eq("id", onboardingId);
+
+      if (updateError) {
+        logOnboarding(
+          "submit_db_ready_update_failed",
+          { requestId, onboardingId, googleUserId, error: updateError.message },
+          "error",
+        );
+      } else {
+        logOnboarding("submit_completed", {
+          requestId,
+          onboardingId,
+          workspaceEmail,
+          googleUserId,
+          supabaseUserId,
+          status: finalStatus,
+          portalProvisionError: portalProvisionError ?? null,
+        });
+      }
     } catch (error) {
-      console.error("Google Workspace provisioning failed", error);
+      const errorMessage = error instanceof Error ? error.message : "Google Workspace user creation failed";
+      logOnboarding(
+        "submit_google_provisioning_failed",
+        { requestId, onboardingId, workspaceEmail, error: errorMessage },
+        "error",
+      );
+      failureError = errorMessage;
       finalStatus = "failed";
       await supabase
         .from("onboarding_records")
         .update({
           status: "failed",
-          google_creation_error: "Google Workspace user creation failed",
+          google_creation_error: errorMessage,
           temporary_password_encrypted: null,
         })
-        .eq("id", record.id);
+        .eq("id", onboardingId);
     }
 
     return jsonResponse({
-      onboardingId: record.id,
+      onboardingId,
       handoffToken,
       status: finalStatus,
+      workspaceEmail,
+      ...(failureError ? { error: failureError } : {}),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Invalid request";
+    logOnboarding("submit_request_failed", { requestId, error: message }, "error");
     return errorResponse(message, 400);
   }
 });

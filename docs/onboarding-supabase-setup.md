@@ -74,6 +74,21 @@ npm run dev
 
 **Security:** If you pasted the service account private key anywhere public, rotate the key in [Google Cloud Console](https://console.cloud.google.com/iam-admin/serviceaccounts?project=employee-onboarding-499721) before production.
 
+### Google first sign-in phone verification
+
+Google may show **"Verify it's you"** and ask for a phone number on first Gmail sign-in — this is Google's risk-based security, not something we can fully disable via API.
+
+**What we do in code:**
+- Phone is **not** attached to the Google account profile
+- Agent's **personal email** is set as `recoveryEmail` on the Google account
+- Agents should click **Try another way** → verify via personal email instead of phone
+
+**Recommended Google Admin settings** ([admin.google.com](https://admin.google.com) → Security → Authentication):
+- **2-Step Verification** → Enforcement: **Off** (allow users to opt in, don't require)
+- Review **Login challenges** policies if your edition exposes them
+
+**Testing tip:** If your personal phone is blocked from reuse, use **Try another way** with the personal email from onboarding. Permanently delete test users from **Recently deleted** in Google Admin to free reserved emails and phone associations.
+
 ---
 
 ## Step 3 — Save Google service account JSON locally
