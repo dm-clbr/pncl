@@ -1,12 +1,9 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
-  BookOpen,
-  CalendarDays,
   Globe,
+  GraduationCap,
   Mail,
-  UserPlus,
-  MessageCircle,
 } from "lucide-react";
 
 export interface PortalLink {
@@ -30,10 +27,10 @@ export const PORTAL_SECTIONS: PortalLinkSection[] = [
     title: "Sales Tools",
     links: [
       {
-        id: "score",
-        title: "CRM & Quoting",
-        description: "Leads, quotes, and client management in Score.",
-        href: "https://score.insure",
+        id: "leadspply",
+        title: "LeadSpply",
+        description: "Leads, quotes, and client management.",
+        href: "https://leadspply.com/",
         external: true,
         icon: BarChart3,
       },
@@ -52,20 +49,12 @@ export const PORTAL_SECTIONS: PortalLinkSection[] = [
     title: "Training & Resources",
     links: [
       {
-        id: "training",
-        title: "Training Events",
-        description: "Upcoming workshops, calls, and coaching sessions.",
-        href: "https://www.thepinnaclelifegroup.com/events",
+        id: "pinnacle-genesis",
+        title: "Pinnacle Genesis",
+        description: "Agent training platform and curriculum.",
+        href: "https://www.pinnaclegenesis.cc/",
         external: true,
-        icon: CalendarDays,
-      },
-      {
-        id: "resources",
-        title: "Agent Resources",
-        description: "Scripts, guides, and sales materials.",
-        href: "https://www.thepinnaclelifegroup.com",
-        external: true,
-        icon: BookOpen,
+        icon: GraduationCap,
       },
     ],
   },
@@ -74,28 +63,12 @@ export const PORTAL_SECTIONS: PortalLinkSection[] = [
     title: "PNCL",
     links: [
       {
-        id: "onboarding",
-        title: "Agent Onboarding",
-        description: "New agent setup and licensing workflow.",
-        href: "/onboarding",
-        external: false,
-        icon: UserPlus,
-      },
-      {
         id: "website",
         title: "Company Website",
         description: "Public PNCL site and product pages.",
         href: "/",
         external: false,
         icon: Globe,
-      },
-      {
-        id: "contact",
-        title: "Contact Support",
-        description: "Reach the PNCL team for help.",
-        href: "/contact",
-        external: false,
-        icon: MessageCircle,
       },
     ],
   },
