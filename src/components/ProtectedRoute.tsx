@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth, isEmailConfirmed } from "@/contexts/AuthContext";
+import { useAuth, isEmailConfirmed, mustChangePassword } from "@/contexts/AuthContext";
 import OnboardingLayout from "@/components/OnboardingLayout";
 import PortalConfirmEmail from "@/pages/PortalConfirmEmail";
 
@@ -21,6 +21,10 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
   if (!isEmailConfirmed(user)) {
     return <PortalConfirmEmail />;
+  }
+
+  if (mustChangePassword(user)) {
+    return <Navigate to="/portal/set-password" replace />;
   }
 
   return children;

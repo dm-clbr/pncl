@@ -136,3 +136,7 @@ export function useAuth(): AuthContextValue {
 export function isEmailConfirmed(user: User | null): boolean {
   return Boolean(user?.email_confirmed_at);
 }
+
+export function mustChangePassword(user: User | null): boolean {
+  return user?.user_metadata?.must_change_password === true;
+}

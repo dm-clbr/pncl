@@ -16,6 +16,7 @@ import AgentOnboarding from "./pages/AgentOnboarding.tsx";
 import OnboardingSuccess from "./pages/OnboardingSuccess.tsx";
 import OnboardingActivate from "./pages/OnboardingActivate.tsx";
 import PortalLogin from "./pages/PortalLogin.tsx";
+import PortalSetPassword from "./pages/PortalSetPassword.tsx";
 import PortalDashboard from "./pages/PortalDashboard.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
@@ -44,6 +45,7 @@ const App = () => (
           <Route path="/onboarding/success/:onboardingId" element={<OnboardingSuccess />} />
           <Route path="/onboarding/activate" element={<OnboardingActivate />} />
           <Route path="/portal/login" element={<PortalLogin />} />
+          <Route path="/portal/set-password" element={<PortalSetPassword />} />
           <Route
             path="/portal"
             element={

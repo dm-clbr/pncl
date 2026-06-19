@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import OnboardingLayout from "@/components/OnboardingLayout";
-import { useAuth, isEmailConfirmed } from "@/contexts/AuthContext";
+import { useAuth, isEmailConfirmed, mustChangePassword } from "@/contexts/AuthContext";
 import { isSupabaseAuthConfigured } from "@/lib/supabase";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
@@ -36,6 +36,9 @@ export default function PortalLogin() {
   };
 
   if (!loading && user && isEmailConfirmed(user)) {
+    if (mustChangePassword(user)) {
+      return <Navigate to="/portal/set-password" replace />;
+    }
     return <Navigate to={from} replace />;
   }
 
