@@ -387,25 +387,6 @@ export default function PortalDashboard() {
               </PortalTile>
             )}
 
-            {referralLink && (
-              <PortalTile
-                label="Refer New Agents"
-                count={1}
-                open={Boolean(openSections.referrals)}
-                onToggle={() => toggleSection("referrals")}
-              >
-                <p className="portal-panel-note">
-                  Share this link with agents you refer. Their onboarding form will automatically
-                  list you as their upline network.
-                </p>
-                <code className="portal-referral-url">{referralLink}</code>
-                <button type="button" className="portal-panel-btn" onClick={handleCopyReferralLink}>
-                  <Copy size={16} />
-                  Copy link
-                </button>
-              </PortalTile>
-            )}
-
             {PORTAL_SECTIONS.map((section: PortalLinkSection) => (
               <PortalTile
                 key={section.id}
