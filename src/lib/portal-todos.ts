@@ -1,5 +1,5 @@
 import type { User } from "@supabase/supabase-js";
-import { getSupabaseClient } from "@/lib/supabase";
+import { getSupabaseClient, getSupabaseConfig, isSupabaseAuthConfigured } from "@/lib/supabase";
 
 export interface PortalTodo {
   id: string;
@@ -11,7 +11,8 @@ export interface PortalTodo {
   showEmailHint?: boolean;
 }
 
-export const PORTAL_TODOS: PortalTodo[] = [
+/** Fallback when the API is unavailable (local dev without migration). */
+export const FALLBACK_PORTAL_TODOS: PortalTodo[] = [
   {
     id: "leadspply_account",
     title: "Create your LeadSpply account",
@@ -60,6 +61,51 @@ export const PORTAL_TODOS: PortalTodo[] = [
   },
 ];
 
+interface PortalTodoResponse {
+  id: string;
+  title: string;
+  description: string;
+  href: string;
+  external: boolean;
+  actionLabel: string;
+  showEmailHint: boolean;
+}
+
+function mapPortalTodo(row: PortalTodoResponse): PortalTodo {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    href: row.href,
+    external: row.external,
+    actionLabel: row.actionLabel,
+    showEmailHint: row.showEmailHint,
+  };
+}
+
+export async function fetchPortalTodos(accessToken: string): Promise<PortalTodo[]> {
+  if (!isSupabaseAuthConfigured()) {
+    return FALLBACK_PORTAL_TODOS;
+  }
+
+  const { url, anonKey } = getSupabaseConfig();
+  const response = await fetch(`${url.replace(/\/$/, "")}/functions/v1/list-portal-todos`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      apikey: anonKey,
+    },
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message ?? "Unable to load to-dos");
+  }
+
+  const todos = (data.todos ?? []) as PortalTodoResponse[];
+  return todos.length > 0 ? todos.map(mapPortalTodo) : FALLBACK_PORTAL_TODOS;
+}
+
 type CompletedPortalTodos = Record<string, boolean>;
 
 function getCompletedTodos(user: User | null): CompletedPortalTodos {
@@ -74,8 +120,8 @@ export function isPortalTodoCompleted(user: User | null, todoId: string): boolea
   return getCompletedTodos(user)[todoId] === true;
 }
 
-export function getPendingPortalTodos(user: User | null): PortalTodo[] {
-  return PORTAL_TODOS.filter((todo) => !isPortalTodoCompleted(user, todo.id));
+export function getPendingPortalTodos(user: User | null, todos: PortalTodo[]): PortalTodo[] {
+  return todos.filter((todo) => !isPortalTodoCompleted(user, todo.id));
 }
 
 export async function completePortalTodo(todoId: string): Promise<void> {

@@ -456,3 +456,97 @@ export async function reorderDashboardLinkPlacements(
     body: JSON.stringify({ linkPlacements }),
   });
 }
+
+export interface AdminPortalTodoSummary {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  href: string;
+  external: boolean;
+  actionLabel: string;
+  showEmailHint: boolean;
+  sortOrder: number;
+  published: boolean;
+  completedCount: number;
+  totalUsers: number;
+  completionPercent: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpsertPortalTodoPayload {
+  id?: string;
+  slug?: string;
+  title: string;
+  description: string;
+  href: string;
+  external?: boolean;
+  actionLabel: string;
+  showEmailHint?: boolean;
+  published?: boolean;
+  sortOrder?: number;
+}
+
+export async function listPortalTodos(
+  accessToken: string,
+): Promise<{ todos: AdminPortalTodoSummary[]; totalUsers: number }> {
+  return adminFetch("admin-list-portal-todos", accessToken, { method: "GET" });
+}
+
+export async function upsertPortalTodo(
+  accessToken: string,
+  input: UpsertPortalTodoPayload,
+): Promise<{ todo: AdminPortalTodoSummary; message: string }> {
+  return adminFetch("admin-upsert-portal-todo", accessToken, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deletePortalTodo(
+  accessToken: string,
+  id: string,
+): Promise<{ id: string; message: string }> {
+  return adminFetch("admin-delete-portal-todo", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  });
+}
+
+export async function reorderPortalTodos(
+  accessToken: string,
+  orderedIds: string[],
+): Promise<{ message: string }> {
+  return adminFetch("admin-reorder-portal-todos", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ orderedIds }),
+  });
+}
+
+export interface PortalTodoCompletionUser {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface PortalTodoCompletionDetail {
+  todo: {
+    id: string;
+    slug: string;
+    title: string;
+  };
+  completed: PortalTodoCompletionUser[];
+  pending: PortalTodoCompletionUser[];
+  totalUsers: number;
+}
+
+export async function getPortalTodoCompletion(
+  accessToken: string,
+  todoId: string,
+): Promise<PortalTodoCompletionDetail> {
+  const params = new URLSearchParams({ todoId });
+  return adminFetch(`admin-get-portal-todo-completion?${params.toString()}`, accessToken, {
+    method: "GET",
+  });
+}

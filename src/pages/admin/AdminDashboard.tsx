@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Building2, GitBranch, GraduationCap, LayoutGrid, Palette, Shield, Trophy, UserPlus, Users } from "lucide-react";
+import { Building2, CheckSquare, GitBranch, GraduationCap, LayoutGrid, Palette, Shield, Trophy, UserPlus, Users } from "lucide-react";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
 import { trackPageView } from "@/lib/analytics";
 
@@ -40,6 +40,12 @@ const ADMIN_CARDS = [
     title: "Manage carriers",
     description: "Update carrier contacts and e-app links on the agent carrier sheet.",
     icon: Building2,
+  },
+  {
+    to: "/portal/admin/todos",
+    title: "Manage to-dos",
+    description: "Edit the onboarding checklist and track completion across agents.",
+    icon: CheckSquare,
   },
   {
     to: "/portal/admin/dashboard-tabs",

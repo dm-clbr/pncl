@@ -36,6 +36,7 @@ import AdminCarriers from "./pages/admin/AdminCarriers.tsx";
 import AdminGenesis from "./pages/admin/AdminGenesis.tsx";
 import AdminClients from "./pages/admin/AdminClients.tsx";
 import AdminDashboardTabs from "./pages/admin/AdminDashboardTabs.tsx";
+import AdminTodos from "./pages/admin/AdminTodos.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -131,6 +132,7 @@ const App = () => (
             <Route path="carriers" element={<AdminFullRoute><AdminCarriers /></AdminFullRoute>} />
             <Route path="clients" element={<AdminFullRoute><AdminClients /></AdminFullRoute>} />
             <Route path="dashboard-tabs" element={<AdminFullRoute><AdminDashboardTabs /></AdminFullRoute>} />
+            <Route path="todos" element={<AdminFullRoute><AdminTodos /></AdminFullRoute>} />
             <Route path="genesis" element={<AdminGenesis />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

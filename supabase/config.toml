@@ -91,3 +91,21 @@ verify_jwt = true
 
 [functions.list-portal-brand-assets]
 verify_jwt = true
+
+[functions.admin-list-portal-todos]
+verify_jwt = true
+
+[functions.admin-upsert-portal-todo]
+verify_jwt = true
+
+[functions.admin-delete-portal-todo]
+verify_jwt = true
+
+[functions.admin-reorder-portal-todos]
+verify_jwt = true
+
+[functions.list-portal-todos]
+verify_jwt = true
+
+[functions.admin-get-portal-todo-completion]
+verify_jwt = true

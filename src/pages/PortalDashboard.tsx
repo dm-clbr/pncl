@@ -25,6 +25,7 @@ import {
   getPendingPortalTodos,
   type PortalTodo,
 } from "@/lib/portal-todos";
+import { usePortalTodos } from "@/hooks/usePortalTodos";
 import {
   dismissGenesisNotice,
   GENESIS_LOGIN_URL,
@@ -202,12 +203,17 @@ export default function PortalDashboard() {
   const [completingTodoId, setCompletingTodoId] = useState<string | null>(null);
   const [dismissingGenesisNotice, setDismissingGenesisNotice] = useState(false);
 
-  const pendingTodos = useMemo(() => getPendingPortalTodos(portalUser), [portalUser]);
-  const showGenesisNotice = shouldShowGenesisNotice(portalUser);
   const { incentives, loading: incentivesLoading } = usePortalIncentives();
   const { assets: brandAssets, loading: brandAssetsLoading } = usePortalBrandAssets();
   const { sections: dashboardSections } = usePortalDashboardTabs();
+  const { todos: portalTodos } = usePortalTodos();
   const { photoUrl, initials, displayName } = usePortalProfile(portalUser);
+
+  const pendingTodos = useMemo(
+    () => getPendingPortalTodos(portalUser, portalTodos),
+    [portalUser, portalTodos],
+  );
+  const showGenesisNotice = shouldShowGenesisNotice(portalUser);
 
   const displaySections = useMemo((): PortalDashboardSection[] => {
     if (dashboardSections.length > 0) {

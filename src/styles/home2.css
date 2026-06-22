@@ -1610,7 +1610,8 @@
 }
 
 .home2-page .admin-field input,
-.home2-page .admin-field select {
+.home2-page .admin-field select,
+.home2-page .admin-field textarea {
   width: 100%;
   height: 44px;
   padding: 0 14px;
@@ -1620,6 +1621,22 @@
   color: var(--bone);
   font: inherit;
   box-sizing: border-box;
+}
+
+.home2-page .admin-field textarea {
+  height: auto;
+  min-height: 96px;
+  padding: 12px 14px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.home2-page .admin-field-hint {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--space);
 }
 
 .home2-page .admin-form {
@@ -2002,6 +2019,231 @@
   font-size: 10px;
   letter-spacing: .06em;
   color: var(--space);
+}
+
+.home2-page .admin-todo-slug {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: .06em;
+  color: var(--space);
+}
+
+.home2-page .admin-todo-completion {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 140px;
+}
+
+.home2-page .admin-todo-completion-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(240, 237, 228, .18);
+  overflow: hidden;
+}
+
+.home2-page .admin-todo-completion-fill {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), var(--accent-bright));
+}
+
+.home2-page .admin-todo-completion-label {
+  font-size: 12px;
+  color: var(--space);
+  white-space: nowrap;
+}
+
+.home2-page .admin-todo-completion-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--steel);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.home2-page .admin-todo-completion-btn:hover {
+  color: var(--bone);
+}
+
+.home2-page .admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(8, 8, 8, .82);
+  backdrop-filter: blur(6px);
+}
+
+.home2-page .admin-modal {
+  width: min(760px, 100%);
+  max-height: min(82vh, 720px);
+  overflow: auto;
+  background: var(--ink-2);
+  border: 1px solid rgba(240, 237, 228, .12);
+  border-radius: calc(var(--radius) + 2px);
+  padding: clamp(18px, 4vw, 24px);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .45);
+}
+
+.home2-page .admin-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.home2-page .admin-modal-head h2 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -.02em;
+  text-transform: uppercase;
+  color: var(--bone);
+  margin-bottom: 6px;
+}
+
+.home2-page .admin-modal-head p {
+  font-size: .9rem;
+  line-height: 1.45;
+  color: var(--steel);
+}
+
+.home2-page .admin-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(240, 237, 228, .12);
+  border-radius: var(--radius);
+  background: rgba(240, 237, 228, .04);
+  color: var(--steel);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.home2-page .admin-modal-close:hover {
+  color: var(--bone);
+  border-color: rgba(240, 237, 228, .22);
+}
+
+.home2-page .admin-todo-completion-loading {
+  display: flex;
+  justify-content: center;
+  padding: 32px 0;
+}
+
+.home2-page .admin-todo-completion-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.home2-page .admin-todo-completion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 180px;
+  padding: 14px;
+  border: 1px solid rgba(240, 237, 228, .1);
+  border-radius: var(--radius);
+  background: rgba(0, 0, 0, .18);
+}
+
+.home2-page .admin-todo-completion-list h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .78rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--bone);
+}
+
+.home2-page .admin-todo-completion-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 11px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.home2-page .admin-todo-completion-list-completed .admin-todo-completion-count {
+  background: rgba(72, 160, 96, .18);
+  color: #7fd99a;
+}
+
+.home2-page .admin-todo-completion-list-pending .admin-todo-completion-count {
+  background: rgba(194, 78, 28, .16);
+  color: var(--accent-bright);
+}
+
+.home2-page .admin-todo-completion-list ul {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 360px;
+  overflow: auto;
+}
+
+.home2-page .admin-todo-completion-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(240, 237, 228, .06);
+}
+
+.home2-page .admin-todo-completion-list li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.home2-page .admin-todo-completion-list li strong {
+  font-size: .92rem;
+  color: var(--bone);
+}
+
+.home2-page .admin-todo-completion-list li span {
+  font-size: .78rem;
+  color: var(--space);
+}
+
+.home2-page .admin-todo-completion-empty {
+  margin: 0;
+  font-size: .84rem;
+  line-height: 1.5;
+  color: var(--space);
+}
+
+@media (max-width: 720px) {
+  .home2-page .admin-todo-completion-columns {
+    grid-template-columns: 1fr;
+  }
 }
 
 .home2-page .admin-incentive-actions {

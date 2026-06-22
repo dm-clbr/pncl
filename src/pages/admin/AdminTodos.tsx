@@ -1,0 +1,417 @@
+import { useEffect, useState, type FormEvent } from "react";
+import {
+  ArrowDown,
+  ArrowUp,
+  CheckSquare,
+  Pencil,
+  Plus,
+  Trash2,
+  Users,
+} from "lucide-react";
+import AdminTodoCompletionModal from "@/components/admin/AdminTodoCompletionModal";
+import {
+  useAdminTodos,
+  type AdminPortalTodoSummary,
+} from "@/hooks/useAdminTodos";
+import type { UpsertPortalTodoPayload } from "@/lib/admin-api";
+import { trackPageView } from "@/lib/analytics";
+import { toast } from "sonner";
+
+type TodoFormState = {
+  id?: string;
+  slug: string;
+  title: string;
+  description: string;
+  href: string;
+  external: boolean;
+  actionLabel: string;
+  showEmailHint: boolean;
+  published: boolean;
+};
+
+const EMPTY_FORM: TodoFormState = {
+  slug: "",
+  title: "",
+  description: "",
+  href: "",
+  external: true,
+  actionLabel: "",
+  showEmailHint: true,
+  published: true,
+};
+
+function slugify(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 64);
+}
+
+function toFormState(todo: AdminPortalTodoSummary): TodoFormState {
+  return {
+    id: todo.id,
+    slug: todo.slug,
+    title: todo.title,
+    description: todo.description,
+    href: todo.href,
+    external: todo.external,
+    actionLabel: todo.actionLabel,
+    showEmailHint: todo.showEmailHint,
+    published: todo.published,
+  };
+}
+
+function toPayload(form: TodoFormState): UpsertPortalTodoPayload {
+  return {
+    id: form.id,
+    slug: form.slug.trim() || undefined,
+    title: form.title.trim(),
+    description: form.description.trim(),
+    href: form.href.trim(),
+    external: form.external,
+    actionLabel: form.actionLabel.trim(),
+    showEmailHint: form.showEmailHint,
+    published: form.published,
+  };
+}
+
+function rowLabel(todo: AdminPortalTodoSummary): string {
+  return todo.title || todo.slug || "To-do";
+}
+
+function CompletionCell({
+  todo,
+  onViewUsers,
+}: {
+  todo: AdminPortalTodoSummary;
+  onViewUsers: (todo: AdminPortalTodoSummary) => void;
+}) {
+  const percent = todo.completionPercent;
+  return (
+    <div className="admin-todo-completion">
+      <div className="admin-todo-completion-bar" aria-hidden="true">
+        <span className="admin-todo-completion-fill" style={{ width: `${percent}%` }} />
+      </div>
+      <span className="admin-todo-completion-label">
+        {percent}% ({todo.completedCount}/{todo.totalUsers})
+      </span>
+      <button
+        type="button"
+        className="admin-todo-completion-btn"
+        onClick={() => onViewUsers(todo)}
+      >
+        <Users size={14} aria-hidden="true" />
+        View users
+      </button>
+    </div>
+  );
+}
+
+export default function AdminTodos() {
+  const { todos, totalUsers, loading, error, save, remove, reorder } = useAdminTodos();
+  const [form, setForm] = useState<TodoFormState>(EMPTY_FORM);
+  const [editing, setEditing] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [reorderingId, setReorderingId] = useState<string | null>(null);
+  const [completionTodo, setCompletionTodo] = useState<AdminPortalTodoSummary | null>(null);
+
+  useEffect(() => {
+    document.title = "To-dos — PNCL Admin";
+    trackPageView("admin_todos");
+  }, []);
+
+  const resetForm = () => {
+    setForm(EMPTY_FORM);
+    setEditing(false);
+  };
+
+  const handleEdit = (todo: AdminPortalTodoSummary) => {
+    setForm(toFormState(todo));
+    setEditing(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    setSubmitting(true);
+    try {
+      const result = await save(toPayload(form));
+      toast.success(result.message);
+      resetForm();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to save to-do");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (todo: AdminPortalTodoSummary) => {
+    if (!window.confirm(`Delete "${rowLabel(todo)}"?`)) return;
+
+    setDeletingId(todo.id);
+    try {
+      const result = await remove(todo.id);
+      toast.success(result.message);
+      if (form.id === todo.id) {
+        resetForm();
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to delete to-do");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const moveTodo = async (index: number, direction: -1 | 1) => {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= todos.length) return;
+
+    const reordered = [...todos];
+    [reordered[index], reordered[nextIndex]] = [reordered[nextIndex], reordered[index]];
+
+    setReorderingId(reordered[nextIndex].id);
+    try {
+      const result = await reorder(reordered.map((todo) => todo.id));
+      toast.success(result.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to reorder to-dos");
+    } finally {
+      setReorderingId(null);
+    }
+  };
+
+  return (
+    <section className="admin-panel">
+      <div className="admin-panel-head">
+        <CheckSquare size={22} aria-hidden="true" />
+        <div>
+          <h1>Portal to-dos</h1>
+          <p>
+            Manage the urgent onboarding checklist shown on the agent dashboard.
+            Completion is tracked across {totalUsers} portal {totalUsers === 1 ? "user" : "users"}.
+          </p>
+        </div>
+      </div>
+
+      <div className="admin-panel-head-row">
+        <p className="admin-panel-note">
+          {editing ? "Editing to-do" : "Add a new to-do"}
+        </p>
+        {!editing && (
+          <button
+            type="button"
+            className="admin-primary-btn"
+            onClick={() => {
+              setForm(EMPTY_FORM);
+              setEditing(true);
+            }}
+          >
+            <Plus size={16} aria-hidden="true" />
+            Add to-do
+          </button>
+        )}
+      </div>
+
+      {editing && (
+        <form className="admin-form" onSubmit={(event) => void handleSubmit(event)}>
+          <label className="admin-field">
+            <span>Title</span>
+            <input
+              type="text"
+              value={form.title}
+              onChange={(event) => {
+                const title = event.target.value;
+                setForm((prev) => ({
+                  ...prev,
+                  title,
+                  slug: prev.id ? prev.slug : slugify(title),
+                  actionLabel: prev.actionLabel || (title ? `Go to ${title.split(" ").slice(0, 3).join(" ")}` : ""),
+                }));
+              }}
+              placeholder="Create your LeadSpply account"
+              required
+            />
+          </label>
+
+          <label className="admin-field">
+            <span>Slug</span>
+            <input
+              type="text"
+              value={form.slug}
+              onChange={(event) => setForm((prev) => ({ ...prev, slug: event.target.value }))}
+              placeholder="leadspply_account"
+              pattern="[a-z0-9_]+"
+              title="Lowercase letters, numbers, and underscores only"
+              required
+            />
+            <span className="admin-field-hint">
+              Used to track completion. Do not change after agents have completed this task.
+            </span>
+          </label>
+
+          <label className="admin-field">
+            <span>Description</span>
+            <textarea
+              value={form.description}
+              onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
+              placeholder="Explain what the agent needs to do..."
+              rows={3}
+              required
+            />
+          </label>
+
+          <label className="admin-field">
+            <span>Link URL</span>
+            <input
+              type="url"
+              value={form.href}
+              onChange={(event) => setForm((prev) => ({ ...prev, href: event.target.value }))}
+              placeholder="https://..."
+              required
+            />
+          </label>
+
+          <label className="admin-field">
+            <span>Action button label</span>
+            <input
+              type="text"
+              value={form.actionLabel}
+              onChange={(event) => setForm((prev) => ({ ...prev, actionLabel: event.target.value }))}
+              placeholder="Go to LeadSpply"
+              required
+            />
+          </label>
+
+          <label className="admin-field admin-field-checkbox">
+            <input
+              type="checkbox"
+              checked={form.external}
+              onChange={(event) => setForm((prev) => ({ ...prev, external: event.target.checked }))}
+            />
+            <span>Open link in a new tab</span>
+          </label>
+
+          <label className="admin-field admin-field-checkbox">
+            <input
+              type="checkbox"
+              checked={form.showEmailHint}
+              onChange={(event) => setForm((prev) => ({ ...prev, showEmailHint: event.target.checked }))}
+            />
+            <span>Show @thepncl.com email hint</span>
+          </label>
+
+          <label className="admin-field admin-field-checkbox">
+            <input
+              type="checkbox"
+              checked={form.published}
+              onChange={(event) => setForm((prev) => ({ ...prev, published: event.target.checked }))}
+            />
+            <span>Published in agent portal</span>
+          </label>
+
+          <div className="admin-form-actions">
+            <button type="submit" className="admin-primary-btn" disabled={submitting}>
+              {submitting ? "Saving..." : form.id ? "Save changes" : "Create to-do"}
+            </button>
+            <button type="button" className="admin-secondary-link" onClick={resetForm}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {loading && <div className="onboarding-spinner admin-spinner" aria-label="Loading to-dos" />}
+
+      {!loading && error && <p className="admin-error">{error}</p>}
+
+      {!loading && !error && (
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>To-do</th>
+                <th>Completion</th>
+                <th>Status</th>
+                <th aria-label="Actions" />
+              </tr>
+            </thead>
+            <tbody>
+              {todos.map((todo, index) => {
+                const isDeleting = deletingId === todo.id;
+                const isReordering = reorderingId === todo.id;
+
+                return (
+                  <tr key={todo.id}>
+                    <td>
+                      <strong>{todo.title}</strong>
+                      <span className="admin-todo-slug">{todo.slug}</span>
+                    </td>
+                    <td>
+                      <CompletionCell todo={todo} onViewUsers={setCompletionTodo} />
+                    </td>
+                    <td>
+                      <span className={`admin-status${todo.published ? " active" : ""}`}>
+                        {todo.published ? "Published" : "Hidden"}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="admin-incentive-actions">
+                        <button
+                          type="button"
+                          className="admin-icon-btn"
+                          disabled={index === 0 || isReordering}
+                          onClick={() => void moveTodo(index, -1)}
+                          aria-label={`Move ${rowLabel(todo)} up`}
+                        >
+                          <ArrowUp size={16} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-icon-btn"
+                          disabled={index === todos.length - 1 || isReordering}
+                          onClick={() => void moveTodo(index, 1)}
+                          aria-label={`Move ${rowLabel(todo)} down`}
+                        >
+                          <ArrowDown size={16} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-icon-btn"
+                          onClick={() => handleEdit(todo)}
+                        >
+                          <Pencil size={16} aria-hidden="true" />
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-icon-btn"
+                          disabled={isDeleting}
+                          onClick={() => void handleDelete(todo)}
+                        >
+                          <Trash2 size={16} aria-hidden="true" />
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          {todos.length === 0 && (
+            <p className="admin-empty">No to-dos yet. Add your first task above.</p>
+          )}
+        </div>
+      )}
+
+      <AdminTodoCompletionModal
+        todo={completionTodo}
+        onClose={() => setCompletionTodo(null)}
+      />
+    </section>
+  );
+}
