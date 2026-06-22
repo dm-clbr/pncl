@@ -24,6 +24,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
 import AdminHierarchy from "./pages/admin/AdminHierarchy.tsx";
 import AdminUsers from "./pages/admin/AdminUsers.tsx";
 import AdminAddUser from "./pages/admin/AdminAddUser.tsx";
+import AdminIncentives from "./pages/admin/AdminIncentives.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -74,6 +75,7 @@ const App = () => (
             <Route path="hierarchy" element={<AdminHierarchy />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="users/new" element={<AdminAddUser />} />
+            <Route path="incentives" element={<AdminIncentives />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

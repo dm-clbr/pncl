@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { GitBranch, Shield, UserPlus, Users } from "lucide-react";
+import { GitBranch, Shield, Trophy, UserPlus, Users } from "lucide-react";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
 import { trackPageView } from "@/lib/analytics";
 
@@ -22,6 +22,12 @@ const ADMIN_CARDS = [
     title: "Add user manually",
     description: "Provision portal access for an existing @thepncl.com mailbox.",
     icon: UserPlus,
+  },
+  {
+    to: "/portal/admin/incentives",
+    title: "Manage incentives",
+    description: "Add, edit, and reorder the poster grid in the agent portal.",
+    icon: Trophy,
   },
 ] as const;
 

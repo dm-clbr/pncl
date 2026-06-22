@@ -30,7 +30,7 @@ export const PORTAL_SECTIONS: PortalLinkSection[] = [
         id: "leadspply",
         title: "LeadSpply",
         description: "Leads, quotes, and client management.",
-        href: "https://leadspply.com/",
+        href: "https://leadspply.com/register",
         external: true,
         icon: BarChart3,
       },

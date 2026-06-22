@@ -89,3 +89,68 @@ export async function updateUserRole(
     body: JSON.stringify({ userId, role }),
   });
 }
+
+export interface AdminIncentiveSummary {
+  id: string;
+  slug: string;
+  title: string;
+  type: "image" | "video";
+  src: string;
+  poster: string | null;
+  href: string | null;
+  sortOrder: number;
+  published: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpsertIncentivePayload {
+  id?: string;
+  slug?: string;
+  title: string;
+  type: "image" | "video";
+  src: string;
+  poster?: string | null;
+  href?: string | null;
+  published?: boolean;
+  sortOrder?: number;
+}
+
+export async function listIncentives(accessToken: string): Promise<AdminIncentiveSummary[]> {
+  const data = await adminFetch<{ incentives: AdminIncentiveSummary[] }>(
+    "admin-list-incentives",
+    accessToken,
+    { method: "GET" },
+  );
+  return data.incentives;
+}
+
+export async function upsertIncentive(
+  accessToken: string,
+  input: UpsertIncentivePayload,
+): Promise<{ incentive: AdminIncentiveSummary; message: string }> {
+  return adminFetch("admin-upsert-incentive", accessToken, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteIncentive(
+  accessToken: string,
+  id: string,
+): Promise<{ id: string; message: string }> {
+  return adminFetch("admin-delete-incentive", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  });
+}
+
+export async function reorderIncentives(
+  accessToken: string,
+  orderedIds: string[],
+): Promise<{ message: string }> {
+  return adminFetch("admin-reorder-incentives", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ orderedIds }),
+  });
+}

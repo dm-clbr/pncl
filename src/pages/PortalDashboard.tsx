@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import {
   ArrowUpRight,
   ChevronDown,
+  Circle,
+  CircleAlert,
   Copy,
   Link2,
   LogOut,
@@ -13,6 +15,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { PORTAL_SECTIONS, type PortalLink, type PortalLinkSection } from "@/lib/portal-links";
 import { buildReferralLink } from "@/lib/referral";
 import { isAdmin } from "@/lib/roles";
+import {
+  completePortalTodo,
+  getPendingPortalTodos,
+  type PortalTodo,
+} from "@/lib/portal-todos";
+import PortalIncentivePoster from "@/components/PortalIncentivePoster";
+import { usePortalIncentives } from "@/hooks/usePortalIncentives";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 import "@/styles/home2.css";
@@ -37,6 +46,14 @@ const PORTAL_SOCIAL_LINKS = [
     iconSrc: "/linkedin.svg",
   },
 ] as const;
+
+function PortalUrgentIcon({ size = 18 }: { size?: number }) {
+  return (
+    <span className="portal-urgent-icon" aria-hidden="true">
+      <CircleAlert size={size} strokeWidth={2.5} />
+    </span>
+  );
+}
 
 function PortalSubLink({ link }: { link: PortalLink }) {
   const content = (
@@ -70,30 +87,87 @@ function PortalTile({
   label,
   count,
   open,
+  urgent,
   onToggle,
   children,
 }: {
   label: string;
   count?: number;
   open: boolean;
+  urgent?: boolean;
   onToggle: () => void;
   children?: ReactNode;
 }) {
   return (
-    <div className={`portal-tile-group${open ? " open" : ""}`}>
+    <div className={`portal-tile-group${open ? " open" : ""}${urgent ? " urgent" : ""}`}>
       <button
         type="button"
-        className={`portal-tile${open ? " open" : ""}`}
+        className={`portal-tile${open ? " open" : ""}${urgent ? " urgent" : ""}`}
         onClick={onToggle}
         aria-expanded={open}
       >
         <span className="portal-tile-label">
+          {urgent && <PortalUrgentIcon />}
           {label}
           {count !== undefined && <span className="portal-tile-count">({count})</span>}
+          {urgent && <span className="portal-urgent-label">Action required</span>}
         </span>
         <ChevronDown size={22} strokeWidth={2.5} className="portal-tile-chevron" aria-hidden="true" />
       </button>
       {open && children && <div className="portal-tile-panel">{children}</div>}
+    </div>
+  );
+}
+
+function PortalTodoItem({
+  todo,
+  agentEmail,
+  completing,
+  onComplete,
+}: {
+  todo: PortalTodo;
+  agentEmail: string;
+  completing: boolean;
+  onComplete: (todoId: string) => void;
+}) {
+  return (
+    <div className="portal-todo-item urgent">
+      <button
+        type="button"
+        className="portal-todo-check"
+        onClick={() => onComplete(todo.id)}
+        disabled={completing}
+        aria-label={`Mark "${todo.title}" as complete`}
+      >
+        {completing ? (
+          <span className="onboarding-spinner portal-todo-check-spinner" aria-hidden="true" />
+        ) : (
+          <Circle size={20} strokeWidth={2} aria-hidden="true" />
+        )}
+      </button>
+
+      <div className="portal-todo-copy">
+        <div className="portal-todo-title-row">
+          <PortalUrgentIcon size={16} />
+          <strong>{todo.title}</strong>
+          <span className="portal-todo-urgent-tag">Do this ASAP</span>
+        </div>
+        <p>{todo.description}</p>
+        {agentEmail && (
+          <p className="portal-todo-email">
+            Use <span>{agentEmail}</span> when you sign up.
+          </p>
+        )}
+        <a
+          href={todo.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="portal-todo-link"
+        >
+          {todo.actionLabel}
+          <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
+        </a>
+      </div>
     </div>
   );
 }
@@ -106,12 +180,22 @@ export default function PortalDashboard() {
   );
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  const [completingTodoId, setCompletingTodoId] = useState<string | null>(null);
+
+  const pendingTodos = useMemo(() => getPendingPortalTodos(user), [user]);
+  const { incentives } = usePortalIncentives();
 
   useEffect(() => {
     document.title = "Employee Portal — PNCL";
     trackPageView("portal_dashboard");
     window.scrollTo(0, 0);
   }, []);
+
+  useEffect(() => {
+    if (pendingTodos.length > 0) {
+      setOpenSections((prev) => ({ ...prev, todos: true }));
+    }
+  }, [pendingTodos.length]);
 
   const toggleSection = (id: string) => {
     setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -137,6 +221,18 @@ export default function PortalDashboard() {
     }
   };
 
+  const handleCompleteTodo = async (todoId: string) => {
+    setCompletingTodoId(todoId);
+    try {
+      await completePortalTodo(todoId);
+      toast.success("To-do marked complete.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to update to-do.");
+    } finally {
+      setCompletingTodoId(null);
+    }
+  };
+
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Agent";
   const agentEmail = user?.email ?? "";
   const showAdminLink = isAdmin(user);
@@ -155,6 +251,16 @@ export default function PortalDashboard() {
             {agentEmail && <p className="portal-meta">{agentEmail}</p>}
           </header>
 
+          {pendingTodos.length > 0 && (
+            <div className="portal-urgent-banner" role="status">
+              <PortalUrgentIcon />
+              <p>
+                <strong>{pendingTodos.length} urgent item{pendingTodos.length === 1 ? "" : "s"}</strong>
+                <span>Complete your setup steps before getting started.</span>
+              </p>
+            </div>
+          )}
+
           {referralLink && (
             <button type="button" className="portal-banner" onClick={handleCopyReferralLink}>
               <span className="portal-banner-icon" aria-hidden="true">
@@ -169,6 +275,30 @@ export default function PortalDashboard() {
           )}
 
           <div className="portal-tiles">
+            {pendingTodos.length > 0 && (
+              <PortalTile
+                label="Getting started"
+                count={pendingTodos.length}
+                urgent
+                open={Boolean(openSections.todos)}
+                onToggle={() => toggleSection("todos")}
+              >
+                <p className="portal-panel-note">
+                  Complete these steps when you first join PNCL. Mark each item done once
+                  you&apos;ve finished it.
+                </p>
+                {pendingTodos.map((todo) => (
+                  <PortalTodoItem
+                    key={todo.id}
+                    todo={todo}
+                    agentEmail={agentEmail}
+                    completing={completingTodoId === todo.id}
+                    onComplete={(id) => void handleCompleteTodo(id)}
+                  />
+                ))}
+              </PortalTile>
+            )}
+
             {referralLink && (
               <PortalTile
                 label="Refer New Agents"
@@ -201,6 +331,19 @@ export default function PortalDashboard() {
                 ))}
               </PortalTile>
             ))}
+
+            <PortalTile
+              label="Incentives"
+              count={incentives.length}
+              open={Boolean(openSections.incentives)}
+              onToggle={() => toggleSection("incentives")}
+            >
+              <div className="portal-incentives-grid">
+                {incentives.map((item) => (
+                  <PortalIncentivePoster key={item.id} item={item} />
+                ))}
+              </div>
+            </PortalTile>
 
             {showAdminLink && (
               <Link to="/portal/admin" className="portal-sub-link portal-admin-link">
