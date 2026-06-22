@@ -917,9 +917,11 @@
 .home2-page .portal-incentive-lightbox-panel {
   position: relative;
   z-index: 1;
-  width: min(100%, 420px);
+  width: auto;
+  max-width: min(100%, 760px);
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 12px;
 }
 
@@ -989,12 +991,18 @@
 }
 
 .home2-page .portal-incentive-poster-full {
-  width: 100%;
+  width: fit-content;
+  max-width: 100%;
+  aspect-ratio: auto;
   box-shadow: 0 24px 64px rgba(0, 0, 0, .45);
 }
 
 .home2-page .portal-incentive-poster-full img,
 .home2-page .portal-incentive-poster-full video {
+  width: auto;
+  height: auto;
+  max-width: min(calc(100vw - 40px), 760px);
+  max-height: min(85vh, 900px);
   object-fit: contain;
 }
 
