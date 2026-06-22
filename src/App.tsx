@@ -21,6 +21,8 @@ import PortalDashboard from "./pages/PortalDashboard.tsx";
 import PortalCarrierSheet from "./pages/PortalCarrierSheet.tsx";
 import PortalBrandAssets from "./pages/PortalBrandAssets.tsx";
 import PortalProfile from "./pages/PortalProfile.tsx";
+import PortalClients from "./pages/PortalClients.tsx";
+import PortalClientIntake from "./pages/PortalClientIntake.tsx";
 import AdminLayout from "./components/AdminLayout.tsx";
 import AdminRoute from "./components/AdminRoute.tsx";
 import AdminFullRoute from "./components/AdminFullRoute.tsx";
@@ -32,6 +34,7 @@ import AdminIncentives from "./pages/admin/AdminIncentives.tsx";
 import AdminBrandAssets from "./pages/admin/AdminBrandAssets.tsx";
 import AdminCarriers from "./pages/admin/AdminCarriers.tsx";
 import AdminGenesis from "./pages/admin/AdminGenesis.tsx";
+import AdminClients from "./pages/admin/AdminClients.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -93,6 +96,22 @@ const App = () => (
             }
           />
           <Route
+            path="/portal/clients"
+            element={
+              <ProtectedRoute>
+                <PortalClients />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/portal/clients/new"
+            element={
+              <ProtectedRoute>
+                <PortalClientIntake />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/portal/admin"
             element={
               <ProtectedRoute>
@@ -109,6 +128,7 @@ const App = () => (
             <Route path="incentives" element={<AdminFullRoute><AdminIncentives /></AdminFullRoute>} />
             <Route path="brand-assets" element={<AdminFullRoute><AdminBrandAssets /></AdminFullRoute>} />
             <Route path="carriers" element={<AdminFullRoute><AdminCarriers /></AdminFullRoute>} />
+            <Route path="clients" element={<AdminFullRoute><AdminClients /></AdminFullRoute>} />
             <Route path="genesis" element={<AdminGenesis />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

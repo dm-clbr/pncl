@@ -1,0 +1,126 @@
+.home2-page .pinnacle-form-preview {
+  background: #fff;
+  color: #111;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 1.5rem;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.home2-page .pinnacle-form-preview.compact {
+  padding: 1rem;
+  font-size: 0.8125rem;
+}
+
+.home2-page .pinnacle-form-header {
+  border-bottom: 2px solid #111;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+}
+
+.home2-page .pinnacle-form-meta {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.home2-page .pinnacle-form-columns {
+  display: grid;
+  gap: 1.25rem;
+}
+
+@media (min-width: 900px) {
+  .home2-page .pinnacle-form-columns {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.home2-page .pinnacle-person-block,
+.home2-page .pinnacle-section {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.home2-page .pinnacle-person-block h3,
+.home2-page .pinnacle-section h3,
+.home2-page .pinnacle-banking h4 {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.home2-page .pinnacle-banking {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.home2-page .pinnacle-grid-2,
+.home2-page .pinnacle-grid-3 {
+  display: grid;
+  gap: 0.5rem 1rem;
+}
+
+.home2-page .pinnacle-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.home2-page .pinnacle-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.home2-page .pinnacle-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  margin-bottom: 0.5rem;
+}
+
+.home2-page .pinnacle-field-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #666;
+}
+
+.home2-page .pinnacle-field-value {
+  border-bottom: 1px solid #ccc;
+  min-height: 1.25rem;
+  word-break: break-word;
+}
+
+.home2-page .client-intake-textarea {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  padding: 0.75rem 1rem;
+  font: inherit;
+}
+
+.home2-page .client-detail-panel {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.home2-page .client-list-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.home2-page .client-list-empty {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.65);
+}

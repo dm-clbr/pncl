@@ -2,11 +2,13 @@ import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
   Building2,
+  ClipboardList,
   Globe,
   GraduationCap,
   Mail,
   MessageCircle,
   User,
+  UserRound,
 } from "lucide-react";
 
 export interface PortalLink {
@@ -52,6 +54,22 @@ export const PORTAL_SECTIONS: PortalLinkSection[] = [
         href: "/portal/carriers",
         external: false,
         icon: Building2,
+      },
+      {
+        id: "client-intake",
+        title: "Client Intake",
+        description: "Financial inventory script and Pinnacle form.",
+        href: "/portal/clients/new",
+        external: false,
+        icon: ClipboardList,
+      },
+      {
+        id: "my-clients",
+        title: "My Clients",
+        description: "View clients you have submitted intake forms for.",
+        href: "/portal/clients",
+        external: false,
+        icon: UserRound,
       },
       {
         id: "discord",

@@ -25,6 +25,20 @@ export interface HierarchyNode {
   children: HierarchyNode[];
 }
 
+export interface AdminClientSummary {
+  id: string;
+  primaryFirstName: string;
+  primaryLastName: string;
+  primaryPhone: string | null;
+  primaryEmail: string | null;
+  address: string | null;
+  dateMet: string | null;
+  agentId: string;
+  agentName: string;
+  agentEmail: string;
+  createdAt: string;
+}
+
 export interface CreateUserInput {
   legalName: string;
   email: string;
@@ -60,6 +74,13 @@ export async function listAgents(accessToken: string): Promise<AgentSummary[]> {
     method: "GET",
   });
   return data.agents;
+}
+
+export async function listAdminClients(accessToken: string): Promise<AdminClientSummary[]> {
+  const data = await adminFetch<{ clients: AdminClientSummary[] }>("admin-list-clients", accessToken, {
+    method: "GET",
+  });
+  return data.clients;
 }
 
 export async function getHierarchy(
