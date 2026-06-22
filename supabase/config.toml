@@ -22,3 +22,15 @@ verify_jwt = true
 
 [functions.get-referrer-info]
 verify_jwt = false
+
+[functions.admin-list-agents]
+verify_jwt = true
+
+[functions.admin-get-hierarchy]
+verify_jwt = true
+
+[functions.admin-create-user]
+verify_jwt = true
+
+[functions.admin-update-role]
+verify_jwt = true

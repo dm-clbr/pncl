@@ -82,6 +82,7 @@ async function sendPortalInvite(
   const appMetadata = {
     onboarding_id: input.onboardingId,
     source: "agent_onboarding",
+    role: "agent",
   };
 
   const { data, error } = await supabase.auth.admin.generateLink({

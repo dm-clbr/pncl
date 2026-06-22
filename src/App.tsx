@@ -18,6 +18,12 @@ import OnboardingActivate from "./pages/OnboardingActivate.tsx";
 import PortalLogin from "./pages/PortalLogin.tsx";
 import PortalSetPassword from "./pages/PortalSetPassword.tsx";
 import PortalDashboard from "./pages/PortalDashboard.tsx";
+import AdminLayout from "./components/AdminLayout.tsx";
+import AdminRoute from "./components/AdminRoute.tsx";
+import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
+import AdminHierarchy from "./pages/admin/AdminHierarchy.tsx";
+import AdminUsers from "./pages/admin/AdminUsers.tsx";
+import AdminAddUser from "./pages/admin/AdminAddUser.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -54,6 +60,21 @@ const App = () => (
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/portal/admin"
+            element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <AdminLayout />
+                </AdminRoute>
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<AdminDashboard />} />
+            <Route path="hierarchy" element={<AdminHierarchy />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="users/new" element={<AdminAddUser />} />
+          </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -6,11 +6,13 @@ import {
   Copy,
   Link2,
   LogOut,
+  Shield,
 } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { PORTAL_SECTIONS, type PortalLink, type PortalLinkSection } from "@/lib/portal-links";
 import { buildReferralLink } from "@/lib/referral";
+import { isAdmin } from "@/lib/roles";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 import "@/styles/home2.css";
@@ -137,6 +139,7 @@ export default function PortalDashboard() {
 
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Agent";
   const agentEmail = user?.email ?? "";
+  const showAdminLink = isAdmin(user);
 
   return (
     <div className="home2-page">
@@ -198,6 +201,13 @@ export default function PortalDashboard() {
                 ))}
               </PortalTile>
             ))}
+
+            {showAdminLink && (
+              <Link to="/portal/admin" className="portal-sub-link portal-admin-link">
+                <span>Admin console</span>
+                <Shield size={18} strokeWidth={2.5} aria-hidden="true" />
+              </Link>
+            )}
 
             <button type="button" className="portal-signout" onClick={handleSignOut}>
               <LogOut size={18} strokeWidth={2.5} aria-hidden="true" />
