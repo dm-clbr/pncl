@@ -1,9 +1,11 @@
 import type { LucideIcon } from "lucide-react";
 import {
   BarChart3,
+  Building2,
   Globe,
   GraduationCap,
   Mail,
+  MessageCircle,
 } from "lucide-react";
 
 export interface PortalLink {
@@ -41,6 +43,22 @@ export const PORTAL_SECTIONS: PortalLinkSection[] = [
         href: "https://mail.google.com",
         external: true,
         icon: Mail,
+      },
+      {
+        id: "carrier-sheet",
+        title: "Carrier Sheet",
+        description: "Carrier contacts and e-app links.",
+        href: "/portal/carriers",
+        external: false,
+        icon: Building2,
+      },
+      {
+        id: "discord",
+        title: "Discord",
+        description: "PNCL community server for announcements, training, and support.",
+        href: "https://discord.gg/aHqQDtTmp",
+        external: true,
+        icon: MessageCircle,
       },
     ],
   },

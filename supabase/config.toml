@@ -55,3 +55,18 @@ verify_jwt = true
 
 [functions.list-portal-incentives]
 verify_jwt = true
+
+[functions.admin-list-carriers]
+verify_jwt = true
+
+[functions.admin-upsert-carrier]
+verify_jwt = true
+
+[functions.admin-delete-carrier]
+verify_jwt = true
+
+[functions.admin-reorder-carriers]
+verify_jwt = true
+
+[functions.list-portal-carriers]
+verify_jwt = true

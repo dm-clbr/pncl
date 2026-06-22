@@ -164,3 +164,64 @@ export async function reorderIncentives(
     body: JSON.stringify({ orderedIds }),
   });
 }
+
+export interface AdminCarrierSummary {
+  id: string;
+  carrier: string;
+  companyNumber: string;
+  eAppLabel: string;
+  eAppUrl: string | null;
+  sortOrder: number;
+  published: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpsertCarrierPayload {
+  id?: string;
+  carrier: string;
+  companyNumber: string;
+  eAppLabel: string;
+  eAppUrl?: string | null;
+  published?: boolean;
+  sortOrder?: number;
+}
+
+export async function listCarriers(accessToken: string): Promise<AdminCarrierSummary[]> {
+  const data = await adminFetch<{ carriers: AdminCarrierSummary[] }>(
+    "admin-list-carriers",
+    accessToken,
+    { method: "GET" },
+  );
+  return data.carriers;
+}
+
+export async function upsertCarrier(
+  accessToken: string,
+  input: UpsertCarrierPayload,
+): Promise<{ carrier: AdminCarrierSummary; message: string }> {
+  return adminFetch("admin-upsert-carrier", accessToken, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteCarrier(
+  accessToken: string,
+  id: string,
+): Promise<{ id: string; message: string }> {
+  return adminFetch("admin-delete-carrier", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  });
+}
+
+export async function reorderCarriers(
+  accessToken: string,
+  orderedIds: string[],
+): Promise<{ message: string }> {
+  return adminFetch("admin-reorder-carriers", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ orderedIds }),
+  });
+}

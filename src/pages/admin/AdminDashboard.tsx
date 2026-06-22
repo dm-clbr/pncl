@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { GitBranch, Shield, Trophy, UserPlus, Users } from "lucide-react";
+import { Building2, GitBranch, Shield, Trophy, UserPlus, Users } from "lucide-react";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
 import { trackPageView } from "@/lib/analytics";
 
@@ -28,6 +28,12 @@ const ADMIN_CARDS = [
     title: "Manage incentives",
     description: "Add, edit, and reorder the poster grid in the agent portal.",
     icon: Trophy,
+  },
+  {
+    to: "/portal/admin/carriers",
+    title: "Manage carriers",
+    description: "Update carrier contacts and e-app links on the agent carrier sheet.",
+    icon: Building2,
   },
 ] as const;
 
