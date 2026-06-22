@@ -262,9 +262,11 @@ export interface AdminBrandAssetSummary {
   id: string;
   title: string;
   description: string | null;
+  assetType: "file" | "color";
   url: string;
   fileName: string;
   contentType: string;
+  hexColor: string | null;
   sortOrder: number;
   published: boolean;
   createdAt: string;
@@ -275,9 +277,11 @@ export interface UpsertBrandAssetPayload {
   id?: string;
   title: string;
   description?: string | null;
-  url: string;
-  fileName: string;
-  contentType: string;
+  assetType?: "file" | "color";
+  url?: string;
+  fileName?: string;
+  contentType?: string;
+  hexColor?: string | null;
   published?: boolean;
   sortOrder?: number;
 }

@@ -35,9 +35,11 @@ serve(async (req) => {
         id: item.id,
         title: item.title,
         description: item.description,
+        assetType: item.assetType,
         url: item.url,
         fileName: item.fileName,
         contentType: item.contentType,
+        hexColor: item.hexColor,
       };
     });
 

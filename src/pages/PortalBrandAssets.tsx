@@ -1,14 +1,17 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowDownToLine, ArrowLeft, FileText } from "lucide-react";
+import { ArrowDownToLine, ArrowLeft, Copy, FileText } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortalBrandAssets } from "@/hooks/usePortalBrandAssets";
 import {
   assetTypeLabel,
+  copyHexColor,
+  isColorAsset,
   isImageAsset,
 } from "@/lib/portal-brand-assets";
 import { trackPageView } from "@/lib/analytics";
+import { toast } from "sonner";
 import "@/styles/home2.css";
 
 export default function PortalBrandAssets() {
@@ -47,7 +50,7 @@ export default function PortalBrandAssets() {
             <div className="brand-assets-panel-head">
               <div>
                 <h1>PNCL brand kit</h1>
-                <p>Logos, templates, and other official brand files for agent use.</p>
+                <p>Logos, templates, brand colors, and other official assets for agent use.</p>
               </div>
             </div>
 
@@ -69,26 +72,49 @@ export default function PortalBrandAssets() {
                 {assets.map((asset) => (
                   <article key={asset.id} className="brand-asset-card">
                     <div className="brand-asset-preview">
-                      {isImageAsset(asset.contentType) ? (
+                      {isColorAsset(asset) ? (
+                        <span
+                          className="brand-asset-color-swatch"
+                          style={{ backgroundColor: asset.hexColor ?? "#000000" }}
+                          aria-hidden="true"
+                        />
+                      ) : isImageAsset(asset.contentType) ? (
                         <img src={asset.url} alt="" className="brand-asset-image" />
                       ) : (
                         <span className="brand-asset-file-icon" aria-hidden="true">
                           <FileText size={32} strokeWidth={1.75} />
                         </span>
                       )}
-                      <span className="brand-asset-type">{assetTypeLabel(asset.contentType)}</span>
+                      <span className="brand-asset-type">
+                        {assetTypeLabel(asset.contentType, asset.assetType)}
+                      </span>
                     </div>
                     <div className="brand-asset-copy">
                       <h2>{asset.title}</h2>
                       {asset.description && <p>{asset.description}</p>}
-                      <a
-                        href={asset.url}
-                        download={asset.fileName}
-                        className="brand-asset-download"
-                      >
-                        <ArrowDownToLine size={16} aria-hidden="true" />
-                        Download
-                      </a>
+                      {isColorAsset(asset) && asset.hexColor ? (
+                        <button
+                          type="button"
+                          className="brand-asset-copy-hex"
+                          onClick={() => {
+                            void copyHexColor(asset.hexColor!)
+                              .then(() => toast.success(`Copied ${asset.hexColor}`))
+                              .catch(() => toast.error("Unable to copy color"));
+                          }}
+                        >
+                          <Copy size={16} aria-hidden="true" />
+                          {asset.hexColor}
+                        </button>
+                      ) : (
+                        <a
+                          href={asset.url}
+                          download={asset.fileName}
+                          className="brand-asset-download"
+                        >
+                          <ArrowDownToLine size={16} aria-hidden="true" />
+                          Download
+                        </a>
+                      )}
                     </div>
                   </article>
                 ))}

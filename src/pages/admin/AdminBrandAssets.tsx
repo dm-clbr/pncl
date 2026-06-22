@@ -17,26 +17,30 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { UpsertBrandAssetPayload } from "@/lib/admin-api";
 import { uploadBrandAsset } from "@/lib/brand-asset-upload";
 import { formatFileSize } from "@/lib/compress-image";
-import { assetTypeLabel, isImageAsset } from "@/lib/portal-brand-assets";
+import { assetTypeLabel, isColorAsset, isImageAsset, normalizeHexColor } from "@/lib/portal-brand-assets";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 
 type BrandAssetFormState = {
   id?: string;
+  assetType: "file" | "color";
   title: string;
   description: string;
   url: string;
   fileName: string;
   contentType: string;
+  hexColor: string;
   published: boolean;
 };
 
 const EMPTY_FORM: BrandAssetFormState = {
+  assetType: "file",
   title: "",
   description: "",
   url: "",
   fileName: "",
   contentType: "",
+  hexColor: "#000000",
   published: true,
 };
 
@@ -51,18 +55,36 @@ function titleFromFilename(name: string): string {
 function toFormState(asset: AdminBrandAssetSummary): BrandAssetFormState {
   return {
     id: asset.id,
+    assetType: asset.assetType,
     title: asset.title,
     description: asset.description ?? "",
     url: asset.url,
     fileName: asset.fileName,
     contentType: asset.contentType,
+    hexColor: asset.hexColor ?? "#000000",
     published: asset.published,
   };
 }
 
 function toPayload(form: BrandAssetFormState): UpsertBrandAssetPayload {
+  if (form.assetType === "color") {
+    const hexColor = normalizeHexColor(form.hexColor);
+    if (!hexColor) {
+      throw new Error("Enter a valid hex color (e.g. #FF5500)");
+    }
+    return {
+      id: form.id,
+      assetType: "color",
+      title: form.title.trim(),
+      description: form.description.trim() || null,
+      hexColor,
+      published: form.published,
+    };
+  }
+
   return {
     id: form.id,
+    assetType: "file",
     title: form.title.trim(),
     description: form.description.trim() || null,
     url: form.url.trim(),
@@ -108,6 +130,12 @@ export default function AdminBrandAssets() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const startColorForm = () => {
+    setForm({ ...EMPTY_FORM, assetType: "color" });
+    setEditing(true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const handleBulkUpload = async (files: File[], token: string) => {
     setUploading(true);
     setBulkUploadProgress({ current: 0, total: files.length });
@@ -122,6 +150,7 @@ export default function AdminBrandAssets() {
       try {
         const result = await uploadBrandAsset(token, file, file.name);
         payloads.push({
+          assetType: "file",
           title: titleFromFilename(result.fileName),
           url: result.url,
           fileName: result.fileName,
@@ -182,6 +211,7 @@ export default function AdminBrandAssets() {
       const result = await uploadBrandAsset(token, file, file.name);
       setForm((prev) => ({
         ...prev,
+        assetType: "file",
         url: result.url,
         fileName: result.fileName,
         contentType: result.contentType,
@@ -200,7 +230,7 @@ export default function AdminBrandAssets() {
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!form.url.trim()) {
+    if (form.assetType === "file" && !form.url.trim()) {
       toast.error("Upload a file before saving");
       return;
     }
@@ -259,30 +289,46 @@ export default function AdminBrandAssets() {
         <div>
           <h1>Brand assets</h1>
           <p>
-            Upload logos, templates, and other files for agents to download from the portal. Select
-            multiple files to add them all at once.
+            Upload logos, templates, and other files for agents to download from the portal. Add
+            brand colors with hex codes for the color palette. Select multiple files to add them all
+            at once.
           </p>
         </div>
       </div>
 
       <div className="admin-panel-head-row">
         <p className="admin-panel-note">
-          {editing ? "Editing brand asset" : "Add a new brand asset"}
+          {editing
+            ? form.assetType === "color"
+              ? "Editing color"
+              : "Editing brand asset"
+            : "Add a new brand asset or color"}
         </p>
         {!editing && (
-          <button
-            type="button"
-            className="admin-primary-btn"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-          >
-            <Plus size={16} aria-hidden="true" />
-            {bulkUploadProgress
-              ? `Uploading ${bulkUploadProgress.current}/${bulkUploadProgress.total}...`
-              : uploading
-                ? "Uploading..."
-                : "Upload assets"}
-          </button>
+          <div className="admin-panel-head-actions">
+            <button
+              type="button"
+              className="admin-secondary-btn"
+              onClick={startColorForm}
+              disabled={uploading}
+            >
+              <Palette size={16} aria-hidden="true" />
+              Add color
+            </button>
+            <button
+              type="button"
+              className="admin-primary-btn"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+            >
+              <Plus size={16} aria-hidden="true" />
+              {bulkUploadProgress
+                ? `Uploading ${bulkUploadProgress.current}/${bulkUploadProgress.total}...`
+                : uploading
+                  ? "Uploading..."
+                  : "Upload assets"}
+            </button>
+          </div>
         )}
       </div>
 
@@ -297,28 +343,42 @@ export default function AdminBrandAssets() {
 
       {editing && (
         <form className="admin-form" onSubmit={(event) => void handleSubmit(event)}>
-          <div className="admin-upload-preview">
-            {form.url && isImageAsset(form.contentType) ? (
-              <img src={form.url} alt="" className="admin-upload-preview-image" />
-            ) : (
-              <span className="admin-upload-preview-placeholder" aria-hidden="true">
-                <Image size={28} strokeWidth={1.75} />
-              </span>
-            )}
-            <div className="admin-upload-preview-copy">
-              <strong>{form.fileName || "No file selected"}</strong>
-              {form.contentType && <span>{assetTypeLabel(form.contentType)}</span>}
-              <button
-                type="button"
-                className="admin-secondary-link"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-              >
-                <Upload size={14} aria-hidden="true" />
-                {uploading ? "Uploading..." : form.url ? "Replace file" : "Choose file"}
-              </button>
+          {form.assetType === "color" ? (
+            <div className="admin-color-preview">
+              <span
+                className="admin-color-swatch"
+                style={{ backgroundColor: normalizeHexColor(form.hexColor) ?? form.hexColor }}
+                aria-hidden="true"
+              />
+              <div className="admin-upload-preview-copy">
+                <strong>{form.title.trim() || "Color name"}</strong>
+                <span>{normalizeHexColor(form.hexColor) ?? "Enter a hex code"}</span>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="admin-upload-preview">
+              {form.url && isImageAsset(form.contentType) ? (
+                <img src={form.url} alt="" className="admin-upload-preview-image" />
+              ) : (
+                <span className="admin-upload-preview-placeholder" aria-hidden="true">
+                  <Image size={28} strokeWidth={1.75} />
+                </span>
+              )}
+              <div className="admin-upload-preview-copy">
+                <strong>{form.fileName || "No file selected"}</strong>
+                {form.contentType && <span>{assetTypeLabel(form.contentType, form.assetType)}</span>}
+                <button
+                  type="button"
+                  className="admin-secondary-link"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  <Upload size={14} aria-hidden="true" />
+                  {uploading ? "Uploading..." : form.url ? "Replace file" : "Choose file"}
+                </button>
+              </div>
+            </div>
+          )}
 
           <label className="admin-field">
             <span>Title</span>
@@ -326,10 +386,33 @@ export default function AdminBrandAssets() {
               type="text"
               value={form.title}
               onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
-              placeholder="PNCL logo — dark background"
+              placeholder={form.assetType === "color" ? "PNCL Gold" : "PNCL logo — dark background"}
               required
             />
           </label>
+
+          {form.assetType === "color" && (
+            <label className="admin-field">
+              <span>Hex color</span>
+              <div className="admin-color-input-row">
+                <input
+                  type="color"
+                  value={normalizeHexColor(form.hexColor)?.slice(0, 7) ?? "#000000"}
+                  onChange={(event) => setForm((prev) => ({ ...prev, hexColor: event.target.value.toUpperCase() }))}
+                  aria-label="Pick color"
+                  className="admin-color-picker"
+                />
+                <input
+                  type="text"
+                  value={form.hexColor}
+                  onChange={(event) => setForm((prev) => ({ ...prev, hexColor: event.target.value }))}
+                  placeholder="#FF5500"
+                  required
+                  spellCheck={false}
+                />
+              </div>
+            </label>
+          )}
 
           <label className="admin-field">
             <span>Description</span>
@@ -352,7 +435,13 @@ export default function AdminBrandAssets() {
 
           <div className="admin-form-actions">
             <button type="submit" className="admin-primary-btn" disabled={submitting || uploading}>
-              {submitting ? "Saving..." : form.id ? "Save changes" : "Create brand asset"}
+              {submitting
+                ? "Saving..."
+                : form.id
+                  ? "Save changes"
+                  : form.assetType === "color"
+                    ? "Add color"
+                    : "Create brand asset"}
             </button>
             <button type="button" className="admin-secondary-link" onClick={resetForm}>
               Cancel
@@ -371,7 +460,7 @@ export default function AdminBrandAssets() {
             <thead>
               <tr>
                 <th>Asset</th>
-                <th>File</th>
+                <th>File / Hex</th>
                 <th>Type</th>
                 <th>Status</th>
                 <th aria-label="Actions" />
@@ -386,7 +475,13 @@ export default function AdminBrandAssets() {
                   <tr key={asset.id}>
                     <td>
                       <div className="admin-brand-asset-cell">
-                        {isImageAsset(asset.contentType) ? (
+                        {isColorAsset(asset) ? (
+                          <span
+                            className="admin-brand-asset-thumb admin-brand-asset-thumb-color"
+                            style={{ backgroundColor: asset.hexColor ?? "#000000" }}
+                            aria-hidden="true"
+                          />
+                        ) : isImageAsset(asset.contentType) ? (
                           <img src={asset.url} alt="" className="admin-brand-asset-thumb" />
                         ) : (
                           <span className="admin-brand-asset-thumb admin-brand-asset-thumb-file" aria-hidden="true">
@@ -396,8 +491,8 @@ export default function AdminBrandAssets() {
                         <span>{asset.title}</span>
                       </div>
                     </td>
-                    <td>{asset.fileName}</td>
-                    <td>{assetTypeLabel(asset.contentType)}</td>
+                    <td>{isColorAsset(asset) ? asset.hexColor ?? "—" : asset.fileName}</td>
+                    <td>{assetTypeLabel(asset.contentType, asset.assetType)}</td>
                     <td>
                       <span className={`admin-status${asset.published ? " active" : ""}`}>
                         {asset.published ? "Published" : "Hidden"}
