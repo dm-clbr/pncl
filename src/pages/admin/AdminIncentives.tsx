@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -7,13 +7,21 @@ import {
   Plus,
   Trash2,
   Trophy,
+  Upload,
 } from "lucide-react";
 import PortalIncentivePoster from "@/components/PortalIncentivePoster";
 import {
   useAdminIncentives,
   type AdminIncentiveSummary,
 } from "@/hooks/useAdminIncentives";
+import { useAuth } from "@/contexts/AuthContext";
 import type { UpsertIncentivePayload } from "@/lib/admin-api";
+import {
+  captureVideoPoster,
+  compressIncentiveImage,
+  formatFileSize,
+} from "@/lib/compress-image";
+import { uploadIncentiveMedia } from "@/lib/incentive-media-upload";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 
@@ -27,6 +35,8 @@ type IncentiveFormState = {
   href: string;
   published: boolean;
 };
+
+type UploadField = "image" | "video" | "poster";
 
 const EMPTY_FORM: IncentiveFormState = {
   slug: "",
@@ -83,13 +93,25 @@ function previewIncentive(form: IncentiveFormState): AdminIncentiveSummary | nul
   };
 }
 
+function fileLabel(field: UploadField, form: IncentiveFormState): string {
+  if (field === "image" && form.src) return "Image uploaded";
+  if (field === "video" && form.src) return "Video uploaded";
+  if (field === "poster" && form.poster) return "Poster uploaded";
+  return "Choose file";
+}
+
 export default function AdminIncentives() {
+  const { session } = useAuth();
   const { incentives, loading, error, save, remove, reorder } = useAdminIncentives();
   const [form, setForm] = useState<IncentiveFormState>(EMPTY_FORM);
   const [editing, setEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingField, setUploadingField] = useState<UploadField | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [reorderingId, setReorderingId] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const posterInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     document.title = "Incentives — PNCL Admin";
@@ -101,10 +123,102 @@ export default function AdminIncentives() {
   const resetForm = () => {
     setForm(EMPTY_FORM);
     setEditing(false);
+    setUploadingField(null);
+  };
+
+  const uploadFile = async (file: File, compress: boolean) => {
+    const token = session?.access_token;
+    if (!token) {
+      throw new Error("Not authenticated");
+    }
+
+    let uploadFile = file;
+    if (compress) {
+      uploadFile = await compressIncentiveImage(file);
+    }
+
+    const result = await uploadIncentiveMedia(token, uploadFile, uploadFile.name);
+    return { ...result, size: uploadFile.size };
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setUploadingField("image");
+    try {
+      const result = await uploadFile(file, true);
+      setForm((prev) => ({
+        ...prev,
+        type: "image",
+        src: result.url,
+        poster: "",
+      }));
+      toast.success(`Image uploaded (${formatFileSize(result.size)})`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to upload image");
+    } finally {
+      setUploadingField(null);
+    }
+  };
+
+  const handleVideoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setUploadingField("video");
+    try {
+      const result = await uploadFile(file, false);
+      const posterFile = await captureVideoPoster(file);
+      setUploadingField("poster");
+      const posterResult = await uploadFile(posterFile, true);
+
+      setForm((prev) => ({
+        ...prev,
+        type: "video",
+        src: result.url,
+        poster: posterResult.url,
+      }));
+      toast.success(`Video uploaded (${formatFileSize(result.size)})`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to upload video");
+    } finally {
+      setUploadingField(null);
+    }
+  };
+
+  const handlePosterUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setUploadingField("poster");
+    try {
+      const result = await uploadFile(file, true);
+      setForm((prev) => ({ ...prev, poster: result.url }));
+      toast.success(`Poster uploaded (${formatFileSize(result.size)})`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to upload poster");
+    } finally {
+      setUploadingField(null);
+    }
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+
+    if (!form.src.trim()) {
+      toast.error("Upload an image or video before saving.");
+      return;
+    }
+
+    if (form.type === "video" && !form.poster.trim()) {
+      toast.error("Upload a poster image for this video.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const result = await save(toPayload(form));
@@ -158,6 +272,8 @@ export default function AdminIncentives() {
     }
   };
 
+  const isUploading = uploadingField !== null;
+
   return (
     <section className="admin-panel">
       <div className="admin-panel-head admin-panel-head-row">
@@ -165,7 +281,7 @@ export default function AdminIncentives() {
           <Trophy size={22} aria-hidden="true" />
           <div>
             <h1>Incentives</h1>
-            <p>Manage the poster grid shown in the agent portal.</p>
+            <p>Upload poster images or videos for the agent portal.</p>
           </div>
         </div>
         {!editing && (
@@ -209,7 +325,7 @@ export default function AdminIncentives() {
               </label>
 
               <label className="admin-field">
-                <span>Type</span>
+                <span>Media type</span>
                 <select
                   value={form.type}
                   onChange={(event) => {
@@ -217,7 +333,8 @@ export default function AdminIncentives() {
                     setForm((prev) => ({
                       ...prev,
                       type,
-                      poster: type === "image" ? "" : prev.poster,
+                      src: type === prev.type ? prev.src : "",
+                      poster: type === "video" ? prev.poster : "",
                     }));
                   }}
                 >
@@ -226,28 +343,81 @@ export default function AdminIncentives() {
                 </select>
               </label>
 
-              <label className="admin-field">
-                <span>{form.type === "video" ? "Video URL" : "Image URL"}</span>
-                <input
-                  type="text"
-                  value={form.src}
-                  onChange={(event) => setForm((prev) => ({ ...prev, src: event.target.value }))}
-                  placeholder="/poster.png or https://..."
-                  required
-                />
-              </label>
-
-              {form.type === "video" && (
-                <label className="admin-field">
-                  <span>Poster URL</span>
+              {form.type === "image" ? (
+                <div className="admin-field">
+                  <span>Image upload</span>
                   <input
-                    type="text"
-                    value={form.poster}
-                    onChange={(event) => setForm((prev) => ({ ...prev, poster: event.target.value }))}
-                    placeholder="https://..."
-                    required
+                    ref={imageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="admin-upload-input"
+                    disabled={isUploading}
+                    onChange={(event) => void handleImageUpload(event)}
                   />
-                </label>
+                  <button
+                    type="button"
+                    className="admin-upload-btn"
+                    disabled={isUploading}
+                    onClick={() => imageInputRef.current?.click()}
+                  >
+                    <Upload size={16} aria-hidden="true" />
+                    {uploadingField === "image" ? "Uploading..." : fileLabel("image", form)}
+                  </button>
+                  <p className="admin-upload-note">
+                    Images are compressed to 500 KB–1 MB before upload.
+                  </p>
+                  {form.src && <p className="admin-upload-path">{form.src}</p>}
+                </div>
+              ) : (
+                <>
+                  <div className="admin-field">
+                    <span>Video upload</span>
+                    <input
+                      ref={videoInputRef}
+                      type="file"
+                      accept="video/mp4,video/webm,video/quicktime"
+                      className="admin-upload-input"
+                      disabled={isUploading}
+                      onChange={(event) => void handleVideoUpload(event)}
+                    />
+                    <button
+                      type="button"
+                      className="admin-upload-btn"
+                      disabled={isUploading}
+                      onClick={() => videoInputRef.current?.click()}
+                    >
+                      <Upload size={16} aria-hidden="true" />
+                      {uploadingField === "video" ? "Uploading..." : fileLabel("video", form)}
+                    </button>
+                    <p className="admin-upload-note">MP4, WebM, or MOV up to 50 MB.</p>
+                    {form.src && <p className="admin-upload-path">{form.src}</p>}
+                  </div>
+
+                  <div className="admin-field">
+                    <span>Poster image</span>
+                    <input
+                      ref={posterInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="admin-upload-input"
+                      disabled={isUploading}
+                      onChange={(event) => void handlePosterUpload(event)}
+                    />
+                    <button
+                      type="button"
+                      className="admin-upload-btn"
+                      disabled={isUploading}
+                      onClick={() => posterInputRef.current?.click()}
+                    >
+                      <Upload size={16} aria-hidden="true" />
+                      {uploadingField === "poster" ? "Uploading..." : fileLabel("poster", form)}
+                    </button>
+                    <p className="admin-upload-note">
+                      Auto-generated from the video, or upload your own poster.
+                    </p>
+                    {form.poster && <p className="admin-upload-path">{form.poster}</p>}
+                  </div>
+                </>
               )}
 
               <label className="admin-field">
@@ -277,14 +447,14 @@ export default function AdminIncentives() {
               ) : (
                 <div className="admin-incentive-preview-empty">
                   <Image size={28} aria-hidden="true" />
-                  <span>Add a title and media URL to preview.</span>
+                  <span>Upload media to preview the poster.</span>
                 </div>
               )}
             </div>
           </div>
 
           <div className="admin-form-actions">
-            <button type="submit" className="admin-primary-btn" disabled={submitting}>
+            <button type="submit" className="admin-primary-btn" disabled={submitting || isUploading}>
               {submitting ? "Saving..." : form.id ? "Save changes" : "Create incentive"}
             </button>
             <button type="button" className="admin-secondary-link" onClick={resetForm}>

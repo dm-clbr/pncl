@@ -978,6 +978,11 @@
   box-shadow: 0 24px 64px rgba(0, 0, 0, .45);
 }
 
+.home2-page .portal-incentive-poster-full img,
+.home2-page .portal-incentive-poster-full video {
+  object-fit: contain;
+}
+
 .home2-page .portal-incentive-link:hover .portal-incentive-poster,
 .home2-page .portal-incentive-poster:hover {
   border-color: rgba(194, 78, 28, .35);
@@ -1703,6 +1708,53 @@
   flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-end;
+}
+
+.home2-page .admin-upload-input {
+  display: none;
+}
+
+.home2-page .admin-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px dashed rgba(240, 237, 228, .22);
+  border-radius: var(--radius);
+  background: rgba(240, 237, 228, .04);
+  color: var(--bone);
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color .25s var(--ease), background .25s var(--ease);
+}
+
+.home2-page .admin-upload-btn:hover:not(:disabled) {
+  border-color: rgba(194, 78, 28, .35);
+  background: rgba(194, 78, 28, .08);
+}
+
+.home2-page .admin-upload-btn:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+.home2-page .admin-upload-note {
+  margin-top: 8px;
+  font-size: .74rem;
+  line-height: 1.45;
+  color: var(--space);
+}
+
+.home2-page .admin-upload-path {
+  margin-top: 8px;
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  line-height: 1.4;
+  color: var(--steel);
+  word-break: break-all;
 }
 
 .home2-page .portal-admin-link {
