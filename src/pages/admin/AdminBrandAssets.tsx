@@ -78,11 +78,14 @@ function rowLabel(asset: AdminBrandAssetSummary): string {
 
 export default function AdminBrandAssets() {
   const { session } = useAuth();
-  const { assets, loading, error, save, remove, reorder } = useAdminBrandAssets();
+  const { assets, loading, error, save, saveMany, remove, reorder } = useAdminBrandAssets();
   const [form, setForm] = useState<BrandAssetFormState>(EMPTY_FORM);
   const [editing, setEditing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [bulkUploadProgress, setBulkUploadProgress] = useState<{ current: number; total: number } | null>(
+    null,
+  );
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [reorderingId, setReorderingId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -96,6 +99,7 @@ export default function AdminBrandAssets() {
     setForm(EMPTY_FORM);
     setEditing(false);
     setUploading(false);
+    setBulkUploadProgress(null);
   };
 
   const handleEdit = (asset: AdminBrandAssetSummary) => {
@@ -104,10 +108,58 @@ export default function AdminBrandAssets() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const handleBulkUpload = async (files: File[], token: string) => {
+    setUploading(true);
+    setBulkUploadProgress({ current: 0, total: files.length });
+
+    const payloads: UpsertBrandAssetPayload[] = [];
+    const failures: string[] = [];
+
+    for (let index = 0; index < files.length; index += 1) {
+      const file = files[index];
+      setBulkUploadProgress({ current: index + 1, total: files.length });
+
+      try {
+        const result = await uploadBrandAsset(token, file, file.name);
+        payloads.push({
+          title: titleFromFilename(result.fileName),
+          url: result.url,
+          fileName: result.fileName,
+          contentType: result.contentType,
+          published: true,
+        });
+      } catch (err) {
+        failures.push(
+          `${file.name}: ${err instanceof Error ? err.message : "Unable to upload file"}`,
+        );
+      }
+    }
+
+    if (payloads.length > 0) {
+      try {
+        await saveMany(payloads);
+        toast.success(`Added ${payloads.length} brand asset${payloads.length === 1 ? "" : "s"}`);
+      } catch (err) {
+        failures.push(err instanceof Error ? err.message : "Unable to save brand assets");
+      }
+    }
+
+    setBulkUploadProgress(null);
+    setUploading(false);
+
+    if (failures.length > 0) {
+      toast.error(
+        failures.length === 1
+          ? failures[0]
+          : `${failures.length} file${failures.length === 1 ? "" : "s"} failed to upload`,
+      );
+    }
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+    const files = Array.from(event.target.files ?? []);
     event.target.value = "";
-    if (!file) return;
+    if (files.length === 0) return;
 
     const token = session?.access_token;
     if (!token) {
@@ -115,6 +167,16 @@ export default function AdminBrandAssets() {
       return;
     }
 
+    if (files.length > 1) {
+      if (editing) {
+        toast.error("Choose one file when replacing an existing asset.");
+        return;
+      }
+      await handleBulkUpload(files, token);
+      return;
+    }
+
+    const file = files[0];
     setUploading(true);
     try {
       const result = await uploadBrandAsset(token, file, file.name);
@@ -196,7 +258,10 @@ export default function AdminBrandAssets() {
         <Palette size={22} aria-hidden="true" />
         <div>
           <h1>Brand assets</h1>
-          <p>Upload logos, templates, and other files for agents to download from the portal.</p>
+          <p>
+            Upload logos, templates, and other files for agents to download from the portal. Select
+            multiple files to add them all at once.
+          </p>
         </div>
       </div>
 
@@ -212,7 +277,11 @@ export default function AdminBrandAssets() {
             disabled={uploading}
           >
             <Plus size={16} aria-hidden="true" />
-            {uploading ? "Uploading..." : "Upload asset"}
+            {bulkUploadProgress
+              ? `Uploading ${bulkUploadProgress.current}/${bulkUploadProgress.total}...`
+              : uploading
+                ? "Uploading..."
+                : "Upload assets"}
           </button>
         )}
       </div>
@@ -220,6 +289,7 @@ export default function AdminBrandAssets() {
       <input
         ref={fileInputRef}
         type="file"
+        multiple={!editing}
         accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml,application/pdf,.zip"
         className="admin-upload-input"
         onChange={(event) => void handleFileUpload(event)}
