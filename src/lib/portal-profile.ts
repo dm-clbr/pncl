@@ -76,11 +76,16 @@ export function profileToFormValues(profile: PortalProfile): PortalProfileFormVa
   };
 }
 
-export function getProfilePhotoUrl(path: string | null | undefined): string | null {
+export function getProfilePhotoUrl(
+  path: string | null | undefined,
+  cacheBuster?: string | number | null,
+): string | null {
   if (!path) return null;
   const supabase = getSupabaseClient();
   const { data } = supabase.storage.from(PROFILE_PHOTO_BUCKET).getPublicUrl(path);
-  return data.publicUrl;
+  if (cacheBuster == null) return data.publicUrl;
+  const separator = data.publicUrl.includes("?") ? "&" : "?";
+  return `${data.publicUrl}${separator}v=${encodeURIComponent(String(cacheBuster))}`;
 }
 
 export async function fetchPortalProfile(userId: string): Promise<PortalProfile | null> {

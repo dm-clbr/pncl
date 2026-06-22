@@ -63,6 +63,7 @@ export default function PortalProfile() {
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<PortalProfileFormValues>(EMPTY_FORM);
   const [photoPath, setPhotoPath] = useState<string | null>(null);
+  const [photoCacheBuster, setPhotoCacheBuster] = useState<string | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
@@ -87,6 +88,7 @@ export default function PortalProfile() {
         if (profile) {
           setForm(profileToFormValues(profile));
           setPhotoPath(profile.profile_photo_path);
+          setPhotoCacheBuster(profile.updated_at);
         } else {
           setForm(getDefaultProfileValues(user));
         }
@@ -132,7 +134,10 @@ export default function PortalProfile() {
     clearCropImageSrc();
   };
 
-  const savedPhotoUrl = useMemo(() => getProfilePhotoUrl(photoPath), [photoPath]);
+  const savedPhotoUrl = useMemo(
+    () => getProfilePhotoUrl(photoPath, photoCacheBuster),
+    [photoPath, photoCacheBuster],
+  );
   const displayPhotoUrl = photoPreviewUrl ?? savedPhotoUrl;
   const initials = getProfileInitials(form.firstName, form.lastName);
   const agentEmail = user?.email ?? "";
@@ -171,6 +176,7 @@ export default function PortalProfile() {
     try {
       const profile = await savePortalProfile(user, form, pendingPhotoFile, photoPath);
       setPhotoPath(profile.profile_photo_path);
+      setPhotoCacheBuster(profile.updated_at);
       setPendingPhotoFile(null);
       if (photoPreviewUrl?.startsWith("blob:")) {
         URL.revokeObjectURL(photoPreviewUrl);

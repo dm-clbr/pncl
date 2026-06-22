@@ -39,8 +39,8 @@ export function usePortalProfile(user: User | null | undefined) {
   }, [user?.id]);
 
   const photoUrl = useMemo(
-    () => getProfilePhotoUrl(profile?.profile_photo_path),
-    [profile?.profile_photo_path],
+    () => getProfilePhotoUrl(profile?.profile_photo_path, profile?.updated_at),
+    [profile?.profile_photo_path, profile?.updated_at],
   );
 
   const initials = useMemo(() => {
