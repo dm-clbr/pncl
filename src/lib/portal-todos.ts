@@ -20,6 +20,15 @@ export const PORTAL_TODOS: PortalTodo[] = [
     external: true,
     actionLabel: "Go to LeadSpply",
   },
+  {
+    id: "discord_account",
+    title: "Create a Discord account and join the PNCL server",
+    description:
+      "Set up Discord (or sign in if you already have an account), then join our community server for announcements, training, and support.",
+    href: "https://discord.gg/aHqQDtTmp",
+    external: true,
+    actionLabel: "Join Discord",
+  },
 ];
 
 type CompletedPortalTodos = Record<string, boolean>;
