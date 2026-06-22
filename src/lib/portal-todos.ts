@@ -8,6 +8,7 @@ export interface PortalTodo {
   href: string;
   external: boolean;
   actionLabel: string;
+  showEmailHint?: boolean;
 }
 
 export const PORTAL_TODOS: PortalTodo[] = [
@@ -28,6 +29,34 @@ export const PORTAL_TODOS: PortalTodo[] = [
     href: "https://discord.gg/aHqQDtTmp",
     external: true,
     actionLabel: "Join Discord",
+    showEmailHint: false,
+  },
+  {
+    id: "instagram_follow",
+    title: "Follow PNCL on Instagram",
+    description: "Follow @thepncl_ on Instagram for updates, culture posts, and agent highlights.",
+    href: "https://www.instagram.com/thepncl_/",
+    external: true,
+    actionLabel: "Follow on Instagram",
+    showEmailHint: false,
+  },
+  {
+    id: "linkedin_follow",
+    title: "Follow PNCL on LinkedIn",
+    description: "Follow The PNCL on LinkedIn to stay connected with company news and opportunities.",
+    href: "https://www.linkedin.com/company/the-pncl/?viewAsMember=true",
+    external: true,
+    actionLabel: "Follow on LinkedIn",
+    showEmailHint: false,
+  },
+  {
+    id: "facebook_follow",
+    title: "Follow PNCL on Facebook",
+    description: "Like and follow PNCL on Facebook for announcements and community updates.",
+    href: "https://www.facebook.com/profile.php?id=61588062292202",
+    external: true,
+    actionLabel: "Follow on Facebook",
+    showEmailHint: false,
   },
 ];
 

@@ -153,7 +153,7 @@ function PortalTodoItem({
           <span className="portal-todo-urgent-tag">Do this ASAP</span>
         </div>
         <p>{todo.description}</p>
-        {agentEmail && (
+        {agentEmail && todo.showEmailHint !== false && (
           <p className="portal-todo-email">
             Use <span>{agentEmail}</span> when you sign up.
           </p>
