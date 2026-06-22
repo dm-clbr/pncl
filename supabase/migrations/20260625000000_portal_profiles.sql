@@ -17,18 +17,21 @@ create index if not exists portal_profiles_updated_at_idx
 
 alter table portal_profiles enable row level security;
 
+drop policy if exists "Users can read own profile" on portal_profiles;
 create policy "Users can read own profile"
   on portal_profiles
   for select
   to authenticated
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert own profile" on portal_profiles;
 create policy "Users can insert own profile"
   on portal_profiles
   for insert
   to authenticated
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can update own profile" on portal_profiles;
 create policy "Users can update own profile"
   on portal_profiles
   for update
@@ -56,12 +59,14 @@ on conflict (id) do update set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
+drop policy if exists "Public read portal profile photos" on storage.objects;
 create policy "Public read portal profile photos"
   on storage.objects
   for select
   to public
   using (bucket_id = 'portal-profile-photos');
 
+drop policy if exists "Users can upload own profile photo" on storage.objects;
 create policy "Users can upload own profile photo"
   on storage.objects
   for insert
@@ -71,6 +76,7 @@ create policy "Users can upload own profile photo"
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
+drop policy if exists "Users can update own profile photo" on storage.objects;
 create policy "Users can update own profile photo"
   on storage.objects
   for update
@@ -84,6 +90,7 @@ create policy "Users can update own profile photo"
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
+drop policy if exists "Users can delete own profile photo" on storage.objects;
 create policy "Users can delete own profile photo"
   on storage.objects
   for delete
