@@ -12,6 +12,7 @@ export interface AgentSummary {
   uplineNetwork: string | null;
   status: string | null;
   emailConfirmed: boolean;
+  genesisAccountCreatedAt: string | null;
   createdAt: string;
   source: string | null;
 }
@@ -120,6 +121,11 @@ export async function buildAgentSummaries(adminClient: SupabaseClient): Promise<
     const onboarding = onboardingByUserId.get(user.id);
     const referrerId = onboarding?.referrer_user_id ?? null;
 
+    const genesisCreatedAt = user.user_metadata?.genesis_account_created_at;
+    const genesisAccountCreatedAt = typeof genesisCreatedAt === "string" && genesisCreatedAt.trim()
+      ? genesisCreatedAt
+      : null;
+
     return {
       id: user.id,
       email: user.email ?? "",
@@ -130,6 +136,7 @@ export async function buildAgentSummaries(adminClient: SupabaseClient): Promise<
       uplineNetwork: onboarding?.upline_network ?? null,
       status: onboarding?.status ?? null,
       emailConfirmed: Boolean(user.email_confirmed_at),
+      genesisAccountCreatedAt,
       createdAt: user.created_at,
       source: typeof user.app_metadata?.source === "string" ? user.app_metadata.source : null,
     };

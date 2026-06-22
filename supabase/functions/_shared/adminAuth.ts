@@ -1,17 +1,28 @@
 import { createClient, type SupabaseClient, type User } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { getEmailDomain } from "./onboarding.ts";
 
-export type PortalRole = "admin" | "agent";
+export type PortalRole = "admin" | "genesis_admin" | "agent";
 
 const ALLOWED_EMAIL_DOMAIN = getEmailDomain();
 
 export function getUserRole(user: User): PortalRole {
   const role = user.app_metadata?.role;
-  return role === "admin" ? "admin" : "agent";
+  if (role === "admin") return "admin";
+  if (role === "genesis_admin") return "genesis_admin";
+  return "agent";
 }
 
 export function isAdminUser(user: User): boolean {
   return getUserRole(user) === "admin";
+}
+
+export function isGenesisAdminUser(user: User): boolean {
+  return getUserRole(user) === "genesis_admin";
+}
+
+export function hasAdminConsoleAccess(user: User): boolean {
+  const role = getUserRole(user);
+  return role === "admin" || role === "genesis_admin";
 }
 
 export async function requirePortalUser(
@@ -63,6 +74,18 @@ export async function requireAdmin(req: Request): Promise<{ user: User; adminCli
   const { user, adminClient } = await requirePortalUser(req);
 
   if (!isAdminUser(user)) {
+    throw new AdminAuthError("Admin access required", 403, "forbidden");
+  }
+
+  return { user, adminClient };
+}
+
+export async function requireGenesisAdminOrAdmin(
+  req: Request,
+): Promise<{ user: User; adminClient: SupabaseClient }> {
+  const { user, adminClient } = await requirePortalUser(req);
+
+  if (!hasAdminConsoleAccess(user)) {
     throw new AdminAuthError("Admin access required", 403, "forbidden");
   }
 

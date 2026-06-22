@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Mail, Shield, ShieldOff, UserPlus, Users } from "lucide-react";
+import { Mail, UserCog, UserPlus, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { resendActivationEmail, updateUserRole, type AgentSummary } from "@/lib/admin-api";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
 import { trackPageView } from "@/lib/analytics";
+import { formatRoleLabel, type PortalRole } from "@/lib/roles";
 import { toast } from "sonner";
 
 function statusLabel(agent: AgentSummary): string {
@@ -12,6 +13,17 @@ function statusLabel(agent: AgentSummary): string {
   if (agent.status === "manual") return "Manual provision";
   if (agent.status) return agent.status.replace(/_/g, " ");
   return "Active";
+}
+
+const ELEVATED_ROLES: Array<{ value: PortalRole; label: string }> = [
+  { value: "admin", label: "Admin" },
+  { value: "genesis_admin", label: "Genesis admin" },
+];
+
+function roleChangeMessage(agent: AgentSummary, nextRole: PortalRole): string {
+  if (nextRole === "admin") return `Set ${agent.name}'s role to admin?`;
+  if (nextRole === "genesis_admin") return `Set ${agent.name}'s role to Genesis admin?`;
+  return `Remove elevated access from ${agent.name}?`;
 }
 
 export default function AdminUsers() {
@@ -53,16 +65,11 @@ export default function AdminUsers() {
     }
   };
 
-  const handleRoleToggle = async (agent: AgentSummary) => {
+  const handleRoleChange = async (agent: AgentSummary, nextRole: PortalRole) => {
     const token = session?.access_token;
-    if (!token) return;
+    if (!token || nextRole === agent.role) return;
 
-    const nextRole = agent.role === "admin" ? "agent" : "admin";
-    const confirmMessage = nextRole === "admin"
-      ? `Promote ${agent.name} to admin?`
-      : `Remove admin access from ${agent.name}?`;
-
-    if (!window.confirm(confirmMessage)) return;
+    if (!window.confirm(roleChangeMessage(agent, nextRole))) return;
 
     setUpdatingId(agent.id);
     try {
@@ -74,6 +81,22 @@ export default function AdminUsers() {
     } finally {
       setUpdatingId(null);
     }
+  };
+
+  const handleRoleSelect = (agent: AgentSummary, value: string) => {
+    if (value === "agent") {
+      void handleRoleChange(agent, "agent");
+      return;
+    }
+    if (value === "admin" || value === "genesis_admin") {
+      void handleRoleChange(agent, value);
+    }
+  };
+
+  const roleBadgeClass = (role: PortalRole) => {
+    if (role === "admin") return "admin-badge accent";
+    if (role === "genesis_admin") return "admin-badge genesis";
+    return "admin-badge";
   };
 
   return (
@@ -138,8 +161,8 @@ export default function AdminUsers() {
                       </span>
                     </td>
                     <td>
-                      <span className={`admin-badge${agent.role === "admin" ? " accent" : ""}`}>
-                        {agent.role}
+                      <span className={roleBadgeClass(agent.role)}>
+                        {formatRoleLabel(agent.role)}
                       </span>
                     </td>
                     <td>
@@ -155,25 +178,34 @@ export default function AdminUsers() {
                             {isResending ? "Sending…" : "Resend activation"}
                           </button>
                         )}
-                        <button
-                          type="button"
-                          className="admin-icon-btn"
-                          disabled={isSelf || isUpdating}
-                          title={isSelf ? "You cannot change your own role here" : undefined}
-                          onClick={() => void handleRoleToggle(agent)}
-                        >
-                          {agent.role === "admin" ? (
-                            <>
-                              <ShieldOff size={16} aria-hidden="true" />
-                              Remove admin
-                            </>
-                          ) : (
-                            <>
-                              <Shield size={16} aria-hidden="true" />
-                              Make admin
-                            </>
-                          )}
-                        </button>
+                        {!isSelf && (
+                          <label className="admin-role-update">
+                            <UserCog size={16} aria-hidden="true" />
+                            <select
+                              className="admin-role-select"
+                              value={agent.role === "agent" ? "" : agent.role}
+                              disabled={isUpdating}
+                              aria-label={`Update role for ${agent.name}`}
+                              onChange={(event) => {
+                                const { value } = event.target;
+                                event.target.value = agent.role === "agent" ? "" : agent.role;
+                                handleRoleSelect(agent, value);
+                              }}
+                            >
+                              <option value="" disabled>
+                                {isUpdating ? "Updating…" : "Update role"}
+                              </option>
+                              {ELEVATED_ROLES.map(({ value, label }) => (
+                                <option key={value} value={value}>
+                                  {label}
+                                </option>
+                              ))}
+                              {agent.role !== "agent" && (
+                                <option value="agent">Remove elevated access</option>
+                              )}
+                            </select>
+                          </label>
+                        )}
                       </div>
                     </td>
                   </tr>

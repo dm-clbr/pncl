@@ -1,9 +1,9 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { hasAdminConsoleAccess } from "@/lib/roles";
+import { isGenesisAdmin } from "@/lib/roles";
 import OnboardingLayout from "@/components/OnboardingLayout";
 
-export default function AdminRoute({ children }: { children: React.ReactNode }) {
+export default function AdminFullRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -14,8 +14,8 @@ export default function AdminRoute({ children }: { children: React.ReactNode }) 
     );
   }
 
-  if (!hasAdminConsoleAccess(user)) {
-    return <Navigate to="/portal" replace />;
+  if (isGenesisAdmin(user)) {
+    return <Navigate to="/portal/admin/genesis" replace />;
   }
 
   return children;

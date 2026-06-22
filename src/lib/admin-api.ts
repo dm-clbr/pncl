@@ -11,6 +11,7 @@ export interface AgentSummary {
   uplineNetwork: string | null;
   status: string | null;
   emailConfirmed: boolean;
+  genesisAccountCreatedAt: string | null;
   createdAt: string;
   source: string | null;
 }
@@ -95,6 +96,16 @@ export async function resendActivationEmail(
   userId: string,
 ): Promise<{ userId: string; email: string; message: string }> {
   return adminFetch("admin-resend-activation", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ userId }),
+  });
+}
+
+export async function markGenesisAccountCreated(
+  accessToken: string,
+  userId: string,
+): Promise<{ userId: string; genesisAccountCreatedAt: string; message: string }> {
+  return adminFetch("admin-mark-genesis-created", accessToken, {
     method: "POST",
     body: JSON.stringify({ userId }),
   });

@@ -6,6 +6,7 @@ import {
   GraduationCap,
   Mail,
   MessageCircle,
+  User,
 } from "lucide-react";
 
 export interface PortalLink {
@@ -73,6 +74,20 @@ export const PORTAL_SECTIONS: PortalLinkSection[] = [
         href: "https://www.pinnaclegenesis.cc/",
         external: true,
         icon: GraduationCap,
+      },
+    ],
+  },
+  {
+    id: "account",
+    title: "Account",
+    links: [
+      {
+        id: "profile",
+        title: "My Profile",
+        description: "Update your name, sizes, and profile photo.",
+        href: "/portal/profile",
+        external: false,
+        icon: User,
       },
     ],
   },

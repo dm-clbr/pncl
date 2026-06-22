@@ -6,20 +6,28 @@ import {
   Circle,
   CircleAlert,
   Copy,
+  GraduationCap,
   Link2,
   LogOut,
   Shield,
+  X,
 } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { PORTAL_SECTIONS, type PortalLink, type PortalLinkSection } from "@/lib/portal-links";
 import { buildReferralLink } from "@/lib/referral";
-import { isAdmin } from "@/lib/roles";
+import { hasAdminConsoleAccess, isGenesisAdmin } from "@/lib/roles";
 import {
   completePortalTodo,
   getPendingPortalTodos,
   type PortalTodo,
 } from "@/lib/portal-todos";
+import {
+  dismissGenesisNotice,
+  GENESIS_LOGIN_URL,
+  refreshPortalUser,
+  shouldShowGenesisNotice,
+} from "@/lib/portal-messages";
 import PortalIncentivesList from "@/components/PortalIncentivesList";
 import { usePortalIncentives } from "@/hooks/usePortalIncentives";
 import { trackPageView } from "@/lib/analytics";
@@ -173,17 +181,34 @@ function PortalTodoItem({
 }
 
 export default function PortalDashboard() {
-  const { user, signOut } = useAuth();
+  const { user: authUser, signOut } = useAuth();
+  const [portalUser, setPortalUser] = useState(authUser);
   const referralLink = useMemo(
-    () => (user?.id ? buildReferralLink(user.id) : ""),
-    [user?.id],
+    () => (portalUser?.id ? buildReferralLink(portalUser.id) : ""),
+    [portalUser?.id],
   );
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [completingTodoId, setCompletingTodoId] = useState<string | null>(null);
+  const [dismissingGenesisNotice, setDismissingGenesisNotice] = useState(false);
 
-  const pendingTodos = useMemo(() => getPendingPortalTodos(user), [user]);
+  const pendingTodos = useMemo(() => getPendingPortalTodos(portalUser), [portalUser]);
+  const showGenesisNotice = shouldShowGenesisNotice(portalUser);
   const { incentives, loading: incentivesLoading } = usePortalIncentives();
+
+  useEffect(() => {
+    setPortalUser(authUser);
+  }, [authUser]);
+
+  useEffect(() => {
+    void refreshPortalUser()
+      .then((user) => {
+        if (user) setPortalUser(user);
+      })
+      .catch(() => {
+        // Keep the cached session user if refresh fails.
+      });
+  }, []);
 
   useEffect(() => {
     document.title = "Employee Portal — PNCL";
@@ -233,9 +258,23 @@ export default function PortalDashboard() {
     }
   };
 
-  const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Agent";
-  const agentEmail = user?.email ?? "";
-  const showAdminLink = isAdmin(user);
+  const handleDismissGenesisNotice = async () => {
+    setDismissingGenesisNotice(true);
+    try {
+      await dismissGenesisNotice();
+      const refreshedUser = await refreshPortalUser();
+      if (refreshedUser) setPortalUser(refreshedUser);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to dismiss notice.");
+    } finally {
+      setDismissingGenesisNotice(false);
+    }
+  };
+
+  const displayName = portalUser?.user_metadata?.full_name ?? portalUser?.email?.split("@")[0] ?? "Agent";
+  const agentEmail = portalUser?.email ?? "";
+  const showAdminLink = hasAdminConsoleAccess(portalUser);
+  const adminLink = isGenesisAdmin(portalUser) ? "/portal/admin/genesis" : "/portal/admin";
 
   return (
     <div className="home2-page">
@@ -250,6 +289,40 @@ export default function PortalDashboard() {
             <p className="portal-welcome">Welcome, {displayName}</p>
             {agentEmail && <p className="portal-meta">{agentEmail}</p>}
           </header>
+
+          {showGenesisNotice && (
+            <div className="portal-notice-banner" role="status">
+              <span className="portal-notice-icon" aria-hidden="true">
+                <GraduationCap size={20} strokeWidth={2.25} />
+              </span>
+              <div className="portal-notice-copy">
+                <strong>Your Pinnacle Genesis account is ready</strong>
+                <p>
+                  Check your email for login instructions to access Genesis. You can also open
+                  Genesis anytime from the <strong>Pinnacle Genesis</strong> link under{" "}
+                  <strong>Training &amp; Resources</strong> below.
+                </p>
+                <a
+                  href={GENESIS_LOGIN_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="portal-notice-link"
+                >
+                  Go to Pinnacle Genesis
+                  <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
+                </a>
+              </div>
+              <button
+                type="button"
+                className="portal-notice-dismiss"
+                onClick={() => void handleDismissGenesisNotice()}
+                disabled={dismissingGenesisNotice}
+                aria-label="Dismiss Genesis account notice"
+              >
+                <X size={18} strokeWidth={2.5} aria-hidden="true" />
+              </button>
+            </div>
+          )}
 
           {pendingTodos.length > 0 && (
             <div className="portal-urgent-banner" role="status">
@@ -351,8 +424,8 @@ export default function PortalDashboard() {
             </PortalTile>
 
             {showAdminLink && (
-              <Link to="/portal/admin" className="portal-sub-link portal-admin-link">
-                <span>Admin console</span>
+              <Link to={adminLink} className="portal-sub-link portal-admin-link">
+                <span>{isGenesisAdmin(portalUser) ? "Genesis admin" : "Admin console"}</span>
                 <Shield size={18} strokeWidth={2.5} aria-hidden="true" />
               </Link>
             )}

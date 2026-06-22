@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { AdminAuthError, requireAdmin } from "../_shared/adminAuth.ts";
+import { AdminAuthError, requireGenesisAdminOrAdmin } from "../_shared/adminAuth.ts";
 import { buildAgentSummaries } from "../_shared/adminAgents.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { adminClient } = await requireAdmin(req);
+    const { adminClient } = await requireGenesisAdminOrAdmin(req);
     const agents = await buildAgentSummaries(adminClient);
     return jsonResponse({ agents });
   } catch (error) {

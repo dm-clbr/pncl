@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { AdminAuthError, requireAdmin, type PortalRole } from "../_shared/adminAuth.ts";
+import { AdminAuthError, getUserRole, requireAdmin, type PortalRole } from "../_shared/adminAuth.ts";
 import { countAdmins } from "../_shared/adminAgents.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
@@ -9,6 +9,8 @@ interface UpdateRolePayload {
   userId: string;
   role: PortalRole;
 }
+
+const VALID_ROLES: PortalRole[] = ["admin", "genesis_admin", "agent"];
 
 function validateUpdateRolePayload(body: unknown): UpdateRolePayload {
   if (!body || typeof body !== "object") {
@@ -22,11 +24,22 @@ function validateUpdateRolePayload(body: unknown): UpdateRolePayload {
   }
 
   const role = data.role;
-  if (role !== "admin" && role !== "agent") {
-    throw new Error("Role must be admin or agent");
+  if (!VALID_ROLES.includes(role as PortalRole)) {
+    throw new Error("Role must be admin, genesis_admin, or agent");
   }
 
-  return { userId, role };
+  return { userId, role: role as PortalRole };
+}
+
+function roleUpdateMessage(role: PortalRole): string {
+  switch (role) {
+    case "admin":
+      return "User promoted to admin.";
+    case "genesis_admin":
+      return "User promoted to Genesis admin.";
+    default:
+      return "Elevated access removed.";
+  }
 }
 
 serve(async (req) => {
@@ -46,16 +59,16 @@ serve(async (req) => {
       return errorResponse("User not found", 404, "not_found");
     }
 
-    const currentRole = targetData.user.app_metadata?.role === "admin" ? "admin" : "agent";
+    const currentRole = getUserRole(targetData.user);
 
-    if (currentRole === "admin" && payload.role === "agent") {
+    if (currentRole === "admin" && payload.role !== "admin") {
       const adminCount = await countAdmins(adminClient);
       if (adminCount <= 1) {
         return errorResponse("Cannot remove the last admin", 409, "last_admin");
       }
     }
 
-    if (payload.userId === adminUser.id && payload.role === "agent") {
+    if (payload.userId === adminUser.id && currentRole === "admin" && payload.role !== "admin") {
       return errorResponse("You cannot remove your own admin access", 409, "self_demote");
     }
 
@@ -86,7 +99,7 @@ serve(async (req) => {
     return jsonResponse({
       userId: payload.userId,
       role: payload.role,
-      message: payload.role === "admin" ? "User promoted to admin." : "Admin access removed.",
+      message: roleUpdateMessage(payload.role),
     });
   } catch (error) {
     if (error instanceof AdminAuthError) {

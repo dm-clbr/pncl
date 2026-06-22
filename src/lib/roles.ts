@@ -1,12 +1,30 @@
 import type { User } from "@supabase/supabase-js";
 
-export type PortalRole = "admin" | "agent";
+export type PortalRole = "admin" | "genesis_admin" | "agent";
 
 export function getUserRole(user: User | null): PortalRole {
   if (!user) return "agent";
-  return user.app_metadata?.role === "admin" ? "admin" : "agent";
+
+  const role = user.app_metadata?.role;
+  if (role === "admin") return "admin";
+  if (role === "genesis_admin") return "genesis_admin";
+  return "agent";
 }
 
 export function isAdmin(user: User | null): boolean {
   return getUserRole(user) === "admin";
+}
+
+export function isGenesisAdmin(user: User | null): boolean {
+  return getUserRole(user) === "genesis_admin";
+}
+
+export function hasAdminConsoleAccess(user: User | null): boolean {
+  const role = getUserRole(user);
+  return role === "admin" || role === "genesis_admin";
+}
+
+export function formatRoleLabel(role: PortalRole): string {
+  if (role === "genesis_admin") return "genesis admin";
+  return role;
 }

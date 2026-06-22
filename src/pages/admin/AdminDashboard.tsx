@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Building2, GitBranch, Shield, Trophy, UserPlus, Users } from "lucide-react";
+import { Building2, GitBranch, GraduationCap, Shield, Trophy, UserPlus, Users } from "lucide-react";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
 import { trackPageView } from "@/lib/analytics";
 
@@ -34,6 +34,12 @@ const ADMIN_CARDS = [
     title: "Manage carriers",
     description: "Update carrier contacts and e-app links on the agent carrier sheet.",
     icon: Building2,
+  },
+  {
+    to: "/portal/admin/genesis",
+    title: "Genesis accounts",
+    description: "Mark Pinnacle Genesis accounts as created and notify agents on their dashboard.",
+    icon: GraduationCap,
   },
 ] as const;
 

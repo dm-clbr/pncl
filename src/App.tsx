@@ -19,14 +19,17 @@ import PortalLogin from "./pages/PortalLogin.tsx";
 import PortalSetPassword from "./pages/PortalSetPassword.tsx";
 import PortalDashboard from "./pages/PortalDashboard.tsx";
 import PortalCarrierSheet from "./pages/PortalCarrierSheet.tsx";
+import PortalProfile from "./pages/PortalProfile.tsx";
 import AdminLayout from "./components/AdminLayout.tsx";
 import AdminRoute from "./components/AdminRoute.tsx";
-import AdminDashboard from "./pages/admin/AdminDashboard.tsx";
+import AdminFullRoute from "./components/AdminFullRoute.tsx";
+import AdminIndexRedirect from "./components/AdminIndexRedirect.tsx";
 import AdminHierarchy from "./pages/admin/AdminHierarchy.tsx";
 import AdminUsers from "./pages/admin/AdminUsers.tsx";
 import AdminAddUser from "./pages/admin/AdminAddUser.tsx";
 import AdminIncentives from "./pages/admin/AdminIncentives.tsx";
 import AdminCarriers from "./pages/admin/AdminCarriers.tsx";
+import AdminGenesis from "./pages/admin/AdminGenesis.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -72,6 +75,14 @@ const App = () => (
             }
           />
           <Route
+            path="/portal/profile"
+            element={
+              <ProtectedRoute>
+                <PortalProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/portal/admin"
             element={
               <ProtectedRoute>
@@ -81,12 +92,13 @@ const App = () => (
               </ProtectedRoute>
             }
           >
-            <Route index element={<AdminDashboard />} />
-            <Route path="hierarchy" element={<AdminHierarchy />} />
-            <Route path="users" element={<AdminUsers />} />
-            <Route path="users/new" element={<AdminAddUser />} />
-            <Route path="incentives" element={<AdminIncentives />} />
-            <Route path="carriers" element={<AdminCarriers />} />
+            <Route index element={<AdminIndexRedirect />} />
+            <Route path="hierarchy" element={<AdminFullRoute><AdminHierarchy /></AdminFullRoute>} />
+            <Route path="users" element={<AdminFullRoute><AdminUsers /></AdminFullRoute>} />
+            <Route path="users/new" element={<AdminFullRoute><AdminAddUser /></AdminFullRoute>} />
+            <Route path="incentives" element={<AdminFullRoute><AdminIncentives /></AdminFullRoute>} />
+            <Route path="carriers" element={<AdminFullRoute><AdminCarriers /></AdminFullRoute>} />
+            <Route path="genesis" element={<AdminGenesis />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
