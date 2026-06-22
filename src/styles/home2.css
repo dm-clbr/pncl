@@ -2728,6 +2728,283 @@
   color: var(--steel);
 }
 
+.home2-page .admin-dashboard-tabs-list {
+  display: grid;
+  gap: 18px;
+}
+
+.home2-page .admin-dashboard-tab-card {
+  border: 1px solid rgba(240, 237, 228, .1);
+  border-radius: calc(var(--radius) + 2px);
+  background: var(--ink);
+  padding: 16px;
+}
+
+.home2-page .admin-dashboard-tab-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.home2-page .admin-dashboard-tab-head-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.home2-page .admin-dashboard-tab-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+  padding: 4px;
+  border-radius: 6px;
+  color: var(--steel);
+  cursor: grab;
+  touch-action: none;
+}
+
+.home2-page .admin-dashboard-tab-drag-handle:active {
+  cursor: grabbing;
+}
+
+.home2-page .admin-dashboard-tab-card.dragging {
+  opacity: .45;
+}
+
+.home2-page .admin-dashboard-tab-card-overlay {
+  min-width: min(100%, 520px);
+  padding: 16px;
+  border: 1px solid var(--gold);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .35);
+  cursor: grabbing;
+}
+
+.home2-page .admin-dashboard-tab-card-overlay strong {
+  display: block;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -.01em;
+  color: var(--bone);
+}
+
+.home2-page .admin-dashboard-tab-head h2 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -.01em;
+}
+
+.home2-page .admin-dashboard-add-link-btn {
+  height: 36px;
+  padding: 0 12px;
+}
+
+.home2-page .admin-dashboard-tab-head .admin-incentive-actions {
+  align-items: center;
+}
+
+.home2-page .admin-dashboard-system-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px dashed rgba(240, 237, 228, .14);
+  border-radius: 0;
+  background: rgba(240, 237, 228, .03);
+}
+
+.home2-page .admin-dashboard-link-form {
+  margin-top: 8px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(240, 237, 228, .08);
+}
+
+.home2-page .admin-draft-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(194, 78, 28, .28);
+  background: rgba(194, 78, 28, .08);
+}
+
+.home2-page .admin-draft-bar p {
+  margin: 0;
+  font-size: .88rem;
+  font-weight: 700;
+  color: var(--bone);
+}
+
+.home2-page .admin-draft-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.home2-page .admin-dashboard-links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 10px;
+}
+
+.home2-page .admin-dashboard-link-tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 72px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(240, 237, 228, .1);
+  background: var(--ink);
+  user-select: none;
+  cursor: grab;
+  touch-action: none;
+  transition: border-color .2s var(--ease), box-shadow .2s var(--ease), opacity .2s var(--ease);
+}
+
+.home2-page .admin-dashboard-link-tile:active,
+.home2-page .admin-dashboard-link-tile.dragging {
+  cursor: grabbing;
+}
+
+.home2-page .admin-dashboard-link-tile.unpublished {
+  opacity: .55;
+}
+
+.home2-page .admin-dashboard-link-tile-grip {
+  flex-shrink: 0;
+  display: inline-flex;
+  color: var(--steel);
+  opacity: .75;
+}
+
+.home2-page .admin-dashboard-link-tile-title {
+  flex: 1;
+  min-width: 0;
+  font-size: .84rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -.01em;
+  color: var(--bone);
+  text-align: center;
+  word-break: break-word;
+}
+
+.home2-page .admin-dashboard-link-tile-menu {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 4px;
+  border-radius: 7px;
+  border: 1px solid rgba(240, 237, 228, .12);
+  background: rgba(10, 10, 12, .94);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s var(--ease);
+}
+
+.home2-page .admin-dashboard-link-tile:hover .admin-dashboard-link-tile-menu,
+.home2-page .admin-dashboard-link-tile:focus-within .admin-dashboard-link-tile-menu {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.home2-page .admin-dashboard-link-tile-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--sand);
+  cursor: pointer;
+}
+
+.home2-page .admin-dashboard-link-tile-menu-btn:hover:not(:disabled) {
+  background: rgba(240, 237, 228, .1);
+}
+
+.home2-page .admin-dashboard-link-tile-menu-btn:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.home2-page .admin-dashboard-link-tile.dragging {
+  opacity: .45;
+}
+
+.home2-page .admin-dashboard-link-tile.drop-target {
+  border-color: var(--gold);
+  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, .35);
+}
+
+.home2-page .admin-dashboard-link-drop-zone {
+  justify-content: center;
+  cursor: default;
+  border-style: dashed;
+  border-color: rgba(240, 237, 228, .12);
+  padding-bottom: 12px;
+}
+
+.home2-page .admin-dashboard-link-drop-zone .admin-dashboard-link-tile-title {
+  flex: unset;
+  color: var(--steel);
+  font-weight: 600;
+}
+
+.home2-page .admin-dashboard-link-drop-zone.active {
+  border-color: var(--gold);
+  background: rgba(212, 175, 55, .06);
+}
+
+.home2-page .admin-dashboard-link-drop-zone.active .admin-dashboard-link-tile-title {
+  color: var(--sand);
+}
+
+.home2-page .admin-dashboard-tabs-list-dragging .admin-dashboard-tab-card:not(:has(.admin-dashboard-link-tile.dragging)) {
+  outline: 1px dashed rgba(240, 237, 228, .1);
+  outline-offset: 4px;
+}
+
+.home2-page .admin-dashboard-links-grid.is-drop-over {
+  outline: 1px dashed rgba(212, 175, 55, .35);
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+
+.home2-page .admin-dashboard-link-tile-overlay-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 72px;
+  min-width: 148px;
+  padding: 12px 14px 22px;
+  border-radius: var(--radius);
+  border: 1px solid var(--gold);
+  background: var(--ink);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .35);
+  cursor: grabbing;
+}
+
 .home2-page .admin-brand-asset-thumb-color {
   border: 1px solid rgba(240, 237, 228, .18);
 }

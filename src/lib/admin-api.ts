@@ -324,3 +324,135 @@ export async function reorderBrandAssets(
     body: JSON.stringify({ orderedIds }),
   });
 }
+
+export interface AdminDashboardLinkSummary {
+  id: string;
+  sectionId: string;
+  title: string;
+  description: string | null;
+  href: string;
+  external: boolean;
+  icon: string;
+  sortOrder: number;
+  published: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AdminDashboardSectionSummary {
+  id: string;
+  title: string;
+  sortOrder: number;
+  published: boolean;
+  sectionType: "links" | "incentives" | "brand_assets";
+  links: AdminDashboardLinkSummary[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpsertDashboardSectionPayload {
+  id: string;
+  title: string;
+  published?: boolean;
+  sortOrder?: number;
+  sectionType?: "links" | "incentives" | "brand_assets";
+}
+
+export interface UpsertDashboardLinkPayload {
+  id?: string;
+  sectionId: string;
+  title: string;
+  description?: string | null;
+  href: string;
+  external?: boolean;
+  icon?: string;
+  published?: boolean;
+  sortOrder?: number;
+}
+
+export async function listDashboardTabs(
+  accessToken: string,
+): Promise<AdminDashboardSectionSummary[]> {
+  const data = await adminFetch<{ sections: AdminDashboardSectionSummary[] }>(
+    "admin-list-dashboard-tabs",
+    accessToken,
+    { method: "GET" },
+  );
+  return data.sections;
+}
+
+export async function upsertDashboardSection(
+  accessToken: string,
+  input: UpsertDashboardSectionPayload,
+): Promise<{ section: AdminDashboardSectionSummary; message: string }> {
+  return adminFetch("admin-upsert-dashboard-section", accessToken, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function upsertDashboardLink(
+  accessToken: string,
+  input: UpsertDashboardLinkPayload,
+): Promise<{ link: AdminDashboardLinkSummary; message: string }> {
+  return adminFetch("admin-upsert-dashboard-link", accessToken, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteDashboardSection(
+  accessToken: string,
+  id: string,
+): Promise<{ id: string; message: string }> {
+  return adminFetch("admin-delete-dashboard-section", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  });
+}
+
+export async function deleteDashboardLink(
+  accessToken: string,
+  id: string,
+): Promise<{ id: string; message: string }> {
+  return adminFetch("admin-delete-dashboard-link", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  });
+}
+
+export async function reorderDashboardSections(
+  accessToken: string,
+  sectionIds: string[],
+): Promise<{ message: string }> {
+  return adminFetch("admin-reorder-dashboard-tabs", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ sectionIds }),
+  });
+}
+
+export async function reorderDashboardLinks(
+  accessToken: string,
+  sectionId: string,
+  linkIds: string[],
+): Promise<{ message: string }> {
+  return adminFetch("admin-reorder-dashboard-tabs", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ sectionId, linkIds }),
+  });
+}
+
+export type DashboardLinkPlacement = {
+  sectionId: string;
+  linkIds: string[];
+};
+
+export async function reorderDashboardLinkPlacements(
+  accessToken: string,
+  linkPlacements: DashboardLinkPlacement[],
+): Promise<{ message: string }> {
+  return adminFetch("admin-reorder-dashboard-tabs", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ linkPlacements }),
+  });
+}

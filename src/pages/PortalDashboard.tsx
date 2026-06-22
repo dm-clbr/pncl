@@ -14,7 +14,10 @@ import {
 } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
 import { useAuth } from "@/contexts/AuthContext";
-import { PORTAL_SECTIONS, type PortalLink, type PortalLinkSection } from "@/lib/portal-links";
+import { PORTAL_SECTIONS } from "@/lib/portal-links";
+import { usePortalDashboardTabs } from "@/hooks/usePortalDashboardTabs";
+import { isLinksDashboardSection } from "@/lib/portal-dashboard-section-types";
+import type { PortalDashboardSection } from "@/lib/portal-dashboard-tabs";
 import { buildReferralLink } from "@/lib/referral";
 import { hasAdminConsoleAccess, isGenesisAdmin } from "@/lib/roles";
 import {
@@ -66,7 +69,11 @@ function PortalUrgentIcon({ size = 18 }: { size?: number }) {
   );
 }
 
-function PortalSubLink({ link }: { link: PortalLink }) {
+function PortalSubLink({
+  link,
+}: {
+  link: { title: string; href: string; external: boolean };
+}) {
   const content = (
     <>
       <span>{link.title}</span>
@@ -199,7 +206,43 @@ export default function PortalDashboard() {
   const showGenesisNotice = shouldShowGenesisNotice(portalUser);
   const { incentives, loading: incentivesLoading } = usePortalIncentives();
   const { assets: brandAssets, loading: brandAssetsLoading } = usePortalBrandAssets();
+  const { sections: dashboardSections } = usePortalDashboardTabs();
   const { photoUrl, initials, displayName } = usePortalProfile(portalUser);
+
+  const displaySections = useMemo((): PortalDashboardSection[] => {
+    if (dashboardSections.length > 0) {
+      return dashboardSections.filter((section) =>
+        isLinksDashboardSection(section) ? section.links.length > 0 : true,
+      );
+    }
+
+    return [
+      ...PORTAL_SECTIONS.map((section) => ({
+        id: section.id,
+        title: section.title,
+        sectionType: "links" as const,
+        links: section.links.map((link) => ({
+          id: link.id,
+          title: link.title,
+          description: link.description,
+          href: link.href,
+          external: link.external,
+        })),
+      })),
+      {
+        id: "incentives",
+        title: "Incentives",
+        sectionType: "incentives" as const,
+        links: [],
+      },
+      {
+        id: "brand-assets",
+        title: "Brand assets",
+        sectionType: "brand_assets" as const,
+        links: [],
+      },
+    ];
+  }, [dashboardSections]);
 
   useEffect(() => {
     setPortalUser(authUser);
@@ -387,64 +430,58 @@ export default function PortalDashboard() {
               </PortalTile>
             )}
 
-            {PORTAL_SECTIONS.map((section: PortalLinkSection) => (
-              <PortalTile
-                key={section.id}
-                label={section.title}
-                count={section.links.length}
-                open={Boolean(openSections[section.id])}
-                onToggle={() => toggleSection(section.id)}
-              >
-                {section.links.map((link) => (
-                  <PortalSubLink key={link.id} link={link} />
-                ))}
-              </PortalTile>
-            ))}
+            {displaySections.map((section) => {
+              const count = isLinksDashboardSection(section)
+                ? section.links.length
+                : section.sectionType === "incentives"
+                  ? incentives.length
+                  : brandAssets.length;
 
-            <PortalTile
-              label="Incentives"
-              count={incentives.length}
-              open={Boolean(openSections.incentives)}
-              onToggle={() => toggleSection("incentives")}
-            >
-              {incentivesLoading ? (
-                <div className="portal-incentives-loading">
-                  <span className="onboarding-spinner" aria-hidden="true" />
-                  <span>Loading incentives...</span>
-                </div>
-              ) : incentives.length > 0 ? (
-                <PortalIncentivesList items={incentives} />
-              ) : (
-                <p className="portal-panel-note">No incentives published yet.</p>
-              )}
-            </PortalTile>
-
-            <PortalTile
-              label="Brand assets"
-              count={brandAssets.length}
-              open={Boolean(openSections["brand-assets"])}
-              onToggle={() => toggleSection("brand-assets")}
-            >
-              {brandAssetsLoading ? (
-                <div className="portal-incentives-loading">
-                  <span className="onboarding-spinner" aria-hidden="true" />
-                  <span>Loading brand assets...</span>
-                </div>
-              ) : brandAssets.length > 0 ? (
-                <>
-                  <p className="portal-panel-note">
-                    Official PNCL logos, templates, and brand files.
-                  </p>
-                  <PortalBrandAssetsList items={brandAssets} />
-                  <Link to="/portal/brand-assets" className="portal-sub-link">
-                    <span>View all brand assets</span>
-                    <ArrowUpRight size={18} strokeWidth={2.5} aria-hidden="true" />
-                  </Link>
-                </>
-              ) : (
-                <p className="portal-panel-note">No brand assets published yet.</p>
-              )}
-            </PortalTile>
+              return (
+                <PortalTile
+                  key={section.id}
+                  label={section.title}
+                  count={count}
+                  open={Boolean(openSections[section.id])}
+                  onToggle={() => toggleSection(section.id)}
+                >
+                  {isLinksDashboardSection(section) ? (
+                    section.links.map((link) => (
+                      <PortalSubLink key={link.id} link={link} />
+                    ))
+                  ) : section.sectionType === "incentives" ? (
+                    incentivesLoading ? (
+                      <div className="portal-incentives-loading">
+                        <span className="onboarding-spinner" aria-hidden="true" />
+                        <span>Loading incentives...</span>
+                      </div>
+                    ) : incentives.length > 0 ? (
+                      <PortalIncentivesList items={incentives} />
+                    ) : (
+                      <p className="portal-panel-note">No incentives published yet.</p>
+                    )
+                  ) : brandAssetsLoading ? (
+                    <div className="portal-incentives-loading">
+                      <span className="onboarding-spinner" aria-hidden="true" />
+                      <span>Loading brand assets...</span>
+                    </div>
+                  ) : brandAssets.length > 0 ? (
+                    <>
+                      <p className="portal-panel-note">
+                        Official PNCL logos, templates, and brand files.
+                      </p>
+                      <PortalBrandAssetsList items={brandAssets} />
+                      <Link to="/portal/brand-assets" className="portal-sub-link">
+                        <span>View all brand assets</span>
+                        <ArrowUpRight size={18} strokeWidth={2.5} aria-hidden="true" />
+                      </Link>
+                    </>
+                  ) : (
+                    <p className="portal-panel-note">No brand assets published yet.</p>
+                  )}
+                </PortalTile>
+              );
+            })}
 
             {showAdminLink && (
               <Link to={adminLink} className="portal-sub-link portal-admin-link">
