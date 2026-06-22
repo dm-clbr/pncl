@@ -632,12 +632,20 @@
 .home2-page .portal-tile-label {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
   text-align: left;
   line-height: 1;
 }
 
+.home2-page .portal-tile-title {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .home2-page .portal-tile-count {
+  flex-shrink: 0;
   font-family: var(--ff-mono);
   font-size: 11px;
   font-weight: 500;
@@ -711,12 +719,18 @@
   border-width: 2px;
 }
 
+.home2-page .portal-tile-group.urgent {
+  overflow: visible;
+}
+
 .home2-page .portal-tile-group.urgent .portal-tile {
   box-shadow: 0 0 0 2px rgba(26, 26, 34, .9);
 }
 
 .home2-page .portal-tile.urgent {
   position: relative;
+  overflow: visible;
+  padding-left: clamp(24px, 4.5vw, 30px);
 }
 
 .home2-page .portal-urgent-icon {
@@ -724,22 +738,36 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--ink);
+}
+
+.home2-page .portal-urgent-icon-circle {
+  fill: var(--bone);
+}
+
+.home2-page .portal-urgent-icon-mark {
+  stroke: var(--ink);
+}
+
+.home2-page .portal-urgent-icon-dot {
+  fill: var(--ink);
 }
 
 .home2-page .portal-tile.urgent .portal-urgent-icon {
-  color: var(--ink);
+  position: absolute;
+  left: -11px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 1;
 }
 
 .home2-page .portal-urgent-banner .portal-urgent-icon,
 .home2-page .portal-todo-title-row .portal-urgent-icon {
   width: 22px;
   height: 22px;
-  border-radius: 50%;
-  background: var(--bone);
 }
 
 .home2-page .portal-urgent-label {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   padding: 4px 8px;

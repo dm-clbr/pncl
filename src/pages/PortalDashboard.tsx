@@ -4,7 +4,6 @@ import {
   ArrowUpRight,
   ChevronDown,
   Circle,
-  CircleAlert,
   Copy,
   GraduationCap,
   Link2,
@@ -62,10 +61,19 @@ const PORTAL_SOCIAL_LINKS = [
   },
 ] as const;
 
-function PortalUrgentIcon({ size = 18 }: { size?: number }) {
+function PortalUrgentIcon({ size = 22 }: { size?: number }) {
   return (
     <span className="portal-urgent-icon" aria-hidden="true">
-      <CircleAlert size={size} strokeWidth={2.5} />
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" className="portal-urgent-icon-circle" />
+        <path
+          className="portal-urgent-icon-mark"
+          d="M12 8v5"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
+        <circle cx="12" cy="16.5" r="1.25" className="portal-urgent-icon-dot" />
+      </svg>
     </span>
   );
 }
@@ -125,11 +133,11 @@ function PortalTile({
         onClick={onToggle}
         aria-expanded={open}
       >
+        {urgent && <PortalUrgentIcon size={28} />}
         <span className="portal-tile-label">
-          {urgent && <PortalUrgentIcon />}
-          {label}
+          <span className="portal-tile-title">{label}</span>
           {count !== undefined && <span className="portal-tile-count">({count})</span>}
-          {urgent && <span className="portal-urgent-label">Action required</span>}
+          {urgent && <span className="portal-urgent-label">Required</span>}
         </span>
         <ChevronDown size={22} strokeWidth={2.5} className="portal-tile-chevron" aria-hidden="true" />
       </button>
