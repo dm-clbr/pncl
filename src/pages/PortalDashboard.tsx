@@ -183,7 +183,7 @@ export default function PortalDashboard() {
   const [completingTodoId, setCompletingTodoId] = useState<string | null>(null);
 
   const pendingTodos = useMemo(() => getPendingPortalTodos(user), [user]);
-  const { incentives } = usePortalIncentives();
+  const { incentives, loading: incentivesLoading } = usePortalIncentives();
 
   useEffect(() => {
     document.title = "Employee Portal — PNCL";
@@ -338,7 +338,16 @@ export default function PortalDashboard() {
               open={Boolean(openSections.incentives)}
               onToggle={() => toggleSection("incentives")}
             >
-              <PortalIncentivesList items={incentives} />
+              {incentivesLoading ? (
+                <div className="portal-incentives-loading">
+                  <span className="onboarding-spinner" aria-hidden="true" />
+                  <span>Loading incentives...</span>
+                </div>
+              ) : incentives.length > 0 ? (
+                <PortalIncentivesList items={incentives} />
+              ) : (
+                <p className="portal-panel-note">No incentives published yet.</p>
+              )}
             </PortalTile>
 
             {showAdminLink && (

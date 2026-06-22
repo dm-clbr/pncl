@@ -49,3 +49,6 @@ verify_jwt = true
 
 [functions.admin-upload-incentive-media]
 verify_jwt = true
+
+[functions.list-portal-incentives]
+verify_jwt = true

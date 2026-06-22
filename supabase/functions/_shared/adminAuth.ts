@@ -14,7 +14,9 @@ export function isAdminUser(user: User): boolean {
   return getUserRole(user) === "admin";
 }
 
-export async function requireAdmin(req: Request): Promise<{ user: User; adminClient: SupabaseClient }> {
+export async function requirePortalUser(
+  req: Request,
+): Promise<{ user: User; adminClient: SupabaseClient }> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) {
     throw new AdminAuthError("Missing authorization", 401, "unauthorized");
@@ -50,13 +52,19 @@ export async function requireAdmin(req: Request): Promise<{ user: User; adminCli
     throw new AdminAuthError("Email must be confirmed", 403, "email_unconfirmed");
   }
 
-  if (!isAdminUser(user)) {
-    throw new AdminAuthError("Admin access required", 403, "forbidden");
-  }
-
   const adminClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
+
+  return { user, adminClient };
+}
+
+export async function requireAdmin(req: Request): Promise<{ user: User; adminClient: SupabaseClient }> {
+  const { user, adminClient } = await requirePortalUser(req);
+
+  if (!isAdminUser(user)) {
+    throw new AdminAuthError("Admin access required", 403, "forbidden");
+  }
 
   return { user, adminClient };
 }

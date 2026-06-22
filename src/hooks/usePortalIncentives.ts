@@ -1,20 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  DEFAULT_PORTAL_INCENTIVES,
   fetchPortalIncentives,
   type PortalIncentive,
 } from "@/lib/portal-incentives";
 
 export function usePortalIncentives() {
-  const { session } = useAuth();
-  const [incentives, setIncentives] = useState<PortalIncentive[]>(DEFAULT_PORTAL_INCENTIVES);
+  const { session, loading: authLoading } = useAuth();
+  const [incentives, setIncentives] = useState<PortalIncentive[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
-    if (!session?.access_token) {
-      setIncentives(DEFAULT_PORTAL_INCENTIVES);
+    const token = session?.access_token;
+    if (!token) {
+      setIncentives([]);
       setLoading(false);
       return;
     }
@@ -22,19 +22,20 @@ export function usePortalIncentives() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchPortalIncentives();
+      const data = await fetchPortalIncentives(token);
       setIncentives(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load incentives");
-      setIncentives(DEFAULT_PORTAL_INCENTIVES);
+      setIncentives([]);
     } finally {
       setLoading(false);
     }
   }, [session?.access_token]);
 
   useEffect(() => {
+    if (authLoading) return;
     void reload();
-  }, [reload]);
+  }, [authLoading, reload]);
 
-  return { incentives, loading, error, reload };
+  return { incentives, loading: loading || authLoading, error, reload };
 }

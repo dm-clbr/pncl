@@ -1,4 +1,4 @@
-import { getSupabaseClient } from "@/lib/supabase";
+import { getSupabaseConfig, isSupabaseAuthConfigured } from "@/lib/supabase";
 
 export interface PortalIncentiveImage {
   id: string;
@@ -53,59 +53,16 @@ interface IncentiveRow {
   updated_at: string;
 }
 
-export const DEFAULT_PORTAL_INCENTIVES: PortalIncentive[] = [
-  {
-    id: "archetype-v4",
-    title: "Archetype Poster",
-    type: "image",
-    src: "/ARCHETYPE POSTER V4.png",
-  },
-  {
-    id: "archetype-v3",
-    title: "Archetype Poster V3",
-    type: "image",
-    src: "/ARCHETYPE POSTER V3.png",
-  },
-  {
-    id: "pillar-001",
-    title: "Pillar 01",
-    type: "image",
-    src: "/001.png",
-  },
-  {
-    id: "pillar-002",
-    title: "Pillar 02",
-    type: "image",
-    src: "/002.png",
-  },
-  {
-    id: "pillar-003",
-    title: "Pillar 03",
-    type: "image",
-    src: "/003.png",
-  },
-  {
-    id: "pillar-004",
-    title: "Pillar 04",
-    type: "image",
-    src: "/004.png",
-  },
-  {
-    id: "culture",
-    title: "PNCL Culture",
-    type: "image",
-    src: "/pncl culture 1.png",
-  },
-  {
-    id: "agents-video",
-    title: "PNCL Agents",
-    type: "video",
-    src: "https://vz-db1532c9-ef4.b-cdn.net/3b0c4b43-8a73-49c4-8009-c8de3f4007f6/play_720p.mp4",
-    poster: "https://vz-db1532c9-ef4.b-cdn.net/3b0c4b43-8a73-49c4-8009-c8de3f4007f6/thumbnail.jpg",
-  },
-];
+interface PortalIncentiveResponse {
+  id: string;
+  title: string;
+  type: "image" | "video";
+  src: string;
+  poster: string | null;
+  href: string | null;
+}
 
-function mapPortalIncentive(row: IncentiveRow): PortalIncentive {
+function mapPortalIncentive(row: IncentiveRow | PortalIncentiveResponse): PortalIncentive {
   const base = {
     id: row.id,
     title: row.title,
@@ -140,22 +97,25 @@ export function mapAdminIncentive(row: IncentiveRow): AdminIncentive {
   };
 }
 
-export async function fetchPortalIncentives(): Promise<PortalIncentive[]> {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase
-    .from("portal_incentives")
-    .select("id, slug, title, type, src, poster, href, sort_order, published, created_at, updated_at")
-    .eq("published", true)
-    .order("sort_order", { ascending: true })
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    throw error;
+export async function fetchPortalIncentives(accessToken: string): Promise<PortalIncentive[]> {
+  if (!isSupabaseAuthConfigured()) {
+    return [];
   }
 
-  if (!data?.length) {
-    return DEFAULT_PORTAL_INCENTIVES;
+  const { url, anonKey } = getSupabaseConfig();
+  const response = await fetch(`${url.replace(/\/$/, "")}/functions/v1/list-portal-incentives`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      apikey: anonKey,
+    },
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message ?? "Unable to load incentives");
   }
 
-  return (data as IncentiveRow[]).map(mapPortalIncentive);
+  const incentives = (data.incentives ?? []) as PortalIncentiveResponse[];
+  return incentives.map(mapPortalIncentive);
 }

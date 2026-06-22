@@ -807,6 +807,21 @@
   padding: 4px 8px 8px;
 }
 
+.home2-page .portal-incentives-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 12px;
+  color: var(--steel);
+  font-size: .84rem;
+}
+
+.home2-page .portal-incentives-loading .onboarding-spinner {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+}
+
 .home2-page .portal-incentive-row {
   display: flex;
   align-items: center;
