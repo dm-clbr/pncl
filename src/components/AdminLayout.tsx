@@ -1,5 +1,5 @@
 import { NavLink, Outlet, Link } from "react-router-dom";
-import { ArrowLeft, Building2, GitBranch, GraduationCap, LayoutDashboard, Trophy, UserPlus, Users } from "lucide-react";
+import { ArrowLeft, Building2, GitBranch, GraduationCap, LayoutDashboard, Palette, Trophy, UserPlus, Users } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { isGenesisAdmin } from "@/lib/roles";
@@ -11,6 +11,7 @@ const FULL_ADMIN_NAV = [
   { to: "/portal/admin/users", label: "Users", icon: Users, end: false },
   { to: "/portal/admin/users/new", label: "Add user", icon: UserPlus, end: false },
   { to: "/portal/admin/incentives", label: "Incentives", icon: Trophy, end: false },
+  { to: "/portal/admin/brand-assets", label: "Brand assets", icon: Palette, end: false },
   { to: "/portal/admin/carriers", label: "Carriers", icon: Building2, end: false },
   { to: "/portal/admin/genesis", label: "Genesis", icon: GraduationCap, end: false },
 ] as const;

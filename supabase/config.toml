@@ -73,3 +73,21 @@ verify_jwt = true
 
 [functions.list-portal-carriers]
 verify_jwt = true
+
+[functions.admin-list-brand-assets]
+verify_jwt = true
+
+[functions.admin-upsert-brand-asset]
+verify_jwt = true
+
+[functions.admin-delete-brand-asset]
+verify_jwt = true
+
+[functions.admin-reorder-brand-assets]
+verify_jwt = true
+
+[functions.admin-upload-brand-asset]
+verify_jwt = true
+
+[functions.list-portal-brand-assets]
+verify_jwt = true

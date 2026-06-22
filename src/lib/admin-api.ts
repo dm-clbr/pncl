@@ -236,3 +236,66 @@ export async function reorderCarriers(
     body: JSON.stringify({ orderedIds }),
   });
 }
+
+export interface AdminBrandAssetSummary {
+  id: string;
+  title: string;
+  description: string | null;
+  url: string;
+  fileName: string;
+  contentType: string;
+  sortOrder: number;
+  published: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpsertBrandAssetPayload {
+  id?: string;
+  title: string;
+  description?: string | null;
+  url: string;
+  fileName: string;
+  contentType: string;
+  published?: boolean;
+  sortOrder?: number;
+}
+
+export async function listBrandAssets(accessToken: string): Promise<AdminBrandAssetSummary[]> {
+  const data = await adminFetch<{ assets: AdminBrandAssetSummary[] }>(
+    "admin-list-brand-assets",
+    accessToken,
+    { method: "GET" },
+  );
+  return data.assets;
+}
+
+export async function upsertBrandAsset(
+  accessToken: string,
+  input: UpsertBrandAssetPayload,
+): Promise<{ asset: AdminBrandAssetSummary; message: string }> {
+  return adminFetch("admin-upsert-brand-asset", accessToken, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteBrandAsset(
+  accessToken: string,
+  id: string,
+): Promise<{ id: string; message: string }> {
+  return adminFetch("admin-delete-brand-asset", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  });
+}
+
+export async function reorderBrandAssets(
+  accessToken: string,
+  orderedIds: string[],
+): Promise<{ message: string }> {
+  return adminFetch("admin-reorder-brand-assets", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ orderedIds }),
+  });
+}

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Building2, GitBranch, GraduationCap, Shield, Trophy, UserPlus, Users } from "lucide-react";
+import { Building2, GitBranch, GraduationCap, Palette, Shield, Trophy, UserPlus, Users } from "lucide-react";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
 import { trackPageView } from "@/lib/analytics";
 
@@ -28,6 +28,12 @@ const ADMIN_CARDS = [
     title: "Manage incentives",
     description: "Add, edit, and reorder the poster grid in the agent portal.",
     icon: Trophy,
+  },
+  {
+    to: "/portal/admin/brand-assets",
+    title: "Manage brand assets",
+    description: "Upload logos, templates, and other brand files for agents.",
+    icon: Palette,
   },
   {
     to: "/portal/admin/carriers",

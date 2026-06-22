@@ -29,7 +29,9 @@ import {
   shouldShowGenesisNotice,
 } from "@/lib/portal-messages";
 import PortalIncentivesList from "@/components/PortalIncentivesList";
+import PortalBrandAssetsList from "@/components/PortalBrandAssetsList";
 import { usePortalIncentives } from "@/hooks/usePortalIncentives";
+import { usePortalBrandAssets } from "@/hooks/usePortalBrandAssets";
 import { usePortalProfile } from "@/hooks/usePortalProfile";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
@@ -196,6 +198,7 @@ export default function PortalDashboard() {
   const pendingTodos = useMemo(() => getPendingPortalTodos(portalUser), [portalUser]);
   const showGenesisNotice = shouldShowGenesisNotice(portalUser);
   const { incentives, loading: incentivesLoading } = usePortalIncentives();
+  const { assets: brandAssets, loading: brandAssetsLoading } = usePortalBrandAssets();
   const { photoUrl, initials, displayName } = usePortalProfile(portalUser);
 
   useEffect(() => {
@@ -432,6 +435,33 @@ export default function PortalDashboard() {
                 <PortalIncentivesList items={incentives} />
               ) : (
                 <p className="portal-panel-note">No incentives published yet.</p>
+              )}
+            </PortalTile>
+
+            <PortalTile
+              label="Brand assets"
+              count={brandAssets.length}
+              open={Boolean(openSections["brand-assets"])}
+              onToggle={() => toggleSection("brand-assets")}
+            >
+              {brandAssetsLoading ? (
+                <div className="portal-incentives-loading">
+                  <span className="onboarding-spinner" aria-hidden="true" />
+                  <span>Loading brand assets...</span>
+                </div>
+              ) : brandAssets.length > 0 ? (
+                <>
+                  <p className="portal-panel-note">
+                    Official PNCL logos, templates, and brand files.
+                  </p>
+                  <PortalBrandAssetsList items={brandAssets} />
+                  <Link to="/portal/brand-assets" className="portal-sub-link">
+                    <span>View all brand assets</span>
+                    <ArrowUpRight size={18} strokeWidth={2.5} aria-hidden="true" />
+                  </Link>
+                </>
+              ) : (
+                <p className="portal-panel-note">No brand assets published yet.</p>
               )}
             </PortalTile>
 
