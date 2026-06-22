@@ -1,26 +1,10 @@
 import type { PortalIncentive } from "@/lib/portal-incentives";
+import PortalIncentiveMedia from "@/components/PortalIncentiveMedia";
 
 export default function PortalIncentivePoster({ item }: { item: PortalIncentive }) {
-  const media =
-    item.type === "video" ? (
-      <video
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="metadata"
-        poster={item.poster}
-        aria-label={item.title}
-      >
-        <source src={item.src} type="video/mp4" />
-      </video>
-    ) : (
-      <img src={item.src} alt={item.title} loading="lazy" />
-    );
-
   const poster = (
     <figure className="portal-incentive-poster">
-      {media}
+      <PortalIncentiveMedia item={item} autoplay={item.type === "video"} />
       <figcaption>{item.title}</figcaption>
     </figure>
   );

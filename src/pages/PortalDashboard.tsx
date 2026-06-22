@@ -20,7 +20,7 @@ import {
   getPendingPortalTodos,
   type PortalTodo,
 } from "@/lib/portal-todos";
-import PortalIncentivePoster from "@/components/PortalIncentivePoster";
+import PortalIncentivesList from "@/components/PortalIncentivesList";
 import { usePortalIncentives } from "@/hooks/usePortalIncentives";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
@@ -338,11 +338,7 @@ export default function PortalDashboard() {
               open={Boolean(openSections.incentives)}
               onToggle={() => toggleSection("incentives")}
             >
-              <div className="portal-incentives-grid">
-                {incentives.map((item) => (
-                  <PortalIncentivePoster key={item.id} item={item} />
-                ))}
-              </div>
+              <PortalIncentivesList items={incentives} />
             </PortalTile>
 
             {showAdminLink && (
