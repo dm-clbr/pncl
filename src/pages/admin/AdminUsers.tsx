@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Shield, ShieldOff, UserPlus, Users } from "lucide-react";
+import { Mail, Shield, ShieldOff, UserPlus, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { updateUserRole, type AgentSummary } from "@/lib/admin-api";
+import { resendActivationEmail, updateUserRole, type AgentSummary } from "@/lib/admin-api";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ export default function AdminUsers() {
   const { agents, loading, error, reload } = useAdminAgents();
   const [query, setQuery] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = "Users — PNCL Admin";
@@ -34,6 +35,23 @@ export default function AdminUsers() {
       || (agent.referrerName?.toLowerCase().includes(normalized) ?? false),
     );
   }, [agents, query]);
+
+  const handleResendActivation = async (agent: AgentSummary) => {
+    const token = session?.access_token;
+    if (!token) return;
+
+    if (!window.confirm(`Send a new portal activation email to ${agent.name}?`)) return;
+
+    setResendingId(agent.id);
+    try {
+      const result = await resendActivationEmail(token, agent.id);
+      toast.success(result.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to resend activation email");
+    } finally {
+      setResendingId(null);
+    }
+  };
 
   const handleRoleToggle = async (agent: AgentSummary) => {
     const token = session?.access_token;
@@ -107,6 +125,7 @@ export default function AdminUsers() {
               {filteredAgents.map((agent) => {
                 const isSelf = agent.id === user?.id;
                 const isUpdating = updatingId === agent.id;
+                const isResending = resendingId === agent.id;
 
                 return (
                   <tr key={agent.id}>
@@ -124,25 +143,38 @@ export default function AdminUsers() {
                       </span>
                     </td>
                     <td>
-                      <button
-                        type="button"
-                        className="admin-icon-btn"
-                        disabled={isSelf || isUpdating}
-                        title={isSelf ? "You cannot change your own role here" : undefined}
-                        onClick={() => void handleRoleToggle(agent)}
-                      >
-                        {agent.role === "admin" ? (
-                          <>
-                            <ShieldOff size={16} aria-hidden="true" />
-                            Remove admin
-                          </>
-                        ) : (
-                          <>
-                            <Shield size={16} aria-hidden="true" />
-                            Make admin
-                          </>
+                      <div className="admin-row-actions">
+                        {!agent.emailConfirmed && (
+                          <button
+                            type="button"
+                            className="admin-icon-btn"
+                            disabled={isResending}
+                            onClick={() => void handleResendActivation(agent)}
+                          >
+                            <Mail size={16} aria-hidden="true" />
+                            {isResending ? "Sending…" : "Resend activation"}
+                          </button>
                         )}
-                      </button>
+                        <button
+                          type="button"
+                          className="admin-icon-btn"
+                          disabled={isSelf || isUpdating}
+                          title={isSelf ? "You cannot change your own role here" : undefined}
+                          onClick={() => void handleRoleToggle(agent)}
+                        >
+                          {agent.role === "admin" ? (
+                            <>
+                              <ShieldOff size={16} aria-hidden="true" />
+                              Remove admin
+                            </>
+                          ) : (
+                            <>
+                              <Shield size={16} aria-hidden="true" />
+                              Make admin
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

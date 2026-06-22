@@ -1596,6 +1596,13 @@
   cursor: not-allowed;
 }
 
+.home2-page .admin-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .home2-page .admin-tree {
   list-style: none;
   margin: 0;

@@ -90,6 +90,16 @@ export async function updateUserRole(
   });
 }
 
+export async function resendActivationEmail(
+  accessToken: string,
+  userId: string,
+): Promise<{ userId: string; email: string; message: string }> {
+  return adminFetch("admin-resend-activation", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ userId }),
+  });
+}
+
 export interface AdminIncentiveSummary {
   id: string;
   slug: string;
