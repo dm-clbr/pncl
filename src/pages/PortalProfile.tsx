@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent 
 import { Link } from "react-router-dom";
 import { ArrowLeft, Camera } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
+import ProfilePhotoCropModal from "@/components/ProfilePhotoCropModal";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   CLOTHING_SIZES,
@@ -64,6 +65,7 @@ export default function PortalProfile() {
   const [photoPath, setPhotoPath] = useState<string | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = "My Profile — PNCL Portal";
@@ -108,8 +110,27 @@ export default function PortalProfile() {
       if (photoPreviewUrl?.startsWith("blob:")) {
         URL.revokeObjectURL(photoPreviewUrl);
       }
+      if (cropImageSrc?.startsWith("blob:")) {
+        URL.revokeObjectURL(cropImageSrc);
+      }
     };
-  }, [photoPreviewUrl]);
+  }, [photoPreviewUrl, cropImageSrc]);
+
+  const clearCropImageSrc = () => {
+    if (cropImageSrc?.startsWith("blob:")) {
+      URL.revokeObjectURL(cropImageSrc);
+    }
+    setCropImageSrc(null);
+  };
+
+  const setProcessedPhoto = (file: File, previewUrl: string) => {
+    if (photoPreviewUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(photoPreviewUrl);
+    }
+    setPendingPhotoFile(file);
+    setPhotoPreviewUrl(previewUrl);
+    clearCropImageSrc();
+  };
 
   const savedPhotoUrl = useMemo(() => getProfilePhotoUrl(photoPath), [photoPath]);
   const displayPhotoUrl = photoPreviewUrl ?? savedPhotoUrl;
@@ -130,12 +151,16 @@ export default function PortalProfile() {
       return;
     }
 
-    if (photoPreviewUrl?.startsWith("blob:")) {
-      URL.revokeObjectURL(photoPreviewUrl);
-    }
+    clearCropImageSrc();
+    setCropImageSrc(URL.createObjectURL(file));
+  };
 
-    setPendingPhotoFile(file);
-    setPhotoPreviewUrl(URL.createObjectURL(file));
+  const handleCropCancel = () => {
+    clearCropImageSrc();
+  };
+
+  const handleCropConfirm = (file: File, previewUrl: string) => {
+    setProcessedPhoto(file, previewUrl);
   };
 
   const handleSubmit = async (event: FormEvent) => {
@@ -213,7 +238,7 @@ export default function PortalProfile() {
                   </div>
                   <div className="portal-profile-photo-copy">
                     <strong>Profile photo</strong>
-                    <p>JPG, PNG, or WebP up to 5 MB.</p>
+                    <p>Choose a photo, crop it, and we&apos;ll compress it to 300 KB before upload.</p>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -303,6 +328,14 @@ export default function PortalProfile() {
           </div>
         </div>
       </main>
+
+      {cropImageSrc && (
+        <ProfilePhotoCropModal
+          imageSrc={cropImageSrc}
+          onClose={handleCropCancel}
+          onConfirm={handleCropConfirm}
+        />
+      )}
     </div>
   );
 }

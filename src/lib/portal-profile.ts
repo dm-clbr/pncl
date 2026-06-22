@@ -2,7 +2,7 @@ import type { User } from "@supabase/supabase-js";
 import { getSupabaseClient } from "@/lib/supabase";
 
 export const PROFILE_PHOTO_BUCKET = "portal-profile-photos";
-export const MAX_PROFILE_PHOTO_BYTES = 5 * 1024 * 1024;
+export const MAX_PROFILE_PHOTO_BYTES = 300 * 1024;
 
 export const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL"] as const;
 export const WAIST_SIZES = ["28", "30", "32", "34", "36", "38", "40", "42", "44", "46", "48"] as const;
@@ -96,8 +96,8 @@ export async function fetchPortalProfile(userId: string): Promise<PortalProfile 
 }
 
 function getPhotoExtension(file: File): string {
+  if (file.type === "image/jpeg") return "jpg";
   const byType: Record<string, string> = {
-    "image/jpeg": "jpg",
     "image/png": "png",
     "image/webp": "webp",
   };
@@ -109,7 +109,7 @@ export async function uploadProfilePhoto(userId: string, file: File): Promise<st
     throw new Error("Profile photo must be an image file.");
   }
   if (file.size > MAX_PROFILE_PHOTO_BYTES) {
-    throw new Error("Profile photo must be 5 MB or smaller.");
+    throw new Error("Profile photo must be 300 KB or smaller.");
   }
 
   const supabase = getSupabaseClient();

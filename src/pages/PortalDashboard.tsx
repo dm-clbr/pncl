@@ -30,6 +30,7 @@ import {
 } from "@/lib/portal-messages";
 import PortalIncentivesList from "@/components/PortalIncentivesList";
 import { usePortalIncentives } from "@/hooks/usePortalIncentives";
+import { usePortalProfile } from "@/hooks/usePortalProfile";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 import "@/styles/home2.css";
@@ -195,6 +196,7 @@ export default function PortalDashboard() {
   const pendingTodos = useMemo(() => getPendingPortalTodos(portalUser), [portalUser]);
   const showGenesisNotice = shouldShowGenesisNotice(portalUser);
   const { incentives, loading: incentivesLoading } = usePortalIncentives();
+  const { photoUrl, initials, displayName } = usePortalProfile(portalUser);
 
   useEffect(() => {
     setPortalUser(authUser);
@@ -271,7 +273,6 @@ export default function PortalDashboard() {
     }
   };
 
-  const displayName = portalUser?.user_metadata?.full_name ?? portalUser?.email?.split("@")[0] ?? "Agent";
   const agentEmail = portalUser?.email ?? "";
   const showAdminLink = hasAdminConsoleAccess(portalUser);
   const adminLink = isGenesisAdmin(portalUser) ? "/portal/admin/genesis" : "/portal/admin";
@@ -286,8 +287,19 @@ export default function PortalDashboard() {
             <Link to="/" className="portal-hero-logo" aria-label="PNCL home">
               <PNCLLogo height={44} />
             </Link>
-            <p className="portal-welcome">Welcome, {displayName}</p>
-            {agentEmail && <p className="portal-meta">{agentEmail}</p>}
+            <Link to="/portal/profile" className="portal-hero-profile" aria-label="View profile">
+              <span className="portal-hero-profile-avatar" aria-hidden="true">
+                {photoUrl ? (
+                  <img src={photoUrl} alt="" className="portal-hero-profile-photo" />
+                ) : (
+                  <span className="portal-hero-profile-initials">{initials}</span>
+                )}
+              </span>
+              <span className="portal-hero-profile-copy">
+                <span className="portal-welcome">Welcome, {displayName}</span>
+                {agentEmail && <span className="portal-meta">{agentEmail}</span>}
+              </span>
+            </Link>
           </header>
 
           {showGenesisNotice && (
