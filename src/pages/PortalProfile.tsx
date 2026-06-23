@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Camera } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
 import ProfilePhotoCropModal from "@/components/ProfilePhotoCropModal";
+import PortalCarrierCredentials from "@/components/PortalCarrierCredentials";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   CLOTHING_SIZES,
@@ -332,6 +333,8 @@ export default function PortalProfile() {
               </form>
             )}
           </div>
+
+          <PortalCarrierCredentials />
         </div>
       </main>
 

@@ -2839,6 +2839,114 @@
   min-width: 0;
 }
 
+.home2-page .portal-carrier-credentials-panel {
+  margin-top: 24px;
+}
+
+.home2-page .portal-carrier-credentials-table-wrap {
+  min-width: 0;
+}
+
+.home2-page .portal-carrier-credentials-table {
+  min-width: 720px;
+}
+
+.home2-page .portal-carrier-credentials-table th:last-child,
+.home2-page .portal-carrier-credentials-table td:last-child {
+  width: 110px;
+  min-width: 110px;
+  text-align: right;
+}
+
+.home2-page .portal-carrier-credential-link {
+  font-weight: 600;
+}
+
+.home2-page .portal-carrier-credential-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.home2-page .portal-carrier-credential-text {
+  font-family: var(--ff-mono);
+  font-size: .82rem;
+  word-break: break-all;
+}
+
+.home2-page .portal-carrier-credential-copy-btn,
+.home2-page .portal-carrier-credential-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid rgba(240, 237, 228, .12);
+  border-radius: var(--radius);
+  background: rgba(240, 237, 228, .04);
+  color: var(--steel);
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color .25s var(--ease), background .25s var(--ease), color .25s var(--ease);
+}
+
+.home2-page .portal-carrier-credential-copy-btn:hover,
+.home2-page .portal-carrier-credential-action-btn:hover {
+  color: var(--bone);
+  border-color: rgba(194, 78, 28, .35);
+  background: rgba(194, 78, 28, .1);
+}
+
+.home2-page .portal-carrier-credential-empty {
+  color: var(--steel);
+  font-size: .84rem;
+}
+
+.home2-page .portal-carrier-credential-edit-wrap {
+  padding: 4px 0;
+}
+
+.home2-page .portal-carrier-credential-edit-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-bottom: 14px;
+}
+
+.home2-page .portal-carrier-credential-edit-head strong {
+  color: var(--bone);
+  font-size: .95rem;
+}
+
+.home2-page .portal-carrier-credential-form {
+  display: grid;
+  gap: 12px;
+  max-width: 420px;
+}
+
+.home2-page .portal-carrier-credential-form .admin-field input {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(240, 237, 228, .12);
+  border-radius: var(--radius);
+  background: rgba(240, 237, 228, .04);
+  color: var(--bone);
+  font-family: var(--ff-sans);
+  font-size: .9rem;
+}
+
+.home2-page .portal-carrier-credential-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+}
+
 .home2-page .portal-photo-crop-overlay {
   position: fixed;
   inset: 0;

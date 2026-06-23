@@ -86,6 +86,12 @@ verify_jwt = true
 [functions.list-portal-carriers]
 verify_jwt = true
 
+[functions.list-portal-carrier-credentials]
+verify_jwt = true
+
+[functions.upsert-portal-carrier-credential]
+verify_jwt = true
+
 [functions.admin-list-brand-assets]
 verify_jwt = true
 
