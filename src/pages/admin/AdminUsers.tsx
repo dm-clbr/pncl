@@ -1,8 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { Mail, UserCog, UserPlus, Users } from "lucide-react";
+import { Mail, Pencil, Trash2, UserCog, UserPlus, Users, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { resendActivationEmail, updateUserRole, type AgentSummary } from "@/lib/admin-api";
+import {
+  deleteUser,
+  resendActivationEmail,
+  updateUserEmail,
+  updateUserRole,
+  type AgentSummary,
+} from "@/lib/admin-api";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
 import { trackPageView } from "@/lib/analytics";
 import { formatRoleLabel, type PortalRole } from "@/lib/roles";
@@ -32,6 +38,10 @@ export default function AdminUsers() {
   const [query, setQuery] = useState("");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [emailEditAgent, setEmailEditAgent] = useState<AgentSummary | null>(null);
+  const [emailDraft, setEmailDraft] = useState("");
+  const [savingEmail, setSavingEmail] = useState(false);
 
   useEffect(() => {
     document.title = "Users — PNCL Admin";
@@ -93,6 +103,65 @@ export default function AdminUsers() {
     }
   };
 
+  const openEmailEditor = (agent: AgentSummary) => {
+    setEmailEditAgent(agent);
+    setEmailDraft(agent.email);
+  };
+
+  const closeEmailEditor = () => {
+    if (savingEmail) return;
+    setEmailEditAgent(null);
+    setEmailDraft("");
+  };
+
+  const handleSaveEmail = async (event: FormEvent) => {
+    event.preventDefault();
+    const token = session?.access_token;
+    if (!token || !emailEditAgent) return;
+
+    const nextEmail = emailDraft.trim().toLowerCase();
+    if (!nextEmail || nextEmail === emailEditAgent.email) {
+      closeEmailEditor();
+      return;
+    }
+
+    if (!window.confirm(`Update ${emailEditAgent.name}'s portal email to ${nextEmail}?`)) return;
+
+    setSavingEmail(true);
+    try {
+      const result = await updateUserEmail(token, emailEditAgent.id, nextEmail);
+      toast.success(result.message);
+      closeEmailEditor();
+      await reload();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to update email");
+    } finally {
+      setSavingEmail(false);
+    }
+  };
+
+  const handleDeleteUser = async (agent: AgentSummary) => {
+    const token = session?.access_token;
+    if (!token) return;
+
+    const message = agent.emailConfirmed
+      ? `Delete ${agent.name}'s portal account (${agent.email})? This removes their portal login and profile data. Update or remove their Google Workspace account separately.`
+      : `Delete ${agent.name}'s pending portal account (${agent.email})?`;
+
+    if (!window.confirm(message)) return;
+
+    setDeletingId(agent.id);
+    try {
+      const result = await deleteUser(token, agent.id);
+      toast.success(result.message);
+      await reload();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to delete user");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const roleBadgeClass = (role: PortalRole) => {
     if (role === "admin") return "admin-badge accent";
     if (role === "genesis_admin") return "admin-badge genesis";
@@ -106,7 +175,7 @@ export default function AdminUsers() {
           <Users size={22} aria-hidden="true" />
           <div>
             <h1>User management</h1>
-            <p>Review the current agent base and manage admin access.</p>
+            <p>Review agents, manage admin access, sync portal emails, and remove accounts.</p>
           </div>
         </div>
         <Link to="/portal/admin/users/new" className="admin-primary-btn">
@@ -149,6 +218,7 @@ export default function AdminUsers() {
                 const isSelf = agent.id === user?.id;
                 const isUpdating = updatingId === agent.id;
                 const isResending = resendingId === agent.id;
+                const isDeleting = deletingId === agent.id;
 
                 return (
                   <tr key={agent.id}>
@@ -167,6 +237,15 @@ export default function AdminUsers() {
                     </td>
                     <td>
                       <div className="admin-row-actions">
+                        <button
+                          type="button"
+                          className="admin-icon-btn"
+                          disabled={savingEmail}
+                          onClick={() => openEmailEditor(agent)}
+                        >
+                          <Pencil size={16} aria-hidden="true" />
+                          Edit email
+                        </button>
                         {!agent.emailConfirmed && (
                           <button
                             type="button"
@@ -179,32 +258,43 @@ export default function AdminUsers() {
                           </button>
                         )}
                         {!isSelf && (
-                          <label className="admin-role-update">
-                            <UserCog size={16} aria-hidden="true" />
-                            <select
-                              className="admin-role-select"
-                              value={agent.role === "agent" ? "" : agent.role}
-                              disabled={isUpdating}
-                              aria-label={`Update role for ${agent.name}`}
-                              onChange={(event) => {
-                                const { value } = event.target;
-                                event.target.value = agent.role === "agent" ? "" : agent.role;
-                                handleRoleSelect(agent, value);
-                              }}
-                            >
-                              <option value="" disabled>
-                                {isUpdating ? "Updating…" : "Update role"}
-                              </option>
-                              {ELEVATED_ROLES.map(({ value, label }) => (
-                                <option key={value} value={value}>
-                                  {label}
+                          <>
+                            <label className="admin-role-update">
+                              <UserCog size={16} aria-hidden="true" />
+                              <select
+                                className="admin-role-select"
+                                value={agent.role === "agent" ? "" : agent.role}
+                                disabled={isUpdating || isDeleting}
+                                aria-label={`Update role for ${agent.name}`}
+                                onChange={(event) => {
+                                  const { value } = event.target;
+                                  event.target.value = agent.role === "agent" ? "" : agent.role;
+                                  handleRoleSelect(agent, value);
+                                }}
+                              >
+                                <option value="" disabled>
+                                  {isUpdating ? "Updating…" : "Update role"}
                                 </option>
-                              ))}
-                              {agent.role !== "agent" && (
-                                <option value="agent">Remove elevated access</option>
-                              )}
-                            </select>
-                          </label>
+                                {ELEVATED_ROLES.map(({ value, label }) => (
+                                  <option key={value} value={value}>
+                                    {label}
+                                  </option>
+                                ))}
+                                {agent.role !== "agent" && (
+                                  <option value="agent">Remove elevated access</option>
+                                )}
+                              </select>
+                            </label>
+                            <button
+                              type="button"
+                              className="admin-icon-btn admin-icon-btn-danger"
+                              disabled={isDeleting}
+                              onClick={() => void handleDeleteUser(agent)}
+                            >
+                              <Trash2 size={16} aria-hidden="true" />
+                              {isDeleting ? "Deleting…" : "Delete"}
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -217,6 +307,67 @@ export default function AdminUsers() {
           {filteredAgents.length === 0 && (
             <p className="admin-empty">No users match your search.</p>
           )}
+        </div>
+      )}
+
+      {emailEditAgent && (
+        <div
+          className="admin-modal-overlay"
+          role="presentation"
+          onClick={closeEmailEditor}
+        >
+          <form
+            className="admin-modal admin-user-email-modal"
+            role="dialog"
+            aria-labelledby="admin-edit-email-title"
+            onClick={(event) => event.stopPropagation()}
+            onSubmit={(event) => void handleSaveEmail(event)}
+          >
+            <div className="admin-modal-head">
+              <div>
+                <h2 id="admin-edit-email-title">Update portal email</h2>
+                <p>
+                  Change the email for {emailEditAgent.name}. Update their Google Workspace address
+                  first, then enter the matching @thepncl.com address here.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="admin-modal-close"
+                aria-label="Close"
+                disabled={savingEmail}
+                onClick={closeEmailEditor}
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
+            </div>
+
+            <label className="admin-field">
+              <span>Portal email</span>
+              <input
+                type="email"
+                value={emailDraft}
+                required
+                autoComplete="off"
+                disabled={savingEmail}
+                onChange={(event) => setEmailDraft(event.target.value)}
+              />
+            </label>
+
+            <div className="admin-form-actions">
+              <button
+                type="button"
+                className="admin-secondary-btn"
+                disabled={savingEmail}
+                onClick={closeEmailEditor}
+              >
+                Cancel
+              </button>
+              <button type="submit" className="admin-primary-btn" disabled={savingEmail}>
+                {savingEmail ? "Saving…" : "Save email"}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </section>

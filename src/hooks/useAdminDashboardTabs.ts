@@ -26,16 +26,23 @@ export function useAdminDashboardTabs() {
     try {
       const data = await listDashboardTabs(token);
       setSections(
-        mergeSystemDashboardSections(data, (def, sortOrder) => ({
-          id: def.id,
-          title: def.title,
-          sectionType: def.sectionType,
-          sortOrder,
-          published: true,
-          links: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        })),
+        mergeSystemDashboardSections(
+          data.map((section) => ({
+            ...section,
+            files: section.files ?? [],
+          })),
+          (def, sortOrder) => ({
+            id: def.id,
+            title: def.title,
+            sectionType: def.sectionType,
+            sortOrder,
+            published: true,
+            links: [],
+            files: [],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          }),
+        ),
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load dashboard tabs");

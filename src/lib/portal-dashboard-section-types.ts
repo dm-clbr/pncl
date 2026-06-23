@@ -1,4 +1,4 @@
-export type PortalDashboardSectionType = "links" | "incentives" | "brand_assets";
+export type PortalDashboardSectionType = "links" | "incentives" | "brand_assets" | "downloads";
 
 export const SYSTEM_DASHBOARD_SECTION_IDS = new Set(["incentives", "brand-assets"]);
 
@@ -9,6 +9,10 @@ export const DEFAULT_SYSTEM_DASHBOARD_SECTIONS = [
 
 export function isLinksDashboardSection(section: { sectionType: PortalDashboardSectionType }): boolean {
   return section.sectionType === "links";
+}
+
+export function isDownloadsDashboardSection(section: { sectionType: PortalDashboardSectionType }): boolean {
+  return section.sectionType === "downloads";
 }
 
 export function isSystemDashboardSection(section: { id: string }): boolean {
@@ -23,6 +27,9 @@ export function normalizeDashboardSectionType(
   }
   if (section.sectionType === "brand_assets" || section.id === "brand-assets") {
     return "brand_assets";
+  }
+  if (section.sectionType === "downloads") {
+    return "downloads";
   }
   return "links";
 }

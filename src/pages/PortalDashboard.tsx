@@ -15,7 +15,7 @@ import PNCLLogo from "@/components/PNCLLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { PORTAL_SECTIONS } from "@/lib/portal-links";
 import { usePortalDashboardTabs } from "@/hooks/usePortalDashboardTabs";
-import { isLinksDashboardSection } from "@/lib/portal-dashboard-section-types";
+import { isLinksDashboardSection, isDownloadsDashboardSection } from "@/lib/portal-dashboard-section-types";
 import type { PortalDashboardSection } from "@/lib/portal-dashboard-tabs";
 import { buildReferralLink } from "@/lib/referral";
 import { hasAdminConsoleAccess, isGenesisAdmin } from "@/lib/roles";
@@ -33,6 +33,7 @@ import {
 } from "@/lib/portal-messages";
 import PortalIncentivesList from "@/components/PortalIncentivesList";
 import PortalBrandAssetsList from "@/components/PortalBrandAssetsList";
+import PortalDashboardFilesList from "@/components/PortalDashboardFilesList";
 import { usePortalIncentives } from "@/hooks/usePortalIncentives";
 import { usePortalBrandAssets } from "@/hooks/usePortalBrandAssets";
 import { usePortalProfile } from "@/hooks/usePortalProfile";
@@ -226,7 +227,11 @@ export default function PortalDashboard() {
   const displaySections = useMemo((): PortalDashboardSection[] => {
     if (dashboardSections.length > 0) {
       return dashboardSections.filter((section) =>
-        isLinksDashboardSection(section) ? section.links.length > 0 : true,
+        isLinksDashboardSection(section)
+          ? section.links.length > 0
+          : isDownloadsDashboardSection(section)
+            ? section.files.length > 0
+            : true,
       );
     }
 
@@ -447,6 +452,8 @@ export default function PortalDashboard() {
             {displaySections.map((section) => {
               const count = isLinksDashboardSection(section)
                 ? section.links.length
+                : isDownloadsDashboardSection(section)
+                  ? section.files.length
                 : section.sectionType === "incentives"
                   ? incentives.length
                   : brandAssets.length;
@@ -463,6 +470,12 @@ export default function PortalDashboard() {
                     section.links.map((link) => (
                       <PortalSubLink key={link.id} link={link} />
                     ))
+                  ) : isDownloadsDashboardSection(section) ? (
+                    section.files.length > 0 ? (
+                      <PortalDashboardFilesList items={section.files} />
+                    ) : (
+                      <p className="portal-panel-note">No files published yet.</p>
+                    )
                   ) : section.sectionType === "incentives" ? (
                     incentivesLoading ? (
                       <div className="portal-incentives-loading">

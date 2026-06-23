@@ -189,3 +189,60 @@ export async function countAdmins(adminClient: SupabaseClient): Promise<number> 
   const users = await listPortalUsers(adminClient);
   return users.filter((user) => getUserRole(user) === "admin").length;
 }
+
+export async function findPortalUserIdByEmail(
+  adminClient: SupabaseClient,
+  email: string,
+): Promise<string | null> {
+  const normalized = email.toLowerCase();
+  let page = 1;
+
+  while (page <= 20) {
+    const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage: 200 });
+    if (error || !data.users.length) break;
+
+    const match = data.users.find((user) => user.email?.toLowerCase() === normalized);
+    if (match) return match.id;
+
+    if (data.users.length < 200) break;
+    page++;
+  }
+
+  return null;
+}
+
+export async function loadOnboardingForPortalUser(
+  adminClient: SupabaseClient,
+  userId: string,
+  email: string,
+): Promise<OnboardingRow & { id: string } | null> {
+  const { data: byUserId } = await adminClient
+    .from("onboarding_records")
+    .select("id, supabase_user_id, legal_name, referrer_user_id, upline_network, status, workspace_email")
+    .eq("supabase_user_id", userId)
+    .maybeSingle();
+
+  if (byUserId) return byUserId as OnboardingRow & { id: string };
+
+  const { data: byEmail } = await adminClient
+    .from("onboarding_records")
+    .select("id, supabase_user_id, legal_name, referrer_user_id, upline_network, status, workspace_email")
+    .eq("workspace_email", email)
+    .maybeSingle();
+
+  return (byEmail as (OnboardingRow & { id: string }) | null) ?? null;
+}
+
+export async function countDownlineAgents(
+  adminClient: SupabaseClient,
+  userId: string,
+): Promise<number> {
+  const { count, error } = await adminClient
+    .from("onboarding_records")
+    .select("id", { count: "exact", head: true })
+    .eq("referrer_user_id", userId)
+    .not("status", "eq", "failed");
+
+  if (error) throw error;
+  return count ?? 0;
+}

@@ -33,6 +33,7 @@ serve(async (req) => {
         .update({
           title: payload.title,
           published: payload.published,
+          section_type: payload.sectionType ?? "links",
           ...(payload.sortOrder !== undefined ? { sort_order: payload.sortOrder } : {}),
           updated_at: now,
         })
@@ -44,7 +45,7 @@ serve(async (req) => {
 
       logOnboarding("admin_dashboard_section_updated", { adminId: user.id, sectionId: payload.id });
       return jsonResponse({
-        section: mapDashboardSectionRecord(data as PortalDashboardSectionRecord, []),
+        section: mapDashboardSectionRecord(data as PortalDashboardSectionRecord, [], []),
         message: "Dashboard tab updated.",
       });
     }

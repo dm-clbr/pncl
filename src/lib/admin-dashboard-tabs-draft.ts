@@ -47,7 +47,12 @@ export function serializeSectionsSnapshot(sections: AdminDashboardSectionSummary
 }
 
 export function createDraftSection(
-  input: { id: string; title: string; published: boolean; sectionType?: "links" | "incentives" | "brand_assets" },
+  input: {
+    id: string;
+    title: string;
+    published: boolean;
+    sectionType?: "links" | "incentives" | "brand_assets" | "downloads";
+  },
   sortOrder: number,
 ): AdminDashboardSectionSummary {
   const now = new Date().toISOString();
@@ -58,6 +63,7 @@ export function createDraftSection(
     sectionType: input.sectionType ?? "links",
     sortOrder,
     links: [],
+    files: [],
     createdAt: now,
     updatedAt: now,
   };
@@ -131,7 +137,14 @@ export async function persistDashboardTabsDraft(
   const linkIdMap = new Map<string, string>();
 
   for (const section of draft) {
-    if (section.sectionType !== "links") continue;
+    if (section.sectionType !== "links") {
+      for (const link of section.links) {
+        if (!isDraftLinkId(link.id)) {
+          await deleteDashboardLink(accessToken, link.id);
+        }
+      }
+      continue;
+    }
 
     for (let index = 0; index < section.links.length; index += 1) {
       const link = section.links[index];

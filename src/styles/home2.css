@@ -1427,8 +1427,8 @@
 
 /* Admin console */
 .home2-page .admin-wrap {
-  max-width: 960px;
-  margin: 0 auto;
+  max-width: none;
+  width: 100%;
   padding-bottom: 48px;
 }
 
@@ -1852,6 +1852,15 @@
 .home2-page .admin-icon-btn:disabled {
   opacity: .45;
   cursor: not-allowed;
+}
+
+.home2-page .admin-icon-btn-danger:hover:not(:disabled) {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, .35);
+}
+
+.home2-page .admin-user-email-modal {
+  width: min(520px, 100%);
 }
 
 .home2-page .admin-row-actions {
@@ -3273,6 +3282,67 @@
   background: var(--ink);
   box-shadow: 0 12px 32px rgba(0, 0, 0, .35);
   cursor: grabbing;
+}
+
+.home2-page .admin-dashboard-files {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.home2-page .admin-dashboard-files-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.home2-page .admin-dashboard-files-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.home2-page .admin-dashboard-file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.home2-page .admin-dashboard-file-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.home2-page .admin-dashboard-file-copy strong {
+  font-size: 0.95rem;
+}
+
+.home2-page .admin-dashboard-file-copy span {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.home2-page .admin-dashboard-file-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.home2-page .admin-dashboard-file-edit input {
+  flex: 1 1 12rem;
+  min-width: 0;
 }
 
 .home2-page .admin-brand-asset-thumb-color {

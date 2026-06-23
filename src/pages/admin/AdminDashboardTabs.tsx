@@ -23,13 +23,14 @@ import {
   moveLinkBetweenSections,
   reorderLinkInSection,
 } from "@/components/admin/DashboardSectionLinks";
+import { DashboardSectionFiles } from "@/components/admin/DashboardSectionFiles";
 import {
   DashboardSortableTab,
   DashboardSystemTabPanel,
   isSystemDashboardSection,
   reorderSections,
 } from "@/components/admin/DashboardSortableTab";
-import { isLinksDashboardSection } from "@/lib/portal-dashboard-section-types";
+import { isLinksDashboardSection, isDownloadsDashboardSection } from "@/lib/portal-dashboard-section-types";
 import {
   useAdminDashboardTabs,
   type AdminDashboardSectionSummary,
@@ -39,6 +40,7 @@ import type {
   UpsertDashboardLinkPayload,
   UpsertDashboardSectionPayload,
 } from "@/lib/admin-api";
+import { listDashboardTabs } from "@/lib/admin-api";
 import {
   cloneSections,
   createDraftLink,
@@ -46,6 +48,7 @@ import {
   serializeSectionsSnapshot,
 } from "@/lib/admin-dashboard-tabs-draft";
 import { slugifyDashboardTabId } from "@/lib/portal-dashboard-tabs";
+import { useAuth } from "@/contexts/AuthContext";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 
@@ -53,6 +56,7 @@ type SectionFormState = {
   id: string;
   title: string;
   published: boolean;
+  sectionType: "links" | "downloads";
   isNew: boolean;
 };
 
@@ -70,6 +74,7 @@ const EMPTY_SECTION_FORM: SectionFormState = {
   id: "",
   title: "",
   published: true,
+  sectionType: "links",
   isNew: true,
 };
 
@@ -91,6 +96,7 @@ function toSectionPayload(form: SectionFormState): UpsertDashboardSectionPayload
     id,
     title: form.title.trim(),
     published: form.published,
+    sectionType: form.sectionType,
   };
 }
 
@@ -107,6 +113,7 @@ function toLinkPayload(form: LinkFormState): UpsertDashboardLinkPayload {
 }
 
 export default function AdminDashboardTabs() {
+  const { session } = useAuth();
   const { sections: savedSections, loading, error, persistDraft } = useAdminDashboardTabs();
 
   const [draftSections, setDraftSections] = useState<AdminDashboardSectionSummary[]>([]);
@@ -144,6 +151,11 @@ export default function AdminDashboardTabs() {
 
   const isDirty = baseline !== serializeSectionsSnapshot(draftSections);
 
+  const persistedSectionIds = useMemo(
+    () => new Set(savedSections.map((section) => section.id)),
+    [savedSections],
+  );
+
   const publishedSectionCount = useMemo(
     () => draftSections.filter((section) => section.published).length,
     [draftSections],
@@ -153,6 +165,19 @@ export default function AdminDashboardTabs() {
     document.title = "Dashboard Tabs — PNCL Admin";
     trackPageView("admin_dashboard_tabs");
   }, []);
+
+  const handleRefreshFiles = useCallback(async () => {
+    const token = session?.access_token;
+    if (!token) return;
+
+    const freshSections = await listDashboardTabs(token);
+    setDraftSections((prev) =>
+      prev.map((section) => {
+        const fresh = freshSections.find((item) => item.id === section.id);
+        return fresh ? { ...section, files: fresh.files } : section;
+      }),
+    );
+  }, [session?.access_token]);
 
   const resetSectionForm = () => setSectionForm(null);
   const resetLinkForm = () => setLinkForm(null);
@@ -208,6 +233,7 @@ export default function AdminDashboardTabs() {
       id: section.id,
       title: section.title,
       published: section.published,
+      sectionType: isDownloadsDashboardSection(section) ? "downloads" : "links",
       isNew: false,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -254,6 +280,7 @@ export default function AdminDashboardTabs() {
               id: payload.id,
               title: payload.title,
               published: payload.published ?? true,
+              sectionType: payload.sectionType ?? "links",
             },
             prev.length,
           ),
@@ -266,6 +293,7 @@ export default function AdminDashboardTabs() {
                   ...section,
                   title: payload.title,
                   published: payload.published ?? true,
+                  sectionType: payload.sectionType ?? section.sectionType,
                 }
               : section,
           ),
@@ -353,7 +381,7 @@ export default function AdminDashboardTabs() {
       return;
     }
 
-    if (!window.confirm(`Delete tab "${section.title}" and all of its links?`)) return;
+    if (!window.confirm(`Delete tab "${section.title}" and all of its content?`)) return;
 
     setDraftSections((prev) => prev.filter((item) => item.id !== section.id));
     if (sectionForm?.id === section.id) resetSectionForm();
@@ -530,6 +558,28 @@ export default function AdminDashboardTabs() {
             />
           </label>
 
+          {!isSystemDashboardSection({ id: sectionForm.id }) && (
+            <label className="admin-field">
+              <span>Tab type</span>
+              <select
+                value={sectionForm.sectionType}
+                onChange={(event) =>
+                  setSectionForm((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          sectionType: event.target.value === "downloads" ? "downloads" : "links",
+                        }
+                      : prev,
+                  )
+                }
+              >
+                <option value="links">Links — navigation to pages and tools</option>
+                <option value="downloads">Downloads — PDFs and files to download</option>
+              </select>
+            </label>
+          )}
+
           <label className="admin-field admin-field-checkbox">
             <input
               type="checkbox"
@@ -666,6 +716,12 @@ export default function AdminDashboardTabs() {
                       disabled={saving}
                       onEditLink={(link) => startEditLink(section.id, link)}
                       onDeleteLink={(linkId, title) => handleDeleteLink(section, linkId, title)}
+                    />
+                  ) : isDownloadsDashboardSection(section) ? (
+                    <DashboardSectionFiles
+                      section={section}
+                      isPersisted={persistedSectionIds.has(section.id)}
+                      onChanged={handleRefreshFiles}
                     />
                   ) : (
                     <DashboardSystemTabPanel section={section} />

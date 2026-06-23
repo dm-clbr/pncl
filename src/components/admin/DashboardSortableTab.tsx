@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import type { AdminDashboardSectionSummary } from "@/hooks/useAdminDashboardTabs";
 import {
   isLinksDashboardSection,
+  isDownloadsDashboardSection,
   isSystemDashboardSection,
 } from "@/lib/portal-dashboard-section-types";
 import type { ReactNode } from "react";
@@ -66,6 +67,8 @@ export function DashboardSortableTab({
               {section.id}
               {isLinksDashboardSection(section)
                 ? ` · ${section.links.length} link${section.links.length === 1 ? "" : "s"}`
+                : isDownloadsDashboardSection(section)
+                  ? ` · ${section.files.length} file${section.files.length === 1 ? "" : "s"}`
                 : section.sectionType === "incentives"
                   ? " · Incentives content"
                   : " · Brand assets content"}

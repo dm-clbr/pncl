@@ -10,12 +10,22 @@ export interface PortalDashboardLink {
   external: boolean;
 }
 
+export interface PortalDashboardFile {
+  id: string;
+  title: string;
+  description: string | null;
+  url: string;
+  fileName: string;
+  contentType: string;
+}
+
 export interface PortalDashboardSection {
   id: string;
   title: string;
   sectionType: PortalDashboardSectionType;
   sortOrder?: number;
   links: PortalDashboardLink[];
+  files: PortalDashboardFile[];
 }
 
 export async function fetchPortalDashboardTabs(
@@ -39,7 +49,10 @@ export async function fetchPortalDashboardTabs(
     throw new Error(data.message ?? "Unable to load dashboard tabs");
   }
 
-  return (data.sections ?? []) as PortalDashboardSection[];
+  return (data.sections ?? []).map((section) => ({
+    ...section,
+    files: section.files ?? [],
+  })) as PortalDashboardSection[];
 }
 
 export function slugifyDashboardTabId(value: string): string {

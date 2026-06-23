@@ -122,6 +122,27 @@ export async function resendActivationEmail(
   });
 }
 
+export async function updateUserEmail(
+  accessToken: string,
+  userId: string,
+  email: string,
+): Promise<{ userId: string; email: string; message: string }> {
+  return adminFetch("admin-update-user-email", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ userId, email }),
+  });
+}
+
+export async function deleteUser(
+  accessToken: string,
+  userId: string,
+): Promise<{ userId: string; email: string; message: string }> {
+  return adminFetch("admin-delete-user", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ userId }),
+  });
+}
+
 export async function markGenesisAccountCreated(
   accessToken: string,
   userId: string,
@@ -339,13 +360,28 @@ export interface AdminDashboardLinkSummary {
   updatedAt: string;
 }
 
+export interface AdminDashboardFileSummary {
+  id: string;
+  sectionId: string;
+  title: string;
+  description: string | null;
+  url: string;
+  fileName: string;
+  contentType: string;
+  sortOrder: number;
+  published: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AdminDashboardSectionSummary {
   id: string;
   title: string;
   sortOrder: number;
   published: boolean;
-  sectionType: "links" | "incentives" | "brand_assets";
+  sectionType: "links" | "incentives" | "brand_assets" | "downloads";
   links: AdminDashboardLinkSummary[];
+  files: AdminDashboardFileSummary[];
   createdAt: string;
   updatedAt: string;
 }
@@ -355,7 +391,7 @@ export interface UpsertDashboardSectionPayload {
   title: string;
   published?: boolean;
   sortOrder?: number;
-  sectionType?: "links" | "incentives" | "brand_assets";
+  sectionType?: "links" | "incentives" | "brand_assets" | "downloads";
 }
 
 export interface UpsertDashboardLinkPayload {
@@ -454,6 +490,49 @@ export async function reorderDashboardLinkPlacements(
   return adminFetch("admin-reorder-dashboard-tabs", accessToken, {
     method: "POST",
     body: JSON.stringify({ linkPlacements }),
+  });
+}
+
+export interface UpsertDashboardFilePayload {
+  id?: string;
+  sectionId: string;
+  title: string;
+  description?: string | null;
+  url: string;
+  fileName: string;
+  contentType: string;
+  published?: boolean;
+  sortOrder?: number;
+}
+
+export async function upsertDashboardFile(
+  accessToken: string,
+  input: UpsertDashboardFilePayload,
+): Promise<{ file: AdminDashboardFileSummary; message: string }> {
+  return adminFetch("admin-upsert-dashboard-file", accessToken, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteDashboardFile(
+  accessToken: string,
+  id: string,
+): Promise<{ id: string; message: string }> {
+  return adminFetch("admin-delete-dashboard-file", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  });
+}
+
+export async function reorderDashboardFiles(
+  accessToken: string,
+  sectionId: string,
+  orderedIds: string[],
+): Promise<{ message: string }> {
+  return adminFetch("admin-reorder-dashboard-files", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ sectionId, orderedIds }),
   });
 }
 

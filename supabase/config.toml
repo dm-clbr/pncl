@@ -41,6 +41,12 @@ verify_jwt = true
 [functions.admin-mark-genesis-created]
 verify_jwt = true
 
+[functions.admin-update-user-email]
+verify_jwt = true
+
+[functions.admin-delete-user]
+verify_jwt = true
+
 [functions.admin-list-incentives]
 verify_jwt = true
 
@@ -108,4 +114,16 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.admin-get-portal-todo-completion]
+verify_jwt = true
+
+[functions.admin-upload-dashboard-file]
+verify_jwt = true
+
+[functions.admin-upsert-dashboard-file]
+verify_jwt = true
+
+[functions.admin-delete-dashboard-file]
+verify_jwt = true
+
+[functions.admin-reorder-dashboard-files]
 verify_jwt = true

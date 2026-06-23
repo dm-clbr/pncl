@@ -17,9 +17,11 @@ serve(async (req) => {
     const sections = await loadDashboardTabs(adminClient, true);
     return jsonResponse({
       sections: sections
-        .filter((section) =>
-          section.sectionType === "links" ? section.links.length > 0 : section.published,
-        )
+        .filter((section) => {
+          if (section.sectionType === "links") return section.links.length > 0;
+          if (section.sectionType === "downloads") return section.files.length > 0;
+          return section.published;
+        })
         .map((section) => ({
           id: section.id,
           title: section.title,
@@ -35,6 +37,18 @@ serve(async (req) => {
                 href: link.href,
                 external: link.external,
                 icon: link.icon,
+              }))
+            : [],
+          files: section.sectionType === "downloads"
+            ? section.files
+              .filter((file) => file.published)
+              .map((file) => ({
+                id: file.id,
+                title: file.title,
+                description: file.description,
+                url: file.url,
+                fileName: file.fileName,
+                contentType: file.contentType,
               }))
             : [],
         })),

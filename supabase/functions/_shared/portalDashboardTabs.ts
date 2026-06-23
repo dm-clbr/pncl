@@ -1,4 +1,8 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import {
+  mapDashboardFileRecord,
+  type PortalDashboardFileRecord,
+} from "./portalDashboardFiles.ts";
 
 export interface PortalDashboardSectionRecord {
   id: string;
@@ -29,7 +33,7 @@ export interface UpsertDashboardSectionPayload {
   title: string;
   published?: boolean;
   sortOrder?: number;
-  sectionType?: "links" | "incentives" | "brand_assets";
+  sectionType?: "links" | "incentives" | "brand_assets" | "downloads";
 }
 
 export interface UpsertDashboardLinkPayload {
@@ -84,7 +88,9 @@ export function validateUpsertDashboardSectionPayload(body: unknown): UpsertDash
     ? Math.max(0, Math.floor(data.sortOrder))
     : undefined;
   const sectionTypeRaw = typeof data.sectionType === "string" ? data.sectionType : "links";
-  const sectionType = sectionTypeRaw === "incentives" || sectionTypeRaw === "brand_assets"
+  const sectionType = sectionTypeRaw === "incentives" ||
+      sectionTypeRaw === "brand_assets" ||
+      sectionTypeRaw === "downloads"
     ? sectionTypeRaw
     : "links";
 
@@ -135,16 +141,22 @@ export function mapDashboardLinkRecord(row: PortalDashboardLinkRecord) {
 export function mapDashboardSectionRecord(
   row: PortalDashboardSectionRecord,
   links: ReturnType<typeof mapDashboardLinkRecord>[],
+  files: ReturnType<typeof mapDashboardFileRecord>[],
 ) {
+  const sectionType = row.section_type === "incentives" ||
+      row.section_type === "brand_assets" ||
+      row.section_type === "downloads"
+    ? row.section_type
+    : "links";
+
   return {
     id: row.id,
     title: row.title,
     sortOrder: row.sort_order,
     published: row.published,
-    sectionType: row.section_type === "incentives" || row.section_type === "brand_assets"
-      ? row.section_type
-      : "links",
+    sectionType,
     links,
+    files,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -174,11 +186,25 @@ export async function loadDashboardTabs(
     linksQuery = linksQuery.eq("published", true);
   }
 
-  const [{ data: sectionRows, error: sectionError }, { data: linkRows, error: linkError }] =
-    await Promise.all([sectionsQuery, linksQuery]);
+  let filesQuery = adminClient
+    .from("portal_dashboard_files")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (publishedOnly) {
+    filesQuery = filesQuery.eq("published", true);
+  }
+
+  const [
+    { data: sectionRows, error: sectionError },
+    { data: linkRows, error: linkError },
+    { data: fileRows, error: fileError },
+  ] = await Promise.all([sectionsQuery, linksQuery, filesQuery]);
 
   if (sectionError) throw new Error(sectionError.message);
   if (linkError) throw new Error(linkError.message);
+  if (fileError) throw new Error(fileError.message);
 
   const linksBySection = new Map<string, ReturnType<typeof mapDashboardLinkRecord>[]>();
   for (const row of (linkRows ?? []) as PortalDashboardLinkRecord[]) {
@@ -188,7 +214,19 @@ export async function loadDashboardTabs(
     linksBySection.set(mapped.sectionId, bucket);
   }
 
+  const filesBySection = new Map<string, ReturnType<typeof mapDashboardFileRecord>[]>();
+  for (const row of (fileRows ?? []) as PortalDashboardFileRecord[]) {
+    const mapped = mapDashboardFileRecord(row);
+    const bucket = filesBySection.get(mapped.sectionId) ?? [];
+    bucket.push(mapped);
+    filesBySection.set(mapped.sectionId, bucket);
+  }
+
   return ((sectionRows ?? []) as PortalDashboardSectionRecord[]).map((row) =>
-    mapDashboardSectionRecord(row, linksBySection.get(row.id) ?? [])
+    mapDashboardSectionRecord(
+      row,
+      linksBySection.get(row.id) ?? [],
+      filesBySection.get(row.id) ?? [],
+    )
   );
 }

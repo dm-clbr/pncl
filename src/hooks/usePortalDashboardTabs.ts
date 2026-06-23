@@ -28,6 +28,7 @@ export function usePortalDashboardTabs() {
           sectionType: def.sectionType,
           sortOrder,
           links: [],
+          files: [],
         })),
       );
     } catch (err) {
