@@ -186,6 +186,15 @@ export async function skipGenesisAccount(
   });
 }
 
+export async function sendTestGenesisNotification(
+  accessToken: string,
+): Promise<{ recipients: string[]; message: string }> {
+  return adminFetch("admin-test-genesis-notification", accessToken, {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
 export interface AdminIncentiveSummary {
   id: string;
   slug: string;

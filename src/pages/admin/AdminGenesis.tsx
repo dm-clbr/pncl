@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, CheckCircle2, ClipboardList, GraduationCap, SkipForward, X } from "lucide-react";
+import { ArrowDownAZ, ArrowUpAZ, Check, CheckCircle2, ClipboardList, GraduationCap, Mail, SkipForward, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   markGenesisAccountCreated,
+  sendTestGenesisNotification,
   skipGenesisAccount,
   type AgentOnboardingDetails,
   type AgentSummary,
@@ -101,8 +102,10 @@ export default function AdminGenesis() {
   const { agents, loading, error, reload } = useAdminAgents();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<GenesisAccountStatus>("pending");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [markingId, setMarkingId] = useState<string | null>(null);
   const [skippingId, setSkippingId] = useState<string | null>(null);
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
   const [detailAgent, setDetailAgent] = useState<AgentSummary | null>(null);
 
   useEffect(() => {
@@ -126,10 +129,12 @@ export default function AdminGenesis() {
         const aTime = new Date(a.createdAt).getTime();
         const bTime = new Date(b.createdAt).getTime();
 
-        if (aTime !== bTime) return aTime - bTime;
+        if (aTime !== bTime) {
+          return sortOrder === "asc" ? aTime - bTime : bTime - aTime;
+        }
         return a.name.localeCompare(b.name);
       });
-  }, [agents, filter, query]);
+  }, [agents, filter, query, sortOrder]);
 
   const pendingCount = useMemo(
     () => agents.filter((agent) => resolveGenesisStatus(agent) === "pending").length,
@@ -145,6 +150,21 @@ export default function AdminGenesis() {
     () => agents.filter((agent) => resolveGenesisStatus(agent) === "skipped").length,
     [agents],
   );
+
+  const handleSendTestEmail = async () => {
+    const token = session?.access_token;
+    if (!token) return;
+
+    setSendingTestEmail(true);
+    try {
+      const result = await sendTestGenesisNotification(token);
+      toast.success(result.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to send test notification");
+    } finally {
+      setSendingTestEmail(false);
+    }
+  };
 
   const handleSkip = async (agent: AgentSummary) => {
     const token = session?.access_token;
@@ -219,6 +239,31 @@ export default function AdminGenesis() {
             <option value="skipped">Skipped ({skippedCount})</option>
           </select>
         </label>
+
+        <button
+          type="button"
+          className="admin-icon-btn"
+          onClick={() => setSortOrder((current) => (current === "asc" ? "desc" : "asc"))}
+          aria-label={sortOrder === "asc" ? "Sort oldest to newest" : "Sort newest to oldest"}
+          title={sortOrder === "asc" ? "Oldest first — click for newest first" : "Newest first — click for oldest first"}
+        >
+          {sortOrder === "asc" ? (
+            <ArrowDownAZ size={16} aria-hidden="true" />
+          ) : (
+            <ArrowUpAZ size={16} aria-hidden="true" />
+          )}
+          {sortOrder === "asc" ? "Oldest first" : "Newest first"}
+        </button>
+
+        <button
+          type="button"
+          className="admin-icon-btn"
+          disabled={sendingTestEmail}
+          onClick={() => void handleSendTestEmail()}
+        >
+          <Mail size={16} aria-hidden="true" />
+          {sendingTestEmail ? "Sending…" : "Send test email"}
+        </button>
       </div>
 
       {loading && <div className="onboarding-spinner admin-spinner" aria-label="Loading users" />}

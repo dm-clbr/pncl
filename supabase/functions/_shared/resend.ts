@@ -120,8 +120,14 @@ export function buildGenesisOnboardingNotificationEmailHtml(input: {
   hasEoInsurance: string;
   completedAt: string;
   genesisUrl: string;
+  isTest?: boolean;
 }): string {
   const npn = input.npn?.trim() ? input.npn.trim() : "Not provided";
+  const testBanner = input.isTest
+    ? `<p style="margin:0 0 16px;padding:10px 12px;background:#fff3cd;color:#664d03;font-size:13px;border-radius:4px;">
+         This is a test notification. No new agent onboarding occurred.
+       </p>`
+    : "";
 
   return `
     <div style="font-family:sans-serif;max-width:560px;margin:0 auto;">
@@ -129,6 +135,7 @@ export function buildGenesisOnboardingNotificationEmailHtml(input: {
         New agent onboarding completed
       </h2>
       <div style="padding:24px;font-size:14px;color:#111;line-height:1.6;">
+        ${testBanner}
         <p>A new agent finished onboarding and needs a Pinnacle Genesis account.</p>
         <table style="width:100%;border-collapse:collapse;font-size:14px;margin:20px 0;">
           <tr><td style="padding:6px 0;color:#555;">Name</td><td style="padding:6px 0;"><strong>${input.legalName}</strong></td></tr>
@@ -169,10 +176,12 @@ export async function sendGenesisOnboardingNotificationEmail(input: {
   hasEoInsurance: string;
   completedAt: string;
   genesisUrl: string;
+  isTest?: boolean;
 }): Promise<void> {
+  const subjectPrefix = input.isTest ? "[Test] " : "";
   await sendEmail({
     to: input.to,
-    subject: `New onboarding: ${input.legalName}`,
+    subject: `${subjectPrefix}New onboarding: ${input.legalName}`,
     html: buildGenesisOnboardingNotificationEmailHtml(input),
   });
 }

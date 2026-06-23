@@ -83,3 +83,54 @@ export async function notifyGenesisAdminsOfNewOnboarding(
     failedCount: errors.length,
   });
 }
+
+const TEST_GENESIS_NOTIFICATION: GenesisOnboardingNotificationInput = {
+  legalName: "Test Agent (Sample)",
+  workspaceEmail: "test.agent@thepncl.com",
+  phoneNumber: "555-555-0100",
+  dateOfBirth: "01/15/1990",
+  stateOfResidence: "TX",
+  uplineNetwork: "PNCL Test Team",
+  hasLicense: "Yes",
+  npn: "12345678",
+  hasEoInsurance: "Yes",
+  completedAt: new Date().toISOString(),
+};
+
+export async function sendTestGenesisNotificationToAdmins(
+  adminClient: SupabaseClient,
+): Promise<{ recipients: string[] }> {
+  const recipients = await listGenesisAdminEmails(adminClient);
+  if (!recipients.length) {
+    throw new Error("No users with the genesis admin role were found.");
+  }
+
+  const genesisUrl = getGenesisAdminUrl();
+  const errors: string[] = [];
+
+  for (const to of recipients) {
+    try {
+      await sendGenesisOnboardingNotificationEmail({
+        to,
+        genesisUrl,
+        ...TEST_GENESIS_NOTIFICATION,
+        isTest: true,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to send email";
+      errors.push(`${to}: ${message}`);
+    }
+  }
+
+  if (errors.length === recipients.length) {
+    throw new Error(errors.join("; "));
+  }
+
+  logOnboarding("genesis_test_notification_sent", {
+    recipientCount: recipients.length - errors.length,
+    failedCount: errors.length,
+    recipients,
+  });
+
+  return { recipients: recipients.filter((email) => !errors.some((entry) => entry.startsWith(`${email}:`))) };
+}
