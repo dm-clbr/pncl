@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requireAdmin } from "../_shared/adminAuth.ts";
-import { buildAgentSummaries, buildHierarchyTree } from "../_shared/adminAgents.ts";
+import {
+  buildAgentSummaries,
+  buildHierarchyTree,
+  loadPortalProfilePhotos,
+} from "../_shared/adminAgents.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
 import { isValidReferrerUserId } from "../_shared/onboarding.ts";
@@ -22,8 +26,11 @@ serve(async (req) => {
       return errorResponse("Invalid root user id", 400, "invalid_root");
     }
 
-    const agents = await buildAgentSummaries(adminClient);
-    const tree = buildHierarchyTree(agents, rootUserId);
+    const [agents, profilesByUserId] = await Promise.all([
+      buildAgentSummaries(adminClient),
+      loadPortalProfilePhotos(adminClient),
+    ]);
+    const tree = buildHierarchyTree(agents, rootUserId, profilesByUserId);
 
     return jsonResponse({ tree, totalAgents: agents.length });
   } catch (error) {

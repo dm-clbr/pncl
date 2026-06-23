@@ -9,6 +9,7 @@ import {
   validateSubmitPayload,
 } from "../_shared/onboarding.ts";
 import { provisionPortalAccount } from "../_shared/portalAuth.ts";
+import { notifyGenesisAdminsOfNewOnboarding } from "../_shared/genesisNotifications.ts";
 import {
   encryptTemporaryPassword,
   generateHandoffToken,
@@ -119,6 +120,7 @@ serve(async (req) => {
       finalStatus = "ready";
       let supabaseUserId: string | null = null;
       let portalProvisionError: string | undefined;
+      const completedAt = new Date().toISOString();
 
       try {
         supabaseUserId = await provisionPortalAccount(supabase, {
@@ -145,6 +147,7 @@ serve(async (req) => {
           status: "ready",
           google_user_id: googleUserId,
           supabase_user_id: supabaseUserId,
+          onboarding_completed_at: completedAt,
         })
         .eq("id", onboardingId);
 
@@ -164,6 +167,30 @@ serve(async (req) => {
           status: finalStatus,
           portalProvisionError: portalProvisionError ?? null,
         });
+
+        try {
+          await notifyGenesisAdminsOfNewOnboarding(supabase, onboardingId, {
+            legalName: payload.legalName,
+            workspaceEmail,
+            phoneNumber: payload.phoneNumber,
+            dateOfBirth: payload.dateOfBirth,
+            stateOfResidence: payload.stateOfResidence,
+            uplineNetwork,
+            hasLicense: payload.hasLicense,
+            npn: payload.npn ?? null,
+            hasEoInsurance: payload.hasEoInsurance,
+            completedAt,
+          });
+        } catch (notificationError) {
+          const message = notificationError instanceof Error
+            ? notificationError.message
+            : "Genesis admin notification failed";
+          logOnboarding(
+            "submit_genesis_notification_failed",
+            { requestId, onboardingId, error: message },
+            "error",
+          );
+        }
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Google Workspace user creation failed";

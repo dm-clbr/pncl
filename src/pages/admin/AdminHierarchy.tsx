@@ -1,37 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { GitBranch } from "lucide-react";
+import { HierarchyCanvas } from "@/components/admin/HierarchyCanvas";
 import { useAuth } from "@/contexts/AuthContext";
-import { getHierarchy, type HierarchyNode } from "@/lib/admin-api";
+import { getHierarchy } from "@/lib/admin-api";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
 import { trackPageView } from "@/lib/analytics";
-
-function HierarchyBranch({ node, depth = 0 }: { node: HierarchyNode; depth?: number }) {
-  return (
-    <li className="admin-tree-node" style={{ "--depth": depth } as React.CSSProperties}>
-      <div className="admin-tree-row">
-        <span className="admin-tree-name">{node.name}</span>
-        <span className="admin-tree-meta">{node.email}</span>
-        {node.role === "admin" && <span className="admin-badge">Admin</span>}
-        {node.children.length > 0 && (
-          <span className="admin-tree-count">{node.children.length} direct</span>
-        )}
-      </div>
-      {node.children.length > 0 && (
-        <ul className="admin-tree-children">
-          {node.children.map((child) => (
-            <HierarchyBranch key={child.id} node={child} depth={depth + 1} />
-          ))}
-        </ul>
-      )}
-    </li>
-  );
-}
 
 export default function AdminHierarchy() {
   const { session } = useAuth();
   const { agents, loading: agentsLoading } = useAdminAgents();
   const [rootUserId, setRootUserId] = useState("");
-  const [tree, setTree] = useState<HierarchyNode[]>([]);
+  const [tree, setTree] = useState<Awaited<ReturnType<typeof getHierarchy>>["tree"]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -109,13 +88,7 @@ export default function AdminHierarchy() {
         <p className="admin-empty">No referral connections found yet.</p>
       )}
 
-      {!loading && !error && tree.length > 0 && (
-        <ul className="admin-tree">
-          {tree.map((node) => (
-            <HierarchyBranch key={node.id} node={node} />
-          ))}
-        </ul>
-      )}
+      {!loading && !error && tree.length > 0 && <HierarchyCanvas tree={tree} />}
     </section>
   );
 }

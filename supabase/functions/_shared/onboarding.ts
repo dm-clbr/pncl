@@ -54,6 +54,8 @@ export interface OnboardingRecord {
   supabase_user_id: string | null;
   referrer_user_id: string | null;
   personal_email: string | null;
+  onboarding_completed_at: string | null;
+  genesis_notification_sent_at: string | null;
   google_creation_error: string | null;
   group_assignment_error: string | null;
   created_at: string;

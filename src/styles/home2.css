@@ -1821,9 +1821,23 @@
   color: var(--space);
 }
 
+.home2-page .admin-status.pending {
+  background: rgba(194, 78, 28, .14);
+  color: var(--accent-bright);
+}
+
 .home2-page .admin-status.active {
   background: rgba(72, 160, 96, .14);
   color: #7fd99a;
+}
+
+.home2-page .admin-status.skipped {
+  background: rgba(240, 237, 228, .08);
+  color: var(--steel);
+}
+
+.home2-page .admin-inline-note.muted {
+  color: var(--steel);
 }
 
 .home2-page .admin-icon-btn {
@@ -1926,6 +1940,145 @@
   font-size: 9px;
   letter-spacing: .08em;
   text-transform: uppercase;
+}
+
+.home2-page .admin-genesis-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px 20px;
+  margin: 0;
+}
+
+.home2-page .admin-genesis-details-modal .admin-genesis-details-grid {
+  padding-top: 4px;
+}
+
+.home2-page .admin-genesis-details-item {
+  min-width: 0;
+}
+
+.home2-page .admin-genesis-details-item dt {
+  margin: 0 0 4px;
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--space);
+}
+
+.home2-page .admin-genesis-details-item dd {
+  margin: 0;
+  color: var(--bone);
+  font-size: .84rem;
+  word-break: break-word;
+}
+
+.home2-page .admin-hierarchy-scroll {
+  margin-top: 8px;
+  overflow: auto;
+  border-radius: calc(var(--radius) + 4px);
+  border: 1px solid rgba(240, 237, 228, .1);
+  background:
+    radial-gradient(circle at 1px 1px, rgba(240, 237, 228, .07) 1px, transparent 0) 0 0 / 20px 20px,
+    linear-gradient(180deg, rgba(240, 237, 228, .02), rgba(240, 237, 228, .01));
+}
+
+.home2-page .admin-hierarchy-canvas {
+  position: relative;
+  min-width: 100%;
+}
+
+.home2-page .admin-hierarchy-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.home2-page .admin-hierarchy-line {
+  fill: none;
+  stroke: rgba(194, 78, 28, .45);
+  stroke-width: 1.5;
+}
+
+.home2-page .admin-hierarchy-node {
+  position: absolute;
+}
+
+.home2-page .admin-hierarchy-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  padding: 12px 10px 10px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(240, 237, 228, .12);
+  background: rgba(12, 12, 14, .92);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .28);
+  text-align: center;
+  transition: border-color .25s var(--ease), transform .25s var(--ease), box-shadow .25s var(--ease);
+}
+
+.home2-page .admin-hierarchy-tile:hover {
+  border-color: rgba(194, 78, 28, .45);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, .34);
+}
+
+.home2-page .admin-hierarchy-tile-avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(240, 237, 228, .08);
+  border: 1px solid rgba(240, 237, 228, .14);
+}
+
+.home2-page .admin-hierarchy-tile-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home2-page .admin-hierarchy-tile-initials {
+  font-family: var(--ff-mono);
+  font-size: .82rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: var(--bone);
+}
+
+.home2-page .admin-hierarchy-tile-name {
+  margin: 0;
+  font-size: .78rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -.01em;
+  color: var(--bone);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.home2-page .admin-hierarchy-tile-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 6px;
+  margin-top: auto;
+}
+
+.home2-page .admin-hierarchy-tile-meta {
+  font-family: var(--ff-mono);
+  font-size: 8px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--steel);
 }
 
 .home2-page .admin-tree {

@@ -1,6 +1,24 @@
 import type { SupabaseClient, User } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { getEmailDomain } from "./onboarding.ts";
 import { getUserRole, type PortalRole } from "./adminAuth.ts";
+import { decryptTemporaryPassword } from "./security.ts";
+
+export type GenesisAccountStatus = "pending" | "created" | "skipped";
+
+export interface AgentOnboardingDetails {
+  legalName: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  dateOfBirth: string;
+  ssn: string | null;
+  stateOfResidence: string;
+  uplineNetwork: string;
+  hasLicense: string;
+  npn: string | null;
+  hasEoInsurance: string;
+  workspaceEmail: string | null;
+}
 
 export interface AgentSummary {
   id: string;
@@ -13,6 +31,10 @@ export interface AgentSummary {
   status: string | null;
   emailConfirmed: boolean;
   genesisAccountCreatedAt: string | null;
+  genesisAccountSkippedAt: string | null;
+  genesisStatus: GenesisAccountStatus;
+  onboardingCompletedAt: string | null;
+  onboarding: AgentOnboardingDetails | null;
   createdAt: string;
   source: string | null;
 }
@@ -23,16 +45,34 @@ export interface HierarchyNode {
   name: string;
   role: PortalRole;
   status: string | null;
+  profilePhotoPath: string | null;
+  profileUpdatedAt: string | null;
   children: HierarchyNode[];
+}
+
+interface PortalProfilePhotoRow {
+  user_id: string;
+  profile_photo_path: string | null;
+  updated_at: string;
 }
 
 interface OnboardingRow {
   supabase_user_id: string | null;
   legal_name: string;
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+  date_of_birth: string;
+  ssn_encrypted: string;
+  state_of_residence: string;
   referrer_user_id: string | null;
   upline_network: string;
+  has_license: string;
+  npn: string | null;
+  has_eo_insurance: string;
   status: string;
   workspace_email: string | null;
+  onboarding_completed_at: string | null;
 }
 
 function resolveDisplayName(user: User, onboardingName?: string | null): string {
@@ -75,23 +115,121 @@ export async function listPortalUsers(adminClient: SupabaseClient): Promise<User
   return users;
 }
 
-async function loadOnboardingByUserId(
+async function loadOnboardingMaps(
   adminClient: SupabaseClient,
-): Promise<Map<string, OnboardingRow>> {
+): Promise<{
+  byUserId: Map<string, OnboardingRow>;
+  byEmail: Map<string, OnboardingRow>;
+  byId: Map<string, OnboardingRow>;
+}> {
   const { data, error } = await adminClient
     .from("onboarding_records")
-    .select("supabase_user_id, legal_name, referrer_user_id, upline_network, status, workspace_email")
-    .not("status", "eq", "failed");
+    .select(`
+      id,
+      supabase_user_id,
+      legal_name,
+      first_name,
+      last_name,
+      phone_number,
+      date_of_birth,
+      ssn_encrypted,
+      state_of_residence,
+      referrer_user_id,
+      upline_network,
+      has_license,
+      npn,
+      has_eo_insurance,
+      status,
+      workspace_email,
+      onboarding_completed_at,
+      created_at
+    `)
+    .not("status", "eq", "failed")
+    .order("created_at", { ascending: false });
 
   if (error) throw error;
 
-  const map = new Map<string, OnboardingRow>();
+  const byUserId = new Map<string, OnboardingRow>();
+  const byEmail = new Map<string, OnboardingRow>();
+  const byId = new Map<string, OnboardingRow>();
+
   for (const row of data ?? []) {
-    if (row.supabase_user_id) {
-      map.set(row.supabase_user_id, row as OnboardingRow);
+    const onboarding = row as OnboardingRow & { id: string; created_at: string };
+    byId.set(onboarding.id, onboarding);
+
+    if (onboarding.supabase_user_id && !byUserId.has(onboarding.supabase_user_id)) {
+      byUserId.set(onboarding.supabase_user_id, onboarding);
+    }
+
+    const email = onboarding.workspace_email?.trim().toLowerCase();
+    if (email && !byEmail.has(email)) {
+      byEmail.set(email, onboarding);
     }
   }
-  return map;
+
+  return { byUserId, byEmail, byId };
+}
+
+function resolveOnboardingForUser(
+  user: User,
+  maps: {
+    byUserId: Map<string, OnboardingRow>;
+    byEmail: Map<string, OnboardingRow>;
+    byId: Map<string, OnboardingRow>;
+  },
+): OnboardingRow | undefined {
+  const onboardingId = user.app_metadata?.onboarding_id;
+  if (typeof onboardingId === "string" && maps.byId.has(onboardingId)) {
+    return maps.byId.get(onboardingId);
+  }
+
+  const byUser = maps.byUserId.get(user.id);
+  if (byUser) return byUser;
+
+  const email = user.email?.trim().toLowerCase();
+  if (email) {
+    return maps.byEmail.get(email);
+  }
+
+  return undefined;
+}
+
+function resolveGenesisAccountStatus(
+  genesisAccountCreatedAt: string | null,
+  genesisAccountSkippedAt: string | null,
+): GenesisAccountStatus {
+  if (genesisAccountCreatedAt) return "created";
+  if (genesisAccountSkippedAt) return "skipped";
+  return "pending";
+}
+
+async function buildOnboardingDetails(
+  onboarding: OnboardingRow,
+  includeSensitive: boolean,
+): Promise<AgentOnboardingDetails> {
+  let ssn: string | null = null;
+  if (includeSensitive && onboarding.ssn_encrypted) {
+    try {
+      ssn = await decryptTemporaryPassword(onboarding.ssn_encrypted);
+    } catch {
+      ssn = null;
+    }
+  }
+
+  return {
+    legalName: onboarding.legal_name,
+    firstName: onboarding.first_name,
+    lastName: onboarding.last_name,
+    phoneNumber: onboarding.phone_number,
+    dateOfBirth: onboarding.date_of_birth,
+    ssn,
+    stateOfResidence: onboarding.state_of_residence,
+    uplineNetwork: onboarding.upline_network,
+    hasLicense: onboarding.has_license,
+    npn: onboarding.npn,
+    hasEoInsurance: onboarding.has_eo_insurance,
+    workspaceEmail: onboarding.workspace_email,
+  };
 }
 
 function resolveReferrerName(
@@ -109,21 +247,34 @@ function resolveReferrerName(
   return resolveDisplayName(user, onboarding?.legal_name);
 }
 
-export async function buildAgentSummaries(adminClient: SupabaseClient): Promise<AgentSummary[]> {
-  const [users, onboardingByUserId] = await Promise.all([
+export async function buildAgentSummaries(
+  adminClient: SupabaseClient,
+  options?: { includeSensitive?: boolean },
+): Promise<AgentSummary[]> {
+  const includeSensitive = options?.includeSensitive ?? false;
+  const [users, onboardingMaps] = await Promise.all([
     listPortalUsers(adminClient),
-    loadOnboardingByUserId(adminClient),
+    loadOnboardingMaps(adminClient),
   ]);
 
   const usersById = new Map(users.map((user) => [user.id, user]));
 
-  return users.map((user) => {
-    const onboarding = onboardingByUserId.get(user.id);
+  const summaries = await Promise.all(users.map(async (user) => {
+    const onboarding = resolveOnboardingForUser(user, onboardingMaps);
     const referrerId = onboarding?.referrer_user_id ?? null;
 
     const genesisCreatedAt = user.user_metadata?.genesis_account_created_at;
     const genesisAccountCreatedAt = typeof genesisCreatedAt === "string" && genesisCreatedAt.trim()
       ? genesisCreatedAt
+      : null;
+
+    const genesisSkippedAt = user.user_metadata?.genesis_account_skipped_at;
+    const genesisAccountSkippedAt = typeof genesisSkippedAt === "string" && genesisSkippedAt.trim()
+      ? genesisSkippedAt
+      : null;
+
+    const onboardingDetails = onboarding
+      ? await buildOnboardingDetails(onboarding, includeSensitive)
       : null;
 
     return {
@@ -132,20 +283,46 @@ export async function buildAgentSummaries(adminClient: SupabaseClient): Promise<
       name: resolveDisplayName(user, onboarding?.legal_name),
       role: getUserRole(user),
       referrerId,
-      referrerName: resolveReferrerName(referrerId, usersById, onboardingByUserId),
+      referrerName: resolveReferrerName(referrerId, usersById, onboardingMaps.byUserId),
       uplineNetwork: onboarding?.upline_network ?? null,
       status: onboarding?.status ?? null,
       emailConfirmed: Boolean(user.email_confirmed_at),
       genesisAccountCreatedAt,
+      genesisAccountSkippedAt,
+      genesisStatus: resolveGenesisAccountStatus(genesisAccountCreatedAt, genesisAccountSkippedAt),
+      onboardingCompletedAt: onboarding?.onboarding_completed_at ?? null,
+      onboarding: onboardingDetails,
       createdAt: user.created_at,
       source: typeof user.app_metadata?.source === "string" ? user.app_metadata.source : null,
     };
-  }).sort((a, b) => a.name.localeCompare(b.name));
+  }));
+
+  return summaries.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export async function loadPortalProfilePhotos(
+  adminClient: SupabaseClient,
+): Promise<Map<string, { profilePhotoPath: string | null; profileUpdatedAt: string | null }>> {
+  const { data, error } = await adminClient
+    .from("portal_profiles")
+    .select("user_id, profile_photo_path, updated_at");
+
+  if (error) throw error;
+
+  const map = new Map<string, { profilePhotoPath: string | null; profileUpdatedAt: string | null }>();
+  for (const row of (data ?? []) as PortalProfilePhotoRow[]) {
+    map.set(row.user_id, {
+      profilePhotoPath: row.profile_photo_path,
+      profileUpdatedAt: row.updated_at,
+    });
+  }
+  return map;
 }
 
 export function buildHierarchyTree(
   agents: AgentSummary[],
   rootUserId?: string,
+  profilesByUserId?: Map<string, { profilePhotoPath: string | null; profileUpdatedAt: string | null }>,
 ): HierarchyNode[] {
   const byId = new Map(agents.map((agent) => [agent.id, agent]));
   const childrenByReferrer = new Map<string, AgentSummary[]>();
@@ -161,12 +338,15 @@ export function buildHierarchyTree(
     const children = (childrenByReferrer.get(agent.id) ?? [])
       .sort((a, b) => a.name.localeCompare(b.name))
       .map(toNode);
+    const profile = profilesByUserId?.get(agent.id);
     return {
       id: agent.id,
       email: agent.email,
       name: agent.name,
       role: agent.role,
       status: agent.status,
+      profilePhotoPath: profile?.profilePhotoPath ?? null,
+      profileUpdatedAt: profile?.profileUpdatedAt ?? null,
       children,
     };
   };

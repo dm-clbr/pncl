@@ -97,3 +97,82 @@ export async function sendPortalActivationEmail(input: {
     html: buildPortalActivationEmailHtml(input),
   });
 }
+
+function formatGenesisNotificationDate(value: string): string {
+  return new Date(value).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+export function buildGenesisOnboardingNotificationEmailHtml(input: {
+  legalName: string;
+  workspaceEmail: string;
+  phoneNumber: string;
+  dateOfBirth: string;
+  stateOfResidence: string;
+  uplineNetwork: string;
+  hasLicense: string;
+  npn: string | null;
+  hasEoInsurance: string;
+  completedAt: string;
+  genesisUrl: string;
+}): string {
+  const npn = input.npn?.trim() ? input.npn.trim() : "Not provided";
+
+  return `
+    <div style="font-family:sans-serif;max-width:560px;margin:0 auto;">
+      <h2 style="background:#0f0f0f;color:#fff;margin:0;padding:20px 24px;font-size:16px;">
+        New agent onboarding completed
+      </h2>
+      <div style="padding:24px;font-size:14px;color:#111;line-height:1.6;">
+        <p>A new agent finished onboarding and needs a Pinnacle Genesis account.</p>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;margin:20px 0;">
+          <tr><td style="padding:6px 0;color:#555;">Name</td><td style="padding:6px 0;"><strong>${input.legalName}</strong></td></tr>
+          <tr><td style="padding:6px 0;color:#555;">PNCL email</td><td style="padding:6px 0;">${input.workspaceEmail}</td></tr>
+          <tr><td style="padding:6px 0;color:#555;">Phone</td><td style="padding:6px 0;">${input.phoneNumber}</td></tr>
+          <tr><td style="padding:6px 0;color:#555;">Date of birth</td><td style="padding:6px 0;">${input.dateOfBirth}</td></tr>
+          <tr><td style="padding:6px 0;color:#555;">State</td><td style="padding:6px 0;">${input.stateOfResidence}</td></tr>
+          <tr><td style="padding:6px 0;color:#555;">Upline network</td><td style="padding:6px 0;">${input.uplineNetwork}</td></tr>
+          <tr><td style="padding:6px 0;color:#555;">Has license</td><td style="padding:6px 0;">${input.hasLicense}</td></tr>
+          <tr><td style="padding:6px 0;color:#555;">NPN</td><td style="padding:6px 0;">${npn}</td></tr>
+          <tr><td style="padding:6px 0;color:#555;">E&amp;O insurance</td><td style="padding:6px 0;">${input.hasEoInsurance}</td></tr>
+          <tr><td style="padding:6px 0;color:#555;">Completed</td><td style="padding:6px 0;">${formatGenesisNotificationDate(input.completedAt)}</td></tr>
+        </table>
+        <p style="margin:28px 0;">
+          <a href="${input.genesisUrl}"
+             style="display:inline-block;background:#c8ff00;color:#0f0f0f;padding:12px 20px;
+                    text-decoration:none;font-weight:600;border-radius:4px;">
+            Open Genesis queue
+          </a>
+        </p>
+        <p style="color:#555;font-size:13px;">
+          Full onboarding details, including SSN, are available in the Genesis admin queue.
+        </p>
+      </div>
+    </div>`;
+}
+
+export async function sendGenesisOnboardingNotificationEmail(input: {
+  to: string;
+  legalName: string;
+  workspaceEmail: string;
+  phoneNumber: string;
+  dateOfBirth: string;
+  stateOfResidence: string;
+  uplineNetwork: string;
+  hasLicense: string;
+  npn: string | null;
+  hasEoInsurance: string;
+  completedAt: string;
+  genesisUrl: string;
+}): Promise<void> {
+  await sendEmail({
+    to: input.to,
+    subject: `New onboarding: ${input.legalName}`,
+    html: buildGenesisOnboardingNotificationEmailHtml(input),
+  });
+}

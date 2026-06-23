@@ -1,6 +1,23 @@
 import { getSupabaseConfig } from "@/lib/supabase";
 import type { PortalRole } from "@/lib/roles";
 
+export type GenesisAccountStatus = "pending" | "created" | "skipped";
+
+export interface AgentOnboardingDetails {
+  legalName: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  dateOfBirth: string;
+  ssn: string | null;
+  stateOfResidence: string;
+  uplineNetwork: string;
+  hasLicense: string;
+  npn: string | null;
+  hasEoInsurance: string;
+  workspaceEmail: string | null;
+}
+
 export interface AgentSummary {
   id: string;
   email: string;
@@ -12,6 +29,10 @@ export interface AgentSummary {
   status: string | null;
   emailConfirmed: boolean;
   genesisAccountCreatedAt: string | null;
+  genesisAccountSkippedAt: string | null;
+  genesisStatus?: GenesisAccountStatus;
+  onboardingCompletedAt: string | null;
+  onboarding: AgentOnboardingDetails | null;
   createdAt: string;
   source: string | null;
 }
@@ -22,6 +43,8 @@ export interface HierarchyNode {
   name: string;
   role: PortalRole;
   status: string | null;
+  profilePhotoPath: string | null;
+  profileUpdatedAt: string | null;
   children: HierarchyNode[];
 }
 
@@ -148,6 +171,16 @@ export async function markGenesisAccountCreated(
   userId: string,
 ): Promise<{ userId: string; genesisAccountCreatedAt: string; message: string }> {
   return adminFetch("admin-mark-genesis-created", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ userId }),
+  });
+}
+
+export async function skipGenesisAccount(
+  accessToken: string,
+  userId: string,
+): Promise<{ userId: string; genesisAccountSkippedAt: string; message: string }> {
+  return adminFetch("admin-skip-genesis", accessToken, {
     method: "POST",
     body: JSON.stringify({ userId }),
   });

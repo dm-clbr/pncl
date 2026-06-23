@@ -14,7 +14,7 @@ serve(async (req) => {
 
   try {
     const { adminClient } = await requireGenesisAdminOrAdmin(req);
-    const agents = await buildAgentSummaries(adminClient);
+    const agents = await buildAgentSummaries(adminClient, { includeSensitive: true });
     return jsonResponse({ agents });
   } catch (error) {
     if (error instanceof AdminAuthError) {

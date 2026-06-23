@@ -41,6 +41,9 @@ verify_jwt = true
 [functions.admin-mark-genesis-created]
 verify_jwt = true
 
+[functions.admin-skip-genesis]
+verify_jwt = true
+
 [functions.admin-update-user-email]
 verify_jwt = true
 
