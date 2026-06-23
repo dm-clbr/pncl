@@ -24,6 +24,7 @@ create index if not exists portal_dashboard_files_section_sort_idx
 
 alter table portal_dashboard_files enable row level security;
 
+drop policy if exists "Authenticated users can read published dashboard files" on portal_dashboard_files;
 create policy "Authenticated users can read published dashboard files"
   on portal_dashboard_files
   for select
@@ -64,6 +65,7 @@ on conflict (id) do update set
   file_size_limit = excluded.file_size_limit,
   allowed_mime_types = excluded.allowed_mime_types;
 
+drop policy if exists "Public read portal dashboard files" on storage.objects;
 create policy "Public read portal dashboard files"
   on storage.objects
   for select
