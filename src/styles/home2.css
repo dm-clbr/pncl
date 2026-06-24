@@ -3067,6 +3067,10 @@
   min-width: 140px;
 }
 
+.home2-page .admin-todo-row-hidden {
+  opacity: .65;
+}
+
 .home2-page .admin-todo-completion-bar {
   height: 8px;
   border-radius: 999px;

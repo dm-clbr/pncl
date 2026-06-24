@@ -3,6 +3,8 @@ import {
   ArrowDown,
   ArrowUp,
   CheckSquare,
+  Eye,
+  EyeOff,
   Pencil,
   Plus,
   Trash2,
@@ -116,6 +118,7 @@ export default function AdminTodos() {
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [reorderingId, setReorderingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
   const [completionTodo, setCompletionTodo] = useState<AdminPortalTodoSummary | null>(null);
 
   useEffect(() => {
@@ -165,6 +168,28 @@ export default function AdminTodos() {
     }
   };
 
+  const handleTogglePublished = async (todo: AdminPortalTodoSummary) => {
+    setTogglingId(todo.id);
+    try {
+      await save({
+        ...toPayload(toFormState(todo)),
+        published: !todo.published,
+      });
+      toast.success(
+        todo.published
+          ? `"${rowLabel(todo)}" hidden from the agent portal.`
+          : `"${rowLabel(todo)}" published to the agent portal.`,
+      );
+      if (form.id === todo.id) {
+        setForm((prev) => ({ ...prev, published: !todo.published }));
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to update to-do visibility");
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
   const moveTodo = async (index: number, direction: -1 | 1) => {
     const nextIndex = index + direction;
     if (nextIndex < 0 || nextIndex >= todos.length) return;
@@ -191,6 +216,7 @@ export default function AdminTodos() {
           <h1>Portal to-dos</h1>
           <p>
             Manage the urgent onboarding checklist shown on the agent dashboard.
+            Hide a to-do to remove it from agents without deleting completion data.
             Completion is tracked across {totalUsers} portal {totalUsers === 1 ? "user" : "users"}.
           </p>
         </div>
@@ -342,9 +368,10 @@ export default function AdminTodos() {
               {todos.map((todo, index) => {
                 const isDeleting = deletingId === todo.id;
                 const isReordering = reorderingId === todo.id;
+                const isToggling = togglingId === todo.id;
 
                 return (
-                  <tr key={todo.id}>
+                  <tr key={todo.id} className={todo.published ? undefined : "admin-todo-row-hidden"}>
                     <td>
                       <strong>{todo.title}</strong>
                       <span className="admin-todo-slug">{todo.slug}</span>
@@ -376,6 +403,20 @@ export default function AdminTodos() {
                           aria-label={`Move ${rowLabel(todo)} down`}
                         >
                           <ArrowDown size={16} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-icon-btn"
+                          disabled={isToggling}
+                          onClick={() => void handleTogglePublished(todo)}
+                          aria-label={todo.published ? `Hide ${rowLabel(todo)}` : `Show ${rowLabel(todo)}`}
+                        >
+                          {todo.published ? (
+                            <EyeOff size={16} aria-hidden="true" />
+                          ) : (
+                            <Eye size={16} aria-hidden="true" />
+                          )}
+                          {todo.published ? "Hide" : "Show"}
                         </button>
                         <button
                           type="button"
