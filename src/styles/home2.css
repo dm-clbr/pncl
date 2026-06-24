@@ -2287,11 +2287,166 @@
   width: min(520px, 100%);
 }
 
+.home2-page .admin-user-link {
+  color: var(--bone);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(240, 237, 228, .18);
+  transition: color .25s var(--ease), border-color .25s var(--ease);
+}
+
+.home2-page .admin-user-link:hover {
+  color: #fff;
+  border-color: rgba(194, 78, 28, .45);
+}
+
+.home2-page .admin-user-profile-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.home2-page .admin-user-profile-summary,
+.home2-page .admin-user-profile-section {
+  padding: 24px;
+  border: 1px solid rgba(240, 237, 228, .08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .02);
+}
+
+.home2-page .admin-user-profile-identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.home2-page .admin-user-profile-identity h2 {
+  margin: 0 0 4px;
+}
+
+.home2-page .admin-user-profile-photo {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.home2-page .admin-user-profile-photo-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(194, 78, 28, .18);
+  color: var(--bone);
+  font-family: var(--ff-mono);
+  font-size: 24px;
+}
+
+.home2-page .admin-user-profile-meta {
+  margin-top: 8px;
+}
+
+.home2-page .admin-user-profile-section h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.home2-page .admin-user-form-status {
+  margin-bottom: 16px;
+}
+
+.home2-page .admin-user-documents {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.home2-page .admin-user-document-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid rgba(240, 237, 228, .08);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, .12);
+}
+
+.home2-page .admin-user-document-item strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
 .home2-page .admin-row-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   justify-content: flex-end;
+}
+
+.home2-page .admin-actions-menu {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.home2-page .admin-actions-menu-trigger {
+  min-width: 96px;
+  justify-content: center;
+}
+
+.home2-page .admin-actions-menu-panel {
+  position: fixed;
+  z-index: 40;
+  min-width: 220px;
+  padding: 6px;
+  border: 1px solid rgba(240, 237, 228, .12);
+  border-radius: 12px;
+  background: rgba(18, 18, 20, .98);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .35);
+}
+
+.home2-page .admin-actions-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--bone);
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  text-align: left;
+  cursor: pointer;
+  transition: background .2s var(--ease), color .2s var(--ease);
+}
+
+.home2-page .admin-actions-menu-item:hover:not(:disabled) {
+  background: rgba(255, 255, 255, .06);
+}
+
+.home2-page .admin-actions-menu-item:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.home2-page .admin-actions-menu-item-danger {
+  color: #fca5a5;
+}
+
+.home2-page .admin-actions-menu-item-danger:hover:not(:disabled) {
+  background: rgba(248, 113, 113, .12);
+  color: #fecaca;
+}
+
+.home2-page .admin-actions-menu-divider {
+  height: 1px;
+  margin: 6px 4px;
+  background: rgba(240, 237, 228, .1);
 }
 
 .home2-page .admin-role-update {
@@ -2379,6 +2534,30 @@
 
 .home2-page .admin-genesis-details-modal .admin-genesis-details-grid {
   padding-top: 4px;
+}
+
+.home2-page .admin-genesis-details-modal {
+  width: min(760px, 100%);
+  max-height: min(85vh, 900px);
+  overflow-y: auto;
+}
+
+.home2-page .admin-genesis-details-documents {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(240, 237, 228, .08);
+}
+
+.home2-page .admin-genesis-details-documents h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.home2-page .admin-genesis-details-documents-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .home2-page .admin-genesis-details-item {

@@ -692,12 +692,79 @@ export interface PortalTodoCompletionDetail {
   totalUsers: number;
 }
 
+export interface AdminUserDocument {
+  id: string;
+  label: string;
+  fileName: string;
+  signedAt: string | null;
+  downloadUrl: string;
+}
+
+export interface AdminUserPortalProfile {
+  firstName: string;
+  lastName: string;
+  shirtSize: string | null;
+  poloShirtSize: string | null;
+  hoodieSize: string | null;
+  waistSize: string | null;
+  shoeSize: string | null;
+  profilePhotoUrl: string | null;
+  updatedAt: string;
+}
+
+export interface AdminUserW9Summary {
+  userId: string;
+  legalName: string;
+  businessName: string | null;
+  taxClassification: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  state: string;
+  zip: string;
+  tinType: "ssn" | "ein";
+  signatureName: string;
+  signedAt: string;
+}
+
+export interface AdminUserDirectDepositSummary {
+  userId: string;
+  legalName: string;
+  addressLine1: string;
+  city: string;
+  state: string;
+  zip: string;
+  accountType: "checking" | "savings";
+  signatureName: string;
+  signedAt: string;
+  pdfPath: string;
+}
+
+export interface AdminUserProfileDetail {
+  agent: AgentSummary;
+  portalProfile: AdminUserPortalProfile | null;
+  w9: AdminUserW9Summary | null;
+  directDeposit: AdminUserDirectDepositSummary | null;
+  completedPortalTodos: Record<string, boolean>;
+  documents: AdminUserDocument[];
+}
+
 export async function getPortalTodoCompletion(
   accessToken: string,
   todoId: string,
 ): Promise<PortalTodoCompletionDetail> {
   const params = new URLSearchParams({ todoId });
   return adminFetch(`admin-get-portal-todo-completion?${params.toString()}`, accessToken, {
+    method: "GET",
+  });
+}
+
+export async function getAdminUserProfile(
+  accessToken: string,
+  userId: string,
+): Promise<AdminUserProfileDetail> {
+  const params = new URLSearchParams({ userId });
+  return adminFetch(`admin-get-user-profile?${params.toString()}`, accessToken, {
     method: "GET",
   });
 }

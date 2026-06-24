@@ -1,10 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { ArrowDownAZ, ArrowUpAZ, Check, CheckCircle2, ClipboardList, GraduationCap, Mail, SkipForward, X } from "lucide-react";
+import AdminOnboardingDetailsPanel from "@/components/admin/AdminOnboardingDetailsPanel";
+import AdminUserDocumentsList from "@/components/admin/AdminUserDocumentsList";
 import { useAuth } from "@/contexts/AuthContext";
 import {
+  getAdminUserProfile,
   markGenesisAccountCreated,
   sendTestGenesisNotification,
   skipGenesisAccount,
+  type AdminUserDocument,
+  type AdminUserDirectDepositSummary,
+  type AdminUserW9Summary,
   type AgentOnboardingDetails,
   type AgentSummary,
   type GenesisAccountStatus,
@@ -29,11 +36,6 @@ function formatGenesisDateTime(value: string): string {
     hour: "numeric",
     minute: "2-digit",
   });
-}
-
-function formatOnboardingValue(value: string | null | undefined, fallback = "—"): string {
-  if (!value?.trim()) return fallback;
-  return value.trim();
 }
 
 function resolveGenesisStatus(agent: AgentSummary): GenesisAccountStatus {
@@ -69,32 +71,16 @@ function OnboardingDetailsPanel({
   onboarding: AgentOnboardingDetails;
   referrerName: string | null;
 }) {
-  const fields: Array<{ label: string; value: string }> = [
-    { label: "Legal name", value: formatOnboardingValue(onboarding.legalName) },
-    { label: "First name", value: formatOnboardingValue(onboarding.firstName) },
-    { label: "Last name", value: formatOnboardingValue(onboarding.lastName) },
-    { label: "PNCL email", value: formatOnboardingValue(onboarding.workspaceEmail ?? "") },
-    { label: "Phone", value: formatOnboardingValue(onboarding.phoneNumber) },
-    { label: "Date of birth", value: formatOnboardingValue(onboarding.dateOfBirth) },
-    { label: "SSN", value: formatOnboardingValue(onboarding.ssn) },
-    { label: "State of residence", value: formatOnboardingValue(onboarding.stateOfResidence) },
-    { label: "Upline network", value: formatOnboardingValue(onboarding.uplineNetwork) },
-    { label: "Referrer", value: formatOnboardingValue(referrerName) },
-    { label: "Has license", value: formatOnboardingValue(onboarding.hasLicense) },
-    { label: "NPN", value: formatOnboardingValue(onboarding.npn, "Not provided") },
-    { label: "E&O insurance", value: formatOnboardingValue(onboarding.hasEoInsurance) },
-  ];
+  return <AdminOnboardingDetailsPanel onboarding={onboarding} referrerName={referrerName} />;
+}
 
-  return (
-    <dl className="admin-genesis-details-grid">
-      {fields.map((field) => (
-        <div key={field.label} className="admin-genesis-details-item">
-          <dt>{field.label}</dt>
-          <dd>{field.value}</dd>
-        </div>
-      ))}
-    </dl>
-  );
+function formatDocumentSummaryDate(value: string | null | undefined): string {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString(undefined, {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 export default function AdminGenesis() {
@@ -107,11 +93,72 @@ export default function AdminGenesis() {
   const [skippingId, setSkippingId] = useState<string | null>(null);
   const [sendingTestEmail, setSendingTestEmail] = useState(false);
   const [detailAgent, setDetailAgent] = useState<AgentSummary | null>(null);
+  const [detailDocuments, setDetailDocuments] = useState<AdminUserDocument[]>([]);
+  const [detailW9, setDetailW9] = useState<AdminUserW9Summary | null>(null);
+  const [detailDirectDeposit, setDetailDirectDeposit] = useState<AdminUserDirectDepositSummary | null>(null);
+  const [detailDocumentsLoading, setDetailDocumentsLoading] = useState(false);
+  const [detailDocumentsError, setDetailDocumentsError] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = "Genesis accounts — PNCL Admin";
     trackPageView("admin_genesis");
   }, []);
+
+  useEffect(() => {
+    const token = session?.access_token;
+    if (!token || !detailAgent) {
+      setDetailDocuments([]);
+      setDetailW9(null);
+      setDetailDirectDeposit(null);
+      setDetailDocumentsLoading(false);
+      setDetailDocumentsError(null);
+      return;
+    }
+
+    let cancelled = false;
+    setDetailDocumentsLoading(true);
+    setDetailDocumentsError(null);
+
+    void getAdminUserProfile(token, detailAgent.id)
+      .then((profile) => {
+        if (cancelled) return;
+        setDetailDocuments(profile.documents);
+        setDetailW9(profile.w9);
+        setDetailDirectDeposit(profile.directDeposit);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setDetailDocuments([]);
+        setDetailW9(null);
+        setDetailDirectDeposit(null);
+        setDetailDocumentsError(err instanceof Error ? err.message : "Unable to load documents");
+      })
+      .finally(() => {
+        if (!cancelled) setDetailDocumentsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [detailAgent, session?.access_token]);
+
+  const refreshDetailDocuments = async () => {
+    const token = session?.access_token;
+    if (!token || !detailAgent) return;
+
+    setDetailDocumentsLoading(true);
+    setDetailDocumentsError(null);
+    try {
+      const profile = await getAdminUserProfile(token, detailAgent.id);
+      setDetailDocuments(profile.documents);
+      setDetailW9(profile.w9);
+      setDetailDirectDeposit(profile.directDeposit);
+    } catch (err) {
+      setDetailDocumentsError(err instanceof Error ? err.message : "Unable to refresh documents");
+    } finally {
+      setDetailDocumentsLoading(false);
+    }
+  };
 
   const filteredAgents = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -395,6 +442,65 @@ export default function AdminGenesis() {
             ) : (
               <p className="admin-empty">No onboarding details are available for this user.</p>
             )}
+
+            <div className="admin-genesis-details-documents">
+              <div className="admin-panel-head admin-panel-head-row">
+                <div>
+                  <h3>Saved documents</h3>
+                  <p>W-9, direct deposit, and other PDFs on this user&apos;s profile.</p>
+                </div>
+                <div className="admin-genesis-details-documents-actions">
+                  <button
+                    type="button"
+                    className="admin-icon-btn"
+                    disabled={detailDocumentsLoading}
+                    onClick={() => void refreshDetailDocuments()}
+                  >
+                    {detailDocumentsLoading ? "Refreshing…" : "Refresh links"}
+                  </button>
+                  <Link to={`/portal/admin/users/${detailAgent.id}`} className="admin-icon-btn">
+                    View full profile
+                  </Link>
+                </div>
+              </div>
+
+              {detailDocumentsLoading && detailDocuments.length === 0 && (
+                <div className="portal-incentives-loading">
+                  <span className="onboarding-spinner" aria-hidden="true" />
+                  <span>Loading documents...</span>
+                </div>
+              )}
+
+              {!detailDocumentsLoading && detailDocumentsError && (
+                <p className="admin-error">{detailDocumentsError}</p>
+              )}
+
+              {!detailDocumentsError && (detailW9 || detailDirectDeposit) && (
+                <dl className="admin-genesis-details-grid admin-user-form-status">
+                  {detailW9 && (
+                    <div className="admin-genesis-details-item">
+                      <dt>Form W-9</dt>
+                      <dd>
+                        Signed {formatDocumentSummaryDate(detailW9.signedAt)} by {detailW9.signatureName}
+                      </dd>
+                    </div>
+                  )}
+                  {detailDirectDeposit && (
+                    <div className="admin-genesis-details-item">
+                      <dt>Direct deposit</dt>
+                      <dd>
+                        Signed {formatDocumentSummaryDate(detailDirectDeposit.signedAt)} —{" "}
+                        {detailDirectDeposit.accountType === "checking" ? "Checking" : "Savings"} account
+                      </dd>
+                    </div>
+                  )}
+                </dl>
+              )}
+
+              {!detailDocumentsError && (
+                <AdminUserDocumentsList documents={detailDocuments} />
+              )}
+            </div>
           </div>
         </div>
       )}

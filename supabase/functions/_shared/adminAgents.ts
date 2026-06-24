@@ -306,6 +306,65 @@ export async function buildAgentSummaries(
   return summaries.sort((a, b) => a.name.localeCompare(b.name));
 }
 
+export async function buildAgentSummaryForUser(
+  adminClient: SupabaseClient,
+  userId: string,
+  options?: { includeSensitive?: boolean },
+): Promise<AgentSummary | null> {
+  const includeSensitive = options?.includeSensitive ?? false;
+  const { data, error } = await adminClient.auth.admin.getUserById(userId);
+  if (error || !data.user) return null;
+
+  const user = data.user;
+  const emailDomain = getEmailDomain();
+  if (!user.email?.toLowerCase().endsWith(`@${emailDomain}`)) return null;
+
+  const [onboardingMaps, compLevelsByUserId, users] = await Promise.all([
+    loadOnboardingMaps(adminClient),
+    loadCompLevelsByUserId(adminClient),
+    listPortalUsers(adminClient),
+  ]);
+
+  const usersById = new Map(users.map((entry) => [entry.id, entry]));
+  const onboarding = resolveOnboardingForUser(user, onboardingMaps);
+  const referrerId = onboarding?.referrer_user_id ?? null;
+
+  const genesisCreatedAt = user.user_metadata?.genesis_account_created_at;
+  const genesisAccountCreatedAt = typeof genesisCreatedAt === "string" && genesisCreatedAt.trim()
+    ? genesisCreatedAt
+    : null;
+
+  const genesisSkippedAt = user.user_metadata?.genesis_account_skipped_at;
+  const genesisAccountSkippedAt = typeof genesisSkippedAt === "string" && genesisSkippedAt.trim()
+    ? genesisSkippedAt
+    : null;
+
+  const onboardingDetails = onboarding
+    ? await buildOnboardingDetails(onboarding, includeSensitive)
+    : null;
+
+  return {
+    id: user.id,
+    email: user.email ?? "",
+    name: resolveDisplayName(user, onboarding?.legal_name),
+    role: getUserRole(user),
+    compLevel: compLevelsByUserId.get(user.id) ?? null,
+    referrerId,
+    referrerName: resolveReferrerName(referrerId, usersById, onboardingMaps.byUserId),
+    uplineNetwork: onboarding?.upline_network ?? null,
+    status: onboarding?.status ?? null,
+    emailConfirmed: Boolean(user.email_confirmed_at),
+    genesisAccountCreatedAt,
+    genesisAccountSkippedAt,
+    genesisStatus: resolveGenesisAccountStatus(genesisAccountCreatedAt, genesisAccountSkippedAt),
+    onboardingCompletedAt: onboarding?.onboarding_completed_at ?? null,
+    onboarding: onboardingDetails,
+    hasOnboardingRecord: Boolean(onboarding),
+    createdAt: user.created_at,
+    source: typeof user.app_metadata?.source === "string" ? user.app_metadata.source : null,
+  };
+}
+
 export async function loadPortalProfilePhotos(
   adminClient: SupabaseClient,
 ): Promise<Map<string, { profilePhotoPath: string | null; profileUpdatedAt: string | null }>> {

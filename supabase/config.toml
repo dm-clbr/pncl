@@ -143,6 +143,9 @@ verify_jwt = true
 [functions.submit-portal-direct-deposit]
 verify_jwt = true
 
+[functions.admin-get-user-profile]
+verify_jwt = true
+
 [functions.admin-get-portal-todo-completion]
 verify_jwt = true
 

@@ -31,6 +31,7 @@ import AdminFullRoute from "./components/AdminFullRoute.tsx";
 import AdminIndexRedirect from "./components/AdminIndexRedirect.tsx";
 import AdminHierarchy from "./pages/admin/AdminHierarchy.tsx";
 import AdminUsers from "./pages/admin/AdminUsers.tsx";
+import AdminUserDetail from "./pages/admin/AdminUserDetail.tsx";
 import AdminAddUser from "./pages/admin/AdminAddUser.tsx";
 import AdminIncentives from "./pages/admin/AdminIncentives.tsx";
 import AdminBrandAssets from "./pages/admin/AdminBrandAssets.tsx";
@@ -145,6 +146,7 @@ const App = () => (
             <Route path="hierarchy" element={<AdminFullRoute><AdminHierarchy /></AdminFullRoute>} />
             <Route path="users" element={<AdminFullRoute><AdminUsers /></AdminFullRoute>} />
             <Route path="users/new" element={<AdminFullRoute><AdminAddUser /></AdminFullRoute>} />
+            <Route path="users/:userId" element={<AdminFullRoute><AdminUserDetail /></AdminFullRoute>} />
             <Route path="incentives" element={<AdminFullRoute><AdminIncentives /></AdminFullRoute>} />
             <Route path="brand-assets" element={<AdminFullRoute><AdminBrandAssets /></AdminFullRoute>} />
             <Route path="carriers" element={<AdminFullRoute><AdminCarriers /></AdminFullRoute>} />

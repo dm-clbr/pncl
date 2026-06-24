@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { Mail, Pencil, Trash2, UserCog, UserPlus, Users, X } from "lucide-react";
+import { UserPlus, Users, X } from "lucide-react";
+import AdminUserRowActionsMenu from "@/components/admin/AdminUserRowActionsMenu";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   deleteUser,
@@ -24,11 +25,6 @@ function statusLabel(agent: AgentSummary): string {
   if (agent.status) return agent.status.replace(/_/g, " ");
   return "Active";
 }
-
-const ELEVATED_ROLES: Array<{ value: PortalRole; label: string }> = [
-  { value: "admin", label: "Admin" },
-  { value: "genesis_admin", label: "Genesis admin" },
-];
 
 function roleChangeMessage(agent: AgentSummary, nextRole: PortalRole): string {
   if (nextRole === "admin") return `Set ${agent.name}'s role to admin?`;
@@ -103,14 +99,8 @@ export default function AdminUsers() {
     }
   };
 
-  const handleRoleSelect = (agent: AgentSummary, value: string) => {
-    if (value === "agent") {
-      void handleRoleChange(agent, "agent");
-      return;
-    }
-    if (value === "admin" || value === "genesis_admin") {
-      void handleRoleChange(agent, value);
-    }
+  const handleRoleSelect = (agent: AgentSummary, nextRole: PortalRole) => {
+    void handleRoleChange(agent, nextRole);
   };
 
   const handleCompLevelChange = async (agent: AgentSummary, compLevel: number | null) => {
@@ -251,7 +241,11 @@ export default function AdminUsers() {
 
                 return (
                   <tr key={agent.id}>
-                    <td>{agent.name}</td>
+                    <td>
+                      <Link to={`/portal/admin/users/${agent.id}`} className="admin-user-link">
+                        {agent.name}
+                      </Link>
+                    </td>
                     <td>{agent.email}</td>
                     <td>{agent.referrerName ?? agent.uplineNetwork ?? "—"}</td>
                     <td>
@@ -274,67 +268,18 @@ export default function AdminUsers() {
                       </span>
                     </td>
                     <td>
-                      <div className="admin-row-actions">
-                        <button
-                          type="button"
-                          className="admin-icon-btn"
-                          disabled={savingEmail}
-                          onClick={() => openEmailEditor(agent)}
-                        >
-                          <Pencil size={16} aria-hidden="true" />
-                          Edit email
-                        </button>
-                        {!agent.emailConfirmed && (
-                          <button
-                            type="button"
-                            className="admin-icon-btn"
-                            disabled={isResending}
-                            onClick={() => void handleResendActivation(agent)}
-                          >
-                            <Mail size={16} aria-hidden="true" />
-                            {isResending ? "Sending…" : "Resend activation"}
-                          </button>
-                        )}
-                        {!isSelf && (
-                          <>
-                            <label className="admin-role-update">
-                              <UserCog size={16} aria-hidden="true" />
-                              <select
-                                className="admin-role-select"
-                                value={agent.role === "agent" ? "" : agent.role}
-                                disabled={isUpdating || isDeleting}
-                                aria-label={`Update role for ${agent.name}`}
-                                onChange={(event) => {
-                                  const { value } = event.target;
-                                  event.target.value = agent.role === "agent" ? "" : agent.role;
-                                  handleRoleSelect(agent, value);
-                                }}
-                              >
-                                <option value="" disabled>
-                                  {isUpdating ? "Updating…" : "Update role"}
-                                </option>
-                                {ELEVATED_ROLES.map(({ value, label }) => (
-                                  <option key={value} value={value}>
-                                    {label}
-                                  </option>
-                                ))}
-                                {agent.role !== "agent" && (
-                                  <option value="agent">Remove elevated access</option>
-                                )}
-                              </select>
-                            </label>
-                            <button
-                              type="button"
-                              className="admin-icon-btn admin-icon-btn-danger"
-                              disabled={isDeleting}
-                              onClick={() => void handleDeleteUser(agent)}
-                            >
-                              <Trash2 size={16} aria-hidden="true" />
-                              {isDeleting ? "Deleting…" : "Delete"}
-                            </button>
-                          </>
-                        )}
-                      </div>
+                      <AdminUserRowActionsMenu
+                        agent={agent}
+                        isSelf={isSelf}
+                        savingEmail={savingEmail}
+                        isResending={isResending}
+                        isUpdating={isUpdating}
+                        isDeleting={isDeleting}
+                        onEditEmail={openEmailEditor}
+                        onResendActivation={handleResendActivation}
+                        onRoleChange={handleRoleSelect}
+                        onDelete={handleDeleteUser}
+                      />
                     </td>
                   </tr>
                 );
