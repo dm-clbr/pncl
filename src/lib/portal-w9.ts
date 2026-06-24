@@ -41,6 +41,7 @@ export interface PortalW9Summary {
   tinType: W9TinType;
   signatureName: string;
   signedAt: string;
+  pdfPath: string | null;
 }
 
 export const EMPTY_W9_FORM: PortalW9FormValues = {
@@ -146,6 +147,7 @@ interface PortalW9Row {
   tin_type: W9TinType;
   signature_name: string;
   signed_at: string;
+  pdf_path: string | null;
 }
 
 function mapPortalW9Summary(row: PortalW9Row): PortalW9Summary {
@@ -162,6 +164,7 @@ function mapPortalW9Summary(row: PortalW9Row): PortalW9Summary {
     tinType: row.tin_type,
     signatureName: row.signature_name,
     signedAt: row.signed_at,
+    pdfPath: row.pdf_path,
   };
 }
 
@@ -169,7 +172,7 @@ export async function fetchPortalW9(userId: string): Promise<PortalW9Summary | n
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from("portal_w9_forms")
-    .select("user_id, legal_name, business_name, tax_classification, address_line1, address_line2, city, state, zip, tin_type, signature_name, signed_at")
+    .select("user_id, legal_name, business_name, tax_classification, address_line1, address_line2, city, state, zip, tin_type, signature_name, signed_at, pdf_path")
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -226,6 +229,43 @@ export async function submitPortalW9(
   }
 
   return data.w9 as PortalW9Summary;
+}
+
+export async function getW9PdfUrl(pdfPath: string): Promise<string | null> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.storage
+    .from("portal-profile-documents")
+    .createSignedUrl(pdfPath, 3600);
+
+  if (error) throw error;
+  return data?.signedUrl ?? null;
+}
+
+export async function fetchPortalW9Document(
+  accessToken: string,
+): Promise<{ w9: PortalW9Summary; downloadUrl: string }> {
+  if (!isSupabaseAuthConfigured()) {
+    throw new Error("Portal authentication is not configured.");
+  }
+
+  const { url, anonKey } = getSupabaseConfig();
+  const response = await fetch(`${url.replace(/\/$/, "")}/functions/v1/get-portal-w9-document`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      apikey: anonKey,
+    },
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message ?? "Unable to load W-9 document");
+  }
+
+  return {
+    w9: data.w9 as PortalW9Summary,
+    downloadUrl: data.downloadUrl as string,
+  };
 }
 
 export function isW9TodoComplete(user: User | null, w9Submitted: boolean): boolean {

@@ -7,6 +7,8 @@ import {
   type PortalW9Record,
   validateSubmitPortalW9Payload,
 } from "../_shared/portalW9.ts";
+import { ensureW9Pdf } from "../_shared/portalW9Documents.ts";
+import { getW9PdfPath } from "../_shared/portalW9Pdf.ts";
 import { encryptTemporaryPassword } from "../_shared/security.ts";
 
 function getCompletedTodos(metadata: Record<string, unknown> | undefined): Record<string, boolean> {
@@ -30,6 +32,7 @@ serve(async (req) => {
     const payload = validateSubmitPortalW9Payload(await req.json());
     const tinEncrypted = await encryptTemporaryPassword(payload.tin);
     const now = new Date().toISOString();
+    const pdfPath = getW9PdfPath(user.id);
 
     const { data, error } = await adminClient
       .from("portal_w9_forms")
@@ -51,6 +54,7 @@ serve(async (req) => {
         exempt_payee_code: payload.exemptPayeeCode ?? null,
         fatca_exemption_code: payload.fatcaExemptionCode ?? null,
         account_numbers: payload.accountNumbers ?? null,
+        pdf_path: pdfPath,
         updated_at: now,
       }, { onConflict: "user_id" })
       .select("*")
@@ -59,6 +63,9 @@ serve(async (req) => {
     if (error) {
       throw new Error(error.message);
     }
+
+    const record = data as PortalW9Record;
+    await ensureW9Pdf(adminClient, { ...record, pdf_path: pdfPath });
 
     const completedTodos = {
       ...getCompletedTodos(user.user_metadata),
@@ -79,7 +86,7 @@ serve(async (req) => {
     logOnboarding("portal_w9_submitted", { userId: user.id });
 
     return jsonResponse({
-      w9: mapPortalW9Summary(data as PortalW9Record),
+      w9: mapPortalW9Summary({ ...record, pdf_path: pdfPath }),
       message: "W-9 submitted successfully.",
     });
   } catch (error) {

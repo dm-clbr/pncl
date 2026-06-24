@@ -18,7 +18,9 @@ import {
   type PortalProfileFormValues,
 } from "@/lib/portal-profile";
 import { getDirectDepositPdfUrl } from "@/lib/portal-direct-deposit";
+import { fetchPortalW9Document, getW9PdfUrl } from "@/lib/portal-w9";
 import { usePortalDirectDeposit } from "@/hooks/usePortalDirectDeposit";
+import { usePortalW9 } from "@/hooks/usePortalW9";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 import "@/styles/home2.css";
@@ -60,7 +62,8 @@ function SizeSelect({
 }
 
 export default function PortalProfile() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
+  const { w9, submitted: w9Submitted, loading: w9Loading } = usePortalW9();
   const { directDeposit, submitted: directDepositSubmitted, loading: directDepositLoading } = usePortalDirectDeposit();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
@@ -72,6 +75,7 @@ export default function PortalProfile() {
   const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const [directDepositPdfUrl, setDirectDepositPdfUrl] = useState<string | null>(null);
+  const [w9PdfUrl, setW9PdfUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!directDeposit?.pdfPath) {
@@ -93,6 +97,46 @@ export default function PortalProfile() {
       cancelled = true;
     };
   }, [directDeposit?.pdfPath]);
+
+  useEffect(() => {
+    const token = session?.access_token;
+    if (!w9Submitted || !token) {
+      setW9PdfUrl(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadW9Pdf() {
+      try {
+        if (w9?.pdfPath) {
+          const url = await getW9PdfUrl(w9.pdfPath);
+          if (!cancelled) setW9PdfUrl(url);
+          return;
+        }
+
+        const { downloadUrl } = await fetchPortalW9Document(token);
+        if (!cancelled) setW9PdfUrl(downloadUrl);
+      } catch {
+        if (!cancelled) setW9PdfUrl(null);
+      }
+    }
+
+    void loadW9Pdf();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.access_token, w9Submitted, w9?.pdfPath]);
+
+  const w9SignedDate = useMemo(() => {
+    if (!w9?.signedAt) return null;
+    return new Date(w9.signedAt).toLocaleDateString(undefined, {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  }, [w9?.signedAt]);
 
   const directDepositSignedDate = useMemo(() => {
     if (!directDeposit?.signedAt) return null;
@@ -376,42 +420,71 @@ export default function PortalProfile() {
               </div>
             </div>
 
-            {directDepositLoading ? (
+            {(w9Loading || directDepositLoading) && !w9Submitted && !directDepositSubmitted ? (
               <div className="portal-incentives-loading">
                 <span className="onboarding-spinner" aria-hidden="true" />
                 <span>Loading documents...</span>
               </div>
-            ) : directDepositSubmitted && directDeposit ? (
+            ) : w9Submitted || directDepositSubmitted ? (
               <div className="portal-profile-documents">
-                <div className="portal-profile-document-item">
-                  <div>
-                    <strong>Direct deposit request</strong>
-                    <p className="portal-panel-note">
-                      Submitted{directDepositSignedDate ? ` on ${directDepositSignedDate}` : ""} for {directDeposit.legalName}.
-                    </p>
+                {w9Submitted && w9 && (
+                  <div className="portal-profile-document-item">
+                    <div>
+                      <strong>Form W-9</strong>
+                      <p className="portal-panel-note">
+                        Submitted{w9SignedDate ? ` on ${w9SignedDate}` : ""} for {w9.legalName}.
+                      </p>
+                    </div>
+                    {w9PdfUrl ? (
+                      <a
+                        href={w9PdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="portal-w9-aside-pdf"
+                      >
+                        Download PDF
+                        <ArrowUpRight size={14} aria-hidden="true" />
+                      </a>
+                    ) : (
+                      <Link to="/portal/w9" className="portal-w9-aside-pdf">
+                        View form
+                        <ArrowUpRight size={14} aria-hidden="true" />
+                      </Link>
+                    )}
                   </div>
-                  {directDepositPdfUrl ? (
-                    <a
-                      href={directDepositPdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="portal-w9-aside-pdf"
-                    >
-                      Download PDF
-                      <ArrowUpRight size={14} aria-hidden="true" />
-                    </a>
-                  ) : (
-                    <Link to="/portal/direct-deposit" className="portal-w9-aside-pdf">
-                      View form
-                      <ArrowUpRight size={14} aria-hidden="true" />
-                    </Link>
-                  )}
-                </div>
+                )}
+                {directDepositSubmitted && directDeposit && (
+                  <div className="portal-profile-document-item">
+                    <div>
+                      <strong>Direct deposit request</strong>
+                      <p className="portal-panel-note">
+                        Submitted{directDepositSignedDate ? ` on ${directDepositSignedDate}` : ""} for {directDeposit.legalName}.
+                      </p>
+                    </div>
+                    {directDepositPdfUrl ? (
+                      <a
+                        href={directDepositPdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="portal-w9-aside-pdf"
+                      >
+                        Download PDF
+                        <ArrowUpRight size={14} aria-hidden="true" />
+                      </a>
+                    ) : (
+                      <Link to="/portal/direct-deposit" className="portal-w9-aside-pdf">
+                        View form
+                        <ArrowUpRight size={14} aria-hidden="true" />
+                      </Link>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <p className="portal-panel-note">
-                No documents yet.{" "}
-                <Link to="/portal/direct-deposit">Submit your direct deposit form</Link> from the portal dashboard.
+                No documents yet. Submit your{" "}
+                <Link to="/portal/w9">W-9</Link> or{" "}
+                <Link to="/portal/direct-deposit">direct deposit form</Link> from the portal dashboard.
               </p>
             )}
           </div>

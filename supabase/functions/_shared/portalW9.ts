@@ -78,6 +78,7 @@ export interface PortalW9Summary {
   tinType: W9TinType;
   signatureName: string;
   signedAt: string;
+  pdfPath: string | null;
 }
 
 export interface PortalW9Record {
@@ -98,6 +99,7 @@ export interface PortalW9Record {
   exempt_payee_code: string | null;
   fatca_exemption_code: string | null;
   account_numbers: string | null;
+  pdf_path: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -274,6 +276,7 @@ export function mapPortalW9Summary(row: PortalW9Record): PortalW9Summary {
     tinType: row.tin_type,
     signatureName: row.signature_name,
     signedAt: row.signed_at,
+    pdfPath: row.pdf_path,
   };
 }
 

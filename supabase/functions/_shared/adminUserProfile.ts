@@ -1,11 +1,8 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { DIRECT_DEPOSIT_PDF_BUCKET } from "./portalDirectDeposit.ts";
 import type { DirectDepositRecord } from "./portalDirectDeposit.ts";
 import type { PortalW9Record } from "./portalW9.ts";
-import { generatePortalW9PdfFromRecord, getW9PdfPath } from "./portalW9Pdf.ts";
-import { decryptTemporaryPassword } from "./security.ts";
-
-const SIGNED_URL_TTL_SECONDS = 3600;
+import { createPortalW9SignedUrl, ensureW9Pdf } from "./portalW9Documents.ts";
+import { DIRECT_DEPOSIT_PDF_BUCKET } from "./portalDirectDeposit.ts";
 
 export interface AdminUserDocument {
   id: string;
@@ -30,34 +27,7 @@ async function createSignedDownloadUrl(
   adminClient: SupabaseClient,
   path: string,
 ): Promise<string> {
-  const { data, error } = await adminClient.storage
-    .from(DIRECT_DEPOSIT_PDF_BUCKET)
-    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
-
-  if (error || !data?.signedUrl) {
-    throw new Error(error?.message ?? "Unable to create document download link");
-  }
-
-  return data.signedUrl;
-}
-
-async function ensureW9Pdf(adminClient: SupabaseClient, record: PortalW9Record): Promise<string> {
-  const path = getW9PdfPath(record.user_id);
-  const tin = await decryptTemporaryPassword(record.tin_encrypted);
-  const pdfBytes = await generatePortalW9PdfFromRecord(record, tin);
-
-  const { error } = await adminClient.storage
-    .from(DIRECT_DEPOSIT_PDF_BUCKET)
-    .upload(path, pdfBytes, {
-      upsert: true,
-      contentType: "application/pdf",
-    });
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return path;
+  return createPortalW9SignedUrl(adminClient, path);
 }
 
 export async function loadAdminUserDocuments(

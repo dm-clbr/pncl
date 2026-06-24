@@ -140,6 +140,9 @@ verify_jwt = true
 [functions.submit-portal-w9]
 verify_jwt = true
 
+[functions.get-portal-w9-document]
+verify_jwt = true
+
 [functions.submit-portal-direct-deposit]
 verify_jwt = true
 
