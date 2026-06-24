@@ -201,6 +201,8 @@ export async function submitPortalW9(
     body: JSON.stringify({
       legalName: values.legalName.trim(),
       businessName: values.businessName.trim() || null,
+      taxClass: values.taxClass,
+      llcClassification: values.taxClass === "llc" ? values.llcClassification || null : null,
       taxClassification: getStoredTaxClassification(values),
       addressLine1: values.addressLine1.trim(),
       addressLine2: values.addressLine2.trim() || null,

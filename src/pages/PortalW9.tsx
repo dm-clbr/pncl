@@ -251,6 +251,7 @@ export default function PortalW9() {
                           <input
                             type="radio"
                             name="taxClass"
+                            value={option.id}
                             checked={form.taxClass === option.id}
                             onChange={() => handleTaxClassChange(option.id)}
                           />

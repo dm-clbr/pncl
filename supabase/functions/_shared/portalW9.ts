@@ -10,6 +10,19 @@ export const W9_STORED_TAX_CLASSIFICATIONS = [
   "Other (see instructions)",
 ] as const;
 
+export const W9_TAX_CLASS_OPTIONS = [
+  { id: "individual", label: "Individual/sole proprietor" },
+  { id: "c_corp", label: "C corporation" },
+  { id: "s_corp", label: "S corporation" },
+  { id: "partnership", label: "Partnership" },
+  { id: "trust_estate", label: "Trust/estate" },
+  { id: "llc", label: "Limited liability company (LLC)" },
+  { id: "other", label: "Other (see instructions)" },
+] as const;
+
+export type W9TaxClassOptionId = (typeof W9_TAX_CLASS_OPTIONS)[number]["id"];
+export type W9LlcClassification = "C" | "S" | "P";
+
 export type W9TinType = "ssn" | "ein";
 
 export interface PortalW9FormValues {
@@ -35,6 +48,8 @@ export interface SubmitPortalW9Payload {
   legalName: string;
   businessName?: string | null;
   taxClassification: string;
+  taxClass?: W9TaxClassOptionId;
+  llcClassification?: W9LlcClassification | null;
   addressLine1: string;
   addressLine2?: string | null;
   city: string;
@@ -116,6 +131,52 @@ function isValidEin(value: string): boolean {
   return /^\d{2}-\d{7}$/.test(normalizeEin(value));
 }
 
+function isW9TaxClassOptionId(value: string): value is W9TaxClassOptionId {
+  return W9_TAX_CLASS_OPTIONS.some((option) => option.id === value);
+}
+
+function isW9LlcClassification(value: string): value is W9LlcClassification {
+  return value === "C" || value === "S" || value === "P";
+}
+
+export function taxClassToStoredLabel(
+  taxClass: W9TaxClassOptionId,
+  llcClassification: W9LlcClassification | "",
+): string {
+  const option = W9_TAX_CLASS_OPTIONS.find((item) => item.id === taxClass);
+  if (!option) return "";
+  if (taxClass === "llc" && llcClassification) {
+    return `${option.label} (${llcClassification})`;
+  }
+  return option.label;
+}
+
+function resolveTaxClassification(data: Record<string, unknown>): string {
+  const taxClass = optionalText(data.taxClass);
+  if (taxClass) {
+    if (!isW9TaxClassOptionId(taxClass)) {
+      throw new Error("Line 3a — federal tax classification is required");
+    }
+    if (taxClass === "llc") {
+      const llcClassification = optionalText(data.llcClassification);
+      if (!isW9LlcClassification(llcClassification)) {
+        throw new Error("Enter the LLC tax classification (C, S, or P)");
+      }
+      return taxClassToStoredLabel(taxClass, llcClassification);
+    }
+    return taxClassToStoredLabel(taxClass, "");
+  }
+
+  const taxClassification = optionalText(data.taxClassification);
+  if (taxClassification === "Limited liability company (LLC)") {
+    throw new Error("Enter the LLC tax classification (C, S, or P)");
+  }
+  if (!W9_STORED_TAX_CLASSIFICATIONS.includes(taxClassification as typeof W9_STORED_TAX_CLASSIFICATIONS[number])) {
+    throw new Error("Line 3a — federal tax classification is required");
+  }
+  return taxClassification;
+}
+
 export function validateSubmitPortalW9Payload(body: unknown): SubmitPortalW9Payload {
   if (!body || typeof body !== "object") {
     throw new Error("Invalid request body");
@@ -127,10 +188,9 @@ export function validateSubmitPortalW9Payload(body: unknown): SubmitPortalW9Payl
     throw new Error("Line 1 — name is required");
   }
 
-  const taxClassification = optionalText(data.taxClassification);
-  if (!W9_STORED_TAX_CLASSIFICATIONS.includes(taxClassification as typeof W9_STORED_TAX_CLASSIFICATIONS[number])) {
-    throw new Error("Line 3a — federal tax classification is required");
-  }
+  const taxClassification = resolveTaxClassification(data);
+  const taxClass = optionalText(data.taxClass);
+  const llcClassification = optionalText(data.llcClassification);
 
   const addressLine1 = optionalText(data.addressLine1);
   if (!addressLine1) {
@@ -182,6 +242,8 @@ export function validateSubmitPortalW9Payload(body: unknown): SubmitPortalW9Payl
     legalName,
     businessName: businessName || null,
     taxClassification,
+    taxClass: isW9TaxClassOptionId(taxClass) ? taxClass : undefined,
+    llcClassification: isW9LlcClassification(llcClassification) ? llcClassification : null,
     addressLine1,
     addressLine2: addressLine2 || null,
     city,
