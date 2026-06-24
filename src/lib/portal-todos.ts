@@ -24,6 +24,16 @@ export const FALLBACK_PORTAL_TODOS: PortalTodo[] = [
     showEmailHint: false,
   },
   {
+    id: "direct_deposit_setup",
+    title: "Set up direct deposit",
+    description:
+      "Submit your direct deposit request so PNCL can pay commissions straight to your bank account. A signed PDF is saved to your profile.",
+    href: "/portal/direct-deposit",
+    external: false,
+    actionLabel: "Fill out direct deposit form",
+    showEmailHint: false,
+  },
+  {
     id: "leadspply_account",
     title: "Create your LeadSpply account",
     description:
@@ -130,13 +140,22 @@ export function isPortalTodoCompleted(user: User | null, todoId: string): boolea
   return getCompletedTodos(user)[todoId] === true;
 }
 
+export const REQUIRED_FORM_TODO_IDS = ["w9_setup", "direct_deposit_setup"] as const;
+
+export function isRequiredFormTodo(todoId: string): boolean {
+  return (REQUIRED_FORM_TODO_IDS as readonly string[]).includes(todoId);
+}
+
 export function getPendingPortalTodos(
   user: User | null,
   todos: PortalTodo[],
-  options?: { w9Submitted?: boolean },
+  options?: { w9Submitted?: boolean; directDepositSubmitted?: boolean },
 ): PortalTodo[] {
   return todos.filter((todo) => {
     if (todo.id === "w9_setup" && options?.w9Submitted) {
+      return false;
+    }
+    if (todo.id === "direct_deposit_setup" && options?.directDepositSubmitted) {
       return false;
     }
     return !isPortalTodoCompleted(user, todo.id);

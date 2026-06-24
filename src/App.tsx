@@ -22,6 +22,7 @@ import PortalCarrierSheet from "./pages/PortalCarrierSheet.tsx";
 import PortalBrandAssets from "./pages/PortalBrandAssets.tsx";
 import PortalProfile from "./pages/PortalProfile.tsx";
 import PortalW9 from "./pages/PortalW9.tsx";
+import PortalDirectDeposit from "./pages/PortalDirectDeposit.tsx";
 import PortalClients from "./pages/PortalClients.tsx";
 import PortalClientIntake from "./pages/PortalClientIntake.tsx";
 import AdminLayout from "./components/AdminLayout.tsx";
@@ -103,6 +104,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <PortalW9 />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/portal/direct-deposit"
+            element={
+              <ProtectedRoute>
+                <PortalDirectDeposit />
               </ProtectedRoute>
             }
           />

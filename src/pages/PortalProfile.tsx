@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Camera } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, Camera } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
 import ProfilePhotoCropModal from "@/components/ProfilePhotoCropModal";
 import PortalCarrierCredentials from "@/components/PortalCarrierCredentials";
@@ -17,6 +17,8 @@ import {
   WAIST_SIZES,
   type PortalProfileFormValues,
 } from "@/lib/portal-profile";
+import { getDirectDepositPdfUrl } from "@/lib/portal-direct-deposit";
+import { usePortalDirectDeposit } from "@/hooks/usePortalDirectDeposit";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 import "@/styles/home2.css";
@@ -59,6 +61,7 @@ function SizeSelect({
 
 export default function PortalProfile() {
   const { user } = useAuth();
+  const { directDeposit, submitted: directDepositSubmitted, loading: directDepositLoading } = usePortalDirectDeposit();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -68,6 +71,37 @@ export default function PortalProfile() {
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const [pendingPhotoFile, setPendingPhotoFile] = useState<File | null>(null);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [directDepositPdfUrl, setDirectDepositPdfUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!directDeposit?.pdfPath) {
+      setDirectDepositPdfUrl(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    void getDirectDepositPdfUrl(directDeposit.pdfPath)
+      .then((url) => {
+        if (!cancelled) setDirectDepositPdfUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setDirectDepositPdfUrl(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [directDeposit?.pdfPath]);
+
+  const directDepositSignedDate = useMemo(() => {
+    if (!directDeposit?.signedAt) return null;
+    return new Date(directDeposit.signedAt).toLocaleDateString(undefined, {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  }, [directDeposit?.signedAt]);
 
   useEffect(() => {
     document.title = "My Profile — PNCL Portal";
@@ -331,6 +365,54 @@ export default function PortalProfile() {
                   </button>
                 </div>
               </form>
+            )}
+          </div>
+
+          <div className="carrier-sheet-panel portal-profile-panel">
+            <div className="carrier-sheet-panel-head">
+              <div>
+                <h2>Saved documents</h2>
+                <p>Signed forms submitted through the portal are stored here for your records.</p>
+              </div>
+            </div>
+
+            {directDepositLoading ? (
+              <div className="portal-incentives-loading">
+                <span className="onboarding-spinner" aria-hidden="true" />
+                <span>Loading documents...</span>
+              </div>
+            ) : directDepositSubmitted && directDeposit ? (
+              <div className="portal-profile-documents">
+                <div className="portal-profile-document-item">
+                  <div>
+                    <strong>Direct deposit request</strong>
+                    <p className="portal-panel-note">
+                      Submitted{directDepositSignedDate ? ` on ${directDepositSignedDate}` : ""} for {directDeposit.legalName}.
+                    </p>
+                  </div>
+                  {directDepositPdfUrl ? (
+                    <a
+                      href={directDepositPdfUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="portal-w9-aside-pdf"
+                    >
+                      Download PDF
+                      <ArrowUpRight size={14} aria-hidden="true" />
+                    </a>
+                  ) : (
+                    <Link to="/portal/direct-deposit" className="portal-w9-aside-pdf">
+                      View form
+                      <ArrowUpRight size={14} aria-hidden="true" />
+                    </Link>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="portal-panel-note">
+                No documents yet.{" "}
+                <Link to="/portal/direct-deposit">Submit your direct deposit form</Link> from the portal dashboard.
+              </p>
             )}
           </div>
 

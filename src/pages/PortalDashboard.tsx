@@ -20,10 +20,12 @@ import { hasAdminConsoleAccess, isGenesisAdmin } from "@/lib/roles";
 import {
   completePortalTodo,
   getPendingPortalTodos,
+  isRequiredFormTodo,
   type PortalTodo,
 } from "@/lib/portal-todos";
 import { usePortalTodos } from "@/hooks/usePortalTodos";
 import { usePortalW9 } from "@/hooks/usePortalW9";
+import { usePortalDirectDeposit } from "@/hooks/usePortalDirectDeposit";
 import {
   dismissGenesisNotice,
   GENESIS_LOGIN_URL,
@@ -157,7 +159,7 @@ function PortalTodoItem({
   completing: boolean;
   onComplete: (todoId: string) => void;
 }) {
-  const isW9 = todo.id === "w9_setup";
+  const isRequiredForm = isRequiredFormTodo(todo.id);
   const actionContent = (
     <>
       {todo.actionLabel}
@@ -167,7 +169,7 @@ function PortalTodoItem({
 
   return (
     <div className="portal-todo-item urgent">
-      {!isW9 && (
+      {!isRequiredForm && (
         <button
           type="button"
           className="portal-todo-check"
@@ -183,12 +185,12 @@ function PortalTodoItem({
         </button>
       )}
 
-      <div className={`portal-todo-copy${isW9 ? " portal-todo-copy-required" : ""}`}>
+      <div className={`portal-todo-copy${isRequiredForm ? " portal-todo-copy-required" : ""}`}>
         <div className="portal-todo-title-row">
           <PortalUrgentIcon size={16} />
           <strong>{todo.title}</strong>
           <span className="portal-todo-urgent-tag">
-            {isW9 ? "Required — top priority" : "Do this ASAP"}
+            {isRequiredForm ? "Required — top priority" : "Do this ASAP"}
           </span>
         </div>
         <p>{todo.description}</p>
@@ -229,13 +231,14 @@ export default function PortalDashboard() {
   const { sections: dashboardSections } = usePortalDashboardTabs();
   const { todos: portalTodos } = usePortalTodos();
   const { submitted: w9Submitted } = usePortalW9();
+  const { submitted: directDepositSubmitted } = usePortalDirectDeposit();
   const { photoUrl, initials, displayName } = usePortalProfile(portalUser);
 
   const pendingTodos = useMemo(
-    () => getPendingPortalTodos(portalUser, portalTodos, { w9Submitted }),
-    [portalUser, portalTodos, w9Submitted],
+    () => getPendingPortalTodos(portalUser, portalTodos, { w9Submitted, directDepositSubmitted }),
+    [portalUser, portalTodos, w9Submitted, directDepositSubmitted],
   );
-  const pendingW9 = pendingTodos.some((todo) => todo.id === "w9_setup");
+  const pendingRequiredForms = pendingTodos.some((todo) => isRequiredFormTodo(todo.id));
   const showGenesisNotice = shouldShowGenesisNotice(portalUser);
 
   const displaySections = useMemo((): PortalDashboardSection[] => {
@@ -410,8 +413,8 @@ export default function PortalDashboard() {
               <p>
                 <strong>{pendingTodos.length} urgent item{pendingTodos.length === 1 ? "" : "s"}</strong>
                 <span>
-                  {pendingW9
-                    ? "Complete your W-9 first — it's required before getting started."
+                  {pendingRequiredForms
+                    ? "Complete your required forms first — W-9 and direct deposit are needed before getting started."
                     : "Complete your setup steps before getting started."}
                 </span>
               </p>
@@ -431,8 +434,8 @@ export default function PortalDashboard() {
               >
                 <p className="portal-panel-note">
                   Complete these steps when you first join PNCL.
-                  {pendingW9
-                    ? " Your W-9 must be submitted before marking other items done."
+                  {pendingRequiredForms
+                    ? " Required forms must be submitted before marking other items done."
                     : " Mark each item done once you\u2019ve finished it."}
                 </p>
                 {pendingTodos.map((todo) => (
