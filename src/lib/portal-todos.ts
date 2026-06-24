@@ -14,6 +14,16 @@ export interface PortalTodo {
 /** Fallback when the API is unavailable (local dev without migration). */
 export const FALLBACK_PORTAL_TODOS: PortalTodo[] = [
   {
+    id: "w9_setup",
+    title: "Complete your W-9 form",
+    description:
+      "Submit your IRS Form W-9 so PNCL can process commission payments. This is required before you can get started.",
+    href: "/portal/w9",
+    external: false,
+    actionLabel: "Fill out W-9",
+    showEmailHint: false,
+  },
+  {
     id: "leadspply_account",
     title: "Create your LeadSpply account",
     description:
@@ -120,8 +130,17 @@ export function isPortalTodoCompleted(user: User | null, todoId: string): boolea
   return getCompletedTodos(user)[todoId] === true;
 }
 
-export function getPendingPortalTodos(user: User | null, todos: PortalTodo[]): PortalTodo[] {
-  return todos.filter((todo) => !isPortalTodoCompleted(user, todo.id));
+export function getPendingPortalTodos(
+  user: User | null,
+  todos: PortalTodo[],
+  options?: { w9Submitted?: boolean },
+): PortalTodo[] {
+  return todos.filter((todo) => {
+    if (todo.id === "w9_setup" && options?.w9Submitted) {
+      return false;
+    }
+    return !isPortalTodoCompleted(user, todo.id);
+  });
 }
 
 export async function completePortalTodo(todoId: string): Promise<void> {

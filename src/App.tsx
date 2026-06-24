@@ -21,6 +21,7 @@ import PortalDashboard from "./pages/PortalDashboard.tsx";
 import PortalCarrierSheet from "./pages/PortalCarrierSheet.tsx";
 import PortalBrandAssets from "./pages/PortalBrandAssets.tsx";
 import PortalProfile from "./pages/PortalProfile.tsx";
+import PortalW9 from "./pages/PortalW9.tsx";
 import PortalClients from "./pages/PortalClients.tsx";
 import PortalClientIntake from "./pages/PortalClientIntake.tsx";
 import AdminLayout from "./components/AdminLayout.tsx";
@@ -94,6 +95,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <PortalProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/portal/w9"
+            element={
+              <ProtectedRoute>
+                <PortalW9 />
               </ProtectedRoute>
             }
           />

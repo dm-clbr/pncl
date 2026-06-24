@@ -25,6 +25,7 @@ import {
   type PortalTodo,
 } from "@/lib/portal-todos";
 import { usePortalTodos } from "@/hooks/usePortalTodos";
+import { usePortalW9 } from "@/hooks/usePortalW9";
 import {
   dismissGenesisNotice,
   GENESIS_LOGIN_URL,
@@ -158,27 +159,39 @@ function PortalTodoItem({
   completing: boolean;
   onComplete: (todoId: string) => void;
 }) {
+  const isW9 = todo.id === "w9_setup";
+  const actionContent = (
+    <>
+      {todo.actionLabel}
+      <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
+    </>
+  );
+
   return (
     <div className="portal-todo-item urgent">
-      <button
-        type="button"
-        className="portal-todo-check"
-        onClick={() => onComplete(todo.id)}
-        disabled={completing}
-        aria-label={`Mark "${todo.title}" as complete`}
-      >
-        {completing ? (
-          <span className="onboarding-spinner portal-todo-check-spinner" aria-hidden="true" />
-        ) : (
-          <Circle size={20} strokeWidth={2} aria-hidden="true" />
-        )}
-      </button>
+      {!isW9 && (
+        <button
+          type="button"
+          className="portal-todo-check"
+          onClick={() => onComplete(todo.id)}
+          disabled={completing}
+          aria-label={`Mark "${todo.title}" as complete`}
+        >
+          {completing ? (
+            <span className="onboarding-spinner portal-todo-check-spinner" aria-hidden="true" />
+          ) : (
+            <Circle size={20} strokeWidth={2} aria-hidden="true" />
+          )}
+        </button>
+      )}
 
-      <div className="portal-todo-copy">
+      <div className={`portal-todo-copy${isW9 ? " portal-todo-copy-required" : ""}`}>
         <div className="portal-todo-title-row">
           <PortalUrgentIcon size={16} />
           <strong>{todo.title}</strong>
-          <span className="portal-todo-urgent-tag">Do this ASAP</span>
+          <span className="portal-todo-urgent-tag">
+            {isW9 ? "Required — top priority" : "Do this ASAP"}
+          </span>
         </div>
         <p>{todo.description}</p>
         {agentEmail && todo.showEmailHint !== false && (
@@ -186,15 +199,20 @@ function PortalTodoItem({
             Use <span>{agentEmail}</span> when you sign up.
           </p>
         )}
-        <a
-          href={todo.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="portal-todo-link"
-        >
-          {todo.actionLabel}
-          <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
-        </a>
+        {todo.external ? (
+          <a
+            href={todo.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="portal-todo-link"
+          >
+            {actionContent}
+          </a>
+        ) : (
+          <Link to={todo.href} className="portal-todo-link">
+            {actionContent}
+          </Link>
+        )}
       </div>
     </div>
   );
@@ -216,12 +234,14 @@ export default function PortalDashboard() {
   const { assets: brandAssets, loading: brandAssetsLoading } = usePortalBrandAssets();
   const { sections: dashboardSections } = usePortalDashboardTabs();
   const { todos: portalTodos } = usePortalTodos();
+  const { submitted: w9Submitted } = usePortalW9();
   const { photoUrl, initials, displayName } = usePortalProfile(portalUser);
 
   const pendingTodos = useMemo(
-    () => getPendingPortalTodos(portalUser, portalTodos),
-    [portalUser, portalTodos],
+    () => getPendingPortalTodos(portalUser, portalTodos, { w9Submitted }),
+    [portalUser, portalTodos, w9Submitted],
   );
+  const pendingW9 = pendingTodos.some((todo) => todo.id === "w9_setup");
   const showGenesisNotice = shouldShowGenesisNotice(portalUser);
 
   const displaySections = useMemo((): PortalDashboardSection[] => {
@@ -406,7 +426,11 @@ export default function PortalDashboard() {
               <PortalUrgentIcon />
               <p>
                 <strong>{pendingTodos.length} urgent item{pendingTodos.length === 1 ? "" : "s"}</strong>
-                <span>Complete your setup steps before getting started.</span>
+                <span>
+                  {pendingW9
+                    ? "Complete your W-9 first — it's required before getting started."
+                    : "Complete your setup steps before getting started."}
+                </span>
               </p>
             </div>
           )}
@@ -434,8 +458,10 @@ export default function PortalDashboard() {
                 onToggle={() => toggleSection("todos")}
               >
                 <p className="portal-panel-note">
-                  Complete these steps when you first join PNCL. Mark each item done once
-                  you&apos;ve finished it.
+                  Complete these steps when you first join PNCL.
+                  {pendingW9
+                    ? " Your W-9 must be submitted before marking other items done."
+                    : " Mark each item done once you\u2019ve finished it."}
                 </p>
                 {pendingTodos.map((todo) => (
                   <PortalTodoItem
