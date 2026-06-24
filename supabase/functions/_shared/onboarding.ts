@@ -74,7 +74,7 @@ export interface SubmitOnboardingPayload {
   hasLicense: string;
   npn?: string;
   hasEoInsurance: string;
-  referrerUserId?: string;
+  referralInviteId?: string;
 }
 
 export interface ReferrerInfo {
@@ -229,8 +229,8 @@ export function validateSubmitPayload(body: unknown): SubmitOnboardingPayload {
   const hasLicense = normalizeYesNo(data.hasLicense, "hasLicense");
   const hasEoInsurance = normalizeYesNo(data.hasEoInsurance, "hasEoInsurance");
   const npn = typeof data.npn === "string" ? data.npn.trim() : "";
-  const referrerUserId = typeof data.referrerId === "string" && isValidReferrerUserId(data.referrerId)
-    ? data.referrerId
+  const referralInviteId = typeof data.referralInviteId === "string" && isValidReferrerUserId(data.referralInviteId)
+    ? data.referralInviteId
     : undefined;
 
   return {
@@ -245,7 +245,7 @@ export function validateSubmitPayload(body: unknown): SubmitOnboardingPayload {
     hasLicense,
     npn: npn || undefined,
     hasEoInsurance,
-    referrerUserId,
+    referralInviteId,
   };
 }
 

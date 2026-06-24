@@ -9,6 +9,8 @@ import {
   resolveReferrer,
 } from "../_shared/onboarding.ts";
 import { provisionPortalAccount } from "../_shared/portalAuth.ts";
+import { isValidCompLevel } from "../_shared/compLevel.ts";
+import { updateAgentCompLevel } from "../_shared/portalReferralInvites.ts";
 import {
   encryptTemporaryPassword,
   generateHandoffToken,
@@ -20,6 +22,7 @@ interface CreateUserPayload {
   email: string;
   uplineNetwork?: string;
   referrerUserId?: string;
+  compLevel?: number;
 }
 
 function validateCreatePayload(body: unknown): CreateUserPayload {
@@ -44,7 +47,24 @@ function validateCreatePayload(body: unknown): CreateUserPayload {
     ? data.referrerUserId
     : undefined;
 
-  return { legalName, email: emailRaw, uplineNetwork: uplineNetwork || undefined, referrerUserId };
+  const compLevelRaw = data.compLevel;
+  const compLevel = typeof compLevelRaw === "number"
+    ? compLevelRaw
+    : typeof compLevelRaw === "string"
+    ? Number.parseInt(compLevelRaw, 10)
+    : undefined;
+
+  if (compLevel != null && !isValidCompLevel(compLevel)) {
+    throw new Error("Select a valid comp level.");
+  }
+
+  return {
+    legalName,
+    email: emailRaw,
+    uplineNetwork: uplineNetwork || undefined,
+    referrerUserId,
+    compLevel,
+  };
 }
 
 serve(async (req) => {
@@ -127,6 +147,10 @@ serve(async (req) => {
       .from("onboarding_records")
       .update({ supabase_user_id: supabaseUserId })
       .eq("id", record.id);
+
+    if (payload.compLevel != null) {
+      await updateAgentCompLevel(adminClient, supabaseUserId, payload.compLevel);
+    }
 
     logOnboarding("admin_user_created", {
       adminId: adminUser.id,

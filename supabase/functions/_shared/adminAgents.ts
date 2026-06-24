@@ -2,6 +2,7 @@ import type { SupabaseClient, User } from "https://esm.sh/@supabase/supabase-js@
 import { getEmailDomain } from "./onboarding.ts";
 import { getUserRole, type PortalRole } from "./adminAuth.ts";
 import { decryptTemporaryPassword } from "./security.ts";
+import { loadCompLevelsByUserId } from "./portalReferralInvites.ts";
 
 export type GenesisAccountStatus = "pending" | "created" | "skipped";
 
@@ -25,6 +26,7 @@ export interface AgentSummary {
   email: string;
   name: string;
   role: PortalRole;
+  compLevel: number | null;
   referrerId: string | null;
   referrerName: string | null;
   uplineNetwork: string | null;
@@ -35,6 +37,7 @@ export interface AgentSummary {
   genesisStatus: GenesisAccountStatus;
   onboardingCompletedAt: string | null;
   onboarding: AgentOnboardingDetails | null;
+  hasOnboardingRecord: boolean;
   createdAt: string;
   source: string | null;
 }
@@ -252,9 +255,10 @@ export async function buildAgentSummaries(
   options?: { includeSensitive?: boolean },
 ): Promise<AgentSummary[]> {
   const includeSensitive = options?.includeSensitive ?? false;
-  const [users, onboardingMaps] = await Promise.all([
+  const [users, onboardingMaps, compLevelsByUserId] = await Promise.all([
     listPortalUsers(adminClient),
     loadOnboardingMaps(adminClient),
+    loadCompLevelsByUserId(adminClient),
   ]);
 
   const usersById = new Map(users.map((user) => [user.id, user]));
@@ -282,6 +286,7 @@ export async function buildAgentSummaries(
       email: user.email ?? "",
       name: resolveDisplayName(user, onboarding?.legal_name),
       role: getUserRole(user),
+      compLevel: compLevelsByUserId.get(user.id) ?? null,
       referrerId,
       referrerName: resolveReferrerName(referrerId, usersById, onboardingMaps.byUserId),
       uplineNetwork: onboarding?.upline_network ?? null,
@@ -292,6 +297,7 @@ export async function buildAgentSummaries(
       genesisStatus: resolveGenesisAccountStatus(genesisAccountCreatedAt, genesisAccountSkippedAt),
       onboardingCompletedAt: onboarding?.onboarding_completed_at ?? null,
       onboarding: onboardingDetails,
+      hasOnboardingRecord: Boolean(onboarding),
       createdAt: user.created_at,
       source: typeof user.app_metadata?.source === "string" ? user.app_metadata.source : null,
     };

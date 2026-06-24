@@ -4,9 +4,7 @@ import {
   ArrowUpRight,
   ChevronDown,
   Circle,
-  Copy,
   GraduationCap,
-  Link2,
   LogOut,
   Shield,
   X,
@@ -17,7 +15,7 @@ import { PORTAL_SECTIONS } from "@/lib/portal-links";
 import { usePortalDashboardTabs } from "@/hooks/usePortalDashboardTabs";
 import { isLinksDashboardSection, isDownloadsDashboardSection } from "@/lib/portal-dashboard-section-types";
 import type { PortalDashboardSection } from "@/lib/portal-dashboard-tabs";
-import { buildReferralLink } from "@/lib/referral";
+import PortalReferralPanel from "@/components/PortalReferralPanel";
 import { hasAdminConsoleAccess, isGenesisAdmin } from "@/lib/roles";
 import {
   completePortalTodo,
@@ -221,10 +219,6 @@ function PortalTodoItem({
 export default function PortalDashboard() {
   const { user: authUser, signOut } = useAuth();
   const [portalUser, setPortalUser] = useState(authUser);
-  const referralLink = useMemo(
-    () => (portalUser?.id ? buildReferralLink(portalUser.id) : ""),
-    [portalUser?.id],
-  );
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [completingTodoId, setCompletingTodoId] = useState<string | null>(null);
@@ -319,17 +313,6 @@ export default function PortalDashboard() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to sign out";
       toast.error(message);
-    }
-  };
-
-  const handleCopyReferralLink = async () => {
-    if (!referralLink) return;
-
-    try {
-      await navigator.clipboard.writeText(referralLink);
-      toast.success("Referral link copied to clipboard.");
-    } catch {
-      toast.error("Unable to copy link. Select and copy it manually.");
     }
   };
 
@@ -435,18 +418,7 @@ export default function PortalDashboard() {
             </div>
           )}
 
-          {referralLink && (
-            <button type="button" className="portal-banner" onClick={handleCopyReferralLink}>
-              <span className="portal-banner-icon" aria-hidden="true">
-                <Link2 size={22} />
-              </span>
-              <span className="portal-banner-copy">
-                <strong>Referral link ready</strong>
-                <span>Tap to copy your personal onboarding link</span>
-              </span>
-              <Copy size={18} className="portal-banner-action" aria-hidden="true" />
-            </button>
-          )}
+          <PortalReferralPanel />
 
           <div className="portal-tiles">
             {pendingTodos.length > 0 && (

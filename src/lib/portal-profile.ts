@@ -19,6 +19,7 @@ export interface PortalProfile {
   hoodie_size: string | null;
   waist_size: string | null;
   shoe_size: string | null;
+  comp_level: number | null;
   profile_photo_path: string | null;
   created_at: string;
   updated_at: string;

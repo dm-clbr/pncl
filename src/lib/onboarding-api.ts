@@ -17,7 +17,7 @@ export interface SubmitOnboardingInput {
   hasLicense: string;
   npn: string;
   hasEoInsurance: string;
-  referrerId?: string;
+  referralInviteId?: string;
 }
 
 export interface SubmitOnboardingResponse {
@@ -93,7 +93,7 @@ export async function submitOnboarding(
       hasLicense: input.hasLicense,
       npn: input.npn || undefined,
       hasEoInsurance: input.hasEoInsurance,
-      referrerId: input.referrerId,
+      referralInviteId: input.referralInviteId,
     }),
   });
 

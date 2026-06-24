@@ -3,26 +3,28 @@ import { isSupabaseConfigured } from "./onboarding-api";
 export const REFERRAL_PARAM = "ref";
 export const REFERRAL_STORAGE_KEY = "pncl_onboarding_ref";
 
-export interface ReferrerInfo {
-  id: string;
-  name: string;
+export interface ReferralInviteInfo {
+  inviteId: string;
+  referrerId: string;
+  referrerName: string;
+  compLevel: number;
 }
 
-export function buildReferralLink(userId: string): string {
+export function buildReferralLink(inviteId: string): string {
   const url = new URL("/onboarding", window.location.origin);
-  url.searchParams.set(REFERRAL_PARAM, userId);
+  url.searchParams.set(REFERRAL_PARAM, inviteId);
   return url.toString();
 }
 
-export function persistReferralId(referrerId: string): void {
+export function persistReferralInviteId(inviteId: string): void {
   try {
-    sessionStorage.setItem(REFERRAL_STORAGE_KEY, referrerId);
+    sessionStorage.setItem(REFERRAL_STORAGE_KEY, inviteId);
   } catch {
     // Ignore storage failures in private browsing.
   }
 }
 
-export function readStoredReferralId(): string | null {
+export function readStoredReferralInviteId(): string | null {
   try {
     return sessionStorage.getItem(REFERRAL_STORAGE_KEY);
   } catch {
@@ -30,7 +32,7 @@ export function readStoredReferralId(): string | null {
   }
 }
 
-export function clearStoredReferralId(): void {
+export function clearStoredReferralInviteId(): void {
   try {
     sessionStorage.removeItem(REFERRAL_STORAGE_KEY);
   } catch {
@@ -38,7 +40,7 @@ export function clearStoredReferralId(): void {
   }
 }
 
-export async function getReferrerInfo(referrerId: string): Promise<ReferrerInfo> {
+export async function getReferralInviteInfo(inviteId: string): Promise<ReferralInviteInfo> {
   if (!isSupabaseConfigured()) {
     throw new Error("Referral lookup is not configured");
   }
@@ -46,7 +48,7 @@ export async function getReferrerInfo(referrerId: string): Promise<ReferrerInfo>
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
   const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
   const url = new URL(`${supabaseUrl.replace(/\/$/, "")}/functions/v1/get-referrer-info`);
-  url.searchParams.set("ref", referrerId);
+  url.searchParams.set("ref", inviteId);
 
   const response = await fetch(url.toString(), {
     method: "GET",
@@ -58,8 +60,13 @@ export async function getReferrerInfo(referrerId: string): Promise<ReferrerInfo>
 
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.message ?? "Unable to load referrer");
+    throw new Error(data.message ?? "Unable to load referral invite");
   }
 
-  return { id: data.id, name: data.name };
+  return {
+    inviteId: data.inviteId,
+    referrerId: data.id,
+    referrerName: data.name,
+    compLevel: data.compLevel,
+  };
 }

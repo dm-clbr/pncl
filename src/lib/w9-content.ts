@@ -6,9 +6,9 @@ export const IRS_W9_INSTRUCTIONS_URL = "https://www.irs.gov/FormW9";
 export const W9_FORM_REVISION = "Rev. March 2024";
 
 export const W9_REQUESTER = {
-  name: "The PNCL / Pinnacle Life Group",
-  addressLine1: "209 Philadelphia Ave",
-  cityStateZip: "Egg Harbor City, NJ 08215",
+  name: "PNCL LLC",
+  addressLine1: "8927 E Wethersfield Rd",
+  cityStateZip: "Scottsdale, AZ 85260-5003",
 } as const;
 
 export const W9_TAX_CLASS_OPTIONS = [

@@ -23,6 +23,15 @@ verify_jwt = true
 [functions.get-referrer-info]
 verify_jwt = false
 
+[functions.create-referral-invite]
+verify_jwt = true
+
+[functions.list-referral-invites]
+verify_jwt = true
+
+[functions.admin-update-comp-level]
+verify_jwt = true
+
 [functions.admin-list-agents]
 verify_jwt = true
 

@@ -5,16 +5,20 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   deleteUser,
   resendActivationEmail,
+  updateUserCompLevel,
   updateUserEmail,
   updateUserRole,
   type AgentSummary,
 } from "@/lib/admin-api";
+import { AdminCompLevelSelect } from "@/components/admin/AdminCompLevelSelect";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
 import { trackPageView } from "@/lib/analytics";
 import { formatRoleLabel, type PortalRole } from "@/lib/roles";
 import { toast } from "sonner";
 
 function statusLabel(agent: AgentSummary): string {
+  if (!agent.hasOnboardingRecord && !agent.emailConfirmed) return "Pending activation";
+  if (!agent.hasOnboardingRecord) return "Manual account";
   if (!agent.emailConfirmed) return "Pending activation";
   if (agent.status === "manual") return "Manual provision";
   if (agent.status) return agent.status.replace(/_/g, " ");
@@ -42,6 +46,7 @@ export default function AdminUsers() {
   const [emailEditAgent, setEmailEditAgent] = useState<AgentSummary | null>(null);
   const [emailDraft, setEmailDraft] = useState("");
   const [savingEmail, setSavingEmail] = useState(false);
+  const [updatingCompId, setUpdatingCompId] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = "Users — PNCL Admin";
@@ -57,6 +62,11 @@ export default function AdminUsers() {
       || (agent.referrerName?.toLowerCase().includes(normalized) ?? false),
     );
   }, [agents, query]);
+
+  const agentsById = useMemo(
+    () => new Map(agents.map((agent) => [agent.id, agent])),
+    [agents],
+  );
 
   const handleResendActivation = async (agent: AgentSummary) => {
     const token = session?.access_token;
@@ -100,6 +110,23 @@ export default function AdminUsers() {
     }
     if (value === "admin" || value === "genesis_admin") {
       void handleRoleChange(agent, value);
+    }
+  };
+
+  const handleCompLevelChange = async (agent: AgentSummary, compLevel: number | null) => {
+    const token = session?.access_token;
+    if (!token) return;
+    if (compLevel === agent.compLevel) return;
+
+    setUpdatingCompId(agent.id);
+    try {
+      const result = await updateUserCompLevel(token, agent.id, compLevel);
+      toast.success(result.message);
+      await reload();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to update comp level");
+    } finally {
+      setUpdatingCompId(null);
     }
   };
 
@@ -208,6 +235,7 @@ export default function AdminUsers() {
                 <th>Name</th>
                 <th>Email</th>
                 <th>Upline</th>
+                <th>Comp</th>
                 <th>Status</th>
                 <th>Role</th>
                 <th aria-label="Actions" />
@@ -217,6 +245,7 @@ export default function AdminUsers() {
               {filteredAgents.map((agent) => {
                 const isSelf = agent.id === user?.id;
                 const isUpdating = updatingId === agent.id;
+                const isUpdatingComp = updatingCompId === agent.id;
                 const isResending = resendingId === agent.id;
                 const isDeleting = deletingId === agent.id;
 
@@ -225,6 +254,15 @@ export default function AdminUsers() {
                     <td>{agent.name}</td>
                     <td>{agent.email}</td>
                     <td>{agent.referrerName ?? agent.uplineNetwork ?? "—"}</td>
+                    <td>
+                      <AdminCompLevelSelect
+                        agent={agent}
+                        agentsById={agentsById}
+                        disabled={isDeleting}
+                        saving={isUpdatingComp}
+                        onChange={(compLevel) => void handleCompLevelChange(agent, compLevel)}
+                      />
+                    </td>
                     <td>
                       <span className={`admin-status${agent.emailConfirmed ? " active" : ""}`}>
                         {statusLabel(agent)}

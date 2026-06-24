@@ -1,13 +1,16 @@
 import { useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { updateUserReferrer, type AgentSummary } from "@/lib/admin-api";
+import { AdminCompLevelSelect } from "@/components/admin/AdminCompLevelSelect";
+import { updateUserCompLevel, updateUserReferrer, type AgentSummary } from "@/lib/admin-api";
 import { countTotalDownline, findHierarchyNode, getDescendantAgentIds } from "@/lib/hierarchy-utils";
 import type { HierarchyNode } from "@/lib/admin-api";
+import { toast } from "sonner";
 
 interface HierarchyEditModalProps {
   agent: AgentSummary;
   agents: AgentSummary[];
+  agentsById: Map<string, AgentSummary>;
   tree: HierarchyNode[];
   onClose: () => void;
   onSaved: () => void;
@@ -17,6 +20,7 @@ interface HierarchyEditModalProps {
 export function HierarchyEditModal({
   agent,
   agents,
+  agentsById,
   tree,
   onClose,
   onSaved,
@@ -25,6 +29,7 @@ export function HierarchyEditModal({
   const { session } = useAuth();
   const [referrerDraft, setReferrerDraft] = useState(agent.referrerId ?? "");
   const [saving, setSaving] = useState(false);
+  const [savingComp, setSavingComp] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const descendants = useMemo(() => getDescendantAgentIds(agents, agent.id), [agents, agent.id]);
@@ -40,6 +45,26 @@ export function HierarchyEditModal({
   const treeNode = useMemo(() => findHierarchyNode(tree, agent.id), [tree, agent.id]);
   const directCount = treeNode?.children.length ?? 0;
   const totalDownline = treeNode ? countTotalDownline(treeNode) : 0;
+
+  async function handleCompLevelChange(compLevel: number | null) {
+    const token = session?.access_token;
+    if (!token || compLevel === agent.compLevel) return;
+
+    setSavingComp(true);
+    setError(null);
+
+    try {
+      const result = await updateUserCompLevel(token, agent.id, compLevel);
+      toast.success(result.message);
+      onSaved();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unable to update comp level";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setSavingComp(false);
+    }
+  }
 
   async function handleSave(event: React.FormEvent) {
     event.preventDefault();
@@ -116,7 +141,7 @@ export function HierarchyEditModal({
           <span>Upline</span>
           <select
             value={referrerDraft}
-            disabled={saving}
+            disabled={saving || savingComp}
             onChange={(event) => setReferrerDraft(event.target.value)}
           >
             <option value="">None (org root)</option>
@@ -126,6 +151,18 @@ export function HierarchyEditModal({
               </option>
             ))}
           </select>
+        </label>
+
+        <label className="admin-field">
+          <span>Comp level</span>
+          <AdminCompLevelSelect
+            agent={agent}
+            agentsById={agentsById}
+            disabled={saving}
+            saving={savingComp}
+            showUnavailableHint
+            onChange={(compLevel) => void handleCompLevelChange(compLevel)}
+          />
         </label>
 
         {error && <p className="admin-error">{error}</p>}
@@ -139,7 +176,7 @@ export function HierarchyEditModal({
           >
             Cancel
           </button>
-          <button type="submit" className="admin-primary-btn" disabled={saving}>
+          <button type="submit" className="admin-primary-btn" disabled={saving || savingComp}>
             {saving ? "Saving…" : "Save upline"}
           </button>
         </div>

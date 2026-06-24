@@ -23,6 +23,7 @@ export interface AgentSummary {
   email: string;
   name: string;
   role: PortalRole;
+  compLevel: number | null;
   referrerId: string | null;
   referrerName: string | null;
   uplineNetwork: string | null;
@@ -33,6 +34,7 @@ export interface AgentSummary {
   genesisStatus?: GenesisAccountStatus;
   onboardingCompletedAt: string | null;
   onboarding: AgentOnboardingDetails | null;
+  hasOnboardingRecord: boolean;
   createdAt: string;
   source: string | null;
 }
@@ -67,6 +69,7 @@ export interface CreateUserInput {
   email: string;
   uplineNetwork?: string;
   referrerUserId?: string;
+  compLevel?: number;
 }
 
 async function adminFetch<T>(
@@ -132,6 +135,17 @@ export async function updateUserRole(
   return adminFetch("admin-update-role", accessToken, {
     method: "POST",
     body: JSON.stringify({ userId, role }),
+  });
+}
+
+export async function updateUserCompLevel(
+  accessToken: string,
+  userId: string,
+  compLevel: number | null,
+): Promise<{ userId: string; compLevel: number | null; message: string }> {
+  return adminFetch("admin-update-comp-level", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ userId, compLevel }),
   });
 }
 

@@ -153,6 +153,7 @@ export default function AdminHierarchy() {
         <HierarchyEditModal
           agent={editAgent}
           agents={agents}
+          agentsById={agentsById}
           tree={tree}
           onClose={() => setEditAgentId(null)}
           onSaved={() => void handleSaved()}

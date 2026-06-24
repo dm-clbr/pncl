@@ -114,3 +114,29 @@ export async function validateHandoffToken(
   }
   return mismatch === 0;
 }
+
+async function getIdentityHashKey(): Promise<CryptoKey> {
+  const secret = Deno.env.get("CREDENTIAL_ENCRYPTION_KEY");
+  if (!secret) {
+    throw new Error("Missing credential encryption configuration");
+  }
+
+  return crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+}
+
+export async function hashSsn(ssn: string): Promise<string> {
+  const digits = ssn.replace(/\D/g, "");
+  if (digits.length !== 9) {
+    throw new Error("Invalid Social Security Number");
+  }
+
+  const key = await getIdentityHashKey();
+  const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(digits));
+  return bytesToHex(new Uint8Array(signature));
+}

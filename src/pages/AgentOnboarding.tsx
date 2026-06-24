@@ -3,10 +3,10 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import OnboardingLayout from "@/components/OnboardingLayout";
 import { submitOnboarding, isSupabaseConfigured } from "@/lib/onboarding-api";
 import {
-  getReferrerInfo,
-  clearStoredReferralId,
-  persistReferralId,
-  readStoredReferralId,
+  getReferralInviteInfo,
+  clearStoredReferralInviteId,
+  persistReferralInviteId,
+  readStoredReferralInviteId,
   REFERRAL_PARAM,
 } from "@/lib/referral";
 import { toast } from "sonner";
@@ -220,7 +220,7 @@ export default function AgentOnboarding() {
   const [transitioning, setTransitioning] = useState(false);
   const [loading, setLoading] = useState(false);
   const [returnToReview, setReturnToReview] = useState(false);
-  const [referrerId, setReferrerId] = useState<string | null>(null);
+  const [referralInviteId, setReferralInviteId] = useState<string | null>(null);
   const [referralLocked, setReferralLocked] = useState(false);
 
   const totalSteps = STEPS.length + 1;
@@ -291,7 +291,7 @@ export default function AgentOnboarding() {
     try {
       const result = await submitOnboarding({
         ...formData,
-        referrerId: referrerId ?? undefined,
+        referralInviteId: referralInviteId ?? undefined,
       });
       navigate(
         `/onboarding/success/${result.onboardingId}?token=${encodeURIComponent(result.handoffToken)}`,
@@ -356,26 +356,28 @@ export default function AgentOnboarding() {
 
   useEffect(() => {
     const refFromUrl = searchParams.get(REFERRAL_PARAM)?.trim() ?? "";
-    const refId = refFromUrl || readStoredReferralId();
+    const refId = refFromUrl || readStoredReferralInviteId();
     if (!refId || !isSupabaseConfigured()) {
       return;
     }
 
     let cancelled = false;
 
-    getReferrerInfo(refId)
-      .then((referrer) => {
+    getReferralInviteInfo(refId)
+      .then((referral) => {
         if (cancelled) return;
-        persistReferralId(referrer.id);
-        setReferrerId(referrer.id);
+        persistReferralInviteId(referral.inviteId);
+        setReferralInviteId(referral.inviteId);
         setReferralLocked(true);
-        setData((prev) => ({ ...prev, uplineNetwork: referrer.name }));
+        setData((prev) => ({ ...prev, uplineNetwork: referral.referrerName }));
       })
-      .catch(() => {
+      .catch((err) => {
         if (cancelled) return;
-        clearStoredReferralId();
+        clearStoredReferralInviteId();
         if (refFromUrl) {
-          toast.error("This referral link is invalid or expired.");
+          toast.error(
+            err instanceof Error ? err.message : "This referral link is invalid or expired.",
+          );
         }
       });
 

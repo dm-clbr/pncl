@@ -5,16 +5,24 @@ import { createWorkspaceUser, waitForWorkspaceMailboxReady } from "../_shared/go
 import { logOnboarding } from "../_shared/logger.ts";
 import {
   getServiceClient,
-  resolveReferrer,
   validateSubmitPayload,
 } from "../_shared/onboarding.ts";
 import { provisionPortalAccount } from "../_shared/portalAuth.ts";
 import { notifyGenesisAdminsOfNewOnboarding } from "../_shared/genesisNotifications.ts";
 import {
+  attachOnboardingToReferralInvite,
+  claimReferralInvite,
+  findActiveOnboardingBySsnHash,
+  releaseReferralInvite,
+  resolveReferralInviteForOnboarding,
+  upsertPortalProfileCompLevel,
+} from "../_shared/portalReferralInvites.ts";
+import {
   encryptTemporaryPassword,
   generateHandoffToken,
   generateTemporaryPassword,
   hashHandoffToken,
+  hashSsn,
 } from "../_shared/security.ts";
 
 serve(async (req) => {
@@ -26,6 +34,7 @@ serve(async (req) => {
   }
 
   const requestId = crypto.randomUUID();
+  let claimedInviteId: string | null = null;
 
   try {
     logOnboarding("submit_request_received", { requestId });
@@ -38,20 +47,41 @@ serve(async (req) => {
       hasLicense: payload.hasLicense,
       hasEoInsurance: payload.hasEoInsurance,
       hasNpn: Boolean(payload.npn),
-      hasReferrer: Boolean(payload.referrerUserId),
+      hasReferralInvite: Boolean(payload.referralInviteId),
     });
 
     const supabase = getServiceClient();
+    const ssnHash = await hashSsn(payload.ssn);
+
+    if (await findActiveOnboardingBySsnHash(supabase, ssnHash)) {
+      return errorResponse(
+        "An account already exists for this applicant. Contact PNCL support if you need help.",
+        409,
+        "duplicate_applicant",
+      );
+    }
 
     let uplineNetwork = payload.uplineNetwork;
     let referrerUserId: string | null = null;
+    let referralInviteId: string | null = null;
+    let invitedCompLevel: number | null = null;
 
-    if (payload.referrerUserId) {
-      const referrer = await resolveReferrer(supabase, payload.referrerUserId);
-      if (referrer) {
-        uplineNetwork = referrer.name;
-        referrerUserId = referrer.id;
+    if (payload.referralInviteId) {
+      const resolvedInvite = await resolveReferralInviteForOnboarding(
+        supabase,
+        payload.referralInviteId,
+      );
+
+      if (!resolvedInvite) {
+        return errorResponse("This referral link is invalid or expired.", 400, "invalid_referral");
       }
+
+      const claimedInvite = await claimReferralInvite(supabase, resolvedInvite.invite.id);
+      claimedInviteId = claimedInvite.id;
+      referralInviteId = claimedInvite.id;
+      referrerUserId = resolvedInvite.referrerId;
+      invitedCompLevel = resolvedInvite.compLevel;
+      uplineNetwork = resolvedInvite.referrerName;
     }
 
     const handoffToken = generateHandoffToken();
@@ -77,12 +107,15 @@ serve(async (req) => {
         phone_number: payload.phoneNumber,
         date_of_birth: payload.dateOfBirth,
         ssn_encrypted: ssnEncrypted,
+        ssn_hash: ssnHash,
         state_of_residence: payload.stateOfResidence,
         upline_network: uplineNetwork,
         has_license: payload.hasLicense,
         npn: payload.npn ?? null,
         has_eo_insurance: payload.hasEoInsurance,
         referrer_user_id: referrerUserId,
+        referral_invite_id: referralInviteId,
+        invited_comp_level: invitedCompLevel,
         workspace_email: workspaceEmail,
         status: "creating_email",
         handoff_token_hash: handoffTokenHash,
@@ -93,6 +126,18 @@ serve(async (req) => {
       .single();
 
     if (insertError || !record) {
+      if (claimedInviteId) {
+        await releaseReferralInvite(supabase, claimedInviteId);
+      }
+
+      if (insertError?.code === "23505") {
+        return errorResponse(
+          "An account already exists for this applicant. Contact PNCL support if you need help.",
+          409,
+          "duplicate_applicant",
+        );
+      }
+
       logOnboarding(
         "submit_db_insert_failed",
         { requestId, workspaceEmail, error: insertError?.message ?? "no record returned" },
@@ -102,6 +147,11 @@ serve(async (req) => {
     }
 
     const onboardingId = record.id;
+
+    if (claimedInviteId) {
+      await attachOnboardingToReferralInvite(supabase, claimedInviteId, onboardingId);
+    }
+
     logOnboarding("submit_db_record_created", { requestId, onboardingId, workspaceEmail });
 
     let finalStatus = "creating_email";
@@ -130,6 +180,16 @@ serve(async (req) => {
           lastName: payload.lastName,
           onboardingId,
         });
+
+        if (supabaseUserId && invitedCompLevel != null) {
+          await upsertPortalProfileCompLevel(
+            supabase,
+            supabaseUserId,
+            invitedCompLevel,
+            payload.firstName,
+            payload.lastName,
+          );
+        }
       } catch (portalError) {
         portalProvisionError = portalError instanceof Error
           ? portalError.message
@@ -166,6 +226,7 @@ serve(async (req) => {
           supabaseUserId,
           status: finalStatus,
           portalProvisionError: portalProvisionError ?? null,
+          invitedCompLevel,
         });
 
         try {
@@ -209,6 +270,10 @@ serve(async (req) => {
           temporary_password_encrypted: null,
         })
         .eq("id", onboardingId);
+
+      if (claimedInviteId) {
+        await releaseReferralInvite(supabase, claimedInviteId);
+      }
     }
 
     return jsonResponse({
@@ -219,6 +284,15 @@ serve(async (req) => {
       ...(failureError ? { error: failureError } : {}),
     });
   } catch (error) {
+    if (claimedInviteId) {
+      try {
+        const supabase = getServiceClient();
+        await releaseReferralInvite(supabase, claimedInviteId);
+      } catch {
+        // Best effort release if submit fails before onboarding record creation.
+      }
+    }
+
     const message = error instanceof Error ? error.message : "Invalid request";
     logOnboarding("submit_request_failed", { requestId, error: message }, "error");
     return errorResponse(message, 400);
