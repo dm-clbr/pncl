@@ -135,6 +135,22 @@ export async function updateUserRole(
   });
 }
 
+export async function updateUserReferrer(
+  accessToken: string,
+  userId: string,
+  referrerUserId: string | null,
+): Promise<{
+  userId: string;
+  referrerUserId: string | null;
+  uplineNetwork: string;
+  message: string;
+}> {
+  return adminFetch("admin-update-referrer", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ userId, referrerUserId }),
+  });
+}
+
 export async function resendActivationEmail(
   accessToken: string,
   userId: string,

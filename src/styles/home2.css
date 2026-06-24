@@ -1787,6 +1787,62 @@
   font-weight: 600;
 }
 
+.home2-page .admin-sheet-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  margin-bottom: 16px;
+}
+
+.home2-page .admin-sheet-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+}
+
+.home2-page .admin-sheet-add-row-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.home2-page .admin-table-editing td:first-child {
+  font-weight: 400;
+}
+
+.home2-page .admin-table-input {
+  display: block;
+  width: 100%;
+  min-width: 120px;
+  padding: 8px 10px;
+  border: 1px solid rgba(240, 237, 228, .12);
+  border-radius: var(--radius);
+  background: rgba(240, 237, 228, .04);
+  color: var(--bone);
+  font-family: var(--ff-sans);
+  font-size: .84rem;
+}
+
+.home2-page .admin-table-input-wide {
+  min-width: 220px;
+}
+
+.home2-page .admin-table-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--steel);
+  font-size: .84rem;
+  cursor: pointer;
+}
+
+.home2-page .admin-table-checkbox input {
+  accent-color: var(--accent);
+}
+
 .home2-page .admin-badge {
   display: inline-flex;
   padding: 4px 8px;
@@ -1973,6 +2029,122 @@
   word-break: break-word;
 }
 
+.home2-page .admin-hierarchy-toolbar {
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.home2-page .admin-hierarchy-view-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: calc(var(--radius) + 2px);
+  border: 1px solid rgba(240, 237, 228, .1);
+  background: rgba(0, 0, 0, .18);
+}
+
+.home2-page .admin-hierarchy-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--steel);
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background .2s var(--ease), color .2s var(--ease);
+}
+
+.home2-page .admin-hierarchy-view-btn:hover {
+  color: var(--bone);
+}
+
+.home2-page .admin-hierarchy-view-btn-active {
+  background: rgba(194, 78, 28, .18);
+  color: var(--bone);
+}
+
+.home2-page .admin-hierarchy-shell {
+  margin-top: 8px;
+  border-radius: calc(var(--radius) + 4px);
+  border: 1px solid rgba(240, 237, 228, .1);
+  background:
+    radial-gradient(circle at 1px 1px, rgba(240, 237, 228, .07) 1px, transparent 0) 0 0 / 20px 20px,
+    linear-gradient(180deg, rgba(240, 237, 228, .02), rgba(240, 237, 228, .01));
+  overflow: hidden;
+}
+
+.home2-page .admin-hierarchy-zoom-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(240, 237, 228, .08);
+}
+
+.home2-page .admin-hierarchy-zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid rgba(240, 237, 228, .12);
+  border-radius: var(--radius);
+  background: rgba(12, 12, 14, .72);
+  color: var(--steel);
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.home2-page .admin-hierarchy-zoom-btn:hover:not(:disabled) {
+  color: var(--bone);
+  border-color: rgba(240, 237, 228, .22);
+}
+
+.home2-page .admin-hierarchy-zoom-btn:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.home2-page .admin-hierarchy-zoom-label {
+  min-width: 44px;
+  text-align: center;
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: .08em;
+  color: var(--steel);
+}
+
+.home2-page .admin-hierarchy-viewport {
+  position: relative;
+  height: min(68vh, 720px);
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.home2-page .admin-hierarchy-viewport-panning {
+  cursor: grabbing;
+}
+
+.home2-page .admin-hierarchy-transform {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
 .home2-page .admin-hierarchy-scroll {
   margin-top: 8px;
   overflow: auto;
@@ -2009,6 +2181,7 @@
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  width: 100%;
   height: 100%;
   padding: 12px 10px 10px;
   border-radius: var(--radius);
@@ -2016,7 +2189,15 @@
   background: rgba(12, 12, 14, .92);
   box-shadow: 0 10px 28px rgba(0, 0, 0, .28);
   text-align: center;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
   transition: border-color .25s var(--ease), transform .25s var(--ease), box-shadow .25s var(--ease);
+}
+
+.home2-page .admin-hierarchy-tile-selected {
+  border-color: rgba(194, 78, 28, .65);
+  box-shadow: 0 0 0 1px rgba(194, 78, 28, .25), 0 14px 32px rgba(0, 0, 0, .34);
 }
 
 .home2-page .admin-hierarchy-tile:hover {
@@ -2081,6 +2262,67 @@
   color: var(--steel);
 }
 
+.home2-page .admin-hierarchy-tree-wrap {
+  margin-top: 8px;
+  padding: 8px 12px 16px;
+  border-radius: calc(var(--radius) + 4px);
+  border: 1px solid rgba(240, 237, 228, .1);
+  background: rgba(0, 0, 0, .12);
+  max-height: min(68vh, 720px);
+  overflow: auto;
+}
+
+.home2-page .admin-hierarchy-edit-modal {
+  max-width: 520px;
+}
+
+.home2-page .admin-hierarchy-edit-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0 0 18px;
+}
+
+.home2-page .admin-hierarchy-edit-stat {
+  min-width: 0;
+  padding: 12px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(240, 237, 228, .1);
+  background: rgba(0, 0, 0, .16);
+}
+
+.home2-page .admin-hierarchy-edit-stat dt {
+  margin: 0 0 4px;
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--space);
+}
+
+.home2-page .admin-hierarchy-edit-stat dd {
+  margin: 0;
+  color: var(--bone);
+  font-size: .88rem;
+  font-weight: 700;
+}
+
+.home2-page .admin-hierarchy-edit-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #e8a07a;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.home2-page .admin-hierarchy-edit-link:hover {
+  color: var(--bone);
+}
+
 .home2-page .admin-tree {
   list-style: none;
   margin: 0;
@@ -2099,8 +2341,55 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-radius: var(--radius);
+}
+
+.home2-page .admin-tree-row-selected {
+  background: rgba(194, 78, 28, .12);
+}
+
+.home2-page .admin-tree-toggle,
+.home2-page .admin-tree-toggle-spacer {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+}
+
+.home2-page .admin-tree-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(240, 237, 228, .1);
+  border-radius: 6px;
+  background: rgba(240, 237, 228, .04);
+  color: var(--steel);
+  cursor: pointer;
+}
+
+.home2-page .admin-tree-toggle:hover {
+  color: var(--bone);
+  border-color: rgba(240, 237, 228, .2);
+}
+
+.home2-page .admin-tree-select {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px 12px;
-  padding: 12px 0;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.home2-page .admin-tree-select:hover .admin-tree-name {
+  color: #e8a07a;
 }
 
 .home2-page .admin-tree-name {

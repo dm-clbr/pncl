@@ -49,6 +49,19 @@ export function useAdminCarriers() {
     return result;
   }, [reload, session?.access_token]);
 
+  const saveMany = useCallback(async (inputs: UpsertCarrierPayload[]) => {
+    const token = session?.access_token;
+    if (!token) {
+      throw new Error("Not authenticated");
+    }
+    const results = [];
+    for (const input of inputs) {
+      results.push(await upsertCarrier(token, input));
+    }
+    await reload();
+    return results;
+  }, [reload, session?.access_token]);
+
   const remove = useCallback(async (id: string) => {
     const token = session?.access_token;
     if (!token) {
@@ -69,7 +82,7 @@ export function useAdminCarriers() {
     return result;
   }, [reload, session?.access_token]);
 
-  return { carriers, loading, error, reload, save, remove, reorder };
+  return { carriers, loading, error, reload, save, saveMany, remove, reorder };
 }
 
 export type { AdminCarrierSummary };

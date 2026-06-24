@@ -426,3 +426,31 @@ export async function countDownlineAgents(
   if (error) throw error;
   return count ?? 0;
 }
+
+export async function getDescendantUserIds(
+  adminClient: SupabaseClient,
+  userId: string,
+): Promise<Set<string>> {
+  const descendants = new Set<string>();
+  const queue = [userId];
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    const { data, error } = await adminClient
+      .from("onboarding_records")
+      .select("supabase_user_id")
+      .eq("referrer_user_id", current)
+      .not("status", "eq", "failed");
+
+    if (error) throw error;
+
+    for (const row of data ?? []) {
+      const childId = row.supabase_user_id as string | null;
+      if (!childId || descendants.has(childId)) continue;
+      descendants.add(childId);
+      queue.push(childId);
+    }
+  }
+
+  return descendants;
+}

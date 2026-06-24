@@ -35,6 +35,9 @@ verify_jwt = true
 [functions.admin-update-role]
 verify_jwt = true
 
+[functions.admin-update-referrer]
+verify_jwt = true
+
 [functions.admin-resend-activation]
 verify_jwt = true
 
