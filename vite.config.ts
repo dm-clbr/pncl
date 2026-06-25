@@ -67,4 +67,7 @@ export default defineConfig(({ mode }) => ({
     },
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "@tanstack/query-core"],
   },
+  optimizeDeps: {
+    include: ["pdfjs-dist", "pdfjs-dist/web/pdf_viewer.mjs"],
+  },
 }));

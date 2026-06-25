@@ -19,8 +19,10 @@ import {
 } from "@/lib/portal-profile";
 import { getDirectDepositPdfUrl } from "@/lib/portal-direct-deposit";
 import { fetchPortalW9Document, getW9PdfUrl } from "@/lib/portal-w9";
+import { fetchPortalIcaDocument } from "@/lib/portal-ica";
 import { usePortalDirectDeposit } from "@/hooks/usePortalDirectDeposit";
 import { usePortalW9 } from "@/hooks/usePortalW9";
+import { usePortalIca } from "@/hooks/usePortalIca";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 import "@/styles/home2.css";
@@ -65,6 +67,7 @@ export default function PortalProfile() {
   const { user, session } = useAuth();
   const { w9, submitted: w9Submitted, loading: w9Loading } = usePortalW9();
   const { directDeposit, submitted: directDepositSubmitted, loading: directDepositLoading } = usePortalDirectDeposit();
+  const { ica, submitted: icaSubmitted, loading: icaLoading } = usePortalIca();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -76,6 +79,7 @@ export default function PortalProfile() {
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const [directDepositPdfUrl, setDirectDepositPdfUrl] = useState<string | null>(null);
   const [w9PdfUrl, setW9PdfUrl] = useState<string | null>(null);
+  const [icaPdfUrl, setIcaPdfUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!directDeposit?.pdfPath) {
@@ -129,6 +133,31 @@ export default function PortalProfile() {
     };
   }, [session?.access_token, w9Submitted, w9?.pdfPath]);
 
+  useEffect(() => {
+    const token = session?.access_token;
+    if (!icaSubmitted || !token) {
+      setIcaPdfUrl(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadIcaPdf() {
+      try {
+        const { downloadUrl } = await fetchPortalIcaDocument(token);
+        if (!cancelled) setIcaPdfUrl(downloadUrl);
+      } catch {
+        if (!cancelled) setIcaPdfUrl(null);
+      }
+    }
+
+    void loadIcaPdf();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.access_token, icaSubmitted]);
+
   const w9SignedDate = useMemo(() => {
     if (!w9?.signedAt) return null;
     return new Date(w9.signedAt).toLocaleDateString(undefined, {
@@ -146,6 +175,15 @@ export default function PortalProfile() {
       year: "numeric",
     });
   }, [directDeposit?.signedAt]);
+
+  const icaSignedDate = useMemo(() => {
+    if (!ica?.signedAt) return null;
+    return new Date(ica.signedAt).toLocaleDateString(undefined, {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  }, [ica?.signedAt]);
 
   useEffect(() => {
     document.title = "My Profile — PNCL Portal";
@@ -420,13 +458,53 @@ export default function PortalProfile() {
               </div>
             </div>
 
-            {(w9Loading || directDepositLoading) && !w9Submitted && !directDepositSubmitted ? (
+            {(w9Loading || directDepositLoading || icaLoading) && !w9Submitted && !directDepositSubmitted && !icaSubmitted ? (
               <div className="portal-incentives-loading">
                 <span className="onboarding-spinner" aria-hidden="true" />
                 <span>Loading documents...</span>
               </div>
-            ) : w9Submitted || directDepositSubmitted ? (
+            ) : w9Submitted || directDepositSubmitted || icaSubmitted ? (
               <div className="portal-profile-documents">
+                {!icaSubmitted && (
+                  <div className="portal-profile-document-item">
+                    <div>
+                      <strong>Independent Contractor Agreement</strong>
+                      <p className="portal-panel-note">
+                        Sign your ICA to save a copy to your profile.
+                      </p>
+                    </div>
+                    <Link to="/portal/ica" className="portal-w9-aside-pdf">
+                      Sign agreement
+                      <ArrowUpRight size={14} aria-hidden="true" />
+                    </Link>
+                  </div>
+                )}
+                {icaSubmitted && ica && (
+                  <div className="portal-profile-document-item">
+                    <div>
+                      <strong>Independent Contractor Agreement</strong>
+                      <p className="portal-panel-note">
+                        Signed{icaSignedDate ? ` on ${icaSignedDate}` : ""} for {ica.legalName}.
+                      </p>
+                    </div>
+                    {icaPdfUrl ? (
+                      <a
+                        href={icaPdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="portal-w9-aside-pdf"
+                      >
+                        Download PDF
+                        <ArrowUpRight size={14} aria-hidden="true" />
+                      </a>
+                    ) : (
+                      <Link to="/portal/ica" className="portal-w9-aside-pdf">
+                        View agreement
+                        <ArrowUpRight size={14} aria-hidden="true" />
+                      </Link>
+                    )}
+                  </div>
+                )}
                 {w9Submitted && w9 && (
                   <div className="portal-profile-document-item">
                     <div>
@@ -482,9 +560,10 @@ export default function PortalProfile() {
               </div>
             ) : (
               <p className="portal-panel-note">
-                No documents yet. Submit your{" "}
-                <Link to="/portal/w9">W-9</Link> or{" "}
-                <Link to="/portal/direct-deposit">direct deposit form</Link> from the portal dashboard.
+                No documents yet. Sign your{" "}
+                <Link to="/portal/ica">Independent Contractor Agreement</Link>, submit your{" "}
+                <Link to="/portal/w9">W-9</Link>, or{" "}
+                <Link to="/portal/direct-deposit">direct deposit form</Link> from the portal.
               </p>
             )}
           </div>

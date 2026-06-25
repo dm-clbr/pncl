@@ -26,6 +26,7 @@ import {
 import { usePortalTodos } from "@/hooks/usePortalTodos";
 import { usePortalW9 } from "@/hooks/usePortalW9";
 import { usePortalDirectDeposit } from "@/hooks/usePortalDirectDeposit";
+import { usePortalIca } from "@/hooks/usePortalIca";
 import {
   dismissGenesisNotice,
   GENESIS_LOGIN_URL,
@@ -230,13 +231,14 @@ export default function PortalDashboard() {
   const { assets: brandAssets, loading: brandAssetsLoading } = usePortalBrandAssets();
   const { sections: dashboardSections } = usePortalDashboardTabs();
   const { todos: portalTodos } = usePortalTodos();
+  const { submitted: icaSubmitted } = usePortalIca();
   const { submitted: w9Submitted } = usePortalW9();
   const { submitted: directDepositSubmitted } = usePortalDirectDeposit();
   const { photoUrl, initials, displayName } = usePortalProfile(portalUser);
 
   const pendingTodos = useMemo(
-    () => getPendingPortalTodos(portalUser, portalTodos, { w9Submitted, directDepositSubmitted }),
-    [portalUser, portalTodos, w9Submitted, directDepositSubmitted],
+    () => getPendingPortalTodos(portalUser, portalTodos, { icaSubmitted, w9Submitted, directDepositSubmitted }),
+    [portalUser, portalTodos, icaSubmitted, w9Submitted, directDepositSubmitted],
   );
   const pendingRequiredForms = pendingTodos.some((todo) => isRequiredFormTodo(todo.id));
   const showGenesisNotice = shouldShowGenesisNotice(portalUser);
@@ -414,7 +416,7 @@ export default function PortalDashboard() {
                 <strong>{pendingTodos.length} urgent item{pendingTodos.length === 1 ? "" : "s"}</strong>
                 <span>
                   {pendingRequiredForms
-                    ? "Complete your required forms first — W-9 and direct deposit are needed before getting started."
+                    ? "Complete your required forms first — sign your ICA, submit your W-9, and set up direct deposit before getting started."
                     : "Complete your setup steps before getting started."}
                 </span>
               </p>

@@ -22,6 +22,7 @@ import PortalCarrierSheet from "./pages/PortalCarrierSheet.tsx";
 import PortalBrandAssets from "./pages/PortalBrandAssets.tsx";
 import PortalProfile from "./pages/PortalProfile.tsx";
 import PortalW9 from "./pages/PortalW9.tsx";
+import PortalIca from "./pages/PortalIca.tsx";
 import PortalDirectDeposit from "./pages/PortalDirectDeposit.tsx";
 import PortalClients from "./pages/PortalClients.tsx";
 import PortalClientIntake from "./pages/PortalClientIntake.tsx";
@@ -40,6 +41,7 @@ import AdminGenesis from "./pages/admin/AdminGenesis.tsx";
 import AdminClients from "./pages/admin/AdminClients.tsx";
 import AdminDashboardTabs from "./pages/admin/AdminDashboardTabs.tsx";
 import AdminTodos from "./pages/admin/AdminTodos.tsx";
+import AdminOnboardingPreview from "./pages/admin/AdminOnboardingPreview.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -109,6 +111,14 @@ const App = () => (
             }
           />
           <Route
+            path="/portal/ica"
+            element={
+              <ProtectedRoute>
+                <PortalIca />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/portal/direct-deposit"
             element={
               <ProtectedRoute>
@@ -155,6 +165,16 @@ const App = () => (
             <Route path="todos" element={<AdminFullRoute><AdminTodos /></AdminFullRoute>} />
             <Route path="genesis" element={<AdminGenesis />} />
           </Route>
+          <Route
+            path="/portal/admin/onboarding-preview"
+            element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <AdminOnboardingPreview />
+                </AdminRoute>
+              </ProtectedRoute>
+            }
+          />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

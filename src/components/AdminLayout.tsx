@@ -1,5 +1,5 @@
 import { NavLink, Outlet, Link } from "react-router-dom";
-import { ArrowLeft, Building2, CheckSquare, ClipboardList, GitBranch, GraduationCap, LayoutDashboard, LayoutGrid, Palette, Trophy, UserPlus, Users } from "lucide-react";
+import { ArrowLeft, Building2, CheckSquare, ClipboardList, Eye, GitBranch, GraduationCap, LayoutDashboard, LayoutGrid, Palette, Trophy, UserPlus, Users } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { isGenesisAdmin } from "@/lib/roles";
@@ -16,11 +16,13 @@ const FULL_ADMIN_NAV = [
   { to: "/portal/admin/todos", label: "To-dos", icon: CheckSquare, end: false },
   { to: "/portal/admin/clients", label: "Clients", icon: ClipboardList, end: false },
   { to: "/portal/admin/dashboard-tabs", label: "Dashboard tabs", icon: LayoutGrid, end: false },
+  { to: "/portal/admin/onboarding-preview", label: "Onboarding preview", icon: Eye, end: false },
   { to: "/portal/admin/genesis", label: "Genesis", icon: GraduationCap, end: false },
 ] as const;
 
 const GENESIS_ADMIN_NAV = [
-  { to: "/portal/admin/genesis", label: "Genesis", icon: GraduationCap, end: true },
+  { to: "/portal/admin/genesis", label: "Genesis", icon: GraduationCap, end: false },
+  { to: "/portal/admin/onboarding-preview", label: "Onboarding preview", icon: Eye, end: false },
 ] as const;
 
 export default function AdminLayout() {

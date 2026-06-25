@@ -8,6 +8,10 @@ enabled = true
 [functions.submit-onboarding]
 verify_jwt = false
 
+[functions.submit-onboarding-contract]
+verify_jwt = false
+static_files = [ "./functions/submit-onboarding-contract/assets/pncl-ica-standard.pdf" ]
+
 [functions.get-onboarding-status]
 verify_jwt = false
 
@@ -144,6 +148,16 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.submit-portal-direct-deposit]
+verify_jwt = true
+
+[functions.submit-portal-ica]
+verify_jwt = true
+static_files = [ "./functions/submit-portal-ica/assets/pncl-ica-standard.pdf" ]
+
+[functions.get-portal-ica-document]
+verify_jwt = true
+
+[functions.get-portal-ica-status]
 verify_jwt = true
 
 [functions.admin-get-user-profile]

@@ -14,6 +14,16 @@ export interface PortalTodo {
 /** Fallback when the API is unavailable (local dev without migration). */
 export const FALLBACK_PORTAL_TODOS: PortalTodo[] = [
   {
+    id: "ica_setup",
+    title: "Sign your Independent Contractor Agreement",
+    description:
+      "Review and sign the PNCL Independent Contractor Agreement. A signed PDF is saved to your profile and is required before you can get started.",
+    href: "/portal/ica",
+    external: false,
+    actionLabel: "Review and sign agreement",
+    showEmailHint: false,
+  },
+  {
     id: "w9_setup",
     title: "Complete your W-9 form",
     description:
@@ -140,7 +150,7 @@ export function isPortalTodoCompleted(user: User | null, todoId: string): boolea
   return getCompletedTodos(user)[todoId] === true;
 }
 
-export const REQUIRED_FORM_TODO_IDS = ["w9_setup", "direct_deposit_setup"] as const;
+export const REQUIRED_FORM_TODO_IDS = ["ica_setup", "w9_setup", "direct_deposit_setup"] as const;
 
 export function isRequiredFormTodo(todoId: string): boolean {
   return (REQUIRED_FORM_TODO_IDS as readonly string[]).includes(todoId);
@@ -149,9 +159,12 @@ export function isRequiredFormTodo(todoId: string): boolean {
 export function getPendingPortalTodos(
   user: User | null,
   todos: PortalTodo[],
-  options?: { w9Submitted?: boolean; directDepositSubmitted?: boolean },
+  options?: { icaSubmitted?: boolean; w9Submitted?: boolean; directDepositSubmitted?: boolean },
 ): PortalTodo[] {
   return todos.filter((todo) => {
+    if (todo.id === "ica_setup" && options?.icaSubmitted) {
+      return false;
+    }
     if (todo.id === "w9_setup" && options?.w9Submitted) {
       return false;
     }

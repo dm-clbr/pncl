@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requireGenesisAdminOrAdmin } from "../_shared/adminAuth.ts";
 import { buildAgentSummaryForUser } from "../_shared/adminAgents.ts";
 import {
-  loadAdminUserDocuments,
+  loadAdminUserDocumentsWithContract,
   validateAdminUserProfileQuery,
   type AdminUserDocument,
 } from "../_shared/adminUserProfile.ts";
@@ -64,12 +64,21 @@ serve(async (req) => {
     const w9Record = w9Row as PortalW9Record | null;
     const directDepositRecord = directDepositRow as DirectDepositRecord | null;
 
-    let documents: AdminUserDocument[] = [];
-    if (w9Record || directDepositRecord) {
-      documents = await loadAdminUserDocuments(adminClient, userId, w9Record, directDepositRecord);
-    } else {
-      documents = await loadAdminUserDocuments(adminClient, userId, null, null);
-    }
+    const { data: onboardingRow } = await adminClient
+      .from("onboarding_records")
+      .select("id")
+      .eq("supabase_user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const documents = await loadAdminUserDocumentsWithContract(
+      adminClient,
+      userId,
+      onboardingRow?.id ?? null,
+      w9Record,
+      directDepositRecord,
+    );
 
     let profilePhotoUrl: string | null = null;
     const profile = profileRow as PortalProfileRow | null;

@@ -442,3 +442,703 @@
     display: none;
   }
 }
+
+.home2-page.onboarding-page .onboarding-panel-wide {
+  max-width: 720px;
+}
+
+.home2-page.onboarding-page .onboarding-panel-signing {
+  max-width: none;
+  width: 100%;
+}
+
+.home2-page.onboarding-page .onboarding-main:has(.onboarding-panel-signing) {
+  align-items: flex-start;
+  overflow: visible;
+}
+
+/* overflow on ancestors breaks position: sticky on the signing panel */
+body:has(.onboarding-panel-signing) {
+  overflow-x: visible;
+}
+
+.home2-page.onboarding-page:has(.onboarding-panel-signing) {
+  overflow-x: visible;
+}
+
+.onboarding-contract-step {
+  text-align: left;
+}
+
+.onboarding-contract-step.ica-flow-fillable {
+  max-width: none;
+}
+
+.ica-signing-layout-fillable {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 300px);
+  gap: 1rem;
+  align-items: start;
+  margin-top: 1.25rem;
+}
+
+.ica-signing-doc-fillable {
+  min-width: 0;
+}
+
+.ica-signing-doc-fillable .ica-fillable-pdf {
+  margin: 0;
+}
+
+.ica-signing-side-panel {
+  position: sticky;
+  top: calc(5.5rem + env(safe-area-inset-top, 0px));
+  align-self: start;
+  z-index: 5;
+  max-height: calc(100svh - 6rem - env(safe-area-inset-top, 0px));
+  overflow-y: auto;
+  display: grid;
+  gap: 1rem;
+  padding: 1rem 1.05rem;
+  border: 2px solid rgba(245, 176, 65, 0.45);
+  border-radius: var(--radius);
+  background:
+    linear-gradient(180deg, rgba(245, 176, 65, 0.08) 0%, rgba(0, 0, 0, 0.22) 100%);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+}
+
+.ica-signing-side-panel .ica-signing-acknowledgments {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.ica-signing-side-actions {
+  margin-top: 0;
+}
+
+.ica-signing-side-actions .btn {
+  width: 100%;
+  min-width: 0;
+}
+
+.ica-signing-side-back {
+  margin-top: 0;
+  justify-self: start;
+}
+
+.ica-signature-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.ica-signature-modal {
+  width: min(100%, 520px);
+  padding: 1.15rem 1.2rem 1.2rem;
+  border: 1px solid rgba(245, 176, 65, 0.45);
+  border-radius: var(--radius);
+  background: #1a1a1a;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+}
+
+.ica-signature-modal-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.15rem;
+  color: var(--bone);
+}
+
+.ica-signature-modal-copy {
+  margin: 0 0 0.85rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: rgba(240, 237, 228, 0.78);
+}
+
+.ica-signature-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+}
+
+.ica-signature-modal-btn {
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(240, 237, 228, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--bone);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.ica-signature-modal-save {
+  min-width: 9rem;
+}
+
+.ica-signature-pad {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.ica-signature-pad-canvas {
+  display: block;
+  width: 100%;
+  height: 160px;
+  border: 1px dashed rgba(245, 176, 65, 0.55);
+  border-radius: 8px;
+  background: #fff;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.ica-signature-pad-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ica-signature-pad-clear {
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(240, 237, 228, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--bone);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.ica-signature-pad-clear:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ica-signature-pad-hint {
+  font-size: 0.75rem;
+  color: rgba(240, 237, 228, 0.62);
+}
+
+.ica-signature-field-input {
+  color: transparent !important;
+  caret-color: transparent;
+  cursor: pointer;
+}
+
+.ica-initial-field-input {
+  min-width: 3.5rem;
+  overflow: visible !important;
+  text-overflow: clip;
+}
+
+.ica-signature-preview-overlay {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  background: #fff;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.ica-signature-preview-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.ica-fillable-pdf {
+  margin: 1.25rem 0;
+  border: 1px solid rgba(240, 237, 228, 0.12);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.ica-fillable-pdf-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem 1rem;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.8125rem;
+  color: rgba(240, 237, 228, 0.82);
+  background: rgba(0, 0, 0, 0.82);
+  border-bottom: 1px solid rgba(240, 237, 228, 0.08);
+}
+
+.ica-fillable-pdf-head span:last-child {
+  color: #ffb089;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.ica-fillable-pdf-head-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ica-fillable-pdf-toolbar {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.75rem 0.85rem;
+  background: rgba(0, 0, 0, 0.55);
+  border-bottom: 1px solid rgba(240, 237, 228, 0.08);
+}
+
+.ica-fillable-pdf-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.ica-fillable-pdf-nav-btn {
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(240, 237, 228, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--bone);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.ica-fillable-pdf-nav-btn:hover:not(:disabled) {
+  border-color: rgba(245, 176, 65, 0.45);
+  background: rgba(245, 176, 65, 0.08);
+}
+
+.ica-fillable-pdf-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.ica-fillable-pdf-page-input {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  color: rgba(240, 237, 228, 0.78);
+}
+
+.ica-fillable-pdf-page-input input {
+  width: 3rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 6px;
+  border: 1px solid rgba(240, 237, 228, 0.18);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--bone);
+  text-align: center;
+  font-size: 0.8125rem;
+}
+
+.ica-fillable-pdf-page-input input:focus {
+  outline: none;
+  border-color: rgba(245, 176, 65, 0.55);
+}
+
+.ica-fillable-pdf-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(240, 237, 228, 0.1);
+  overflow: hidden;
+}
+
+.ica-fillable-pdf-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f5b041, var(--accent));
+  transition: width 0.35s var(--ease);
+}
+
+.ica-fillable-pdf-jumps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: center;
+}
+
+.ica-fillable-pdf-jump-btn {
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(240, 237, 228, 0.14);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(240, 237, 228, 0.82);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ica-fillable-pdf-jump-btn:hover,
+.ica-fillable-pdf-jump-btn.active {
+  border-color: rgba(245, 176, 65, 0.55);
+  color: #ffc58a;
+  background: rgba(245, 176, 65, 0.1);
+}
+
+.ica-fillable-pdf-head-status {
+  color: rgba(240, 237, 228, 0.72);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ica-fillable-pdf-head-status::before {
+  content: "";
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-right: 0.35rem;
+  border-radius: 50%;
+  border: 2px solid rgba(245, 176, 65, 0.35);
+  border-top-color: #f5b041;
+  vertical-align: -0.05em;
+  animation: ica-pdf-spin 0.75s linear infinite;
+}
+
+@keyframes ica-pdf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.ica-fillable-pdf-host {
+  position: relative;
+  height: auto;
+  min-height: 280px;
+  background: #525659;
+  transition: height 0.2s ease;
+}
+
+/* PDF.js PDFViewer requires an absolutely positioned container. */
+.ica-fillable-pdf-container {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+}
+
+.ica-fillable-pdf-container--paged {
+  overflow: hidden;
+}
+
+.ica-fillable-pdf-container--paged .pdfViewer {
+  padding: 0;
+}
+
+.ica-fillable-pdf-container .pdfViewer {
+  padding: 0;
+}
+
+.ica-fillable-pdf-container--paged .page {
+  margin: 0 auto;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+
+.ica-fillable-pdf-container .page {
+  margin: 0 auto;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+
+.ica-field-callouts {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ica-field-callout {
+  position: absolute;
+  width: 168px;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid rgba(245, 176, 65, 0.55);
+  border-radius: 8px;
+  background: rgba(22, 22, 22, 0.92);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  text-align: left;
+  pointer-events: auto;
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition:
+    opacity 0.2s ease,
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.ica-field-callout::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border: 6px solid transparent;
+  transform: translateY(-50%);
+}
+
+.ica-field-callout--left::after {
+  right: -12px;
+  border-left-color: rgba(245, 176, 65, 0.55);
+}
+
+.ica-field-callout--right::after {
+  left: -12px;
+  border-right-color: rgba(245, 176, 65, 0.55);
+}
+
+.ica-field-callout--below {
+  width: min(168px, calc(100% - 16px));
+  transform: none;
+}
+
+.ica-field-callout--below::after {
+  display: none;
+}
+
+.ica-field-callouts--mobile {
+  overflow: visible;
+}
+
+.ica-field-callout:hover {
+  border-color: rgba(245, 176, 65, 0.85);
+  background: rgba(34, 28, 18, 0.96);
+}
+
+.ica-field-callout--filled {
+  opacity: 0.55;
+  border-color: rgba(240, 237, 228, 0.22);
+}
+
+.ica-field-callout-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #ffc58a;
+}
+
+.ica-field-callout-hint {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.6875rem;
+  line-height: 1.3;
+  color: rgba(240, 237, 228, 0.72);
+}
+
+.ica-fillable-pdf-error {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-content: center;
+  gap: 0.65rem;
+  padding: 1rem;
+  text-align: center;
+  color: rgba(240, 237, 228, 0.85);
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.ica-fillable-pdf-error a {
+  color: var(--accent);
+}
+
+.ica-fillable-pdf-link {
+  display: block;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: var(--accent);
+  text-align: center;
+  text-decoration: none;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.ica-fillable-pdf-link:hover {
+  text-decoration: underline;
+}
+
+.ica-signing-acknowledgments {
+  display: grid;
+  gap: 0.85rem;
+  margin: 1.1rem 0 1.25rem;
+  padding: 1rem 1.05rem;
+  border: 1px solid rgba(245, 176, 65, 0.35);
+  border-radius: var(--radius);
+  background: rgba(245, 176, 65, 0.06);
+}
+
+.ica-signing-acknowledgments label {
+  align-items: flex-start;
+  text-align: left;
+}
+
+.onboarding-review-note {
+  font-size: 0.75rem;
+  color: rgba(240, 237, 228, 0.55);
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .ica-signing-layout-fillable {
+    grid-template-columns: 1fr;
+  }
+
+  .ica-signing-side-panel {
+    position: static;
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
+@media (max-width: 560px) {
+  .ica-fillable-pdf-jumps {
+    justify-content: stretch;
+  }
+
+  .ica-fillable-pdf-jump-btn {
+    flex: 1 1 calc(50% - 0.45rem);
+    text-align: center;
+  }
+
+  .ica-field-callout {
+    width: min(168px, calc(100% - 16px));
+  }
+
+  .onboarding-review-row {
+    flex-wrap: wrap;
+  }
+
+  .onboarding-review-note {
+    width: 100%;
+    text-align: right;
+  }
+}
+
+.admin-onboarding-preview-shell .home2-page.onboarding-page .onboarding-main {
+  padding-top: clamp(128px, 16vh, 150px);
+  overflow: visible;
+}
+
+.admin-onboarding-preview-shell .home2-page.onboarding-page:has(.onboarding-panel-signing) {
+  overflow-x: visible;
+}
+
+.admin-onboarding-preview-shell .ica-signing-side-panel {
+  top: calc(8.75rem + env(safe-area-inset-top, 0px));
+  max-height: calc(100svh - 10rem - env(safe-area-inset-top, 0px));
+}
+
+.admin-onboarding-preview-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1002;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem clamp(16px, 4vw, 28px);
+  background: rgba(18, 18, 18, 0.96);
+  border-bottom: 1px solid rgba(194, 78, 28, 0.45);
+  backdrop-filter: blur(10px);
+}
+
+.admin-onboarding-preview-bar-copy {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.admin-onboarding-preview-bar-copy p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: rgba(240, 237, 228, 0.78);
+}
+
+.admin-onboarding-preview-badge {
+  flex-shrink: 0;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(194, 78, 28, 0.18);
+  color: #ffb089;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.admin-onboarding-preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.admin-onboarding-preview-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid rgba(240, 237, 228, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--bone);
+  font-size: 0.8125rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.admin-onboarding-preview-btn:hover {
+  border-color: rgba(240, 237, 228, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.onboarding-preview-success-card {
+  margin: 1.25rem 0 1.5rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(240, 237, 228, 0.12);
+  border-radius: var(--radius);
+  text-align: left;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.onboarding-preview-success-card p {
+  margin: 0;
+}
+
+.onboarding-preview-success-card p + p {
+  margin-top: 0.35rem;
+  font-size: 1.05rem;
+}
+
+.onboarding-actions-stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+@media (max-width: 720px) {
+  .admin-onboarding-preview-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-onboarding-preview-bar-copy {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-onboarding-preview-actions {
+    justify-content: flex-end;
+  }
+}

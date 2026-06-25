@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import OnboardingLayout from "@/components/OnboardingLayout";
+import OnboardingContractStep from "@/components/OnboardingContractStep";
 import { submitOnboarding, isSupabaseConfigured } from "@/lib/onboarding-api";
+import {
+  clearStoredContractSession,
+  readStoredContractLegalName,
+  readStoredContractSignatureId,
+} from "@/lib/onboarding-contract";
 import {
   getReferralInviteInfo,
   clearStoredReferralInviteId,
@@ -20,6 +26,14 @@ const US_STATES = [
   "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
 ];
 
+type OnboardingPhase = "intro" | "contract" | "form" | "previewComplete";
+
+interface AgentOnboardingProps {
+  preview?: boolean;
+  onPreviewRestart?: () => void;
+  onPreviewExit?: () => void;
+}
+
 interface OnboardingData {
   legalName: string;
   phoneNumber: string;
@@ -32,7 +46,7 @@ interface OnboardingData {
   hasEoInsurance: string;
 }
 
-type StepKey = keyof OnboardingData;
+type StepKey = Exclude<keyof OnboardingData, "legalName">;
 
 interface Step {
   key: StepKey;
@@ -45,14 +59,6 @@ interface Step {
 }
 
 const STEPS: Step[] = [
-  {
-    key: "legalName",
-    question: "Legal first & last name",
-    subtitle: "The Department of Insurance will use your legal name.",
-    type: "text",
-    placeholder: "Jane Smith",
-    required: true,
-  },
   {
     key: "phoneNumber",
     question: "Phone number",
@@ -168,7 +174,7 @@ function maskSsn(ssn: string): string {
   return `•••-••-${match[1]}`;
 }
 
-function formatReviewValue(key: StepKey, value: string): string {
+function formatReviewValue(key: StepKey | "legalName", value: string): string {
   if (!value.trim()) {
     if (key === "npn") return "Not provided";
     return "—";
@@ -211,22 +217,41 @@ function getPreviousStepIndex(from: number, skipUpline: boolean): number {
   return prev;
 }
 
-export default function AgentOnboarding() {
+function resolveInitialPhase(preview: boolean): OnboardingPhase {
+  return readStoredContractSignatureId(preview) ? "form" : "intro";
+}
+
+export default function AgentOnboarding({
+  preview = false,
+  onPreviewRestart,
+  onPreviewExit,
+}: AgentOnboardingProps = {}) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [started, setStarted] = useState(false);
+  const [phase, setPhase] = useState<OnboardingPhase>(() => resolveInitialPhase(preview));
   const [currentStep, setCurrentStep] = useState(0);
-  const [data, setData] = useState<OnboardingData>(EMPTY_DATA);
+  const [data, setData] = useState<OnboardingData>(() => ({
+    ...EMPTY_DATA,
+    legalName: readStoredContractLegalName(preview) ?? "",
+  }));
   const [transitioning, setTransitioning] = useState(false);
   const [loading, setLoading] = useState(false);
   const [returnToReview, setReturnToReview] = useState(false);
   const [referralInviteId, setReferralInviteId] = useState<string | null>(null);
   const [referralLocked, setReferralLocked] = useState(false);
+  const [contractSignatureId, setContractSignatureId] = useState<string | null>(() =>
+    readStoredContractSignatureId(preview),
+  );
+  const [previewSubmittedName, setPreviewSubmittedName] = useState("");
 
   const totalSteps = STEPS.length + 1;
-  const isReviewStep = started && currentStep === STEPS.length;
+  const isReviewStep = phase === "form" && currentStep === STEPS.length;
   const step = isReviewStep ? null : STEPS[currentStep];
-  const progress = started ? ((currentStep + 1) / totalSteps) * 100 : 0;
+  const progress = phase === "contract"
+    ? 8
+    : phase === "form"
+      ? 8 + ((currentStep + 1) / totalSteps) * 92
+      : undefined;
   const currentValue = step ? data[step.key] : "";
 
   const validationError = useMemo(() => {
@@ -281,7 +306,34 @@ export default function AgentOnboarding() {
     advance();
   };
 
+  const resetContractAndReturn = () => {
+    clearStoredContractSession(preview);
+    setContractSignatureId(null);
+    setData((prev) => ({ ...prev, legalName: "" }));
+    setPhase("contract");
+    setCurrentStep(0);
+    setReturnToReview(false);
+  };
+
   const performSubmit = async (formData: OnboardingData) => {
+    if (!contractSignatureId) {
+      toast.error("Please sign the Independent Contractor Agreement before submitting.");
+      setPhase("contract");
+      return;
+    }
+
+    if (preview) {
+      setLoading(true);
+      setTimeout(() => {
+        setPreviewSubmittedName(formData.legalName);
+        clearStoredContractSession(true);
+        setPhase("previewComplete");
+        setLoading(false);
+        toast.success("Preview complete — no application was submitted.");
+      }, 600);
+      return;
+    }
+
     if (!isSupabaseConfigured()) {
       toast.error("Onboarding is not configured. Please contact PNCL support.");
       return;
@@ -292,15 +344,22 @@ export default function AgentOnboarding() {
       const result = await submitOnboarding({
         ...formData,
         referralInviteId: referralInviteId ?? undefined,
+        contractSignatureId,
       });
+      clearStoredContractSession(false);
       navigate(
         `/onboarding/success/${result.onboardingId}?token=${encodeURIComponent(result.handoffToken)}`,
         { replace: true },
       );
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Something went wrong. Please try again.",
-      );
+      const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      if (
+        message.includes("contract") ||
+        message.includes("Agreement")
+      ) {
+        resetContractAndReturn();
+      }
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -317,6 +376,7 @@ export default function AgentOnboarding() {
   };
 
   const handleInputChange = (raw: string) => {
+    if (!step) return;
     let value = raw;
     if (step.key === "phoneNumber") value = formatPhone(raw);
     if (step.key === "ssn") value = formatSsn(raw);
@@ -336,6 +396,7 @@ export default function AgentOnboarding() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!step) return;
     if (e.key === "Enter" && step.type !== "yesno" && step.type !== "select") {
       e.preventDefault();
       handleSubmit();
@@ -343,18 +404,28 @@ export default function AgentOnboarding() {
   };
 
   useEffect(() => {
-    document.title = "PNCL New Agent Onboarding";
+    if (phase === "form" && !contractSignatureId) {
+      setPhase("contract");
+    }
+  }, [phase, contractSignatureId]);
+
+  useEffect(() => {
+    document.title = preview ? "Onboarding preview — PNCL Admin" : "PNCL New Agent Onboarding";
     const meta = document.querySelector('meta[name="description"]');
     if (meta) {
       meta.setAttribute(
         "content",
-        "Complete your PNCL agent onboarding. Provide your licensing information to initiate the contracting process.",
+        preview
+          ? "Preview the PNCL new agent onboarding experience."
+          : "Complete your PNCL agent onboarding. Sign your contract and provide licensing information to initiate the contracting process.",
       );
     }
-    trackPageView("agent-onboarding");
-  }, []);
+    trackPageView(preview ? "admin-onboarding-preview" : "agent-onboarding");
+  }, [preview]);
 
   useEffect(() => {
+    if (preview) return;
+
     const refFromUrl = searchParams.get(REFERRAL_PARAM)?.trim() ?? "";
     const refId = refFromUrl || readStoredReferralInviteId();
     if (!refId || !isSupabaseConfigured()) {
@@ -384,30 +455,77 @@ export default function AgentOnboarding() {
     return () => {
       cancelled = true;
     };
-  }, [searchParams]);
+  }, [searchParams, preview]);
 
-  if (!started) {
-    // intro only
-  } else if (!isReviewStep && !step) {
+  if (phase === "form" && !isReviewStep && !step) {
     return null;
   }
 
+  const previewWorkspaceEmail = previewSubmittedName
+    ? `${previewSubmittedName.trim().split(/\s+/)[0]?.toLowerCase() ?? "agent"}.${previewSubmittedName.trim().split(/\s+/).pop()?.toLowerCase() ?? "preview"}@thepncl.com`
+    : "jane.smith@thepncl.com";
+
   return (
-    <OnboardingLayout progress={started ? progress : undefined} wide={isReviewStep}>
-      {!started && (
+    <OnboardingLayout
+      progress={phase === "previewComplete" ? 100 : progress}
+      wide={phase === "contract" || isReviewStep || phase === "previewComplete"}
+      signing={phase === "contract"}
+    >
+      {phase === "previewComplete" && (
+        <div className="onboarding-step">
+          <span className="eyebrow">Preview complete</span>
+          <h2 className="h3">Application submitted</h2>
+          <p className="lead">
+            In the live flow, PNCL would create a @thepncl.com mailbox and show credential handoff
+            on the next screen. No account was created in this preview.
+          </p>
+          <div className="onboarding-preview-success-card">
+            <p><strong>Sample workspace email</strong></p>
+            <p>{previewWorkspaceEmail}</p>
+          </div>
+          <div className="onboarding-actions onboarding-actions-stack">
+            {onPreviewRestart && (
+              <button type="button" className="btn btn-accent" onClick={onPreviewRestart}>
+                Restart preview <span className="arr">→</span>
+              </button>
+            )}
+            {onPreviewExit && (
+              <button type="button" className="btn btn-ghost" onClick={onPreviewExit}>
+                Back to admin
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {phase === "intro" && (
         <div className="onboarding-step">
           <span className="eyebrow">New Agent</span>
           <h2 className="h2">PNCL Agent Onboarding</h2>
           <p className="lead">
-            This form initiates the PNCL onboarding process. Please fill out completely with accurate information.
+            You&apos;ll start by signing the PNCL Independent Contractor Agreement, then complete
+            your application with accurate licensing information.
           </p>
-          <button type="button" className="btn btn-accent btn-lg" onClick={() => setStarted(true)}>
+          <button type="button" className="btn btn-accent btn-lg" onClick={() => setPhase("contract")}>
             Get Started <span className="arr">→</span>
           </button>
         </div>
       )}
 
-      {started && isReviewStep && (
+      {phase === "contract" && (
+        <OnboardingContractStep
+          preview={preview}
+          onSigned={({ contractSignatureId: signedId, legalName }) => {
+            setContractSignatureId(signedId);
+            setData((prev) => ({ ...prev, legalName }));
+            setPhase("form");
+            setCurrentStep(0);
+          }}
+          onBack={() => setPhase("intro")}
+        />
+      )}
+
+      {phase === "form" && isReviewStep && (
         <div className={`onboarding-step ${transitioning ? "out" : ""}`}>
           <span className="eyebrow">Review</span>
           <h2 className="h3">Check your answers</h2>
@@ -416,6 +534,13 @@ export default function AgentOnboarding() {
           </p>
 
           <ul className="onboarding-review-list">
+            <li className="onboarding-review-row">
+              <div className="onboarding-review-content">
+                <span className="onboarding-review-label">Legal first &amp; last name</span>
+                <span className="onboarding-review-value">{formatReviewValue("legalName", data.legalName)}</span>
+              </div>
+              <span className="onboarding-review-note">From signed contract</span>
+            </li>
             {STEPS.map((reviewStep, index) => (
               <li key={reviewStep.key} className="onboarding-review-row">
                 <div className="onboarding-review-content">
@@ -444,7 +569,11 @@ export default function AgentOnboarding() {
               onClick={() => performSubmit(data)}
               disabled={loading}
             >
-              {loading ? "Submitting…" : <>Submit Application <span className="arr">→</span></>}
+              {loading
+                ? "Submitting…"
+                : preview
+                  ? <>Submit preview application <span className="arr">→</span></>
+                  : <>Submit Application <span className="arr">→</span></>}
             </button>
           </div>
 
@@ -458,10 +587,10 @@ export default function AgentOnboarding() {
         </div>
       )}
 
-      {started && !isReviewStep && step && (
+      {phase === "form" && !isReviewStep && step && (
         <div className={`onboarding-step ${transitioning ? "out" : ""}`}>
           <span className="eyebrow">
-            Step {currentStep + 1} of {totalSteps}
+            Step {currentStep + 2} of {totalSteps + 1}
           </span>
           <h2 className="h3">{step.question}</h2>
           {step.key === "uplineNetwork" && referralLocked ? (
@@ -529,13 +658,7 @@ export default function AgentOnboarding() {
                       onChange={(e) => handleInputChange(e.target.value)}
                       onKeyDown={handleKeyDown}
                       autoFocus
-                      autoComplete={
-                        step.key === "legalName"
-                          ? "name"
-                          : step.key === "phoneNumber"
-                            ? "tel"
-                            : "off"
-                      }
+                      autoComplete={step.key === "phoneNumber" ? "tel" : "off"}
                     />
                     {validationError && <p className="onboarding-error">{validationError}</p>}
                   </>
@@ -571,6 +694,12 @@ export default function AgentOnboarding() {
               }}
             >
               ← {returnToReview ? "Back to review" : "Back"}
+            </button>
+          )}
+
+          {currentStep === 0 && !returnToReview && (
+            <button type="button" className="onboarding-back" onClick={resetContractAndReturn}>
+              ← Back to contract
             </button>
           )}
         </div>

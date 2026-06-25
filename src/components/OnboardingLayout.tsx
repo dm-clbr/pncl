@@ -7,9 +7,10 @@ interface OnboardingLayoutProps {
   children: React.ReactNode;
   progress?: number;
   wide?: boolean;
+  signing?: boolean;
 }
 
-export default function OnboardingLayout({ children, progress, wide }: OnboardingLayoutProps) {
+export default function OnboardingLayout({ children, progress, wide, signing }: OnboardingLayoutProps) {
   return (
     <div className="home2-page onboarding-page">
       <div className="grain" aria-hidden="true" />
@@ -30,7 +31,15 @@ export default function OnboardingLayout({ children, progress, wide }: Onboardin
       )}
 
       <main className="onboarding-main">
-        <div className={`onboarding-panel${wide ? " onboarding-panel-wide" : ""}`}>{children}</div>
+        <div
+          className={[
+            "onboarding-panel",
+            wide ? "onboarding-panel-wide" : "",
+            signing ? "onboarding-panel-signing" : "",
+          ].filter(Boolean).join(" ")}
+        >
+          {children}
+        </div>
       </main>
     </div>
   );

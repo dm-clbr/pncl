@@ -6,6 +6,10 @@ import {
   logOnboardingSubmitStarted,
   logOnboardingSubmitSuccess,
 } from "./onboarding-logger";
+import type {
+  SubmitOnboardingContractInput,
+  SubmitOnboardingContractResponse,
+} from "./onboarding-contract";
 
 export interface SubmitOnboardingInput {
   legalName: string;
@@ -18,6 +22,7 @@ export interface SubmitOnboardingInput {
   npn: string;
   hasEoInsurance: string;
   referralInviteId?: string;
+  contractSignatureId: string;
 }
 
 export interface SubmitOnboardingResponse {
@@ -94,6 +99,7 @@ export async function submitOnboarding(
       npn: input.npn || undefined,
       hasEoInsurance: input.hasEoInsurance,
       referralInviteId: input.referralInviteId,
+      contractSignatureId: input.contractSignatureId,
     }),
   });
 
@@ -108,6 +114,23 @@ export async function submitOnboarding(
     workspaceEmail: data.workspaceEmail ?? "",
     error: data.error ?? "",
   });
+  return data;
+}
+
+export async function submitOnboardingContract(
+  input: SubmitOnboardingContractInput,
+): Promise<SubmitOnboardingContractResponse> {
+  const response = await fetch(getFunctionUrl("submit-onboarding-contract"), {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify(input),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message ?? "Unable to sign contract");
+  }
+
   return data;
 }
 

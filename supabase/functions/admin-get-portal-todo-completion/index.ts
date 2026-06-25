@@ -7,6 +7,7 @@ import {
   type PortalTodoRecord,
   validateTodoCompletionQuery,
 } from "../_shared/portalTodos.ts";
+import { ICA_TODO_SLUG, isIcaSignedForUser, listIcaSignedUserIds } from "../_shared/portalIca.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
 
@@ -43,6 +44,9 @@ serve(async (req) => {
     ]);
 
     const usersById = new Map(users.map((user) => [user.id, user]));
+    const icaSignedUserIds = todo.slug === ICA_TODO_SLUG
+      ? await listIcaSignedUserIds(adminClient, users.map((user) => user.id))
+      : null;
     const completed = [];
     const pending = [];
 
@@ -54,7 +58,11 @@ serve(async (req) => {
         email: agent.email,
       };
 
-      if (user && isPortalTodoCompletedForUser(user, todo.slug)) {
+      const isCompleted = todo.slug === ICA_TODO_SLUG && icaSignedUserIds
+        ? isIcaSignedForUser(agent.id, user?.user_metadata, icaSignedUserIds)
+        : user && isPortalTodoCompletedForUser(user, todo.slug);
+
+      if (isCompleted) {
         completed.push(entry);
       } else {
         pending.push(entry);

@@ -4,6 +4,10 @@ import { generateAvailableWorkspaceEmail } from "../_shared/email.ts";
 import { createWorkspaceUser, waitForWorkspaceMailboxReady } from "../_shared/googleWorkspace.ts";
 import { logOnboarding } from "../_shared/logger.ts";
 import {
+  isContractSignatureExpired,
+  type OnboardingContractRecord,
+} from "../_shared/onboardingContract.ts";
+import {
   getServiceClient,
   validateSubmitPayload,
 } from "../_shared/onboarding.ts";
@@ -51,6 +55,50 @@ serve(async (req) => {
     });
 
     const supabase = getServiceClient();
+
+    const { data: contractRow, error: contractError } = await supabase
+      .from("onboarding_contract_signatures")
+      .select("*")
+      .eq("id", payload.contractSignatureId)
+      .maybeSingle();
+
+    if (contractError) {
+      throw new Error(contractError.message);
+    }
+
+    const contract = contractRow as OnboardingContractRecord | null;
+    if (!contract) {
+      return errorResponse(
+        "Your signed contract was not found. Please sign the agreement again.",
+        400,
+        "invalid_contract",
+      );
+    }
+
+    if (contract.onboarding_id) {
+      return errorResponse(
+        "This signed contract has already been used. Please sign the agreement again.",
+        409,
+        "contract_already_used",
+      );
+    }
+
+    if (isContractSignatureExpired(contract.signed_at)) {
+      return errorResponse(
+        "Your signed contract has expired. Please sign the agreement again.",
+        400,
+        "contract_expired",
+      );
+    }
+
+    if (contract.legal_name.localeCompare(payload.legalName, undefined, { sensitivity: "accent" }) !== 0) {
+      return errorResponse(
+        "Your legal name must match the name on your signed contract.",
+        400,
+        "contract_name_mismatch",
+      );
+    }
+
     const ssnHash = await hashSsn(payload.ssn);
 
     if (await findActiveOnboardingBySsnHash(supabase, ssnHash)) {
@@ -113,6 +161,7 @@ serve(async (req) => {
         has_license: payload.hasLicense,
         npn: payload.npn ?? null,
         has_eo_insurance: payload.hasEoInsurance,
+        personal_email: contract.personal_email,
         referrer_user_id: referrerUserId,
         referral_invite_id: referralInviteId,
         invited_comp_level: invitedCompLevel,
@@ -147,6 +196,20 @@ serve(async (req) => {
     }
 
     const onboardingId = record.id;
+
+    const { error: contractLinkError } = await supabase
+      .from("onboarding_contract_signatures")
+      .update({ onboarding_id: onboardingId })
+      .eq("id", payload.contractSignatureId)
+      .is("onboarding_id", null);
+
+    if (contractLinkError) {
+      logOnboarding(
+        "submit_contract_link_failed",
+        { requestId, onboardingId, error: contractLinkError.message },
+        "error",
+      );
+    }
 
     if (claimedInviteId) {
       await attachOnboardingToReferralInvite(supabase, claimedInviteId, onboardingId);

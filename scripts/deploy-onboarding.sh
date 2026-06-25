@@ -14,7 +14,7 @@ echo "==> Pushing database migrations..."
 supabase db push
 
 echo "==> Deploying Edge Functions..."
-supabase functions deploy submit-onboarding get-onboarding-status reveal-onboarding-credentials setup-portal-account resend-portal-confirmation get-referrer-info create-referral-invite list-referral-invites admin-update-comp-level admin-list-agents admin-get-hierarchy admin-create-user admin-update-role admin-update-referrer admin-resend-activation
+supabase functions deploy submit-onboarding submit-onboarding-contract submit-portal-ica get-portal-ica-document get-portal-ica-status get-onboarding-status reveal-onboarding-credentials setup-portal-account resend-portal-confirmation get-referrer-info create-referral-invite list-referral-invites admin-update-comp-level admin-list-agents admin-get-hierarchy admin-create-user admin-update-role admin-update-referrer admin-resend-activation admin-get-user-profile admin-list-portal-todos admin-get-portal-todo-completion
 
 echo ""
 echo "Deploy complete. Test onboarding at: http://localhost:8080/onboarding"

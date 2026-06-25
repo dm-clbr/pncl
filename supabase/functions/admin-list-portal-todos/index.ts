@@ -6,6 +6,7 @@ import {
   mapPortalTodoRecord,
   type PortalTodoRecord,
 } from "../_shared/portalTodos.ts";
+import { ICA_TODO_SLUG, listIcaSignedUserIds } from "../_shared/portalIca.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
 
@@ -36,10 +37,15 @@ serve(async (req) => {
     const rows = (data ?? []) as PortalTodoRecord[];
     const slugs = rows.map((row) => row.slug);
     const { totalUsers, completionsBySlug } = countTodoCompletions(users, slugs);
+    const icaSignedUserIds = slugs.includes(ICA_TODO_SLUG)
+      ? await listIcaSignedUserIds(adminClient, users.map((user) => user.id))
+      : null;
 
     const todos = rows.map((row) => {
       const mapped = mapPortalTodoRecord(row);
-      const completedCount = completionsBySlug[row.slug] ?? 0;
+      const completedCount = row.slug === ICA_TODO_SLUG && icaSignedUserIds
+        ? icaSignedUserIds.size
+        : (completionsBySlug[row.slug] ?? 0);
       const completionPercent = totalUsers > 0
         ? Math.round((completedCount / totalUsers) * 100)
         : 0;

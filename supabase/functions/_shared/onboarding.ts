@@ -75,6 +75,7 @@ export interface SubmitOnboardingPayload {
   npn?: string;
   hasEoInsurance: string;
   referralInviteId?: string;
+  contractSignatureId: string;
 }
 
 export interface ReferrerInfo {
@@ -233,6 +234,13 @@ export function validateSubmitPayload(body: unknown): SubmitOnboardingPayload {
     ? data.referralInviteId
     : undefined;
 
+  const contractSignatureId = typeof data.contractSignatureId === "string"
+    ? data.contractSignatureId.trim()
+    : "";
+  if (!isValidReferrerUserId(contractSignatureId)) {
+    throw new Error("A signed Independent Contractor Agreement is required before submitting");
+  }
+
   return {
     legalName,
     firstName,
@@ -246,6 +254,7 @@ export function validateSubmitPayload(body: unknown): SubmitOnboardingPayload {
     npn: npn || undefined,
     hasEoInsurance,
     referralInviteId,
+    contractSignatureId,
   };
 }
 

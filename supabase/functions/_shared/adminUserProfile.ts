@@ -3,6 +3,11 @@ import type { DirectDepositRecord } from "./portalDirectDeposit.ts";
 import type { PortalW9Record } from "./portalW9.ts";
 import { createPortalW9SignedUrl, ensureW9Pdf } from "./portalW9Documents.ts";
 import { DIRECT_DEPOSIT_PDF_BUCKET } from "./portalDirectDeposit.ts";
+import {
+  createOnboardingContractSignedUrl,
+  type OnboardingContractRecord,
+} from "./onboardingContract.ts";
+import { createPortalIcaSignedUrl, type PortalIcaRecord } from "./portalIca.ts";
 
 export interface AdminUserDocument {
   id: string;
@@ -15,6 +20,7 @@ export interface AdminUserDocument {
 const DOCUMENT_LABELS: Record<string, string> = {
   "w9.pdf": "Form W-9",
   "direct-deposit.pdf": "Direct deposit request",
+  "ica-signed.pdf": "Independent Contractor Agreement",
 };
 
 function labelForFileName(fileName: string): string {
@@ -84,6 +90,83 @@ export async function loadAdminUserDocuments(
   }
 
   return documents.sort((a, b) => a.label.localeCompare(b.label));
+}
+
+export async function loadPortalIcaDocument(
+  adminClient: SupabaseClient,
+  userId: string,
+): Promise<AdminUserDocument | null> {
+  const { data, error } = await adminClient
+    .from("portal_ica_signatures")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  const record = data as PortalIcaRecord;
+  return {
+    id: "ica",
+    label: "Independent Contractor Agreement",
+    fileName: "ica-signed.pdf",
+    signedAt: record.signed_at,
+    downloadUrl: await createPortalIcaSignedUrl(adminClient, record.pdf_path),
+  };
+}
+
+export async function loadOnboardingContractDocument(
+  adminClient: SupabaseClient,
+  onboardingId: string,
+): Promise<AdminUserDocument | null> {
+  const { data, error } = await adminClient
+    .from("onboarding_contract_signatures")
+    .select("*")
+    .eq("onboarding_id", onboardingId)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  const record = data as OnboardingContractRecord;
+  return {
+    id: "ica",
+    label: "Independent Contractor Agreement",
+    fileName: "ica-signed.pdf",
+    signedAt: record.signed_at,
+    downloadUrl: await createOnboardingContractSignedUrl(adminClient, record.pdf_path),
+  };
+}
+
+export async function loadAdminUserDocumentsWithContract(
+  adminClient: SupabaseClient,
+  userId: string,
+  onboardingId: string | null,
+  w9Record: PortalW9Record | null,
+  directDepositRecord: DirectDepositRecord | null,
+): Promise<AdminUserDocument[]> {
+  const documents = await loadAdminUserDocuments(adminClient, userId, w9Record, directDepositRecord);
+  const withoutIcaDuplicates = documents.filter(
+    (document) => document.fileName.toLowerCase() !== "ica-signed.pdf",
+  );
+
+  const portalIcaDocument = await loadPortalIcaDocument(adminClient, userId);
+  if (portalIcaDocument) {
+    return [portalIcaDocument, ...withoutIcaDuplicates].sort((a, b) => a.label.localeCompare(b.label));
+  }
+
+  if (!onboardingId) {
+    return withoutIcaDuplicates;
+  }
+
+  const contractDocument = await loadOnboardingContractDocument(adminClient, onboardingId);
+  if (!contractDocument) {
+    return withoutIcaDuplicates;
+  }
+
+  return [contractDocument, ...withoutIcaDuplicates].sort((a, b) => a.label.localeCompare(b.label));
 }
 
 export function validateAdminUserProfileQuery(url: URL): { userId: string } {
