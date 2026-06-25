@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import OnboardingLayout from "@/components/OnboardingLayout";
 import { useAuth, isEmailConfirmed } from "@/contexts/AuthContext";
 import { isSupabaseAuthConfigured } from "@/lib/supabase";
@@ -72,10 +72,6 @@ export default function PortalLogin() {
           </button>
         </div>
       )}
-
-      <p className="onboarding-help-text">
-        New agent? Complete <Link to="/onboarding">onboarding</Link> first to create your portal account.
-      </p>
     </OnboardingLayout>
   );
 }
