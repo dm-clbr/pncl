@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation } from "react-router-dom";
 import OnboardingLayout from "@/components/OnboardingLayout";
 import { useAuth, isEmailConfirmed } from "@/contexts/AuthContext";
 import { isSupabaseAuthConfigured } from "@/lib/supabase";
+import { consumePortalOAuthReturn } from "@/lib/portal-auth";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 
@@ -12,7 +13,10 @@ export default function PortalLogin() {
   const [signingInWithGoogle, setSigningInWithGoogle] = useState(false);
   const configured = isSupabaseAuthConfigured();
 
-  const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? "/portal";
+  const [redirectTarget] = useState(() => {
+    const stateFrom = (location.state as { from?: { pathname: string } } | null)?.from?.pathname;
+    return stateFrom ?? consumePortalOAuthReturn() ?? "/portal";
+  });
 
   useEffect(() => {
     document.title = "Employee Portal — PNCL";
@@ -23,7 +27,7 @@ export default function PortalLogin() {
   const handleGoogleSignIn = async () => {
     setSigningInWithGoogle(true);
     try {
-      await signInWithGoogle(from);
+      await signInWithGoogle(redirectTarget);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to sign in with Google";
       toast.error(message);
@@ -32,7 +36,7 @@ export default function PortalLogin() {
   };
 
   if (!loading && user && isEmailConfirmed(user)) {
-    return <Navigate to={from} replace />;
+    return <Navigate to={redirectTarget} replace />;
   }
 
   if (loading) {

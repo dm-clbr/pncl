@@ -9,26 +9,15 @@ import {
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { getSupabaseClient, isSupabaseAuthConfigured } from "@/lib/supabase";
+import {
+  completePortalOAuthRedirect,
+  PORTAL_HOME_PATH,
+  PORTAL_LOGIN_PATH,
+  shouldCompletePortalOAuthRedirect,
+  storePortalOAuthReturn,
+} from "@/lib/portal-auth";
 
 const ALLOWED_EMAIL_DOMAIN = "thepncl.com";
-const PORTAL_HOME_PATH = "/portal";
-
-function isOAuthCallbackUrl(): boolean {
-  const { hash, search } = window.location;
-  return hash.includes("access_token") || search.includes("code=");
-}
-
-function clearOAuthCallbackFromUrl() {
-  window.history.replaceState(null, "", window.location.pathname);
-}
-
-function redirectToPortalAfterOAuth() {
-  const { pathname } = window.location;
-  if (pathname === "/" || pathname === "") {
-    clearOAuthCallbackFromUrl();
-    window.location.replace(PORTAL_HOME_PATH);
-  }
-}
 
 interface AuthContextValue {
   user: User | null;
@@ -69,11 +58,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(nextSession.user);
   }, []);
 
+  const maybeRedirectAfterPortalSignIn = useCallback(() => {
+    if (!user || !isEmailConfirmed(user)) return;
+    if (!shouldCompletePortalOAuthRedirect(window.location.pathname)) return;
+    completePortalOAuthRedirect();
+  }, [user]);
+
   useEffect(() => {
-    if (loading || !user || !isEmailConfirmed(user)) return;
-    if (!isOAuthCallbackUrl()) return;
-    redirectToPortalAfterOAuth();
-  }, [loading, user]);
+    maybeRedirectAfterPortalSignIn();
+  }, [maybeRedirectAfterPortalSignIn, loading]);
 
   useEffect(() => {
     if (!isSupabaseAuthConfigured()) {
@@ -90,16 +83,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }).finally(() => setLoading(false));
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, nextSession) => {
       try {
         await enforceDomain(nextSession);
-        if (
-          (event === "SIGNED_IN" || event === "INITIAL_SESSION")
-          && nextSession?.user
-          && isOAuthCallbackUrl()
-        ) {
-          redirectToPortalAfterOAuth();
-        }
       } catch {
         setSession(null);
         setUser(null);
@@ -112,7 +98,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = useCallback(async (redirectPath = PORTAL_HOME_PATH) => {
     const supabase = getSupabaseClient();
     const path = redirectPath.startsWith("/") ? redirectPath : `/${redirectPath}`;
-    const redirectTo = `${window.location.origin}${path}`;
+    storePortalOAuthReturn(path);
+    const redirectTo = `${window.location.origin}${PORTAL_LOGIN_PATH}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
