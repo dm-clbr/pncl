@@ -46,10 +46,6 @@ serve(async (req) => {
       );
     }
 
-    if (user.email_confirmed_at) {
-      return errorResponse("Email is already confirmed.", 409, "already_confirmed");
-    }
-
     const firstName = typeof user.user_metadata?.first_name === "string"
       ? user.user_metadata.first_name
       : user.email.split("@")[0];
@@ -57,9 +53,9 @@ serve(async (req) => {
     const adminClient = getServiceClient();
     await sendPortalConfirmationEmail(adminClient, email, firstName);
 
-    return jsonResponse({ message: "Confirmation email sent." });
+    return jsonResponse({ message: "Portal welcome email sent." });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to resend confirmation email";
+    const message = error instanceof Error ? error.message : "Unable to resend portal welcome email";
     logOnboarding("portal_confirmation_resend_request_failed", { error: message }, "error");
     return errorResponse(message, 500, "resend_failed");
   }

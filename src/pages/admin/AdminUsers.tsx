@@ -68,14 +68,14 @@ export default function AdminUsers() {
     const token = session?.access_token;
     if (!token) return;
 
-    if (!window.confirm(`Send a new portal activation email to ${agent.name}?`)) return;
+    if (!window.confirm(`Send a portal welcome email to ${agent.name}?`)) return;
 
     setResendingId(agent.id);
     try {
       const result = await resendActivationEmail(token, agent.id);
       toast.success(result.message);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Unable to resend activation email");
+      toast.error(err instanceof Error ? err.message : "Unable to resend welcome email");
     } finally {
       setResendingId(null);
     }

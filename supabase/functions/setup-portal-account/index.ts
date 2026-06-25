@@ -64,7 +64,7 @@ serve(async (req) => {
 
     return jsonResponse({
       email: record.workspace_email,
-      message: "Portal activation email sent. Check your PNCL inbox.",
+      message: "Portal welcome email sent. Sign in with Google at the portal login page.",
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to resend portal activation email";

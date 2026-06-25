@@ -98,6 +98,55 @@ export async function sendPortalActivationEmail(input: {
   });
 }
 
+export function buildPortalWelcomeEmailHtml(input: {
+  firstName: string;
+  loginUrl: string;
+}): string {
+  const greeting = input.firstName ? `Hi ${input.firstName},` : "Hi,";
+
+  return `
+    <div style="font-family:sans-serif;max-width:560px;margin:0 auto;">
+      <h2 style="background:#0f0f0f;color:#fff;margin:0;padding:20px 24px;font-size:16px;">
+        Your PNCL Employee Portal is ready
+      </h2>
+      <div style="padding:24px;font-size:14px;color:#111;line-height:1.6;">
+        <p>${greeting}</p>
+        <p>
+          Your PNCL company email is ready. Sign in to the Employee Portal with your
+          @thepncl.com Google account.
+        </p>
+        <p style="margin:28px 0;">
+          <a href="${input.loginUrl}"
+             style="display:inline-block;background:#c8ff00;color:#0f0f0f;padding:12px 20px;
+                    text-decoration:none;font-weight:600;border-radius:4px;">
+            Sign in to Portal
+          </a>
+        </p>
+        <p style="color:#555;font-size:13px;">
+          If the button does not work, copy and paste this link into your browser:<br />
+          <a href="${input.loginUrl}" style="color:#555;word-break:break-all;">
+            ${input.loginUrl}
+          </a>
+        </p>
+        <p style="color:#555;font-size:13px;margin-top:24px;">
+          Use <strong>Sign in with Google</strong> and choose your @thepncl.com account.
+        </p>
+      </div>
+    </div>`;
+}
+
+export async function sendPortalWelcomeEmail(input: {
+  to: string;
+  firstName: string;
+  loginUrl: string;
+}): Promise<void> {
+  await sendEmail({
+    to: input.to,
+    subject: "Your PNCL Employee Portal is ready",
+    html: buildPortalWelcomeEmailHtml(input),
+  });
+}
+
 function formatGenesisNotificationDate(value: string): string {
   return new Date(value).toLocaleString("en-US", {
     month: "short",

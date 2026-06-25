@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { logOnboarding } from "./logger.ts";
-import { sendPortalActivationEmail } from "./resend.ts";
+import { sendPortalWelcomeEmail } from "./resend.ts";
 
 export interface ProvisionPortalAccountInput {
   email: string;
@@ -11,9 +11,9 @@ export interface ProvisionPortalAccountInput {
   existingSupabaseUserId?: string | null;
 }
 
-export function getPortalActivateUrl(): string {
+export function getPortalLoginUrl(): string {
   const siteUrl = Deno.env.get("PNCL_SITE_URL") ?? "http://localhost:8080";
-  return `${siteUrl.replace(/\/$/, "")}/onboarding/activate`;
+  return `${siteUrl.replace(/\/$/, "")}/portal/login`;
 }
 
 async function findPortalUserByEmail(
@@ -37,65 +37,72 @@ async function findPortalUserByEmail(
   return null;
 }
 
-async function removeUnconfirmedPortalUser(
-  supabase: SupabaseClient,
-  userId: string,
-  email: string,
-  onboardingId: string,
-): Promise<void> {
-  const { data: existing, error } = await supabase.auth.admin.getUserById(userId);
-  if (error || !existing.user) {
-    throw new Error("Unable to load existing portal account");
-  }
-
-  if (existing.user.email_confirmed_at) {
-    return;
-  }
-
-  const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);
-  if (deleteError) {
-    logOnboarding("portal_user_delete_failed", {
-      onboardingId,
-      email,
-      error: deleteError.message,
-    }, "error");
-    throw new Error("Unable to reset portal account");
-  }
-
-  logOnboarding("portal_user_removed_for_reinvite", {
-    onboardingId,
-    email,
-    previousUserId: userId,
-  });
+function buildPortalMetadata(input: ProvisionPortalAccountInput) {
+  return {
+    userMetadata: {
+      full_name: input.legalName,
+      first_name: input.firstName,
+      last_name: input.lastName,
+    },
+    appMetadata: {
+      onboarding_id: input.onboardingId,
+      source: "agent_onboarding",
+      role: "agent",
+    },
+  };
 }
 
-async function sendPortalInvite(
-  supabase: SupabaseClient,
-  input: ProvisionPortalAccountInput,
-): Promise<string> {
-  const redirectTo = getPortalActivateUrl();
-  const userMetadata = {
-    full_name: input.legalName,
-    first_name: input.firstName,
-    last_name: input.lastName,
-  };
-  const appMetadata = {
-    onboarding_id: input.onboardingId,
-    source: "agent_onboarding",
-    role: "agent",
-  };
+function isDuplicateEmailError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return normalized.includes("already been registered")
+    || normalized.includes("already exists")
+    || normalized.includes("duplicate");
+}
 
-  const { data, error } = await supabase.auth.admin.generateLink({
-    type: "invite",
-    email: input.email,
-    options: {
-      redirectTo,
-      data: userMetadata,
-    },
+async function syncPortalUserMetadata(
+  supabase: SupabaseClient,
+  userId: string,
+  input: ProvisionPortalAccountInput,
+): Promise<void> {
+  const { userMetadata, appMetadata } = buildPortalMetadata(input);
+  const { error } = await supabase.auth.admin.updateUserById(userId, {
+    email_confirm: true,
+    user_metadata: userMetadata,
+    app_metadata: appMetadata,
   });
 
   if (error) {
-    logOnboarding("portal_invite_failed", {
+    logOnboarding("portal_user_metadata_failed", {
+      onboardingId: input.onboardingId,
+      email: input.email,
+      error: error.message,
+    }, "warn");
+  }
+}
+
+async function createPortalUser(
+  supabase: SupabaseClient,
+  input: ProvisionPortalAccountInput,
+): Promise<string> {
+  const { userMetadata, appMetadata } = buildPortalMetadata(input);
+
+  const { data, error } = await supabase.auth.admin.createUser({
+    email: input.email,
+    email_confirm: true,
+    user_metadata: userMetadata,
+    app_metadata: appMetadata,
+  });
+
+  if (error) {
+    if (isDuplicateEmailError(error.message)) {
+      const existingId = await findPortalUserByEmail(supabase, input.email);
+      if (existingId) {
+        await syncPortalUserMetadata(supabase, existingId, input);
+        return existingId;
+      }
+    }
+
+    logOnboarding("portal_user_create_failed", {
       onboardingId: input.onboardingId,
       email: input.email,
       error: error.message,
@@ -107,42 +114,51 @@ async function sendPortalInvite(
     throw new Error("Unable to provision portal account");
   }
 
-  const activationUrl = data.properties?.action_link;
-  if (!activationUrl) {
-    logOnboarding("portal_invite_link_missing", {
-      onboardingId: input.onboardingId,
-      email: input.email,
-    }, "error");
-    throw new Error("Unable to generate portal activation link");
-  }
+  return data.user.id;
+}
 
-  const { error: metadataError } = await supabase.auth.admin.updateUserById(data.user.id, {
-    app_metadata: appMetadata,
-  });
+async function sendPortalWelcome(
+  input: ProvisionPortalAccountInput,
+  supabaseUserId: string,
+  delivery: "provision" | "resend",
+): Promise<void> {
+  const loginUrl = getPortalLoginUrl();
 
-  if (metadataError) {
-    logOnboarding("portal_user_metadata_failed", {
-      onboardingId: input.onboardingId,
-      email: input.email,
-      error: metadataError.message,
-    }, "warn");
-  }
-
-  await sendPortalActivationEmail({
+  await sendPortalWelcomeEmail({
     to: input.email,
     firstName: input.firstName,
-    activationUrl,
+    loginUrl,
   });
 
-  logOnboarding("portal_invite_sent", {
+  logOnboarding(delivery === "provision" ? "portal_welcome_sent" : "portal_welcome_resent", {
     onboardingId: input.onboardingId,
     email: input.email,
-    supabaseUserId: data.user.id,
-    redirectTo,
+    supabaseUserId,
+    loginUrl,
     delivery: "resend",
   });
+}
 
-  return data.user.id;
+async function provisionPortalUser(
+  supabase: SupabaseClient,
+  input: ProvisionPortalAccountInput,
+  options: { sendWelcomeEmail: boolean; delivery: "provision" | "resend" },
+): Promise<string> {
+  const existingId = input.existingSupabaseUserId
+    ?? await findPortalUserByEmail(supabase, input.email);
+
+  const supabaseUserId = existingId
+    ? await (async () => {
+      await syncPortalUserMetadata(supabase, existingId, input);
+      return existingId;
+    })()
+    : await createPortalUser(supabase, input);
+
+  if (options.sendWelcomeEmail) {
+    await sendPortalWelcome(input, supabaseUserId, options.delivery);
+  }
+
+  return supabaseUserId;
 }
 
 export async function sendPortalConfirmationEmail(
@@ -150,31 +166,15 @@ export async function sendPortalConfirmationEmail(
   email: string,
   firstName: string,
 ): Promise<void> {
-  const redirectTo = getPortalActivateUrl();
+  const loginUrl = getPortalLoginUrl();
 
-  const { data, error } = await supabase.auth.admin.generateLink({
-    type: "invite",
-    email,
-    options: { redirectTo },
-  });
-
-  if (error) {
-    logOnboarding("portal_confirmation_resend_failed", { email, error: error.message }, "error");
-    throw new Error(error.message);
-  }
-
-  const activationUrl = data.properties?.action_link;
-  if (!activationUrl) {
-    throw new Error("Unable to generate portal activation link");
-  }
-
-  await sendPortalActivationEmail({
+  await sendPortalWelcomeEmail({
     to: email,
     firstName,
-    activationUrl,
+    loginUrl,
   });
 
-  logOnboarding("portal_confirmation_resent", { email, redirectTo, delivery: "resend" });
+  logOnboarding("portal_welcome_resent", { email, loginUrl, delivery: "resend" });
 }
 
 export async function provisionPortalAccount(
@@ -185,45 +185,19 @@ export async function provisionPortalAccount(
     ?? await findPortalUserByEmail(supabase, input.email);
 
   if (existingId) {
-    const { data: existing, error } = await supabase.auth.admin.getUserById(existingId);
-    if (error || !existing.user) {
-      throw new Error("Unable to load existing portal account");
-    }
-
-    if (existing.user.email_confirmed_at) {
-      logOnboarding("portal_already_active", {
-        onboardingId: input.onboardingId,
-        email: input.email,
-        supabaseUserId: existingId,
-      });
-      return existingId;
-    }
-
-    await removeUnconfirmedPortalUser(supabase, existingId, input.email, input.onboardingId);
+    logOnboarding("portal_already_active", {
+      onboardingId: input.onboardingId,
+      email: input.email,
+      supabaseUserId: existingId,
+    });
   }
 
-  return sendPortalInvite(supabase, input);
+  return provisionPortalUser(supabase, input, { sendWelcomeEmail: true, delivery: "provision" });
 }
 
 export async function resendPortalInvite(
   supabase: SupabaseClient,
   input: ProvisionPortalAccountInput,
 ): Promise<string> {
-  const existingId = input.existingSupabaseUserId
-    ?? await findPortalUserByEmail(supabase, input.email);
-
-  if (existingId) {
-    const { data: existing, error } = await supabase.auth.admin.getUserById(existingId);
-    if (error || !existing.user) {
-      throw new Error("Unable to load portal account");
-    }
-
-    if (existing.user.email_confirmed_at) {
-      throw new Error("Portal account is already active");
-    }
-
-    await removeUnconfirmedPortalUser(supabase, existingId, input.email, input.onboardingId);
-  }
-
-  return sendPortalInvite(supabase, input);
+  return provisionPortalUser(supabase, input, { sendWelcomeEmail: true, delivery: "resend" });
 }

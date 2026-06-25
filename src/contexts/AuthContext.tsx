@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
-import { getSupabaseClient, getSupabaseConfig, isSupabaseAuthConfigured } from "@/lib/supabase";
+import { getSupabaseClient, isSupabaseAuthConfigured } from "@/lib/supabase";
 
 const ALLOWED_EMAIL_DOMAIN = "thepncl.com";
 
@@ -16,8 +16,7 @@ interface AuthContextValue {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signInWithEmail: (email: string, password: string) => Promise<void>;
-  resendConfirmationEmail: (email: string) => Promise<void>;
+  signInWithGoogle: (redirectPath?: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -77,36 +76,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, [enforceDomain]);
 
-  const signInWithEmail = useCallback(async (email: string, password: string) => {
+  const signInWithGoogle = useCallback(async (redirectPath = "/portal") => {
     const supabase = getSupabaseClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
-  }, []);
-
-  const resendConfirmationEmail = useCallback(async (email: string) => {
-    const supabase = getSupabaseClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) {
-      throw new Error("You must be signed in to resend a confirmation email.");
-    }
-
-    const { url, anonKey } = getSupabaseConfig();
-    const response = await fetch(
-      `${url.replace(/\/$/, "")}/functions/v1/resend-portal-confirmation`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: anonKey,
+    const path = redirectPath.startsWith("/") ? redirectPath : `/${redirectPath}`;
+    const redirectTo = `${window.location.origin}${path}`;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo,
+        queryParams: {
+          hd: ALLOWED_EMAIL_DOMAIN,
         },
       },
-    );
-
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message ?? "Unable to resend confirmation email.");
-    }
+    });
+    if (error) throw error;
   }, []);
 
   const signOut = useCallback(async () => {
@@ -118,8 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, session, loading, signInWithEmail, resendConfirmationEmail, signOut }),
-    [user, session, loading, signInWithEmail, resendConfirmationEmail, signOut],
+    () => ({ user, session, loading, signInWithGoogle, signOut }),
+    [user, session, loading, signInWithGoogle, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

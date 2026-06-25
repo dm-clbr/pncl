@@ -1127,6 +1127,36 @@ body:has(.onboarding-panel-signing) {
   align-items: stretch;
 }
 
+.home2-page.onboarding-page .portal-login-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.home2-page.onboarding-page .portal-login-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.25rem 0 1rem;
+  color: var(--steel);
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.home2-page.onboarding-page .portal-login-divider::before,
+.home2-page.onboarding-page .portal-login-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(240, 237, 228, 0.15);
+}
+
+.home2-page.onboarding-page .portal-login-divider span {
+  flex-shrink: 0;
+}
+
 @media (max-width: 720px) {
   .admin-onboarding-preview-bar {
     flex-direction: column;

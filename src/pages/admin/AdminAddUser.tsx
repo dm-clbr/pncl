@@ -56,8 +56,8 @@ export default function AdminAddUser() {
         <div>
           <h1>Add user manually</h1>
           <p>
-            Provision portal access for an existing @thepncl.com mailbox. An activation email
-            will be sent to the address you enter.
+            Provision portal access for an existing @thepncl.com mailbox. A welcome email
+            with portal login instructions will be sent to the address you enter.
           </p>
         </div>
       </div>
@@ -116,7 +116,7 @@ export default function AdminAddUser() {
 
         <div className="admin-form-actions">
           <button type="submit" className="admin-primary-btn" disabled={submitting}>
-            {submitting ? "Creating…" : "Create user & send invite"}
+            {submitting ? "Creating…" : "Create user & send welcome email"}
           </button>
           <Link to="/portal/admin/users" className="admin-secondary-link">
             Cancel

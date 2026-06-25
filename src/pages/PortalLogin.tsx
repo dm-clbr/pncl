@@ -1,17 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import OnboardingLayout from "@/components/OnboardingLayout";
-import { useAuth, isEmailConfirmed, mustChangePassword } from "@/contexts/AuthContext";
+import { useAuth, isEmailConfirmed } from "@/contexts/AuthContext";
 import { isSupabaseAuthConfigured } from "@/lib/supabase";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 
 export default function PortalLogin() {
-  const { user, loading, signInWithEmail } = useAuth();
+  const { user, loading, signInWithGoogle } = useAuth();
   const location = useLocation();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [signingIn, setSigningIn] = useState(false);
+  const [signingInWithGoogle, setSigningInWithGoogle] = useState(false);
   const configured = isSupabaseAuthConfigured();
 
   const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? "/portal";
@@ -22,23 +20,18 @@ export default function PortalLogin() {
     window.scrollTo(0, 0);
   }, []);
 
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSigningIn(true);
+  const handleGoogleSignIn = async () => {
+    setSigningInWithGoogle(true);
     try {
-      await signInWithEmail(email.trim(), password);
+      await signInWithGoogle(from);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unable to sign in";
+      const message = err instanceof Error ? err.message : "Unable to sign in with Google";
       toast.error(message);
-    } finally {
-      setSigningIn(false);
+      setSigningInWithGoogle(false);
     }
   };
 
   if (!loading && user && isEmailConfirmed(user)) {
-    if (mustChangePassword(user)) {
-      return <Navigate to="/portal/set-password" replace />;
-    }
     return <Navigate to={from} replace />;
   }
 
@@ -55,7 +48,7 @@ export default function PortalLogin() {
       <span className="onboarding-status-badge tone-neutral">Employee Portal</span>
       <h2 className="h3" style={{ margin: "1rem 0" }}>Welcome back</h2>
       <p className="lead">
-        Sign in with your @thepncl.com email and portal password.
+        Sign in with your @thepncl.com Google account.
       </p>
 
       {!configured ? (
@@ -64,37 +57,16 @@ export default function PortalLogin() {
           <code>VITE_SUPABASE_ANON_KEY</code> in your environment.
         </p>
       ) : (
-        <form onSubmit={handleSignIn} style={{ marginTop: "1.5rem" }}>
-          <div className="onboarding-field">
-            <label htmlFor="portal-email">PNCL email</label>
-            <input
-              id="portal-email"
-              type="email"
-              autoComplete="username"
-              placeholder="you@thepncl.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div className="onboarding-field">
-            <label htmlFor="portal-password">Password</label>
-            <input
-              id="portal-password"
-              type="password"
-              autoComplete="current-password"
-              placeholder="Your portal password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <div className="onboarding-actions">
-            <button type="submit" className="btn btn-accent" disabled={signingIn}>
-              {signingIn ? "Signing in…" : <>Sign in <span className="arr">→</span></>}
-            </button>
-          </div>
-        </form>
+        <div className="onboarding-actions" style={{ marginTop: "1.5rem" }}>
+          <button
+            type="button"
+            className="btn btn-accent"
+            disabled={signingInWithGoogle}
+            onClick={() => void handleGoogleSignIn()}
+          >
+            {signingInWithGoogle ? "Redirecting to Google…" : "Sign in with Google"}
+          </button>
+        </div>
       )}
 
       <p className="onboarding-help-text">

@@ -204,7 +204,7 @@ export async function resendPortalInvite(
 
   const data = await response.json();
   if (!response.ok) {
-    throw new Error(data.message ?? "Unable to resend portal activation email");
+    throw new Error(data.message ?? "Unable to resend portal welcome email");
   }
   return data;
 }

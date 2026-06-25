@@ -161,9 +161,9 @@ export default function OnboardingSuccess() {
     setResendingInvite(true);
     try {
       await resendPortalInvite(onboardingId, token);
-      toast.success("Portal activation email sent. Check your PNCL inbox and spam folder.");
+      toast.success("Portal welcome email sent. Check your PNCL inbox and sign in with Google.");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Unable to resend portal activation email.");
+      toast.error(error instanceof Error ? error.message : "Unable to resend portal welcome email.");
     } finally {
       setResendingInvite(false);
     }
@@ -215,20 +215,20 @@ export default function OnboardingSuccess() {
           <p className="lead">
             {portalInviteSent ? (
               <>
-                A portal activation link was sent to <strong>{email}</strong>. Sign in to Gmail first,
-                then open it from your PNCL inbox to confirm your email and create your portal password.
+                A portal welcome email was sent to <strong>{email}</strong>. Sign in to Gmail first,
+                then use <strong>Sign in with Google</strong> on the portal login page.
               </>
             ) : (
               <>
-                Your PNCL email is ready. Reveal your Gmail sign-in instructions below, then use
-                the button to send your portal activation link to <strong>{email}</strong>.
+                Your PNCL email is ready. Reveal your Gmail sign-in instructions below, then request
+                a portal welcome email for <strong>{email}</strong>.
               </>
             )}
           </p>
           <ol className="onboarding-steps">
             <li>Reveal and save your temporary Gmail sign-in details</li>
             <li>Sign in to Gmail and set your Google password</li>
-            <li>Open the portal activation email in your PNCL inbox and create your portal password</li>
+            <li>Sign in to the Employee Portal with Google using your @thepncl.com account</li>
           </ol>
           <button
             type="button"
@@ -249,8 +249,8 @@ export default function OnboardingSuccess() {
             {resendingInvite
               ? "Sending…"
               : portalInviteSent
-                ? "Resend portal activation email"
-                : "Send portal activation email"}
+                ? "Resend portal welcome email"
+                : "Send portal welcome email"}
           </button>
           <p className="onboarding-help-text">
             If you close this page before saving your temporary password, contact PNCL support or an admin for a password reset.
@@ -296,7 +296,7 @@ export default function OnboardingSuccess() {
             <li>Open Gmail and sign in with your temporary password</li>
             <li>If Google asks for phone verification, click <strong>Try another way</strong></li>
             <li>Create your new Google password when prompted</li>
-            <li>Open the portal activation email in your PNCL inbox to finish onboarding</li>
+            <li>Sign in to the Employee Portal with Google using your @thepncl.com account</li>
           </ol>
           <div className="onboarding-action-row" style={{ marginTop: "0.75rem" }}>
             <a
@@ -307,6 +307,9 @@ export default function OnboardingSuccess() {
             >
               Open Gmail <span className="arr">→</span>
             </a>
+            <Link to="/portal/login" className="btn btn-ghost">
+              Sign in with Google <span className="arr">→</span>
+            </Link>
             <button
               type="button"
               className="btn btn-ghost"
@@ -316,13 +319,12 @@ export default function OnboardingSuccess() {
               {resendingInvite
                 ? "Sending…"
                 : portalInviteSent
-                  ? "Resend portal activation email"
-                  : "Send portal activation email"}
+                  ? "Resend portal welcome email"
+                  : "Send portal welcome email"}
             </button>
           </div>
           <p className="onboarding-help-text">
-            Your portal activation link was sent to your PNCL inbox. Click it to confirm your email,
-            set your portal password, and sign in automatically.
+            After Gmail is set up, use <strong>Sign in with Google</strong> on the portal login page.
             Google may ask for phone verification on first sign-in — use <strong>Try another way</strong> if needed.
           </p>
         </>

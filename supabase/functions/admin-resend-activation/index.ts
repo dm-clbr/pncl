@@ -73,10 +73,6 @@ serve(async (req) => {
       return errorResponse(`Only @${emailDomain} portal accounts can be managed here.`, 400, "invalid_domain");
     }
 
-    if (targetUser.email_confirmed_at) {
-      return errorResponse("This user has already activated their portal account.", 409, "already_confirmed");
-    }
-
     const record = await loadOnboardingRecord(adminClient, payload.userId, email);
 
     const legalName = record?.legal_name
@@ -128,7 +124,7 @@ serve(async (req) => {
     return jsonResponse({
       userId: payload.userId,
       email,
-      message: "Portal activation email sent.",
+      message: "Portal welcome email sent.",
     });
   } catch (error) {
     if (error instanceof AdminAuthError) {

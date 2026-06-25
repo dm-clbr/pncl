@@ -165,7 +165,7 @@ serve(async (req) => {
       onboardingId: record.id,
       email: payload.email,
       name: payload.legalName,
-      message: "Portal activation email sent.",
+      message: "Portal welcome email sent.",
     });
   } catch (error) {
     if (error instanceof AdminAuthError) {

@@ -162,7 +162,7 @@ export default function AdminUserRowActionsMenu({
               onClick={() => runAction(() => onResendActivation(agent))}
             >
               <Mail size={15} aria-hidden="true" />
-              {isResending ? "Sending activation…" : "Resend activation"}
+              {isResending ? "Sending welcome email…" : "Resend welcome email"}
             </button>
           )}
 
