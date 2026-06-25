@@ -11,6 +11,24 @@ import type { Session, User } from "@supabase/supabase-js";
 import { getSupabaseClient, isSupabaseAuthConfigured } from "@/lib/supabase";
 
 const ALLOWED_EMAIL_DOMAIN = "thepncl.com";
+const PORTAL_HOME_PATH = "/portal";
+
+function isOAuthCallbackUrl(): boolean {
+  const { hash, search } = window.location;
+  return hash.includes("access_token") || search.includes("code=");
+}
+
+function clearOAuthCallbackFromUrl() {
+  window.history.replaceState(null, "", window.location.pathname);
+}
+
+function redirectToPortalAfterOAuth() {
+  const { pathname } = window.location;
+  if (pathname === "/" || pathname === "") {
+    clearOAuthCallbackFromUrl();
+    window.location.replace(PORTAL_HOME_PATH);
+  }
+}
 
 interface AuthContextValue {
   user: User | null;
@@ -52,6 +70,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (loading || !user || !isEmailConfirmed(user)) return;
+    if (!isOAuthCallbackUrl()) return;
+    redirectToPortalAfterOAuth();
+  }, [loading, user]);
+
+  useEffect(() => {
     if (!isSupabaseAuthConfigured()) {
       setLoading(false);
       return;
@@ -66,17 +90,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }).finally(() => setLoading(false));
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      enforceDomain(nextSession).catch(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, nextSession) => {
+      try {
+        await enforceDomain(nextSession);
+        if (
+          (event === "SIGNED_IN" || event === "INITIAL_SESSION")
+          && nextSession?.user
+          && isOAuthCallbackUrl()
+        ) {
+          redirectToPortalAfterOAuth();
+        }
+      } catch {
         setSession(null);
         setUser(null);
-      });
+      }
     });
 
     return () => subscription.unsubscribe();
   }, [enforceDomain]);
 
-  const signInWithGoogle = useCallback(async (redirectPath = "/portal") => {
+  const signInWithGoogle = useCallback(async (redirectPath = PORTAL_HOME_PATH) => {
     const supabase = getSupabaseClient();
     const path = redirectPath.startsWith("/") ? redirectPath : `/${redirectPath}`;
     const redirectTo = `${window.location.origin}${path}`;
