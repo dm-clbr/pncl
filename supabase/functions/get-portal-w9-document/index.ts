@@ -31,7 +31,7 @@ serve(async (req) => {
     }
 
     const record = data as PortalW9Record;
-    const pdfPath = await ensureW9Pdf(adminClient, record);
+    const pdfPath = await ensureW9Pdf(adminClient, record, import.meta.url);
     const downloadUrl = await createPortalW9SignedUrl(adminClient, pdfPath);
 
     logOnboarding("portal_w9_document_ready", { userId: user.id });

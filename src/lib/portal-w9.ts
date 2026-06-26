@@ -28,6 +28,28 @@ export interface PortalW9FormValues {
   certificationAccepted: boolean;
 }
 
+export interface SubmitPortalW9Payload {
+  legalName: string;
+  businessName: string | null;
+  taxClass: W9TaxClassOptionId;
+  llcClassification: W9LlcClassification | null;
+  taxClassification: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  city: string;
+  state: string;
+  zip: string;
+  tinType: W9TinType;
+  tin: string;
+  signatureName: string;
+  signatureImageBase64: string;
+  certificationAccepted: boolean;
+  hasForeignPartners: boolean;
+  exemptPayeeCode: string | null;
+  fatcaExemptionCode: string | null;
+  accountNumbers: string | null;
+}
+
 export interface PortalW9Summary {
   userId: string;
   legalName: string;
@@ -182,15 +204,10 @@ export async function fetchPortalW9(userId: string): Promise<PortalW9Summary | n
 
 export async function submitPortalW9(
   accessToken: string,
-  values: PortalW9FormValues,
+  payload: SubmitPortalW9Payload,
 ): Promise<PortalW9Summary> {
   if (!isSupabaseAuthConfigured()) {
     throw new Error("Portal authentication is not configured.");
-  }
-
-  const validationError = validatePortalW9Form(values);
-  if (validationError) {
-    throw new Error(validationError);
   }
 
   const { url, anonKey } = getSupabaseConfig();
@@ -201,26 +218,7 @@ export async function submitPortalW9(
       apikey: anonKey,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      legalName: values.legalName.trim(),
-      businessName: values.businessName.trim() || null,
-      taxClass: values.taxClass,
-      llcClassification: values.taxClass === "llc" ? values.llcClassification || null : null,
-      taxClassification: getStoredTaxClassification(values),
-      addressLine1: values.addressLine1.trim(),
-      addressLine2: values.addressLine2.trim() || null,
-      city: values.city.trim(),
-      state: values.state.trim().toUpperCase(),
-      zip: values.zip.trim(),
-      tinType: values.tinType,
-      tin: formatTinInput(values.tin, values.tinType),
-      signatureName: values.signatureName.trim(),
-      certificationAccepted: values.certificationAccepted,
-      hasForeignPartners: values.hasForeignPartners,
-      exemptPayeeCode: values.exemptPayeeCode.trim() || null,
-      fatcaExemptionCode: values.fatcaExemptionCode.trim() || null,
-      accountNumbers: values.accountNumbers.trim() || null,
-    }),
+    body: JSON.stringify(payload),
   });
 
   const data = await response.json();

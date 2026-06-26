@@ -42,6 +42,7 @@ import AdminClients from "./pages/admin/AdminClients.tsx";
 import AdminDashboardTabs from "./pages/admin/AdminDashboardTabs.tsx";
 import AdminTodos from "./pages/admin/AdminTodos.tsx";
 import AdminOnboardingPreview from "./pages/admin/AdminOnboardingPreview.tsx";
+import AdminW9Preview from "./pages/admin/AdminW9Preview.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -165,6 +166,16 @@ const App = () => (
             <Route path="todos" element={<AdminFullRoute><AdminTodos /></AdminFullRoute>} />
             <Route path="genesis" element={<AdminGenesis />} />
           </Route>
+          <Route
+            path="/portal/admin/w9-preview"
+            element={
+              <ProtectedRoute>
+                <AdminRoute>
+                  <AdminW9Preview />
+                </AdminRoute>
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/portal/admin/onboarding-preview"
             element={

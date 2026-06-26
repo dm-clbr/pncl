@@ -7,8 +7,8 @@ import {
   type PortalW9Record,
   validateSubmitPortalW9Payload,
 } from "../_shared/portalW9.ts";
-import { ensureW9Pdf } from "../_shared/portalW9Documents.ts";
-import { getW9PdfPath } from "../_shared/portalW9Pdf.ts";
+import { generateSignedW9Pdf, getW9PdfPath } from "../_shared/portalW9Pdf.ts";
+import { PORTAL_PROFILE_DOCUMENTS_BUCKET } from "../_shared/portalW9Documents.ts";
 import { encryptTemporaryPassword } from "../_shared/security.ts";
 
 function getCompletedTodos(metadata: Record<string, unknown> | undefined): Record<string, boolean> {
@@ -17,6 +17,14 @@ function getCompletedTodos(metadata: Record<string, unknown> | undefined): Recor
     return {};
   }
   return value as Record<string, boolean>;
+}
+
+function getClientIp(req: Request): string | null {
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) {
+    return forwarded.split(",")[0]?.trim() ?? null;
+  }
+  return req.headers.get("x-real-ip");
 }
 
 serve(async (req) => {
@@ -31,8 +39,27 @@ serve(async (req) => {
     const { user, adminClient } = await requirePortalUser(req);
     const payload = validateSubmitPortalW9Payload(await req.json());
     const tinEncrypted = await encryptTemporaryPassword(payload.tin);
-    const now = new Date().toISOString();
+    const signedAt = new Date();
+    const now = signedAt.toISOString();
     const pdfPath = getW9PdfPath(user.id);
+    const ipAddress = getClientIp(req);
+    const userAgent = req.headers.get("user-agent");
+
+    const pdfBytes = await generateSignedW9Pdf(payload, signedAt, {
+      ipAddress: ipAddress ?? undefined,
+      userAgent: userAgent ?? undefined,
+    }, import.meta.url);
+
+    const { error: uploadError } = await adminClient.storage
+      .from(PORTAL_PROFILE_DOCUMENTS_BUCKET)
+      .upload(pdfPath, pdfBytes, {
+        upsert: true,
+        contentType: "application/pdf",
+      });
+
+    if (uploadError) {
+      throw new Error(uploadError.message);
+    }
 
     const { data, error } = await adminClient
       .from("portal_w9_forms")
@@ -65,8 +92,6 @@ serve(async (req) => {
     }
 
     const record = data as PortalW9Record;
-    await ensureW9Pdf(adminClient, { ...record, pdf_path: pdfPath });
-
     const completedTodos = {
       ...getCompletedTodos(user.user_metadata),
       w9_setup: true,
@@ -95,6 +120,6 @@ serve(async (req) => {
     }
     const message = error instanceof Error ? error.message : "Unable to submit W-9";
     logOnboarding("portal_w9_submit_failed", { error: message }, "error");
-    return errorResponse(message, 500, "submit_failed");
+    return errorResponse(message, 400, "submit_failed");
   }
 });

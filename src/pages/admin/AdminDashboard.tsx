@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Building2, CheckSquare, Eye, GitBranch, GraduationCap, LayoutGrid, Palette, Shield, Trophy, UserPlus, Users } from "lucide-react";
+import { Building2, CheckSquare, Eye, FileText, GitBranch, GraduationCap, LayoutGrid, Palette, Shield, Trophy, UserPlus, Users } from "lucide-react";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
 import { trackPageView } from "@/lib/analytics";
 
@@ -52,6 +52,12 @@ const ADMIN_CARDS = [
     title: "Onboarding preview",
     description: "Walk through the new-agent onboarding flow exactly as applicants see it.",
     icon: Eye,
+  },
+  {
+    to: "/portal/admin/w9-preview",
+    title: "W-9 preview",
+    description: "Test the fillable W-9 form, field validation, and signature flow without saving data.",
+    icon: FileText,
   },
   {
     to: "/portal/admin/dashboard-tabs",

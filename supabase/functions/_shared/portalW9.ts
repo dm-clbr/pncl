@@ -48,7 +48,7 @@ export interface SubmitPortalW9Payload {
   legalName: string;
   businessName?: string | null;
   taxClassification: string;
-  taxClass?: W9TaxClassOptionId;
+  taxClass: W9TaxClassOptionId;
   llcClassification?: W9LlcClassification | null;
   addressLine1: string;
   addressLine2?: string | null;
@@ -58,6 +58,7 @@ export interface SubmitPortalW9Payload {
   tinType: W9TinType;
   tin: string;
   signatureName: string;
+  signatureImageBase64: string;
   certificationAccepted: boolean;
   hasForeignPartners?: boolean;
   exemptPayeeCode?: string | null;
@@ -179,6 +180,37 @@ function resolveTaxClassification(data: Record<string, unknown>): string {
   return taxClassification;
 }
 
+function normalizeSignatureImageBase64(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error("A drawn signature is required");
+  }
+
+  const trimmed = value.trim();
+  const base64 = trimmed.includes(",") ? trimmed.split(",").pop() ?? "" : trimmed;
+  if (!base64 || !/^[A-Za-z0-9+/]+=*$/.test(base64)) {
+    throw new Error("A valid drawn signature is required");
+  }
+
+  return trimmed;
+}
+
+export function storedLabelToTaxClass(stored: string): {
+  taxClass: W9TaxClassOptionId;
+  llcClassification: W9LlcClassification | "";
+} {
+  const llcMatch = stored.match(/^Limited liability company \(LLC\) \(([CSP])\)$/);
+  if (llcMatch) {
+    return { taxClass: "llc", llcClassification: llcMatch[1] as W9LlcClassification };
+  }
+
+  const found = W9_TAX_CLASS_OPTIONS.find((item) => item.label === stored);
+  if (found) {
+    return { taxClass: found.id, llcClassification: "" };
+  }
+
+  return { taxClass: "individual", llcClassification: "" };
+}
+
 export function validateSubmitPortalW9Payload(body: unknown): SubmitPortalW9Payload {
   if (!body || typeof body !== "object") {
     throw new Error("Invalid request body");
@@ -232,6 +264,12 @@ export function validateSubmitPortalW9Payload(body: unknown): SubmitPortalW9Payl
     throw new Error("Part II — signature is required");
   }
 
+  const signatureImageBase64 = normalizeSignatureImageBase64(data.signatureImageBase64);
+
+  if (legalName.localeCompare(signatureName, undefined, { sensitivity: "accent" }) !== 0) {
+    throw new Error("Signature must match your legal name exactly");
+  }
+
   if (data.certificationAccepted !== true) {
     throw new Error("You must certify the information under Part II");
   }
@@ -239,12 +277,15 @@ export function validateSubmitPortalW9Payload(body: unknown): SubmitPortalW9Payl
   const businessName = optionalText(data.businessName);
   const addressLine2 = optionalText(data.addressLine2);
   const hasForeignPartners = data.hasForeignPartners === true;
+  const resolvedTaxClass = isW9TaxClassOptionId(taxClass)
+    ? taxClass
+    : storedLabelToTaxClass(taxClassification).taxClass;
 
   return {
     legalName,
     businessName: businessName || null,
     taxClassification,
-    taxClass: isW9TaxClassOptionId(taxClass) ? taxClass : undefined,
+    taxClass: resolvedTaxClass,
     llcClassification: isW9LlcClassification(llcClassification) ? llcClassification : null,
     addressLine1,
     addressLine2: addressLine2 || null,
@@ -254,6 +295,7 @@ export function validateSubmitPortalW9Payload(body: unknown): SubmitPortalW9Payl
     tinType,
     tin,
     signatureName,
+    signatureImageBase64,
     certificationAccepted: true,
     hasForeignPartners,
     exemptPayeeCode: optionalNullableText(data.exemptPayeeCode),

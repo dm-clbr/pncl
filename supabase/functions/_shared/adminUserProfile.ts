@@ -46,7 +46,7 @@ export async function loadAdminUserDocuments(
   const seenPaths = new Set<string>();
 
   if (w9Record) {
-    const path = await ensureW9Pdf(adminClient, w9Record);
+    const path = await ensureW9Pdf(adminClient, w9Record, import.meta.url);
     seenPaths.add(path);
     documents.push({
       id: "w9",

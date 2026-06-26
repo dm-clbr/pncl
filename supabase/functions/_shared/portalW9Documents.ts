@@ -9,10 +9,11 @@ export const PORTAL_PROFILE_DOCUMENTS_BUCKET = DIRECT_DEPOSIT_PDF_BUCKET;
 export async function ensureW9Pdf(
   adminClient: SupabaseClient,
   record: PortalW9Record,
+  callerModuleUrl?: string,
 ): Promise<string> {
   const path = record.pdf_path?.trim() || getW9PdfPath(record.user_id);
   const tin = await decryptTemporaryPassword(record.tin_encrypted);
-  const pdfBytes = await generatePortalW9PdfFromRecord(record, tin);
+  const pdfBytes = await generatePortalW9PdfFromRecord(record, tin, callerModuleUrl);
 
   const { error: uploadError } = await adminClient.storage
     .from(PORTAL_PROFILE_DOCUMENTS_BUCKET)
