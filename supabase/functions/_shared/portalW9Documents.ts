@@ -1,17 +1,18 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { DIRECT_DEPOSIT_PDF_BUCKET } from "./portalDirectDeposit.ts";
 import type { PortalW9Record } from "./portalW9.ts";
-import { generatePortalW9PdfFromRecord, getW9PdfPath } from "./portalW9Pdf.ts";
+import { generatePortalW9PdfFromRecord, resolveW9PdfPath } from "./portalW9Pdf.ts";
 import { decryptTemporaryPassword } from "./security.ts";
 
 export const PORTAL_PROFILE_DOCUMENTS_BUCKET = DIRECT_DEPOSIT_PDF_BUCKET;
 
+/** Regenerate and upload a W-9 PDF from stored form data (backfill / repair only). */
 export async function ensureW9Pdf(
   adminClient: SupabaseClient,
   record: PortalW9Record,
   callerModuleUrl?: string,
 ): Promise<string> {
-  const path = record.pdf_path?.trim() || getW9PdfPath(record.user_id);
+  const path = resolveW9PdfPath(record);
   const tin = await decryptTemporaryPassword(record.tin_encrypted);
   const pdfBytes = await generatePortalW9PdfFromRecord(record, tin, callerModuleUrl);
 
@@ -54,4 +55,11 @@ export async function createPortalW9SignedUrl(
   }
 
   return data.signedUrl;
+}
+
+export async function createW9DownloadUrl(
+  adminClient: SupabaseClient,
+  record: PortalW9Record,
+): Promise<string> {
+  return createPortalW9SignedUrl(adminClient, resolveW9PdfPath(record));
 }

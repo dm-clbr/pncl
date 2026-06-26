@@ -24,7 +24,7 @@ export default function W9SigningStep({
   prefillLegalName = "",
   eyebrow = "Tax form",
   title = "Complete your W-9",
-  lead = "Fill in the highlighted fields on Form W-9 page 1, draw your signature, and confirm the certification. A signed PDF will be saved to your profile.",
+  lead = "Fill in the highlighted fields on Form W-9 page 1 and confirm the Part II certification. A completed PDF will be saved to your profile.",
   finishLabel = "Submit W-9 to PNCL",
   onSubmit,
   onBack,
@@ -54,17 +54,15 @@ export default function W9SigningStep({
       return;
     }
 
-    const signatureImage = viewerRef.current?.getSignatureImage() ?? "";
-
     let extracted;
     try {
-      extracted = await extractW9FormValues(pdfDocument, container, signatureImage);
+      extracted = await extractW9FormValues(pdfDocument, container);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to read form fields.");
       return;
     }
 
-    const validationError = validateExtractedW9FormValues(extracted, signatureImage, certificationAccepted);
+    const validationError = validateExtractedW9FormValues(extracted, certificationAccepted);
     if (validationError) {
       toast.error(validationError);
       return;
@@ -72,7 +70,7 @@ export default function W9SigningStep({
 
     setSubmitting(true);
     try {
-      await onSubmit(extractedToSubmitPayload(extracted, signatureImage, certificationAccepted));
+      await onSubmit(extractedToSubmitPayload(extracted, certificationAccepted));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to submit W-9.");
     } finally {

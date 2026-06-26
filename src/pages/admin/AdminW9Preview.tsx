@@ -65,7 +65,7 @@ export default function AdminW9Preview() {
                 className="portal-w9-signing"
                 eyebrow="Preview"
                 title="Test the W-9 form"
-                lead="Fill in the highlighted fields, draw a signature, and confirm the certification. Use test data only — no PDF is generated and nothing is stored."
+                lead="Fill in the highlighted fields and confirm the Part II certification. Use test data only — no PDF is generated and nothing is stored."
                 finishLabel="Test submit (preview)"
                 prefillLegalName="Preview Agent"
                 onSubmit={handleSubmit}

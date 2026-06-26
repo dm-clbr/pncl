@@ -1,5 +1,5 @@
 import { getW9FieldEntry, W9_TAX_CLASS_CHECKBOX_KEYS, type W9FormFieldKey, type W9ResolvedFieldObjects } from "@/lib/w9-form-fields";
-import { W9_FIELD_CALLOUTS, W9_SIGNATURE_FIELD_KEY } from "@/lib/w9-field-callouts";
+import { W9_FIELD_CALLOUTS } from "@/lib/w9-field-callouts";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
@@ -20,8 +20,6 @@ interface W9FieldCalloutsProps {
   pdfDocument: PDFDocumentProxy | null;
   currentPage: number;
   active: boolean;
-  signatureImage?: string | null;
-  onSignatureRequest?: () => void;
 }
 
 const CALLOUT_WIDTH = 168;
@@ -37,8 +35,6 @@ export default function W9FieldCallouts({
   pdfDocument,
   currentPage,
   active,
-  signatureImage = null,
-  onSignatureRequest,
 }: W9FieldCalloutsProps) {
   const [callouts, setCallouts] = useState<PlacedCallout[]>([]);
   const [mobileLayout, setMobileLayout] = useState(isMobileLayout);
@@ -47,7 +43,6 @@ export default function W9FieldCallouts({
 
   const isCalloutFilled = useCallback(
     (fieldKey: W9FormFieldKey, input: HTMLInputElement | null): boolean => {
-      if (fieldKey === W9_SIGNATURE_FIELD_KEY) return Boolean(signatureImage);
       if (fieldKey === "taxClassIndividual") {
         const container = containerRef.current;
         if (!container) return false;
@@ -71,7 +66,7 @@ export default function W9FieldCallouts({
       }
       return Boolean(input?.value?.trim());
     },
-    [containerRef, signatureImage],
+    [containerRef],
   );
 
   const layoutCallouts = useCallback(() => {
@@ -233,13 +228,7 @@ export default function W9FieldCallouts({
           type="button"
           className={`ica-field-callout ica-field-callout--${callout.placement}${callout.filled ? " ica-field-callout--filled" : ""}`}
           style={{ top: callout.top, left: callout.left }}
-          onClick={() => {
-            if (callout.fieldKey === W9_SIGNATURE_FIELD_KEY && onSignatureRequest) {
-              onSignatureRequest();
-              return;
-            }
-            focusField(callout.fieldId);
-          }}
+          onClick={() => focusField(callout.fieldId)}
           title={callout.hint ? `${callout.label} — ${callout.hint}` : callout.label}
         >
           <span className="ica-field-callout-label">{callout.label}</span>

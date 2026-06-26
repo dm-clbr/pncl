@@ -180,12 +180,16 @@ function resolveTaxClassification(data: Record<string, unknown>): string {
   return taxClassification;
 }
 
-function normalizeSignatureImageBase64(value: unknown): string {
+function optionalSignatureImageBase64(value: unknown): string {
   if (typeof value !== "string" || !value.trim()) {
-    throw new Error("A drawn signature is required");
+    return "";
   }
 
   const trimmed = value.trim();
+  if (!trimmed.startsWith("data:image/png")) {
+    return "";
+  }
+
   const base64 = trimmed.includes(",") ? trimmed.split(",").pop() ?? "" : trimmed;
   if (!base64 || !/^[A-Za-z0-9+/]+=*$/.test(base64)) {
     throw new Error("A valid drawn signature is required");
@@ -259,16 +263,8 @@ export function validateSubmitPortalW9Payload(body: unknown): SubmitPortalW9Payl
       : "Enter a valid EIN (12-3456789)");
   }
 
-  const signatureName = optionalText(data.signatureName);
-  if (!signatureName) {
-    throw new Error("Part II — signature is required");
-  }
-
-  const signatureImageBase64 = normalizeSignatureImageBase64(data.signatureImageBase64);
-
-  if (legalName.localeCompare(signatureName, undefined, { sensitivity: "accent" }) !== 0) {
-    throw new Error("Signature must match your legal name exactly");
-  }
+  const signatureName = optionalText(data.signatureName) || legalName;
+  const signatureImageBase64 = optionalSignatureImageBase64(data.signatureImageBase64);
 
   if (data.certificationAccepted !== true) {
     throw new Error("You must certify the information under Part II");

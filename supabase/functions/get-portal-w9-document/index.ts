@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requirePortalUser } from "../_shared/adminAuth.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
-import { createPortalW9SignedUrl, ensureW9Pdf } from "../_shared/portalW9Documents.ts";
+import { createW9DownloadUrl } from "../_shared/portalW9Documents.ts";
 import { mapPortalW9Summary, type PortalW9Record } from "../_shared/portalW9.ts";
 
 serve(async (req) => {
@@ -31,13 +31,12 @@ serve(async (req) => {
     }
 
     const record = data as PortalW9Record;
-    const pdfPath = await ensureW9Pdf(adminClient, record, import.meta.url);
-    const downloadUrl = await createPortalW9SignedUrl(adminClient, pdfPath);
+    const downloadUrl = await createW9DownloadUrl(adminClient, record);
 
     logOnboarding("portal_w9_document_ready", { userId: user.id });
 
     return jsonResponse({
-      w9: mapPortalW9Summary({ ...record, pdf_path: pdfPath }),
+      w9: mapPortalW9Summary(record),
       downloadUrl,
     });
   } catch (error) {

@@ -1,5 +1,5 @@
+import { syncW9FormFieldsFromDom } from "@/lib/w9-acroform";
 import { W9_PDF_URL, W9_PDF_PAGES, W9_TOTAL_PAGES } from "@/lib/w9-form";
-import { getW9FieldEntry, type W9ResolvedFieldObjects } from "@/lib/w9-form-fields";
 import { prefillW9Fields, refreshW9SignatureDate } from "@/lib/w9-prefill";
 import "@/lib/pdfjs-setup";
 import { getDocument, type PDFDocumentProxy } from "pdfjs-dist";
@@ -11,7 +11,6 @@ import {
 } from "pdfjs-dist/web/pdf_viewer.mjs";
 import "pdfjs-dist/web/pdf_viewer.css";
 import W9FieldCallouts from "@/components/W9FieldCallouts";
-import IcaSignatureModal from "@/components/IcaSignatureModal";
 import {
   forwardRef,
   useCallback,
@@ -19,13 +18,11 @@ import {
   useImperativeHandle,
   useRef,
   useState,
-  type CSSProperties,
 } from "react";
 
 export interface W9FillablePdfViewerHandle {
   getPdfDocument: () => PDFDocumentProxy | null;
   getContainer: () => HTMLDivElement | null;
-  getSignatureImage: () => string | null;
   ensureFieldPagesRendered: () => Promise<void>;
 }
 
@@ -39,33 +36,6 @@ const PARSE_TIMEOUT_MS = 30_000;
 const W9_SECTION_JUMPS = [
   { label: "Form", page: W9_PDF_PAGES.form },
   { label: "Instructions", page: 2 },
-] as const;
-
-const REQUIRED_FIELD_KEYS = [
-  "legalName",
-  "businessName",
-  "taxClassIndividual",
-  "taxClassCCorp",
-  "taxClassSCorp",
-  "taxClassPartnership",
-  "taxClassTrustEstate",
-  "taxClassLlc",
-  "taxClassOther",
-  "llcClassification",
-  "hasForeignPartners",
-  "exemptPayeeCode",
-  "fatcaExemptionCode",
-  "addressLine1",
-  "cityStateZip",
-  "requester",
-  "accountNumbers",
-  "ssnPart1",
-  "ssnPart2",
-  "ssnPart3",
-  "einPart1",
-  "einPart2",
-  "signature",
-  "signatureDate",
 ] as const;
 
 async function fetchW9PdfBytes(): Promise<Uint8Array> {
@@ -114,25 +84,6 @@ function hasRenderedPages(viewer: HTMLElement | null): boolean {
   return Boolean(viewer?.querySelector(".page"));
 }
 
-function waitForFieldDom(container: HTMLElement, fieldId: string, timeoutMs = 4000): Promise<boolean> {
-  return new Promise((resolve) => {
-    const started = Date.now();
-    const check = () => {
-      const el = container.querySelector(`#pdfjs_internal_id_${fieldId}`);
-      if (el) {
-        resolve(true);
-        return;
-      }
-      if (Date.now() - started >= timeoutMs) {
-        resolve(false);
-        return;
-      }
-      window.requestAnimationFrame(check);
-    };
-    check();
-  });
-}
-
 const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfViewerProps>(
   function W9FillablePdfViewer({ className, prefillLegalName = "" }, ref) {
     const hostRef = useRef<HTMLDivElement>(null);
@@ -142,17 +93,12 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
     const eventBusRef = useRef<EventBus | null>(null);
     const pdfDocRef = useRef<PDFDocumentProxy | null>(null);
     const loadGenerationRef = useRef(0);
-    const signatureFieldIdRef = useRef<string | null>(null);
-    const requesterFieldIdRef = useRef<string | null>(null);
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [viewerReady, setViewerReady] = useState(false);
     const [pdfDocument, setPdfDocument] = useState<PDFDocumentProxy | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
-    const [signatureImage, setSignatureImage] = useState<string | null>(null);
-    const [signatureModalOpen, setSignatureModalOpen] = useState(false);
-    const [signatureOverlayStyle, setSignatureOverlayStyle] = useState<CSSProperties | null>(null);
 
     const syncHostHeightForPage = useCallback((page: number) => {
       const viewer = viewerRef.current;
@@ -203,27 +149,20 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
       }
 
       goToPage(W9_PDF_PAGES.form);
-      await new Promise((resolve) => window.requestAnimationFrame(resolve));
 
-      const fieldObjects = (await pdfDocumentLocal.getFieldObjects()) as W9ResolvedFieldObjects | null;
-      if (!fieldObjects) {
-        throw new Error("This W-9 PDF has no fillable fields.");
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        await new Promise((resolve) => window.requestAnimationFrame(resolve));
+        if (container.querySelector(`.page[data-page-number="${W9_PDF_PAGES.form}"]`)) break;
       }
 
-      for (const key of REQUIRED_FIELD_KEYS) {
-        const entry = getW9FieldEntry(fieldObjects, key);
-        if (!entry?.id) continue;
-        const found = await waitForFieldDom(container, entry.id);
-        if (!found && ["legalName", "addressLine1", "cityStateZip", "signature", "ssnPart1"].includes(key)) {
-          throw new Error("Unable to load all W-9 fields. Please try again.");
-        }
-      }
+      container.scrollTop = container.scrollHeight;
+      await new Promise((resolve) => window.setTimeout(resolve, 100));
+      await syncW9FormFieldsFromDom(container, pdfDocumentLocal);
     }, [goToPage]);
 
     useImperativeHandle(ref, () => ({
       getPdfDocument: () => pdfDocRef.current,
       getContainer: () => containerRef.current,
-      getSignatureImage: () => signatureImage,
       ensureFieldPagesRendered,
     }));
 
@@ -386,34 +325,8 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
       const pdfDocumentLocal = pdfDocRef.current;
       if (!viewerReady || !container || !pdfDocumentLocal) return;
 
-      void (async () => {
-        await prefillW9Fields(pdfDocumentLocal, container, { legalName: prefillLegalName });
-
-        const fieldObjects = (await pdfDocumentLocal.getFieldObjects()) as W9ResolvedFieldObjects | null;
-        signatureFieldIdRef.current = getW9FieldEntry(fieldObjects ?? {}, "signature")?.id ?? null;
-        requesterFieldIdRef.current = getW9FieldEntry(fieldObjects ?? {}, "requester")?.id ?? null;
-      })();
+      void prefillW9Fields(pdfDocumentLocal, container, { legalName: prefillLegalName });
     }, [viewerReady, pdfDocument, prefillLegalName]);
-
-    useEffect(() => {
-      const container = containerRef.current;
-      if (!viewerReady || !container) return;
-
-      const fieldId = signatureFieldIdRef.current;
-      if (!fieldId) return;
-
-      const input = container.querySelector(`#pdfjs_internal_id_${fieldId}`) as HTMLInputElement | null;
-      if (!input) return;
-
-      input.readOnly = true;
-      input.tabIndex = -1;
-      input.placeholder = "Draw signature";
-      input.classList.add("ica-signature-field-input");
-
-      const openModal = () => setSignatureModalOpen(true);
-      input.addEventListener("click", openModal);
-      return () => input.removeEventListener("click", openModal);
-    }, [currentPage, viewerReady, pdfDocument]);
 
     useEffect(() => {
       const container = containerRef.current;
@@ -422,47 +335,6 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
 
       void refreshW9SignatureDate(pdfDocumentLocal, container);
     }, [viewerReady, pdfDocument]);
-
-    const layoutSignatureOverlay = useCallback(() => {
-      const container = containerRef.current;
-      const host = hostRef.current;
-      const fieldId = signatureFieldIdRef.current;
-      if (!signatureImage || !container || !host || !fieldId || currentPage !== W9_PDF_PAGES.form) {
-        setSignatureOverlayStyle(null);
-        return;
-      }
-
-      const input = container.querySelector(`#pdfjs_internal_id_${fieldId}`) as HTMLElement | null;
-      if (!input) {
-        setSignatureOverlayStyle(null);
-        return;
-      }
-
-      const hostRect = host.getBoundingClientRect();
-      const inputRect = input.getBoundingClientRect();
-      if (inputRect.width === 0 || inputRect.height === 0) {
-        setSignatureOverlayStyle(null);
-        return;
-      }
-
-      setSignatureOverlayStyle({
-        top: inputRect.top - hostRect.top,
-        left: inputRect.left - hostRect.left,
-        width: inputRect.width,
-        height: inputRect.height,
-      });
-    }, [currentPage, signatureImage]);
-
-    useEffect(() => {
-      layoutSignatureOverlay();
-      window.addEventListener("resize", layoutSignatureOverlay);
-      const container = containerRef.current;
-      container?.addEventListener("scroll", layoutSignatureOverlay, { passive: true });
-      return () => {
-        window.removeEventListener("resize", layoutSignatureOverlay);
-        container?.removeEventListener("scroll", layoutSignatureOverlay);
-      };
-    }, [layoutSignatureOverlay]);
 
     const progressPercent = Math.round((currentPage / W9_TOTAL_PAGES) * 100);
 
@@ -551,24 +423,8 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
             pdfDocument={pdfDocument}
             currentPage={currentPage}
             active={viewerReady && !error}
-            signatureImage={signatureImage}
-            onSignatureRequest={() => setSignatureModalOpen(true)}
           />
-          {signatureOverlayStyle && (
-            <div className="ica-signature-preview-overlay" style={signatureOverlayStyle}>
-              <img src={signatureImage ?? ""} alt="Your signature" className="ica-signature-preview-image" />
-            </div>
-          )}
         </div>
-        <IcaSignatureModal
-          open={signatureModalOpen}
-          initialImage={signatureImage}
-          onClose={() => setSignatureModalOpen(false)}
-          onSave={(dataUrl) => {
-            setSignatureImage(dataUrl);
-            setSignatureModalOpen(false);
-          }}
-        />
         <a href={W9_PDF_URL} target="_blank" rel="noopener noreferrer" className="ica-fillable-pdf-link">
           Open full W-9 in a new tab
         </a>

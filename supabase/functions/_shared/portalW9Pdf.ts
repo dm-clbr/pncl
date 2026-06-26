@@ -1,4 +1,4 @@
-import { PDFDocument, StandardFonts, rgb, type PDFForm } from "https://esm.sh/pdf-lib@1.17.1";
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFForm } from "https://esm.sh/pdf-lib@1.17.1";
 import {
   getPdfLibFieldName,
   W9_TAX_CLASS_CHECKBOX_KEYS,
@@ -37,7 +37,23 @@ function decodeBase64ToBytes(base64: string): Uint8Array {
 }
 
 function setFormText(form: PDFForm, fieldName: string, value: string): void {
-  form.getTextField(fieldName).setText(value);
+  try {
+    form.getTextField(fieldName).setText(value);
+  } catch {
+    throw new Error(`Missing or invalid PDF form field: ${fieldName}`);
+  }
+}
+
+function requireFieldName(form: PDFForm, key: W9FormFieldKey): string {
+  const fieldName = getPdfLibFieldName(form, key);
+  if (!fieldName) {
+    throw new Error(`Missing PDF form field: ${key}`);
+  }
+  return fieldName;
+}
+
+function setRequiredText(form: PDFForm, key: W9FormFieldKey, value: string): void {
+  setFormText(form, requireFieldName(form, key), value);
 }
 
 function setOptionalText(form: PDFForm, key: W9FormFieldKey, value: string | null | undefined): void {
@@ -47,8 +63,7 @@ function setOptionalText(form: PDFForm, key: W9FormFieldKey, value: string | nul
 }
 
 function setCheckbox(form: PDFForm, key: W9FormFieldKey, checked: boolean): void {
-  const fieldName = getPdfLibFieldName(form, key);
-  if (!fieldName) return;
+  const fieldName = requireFieldName(form, key);
   const checkbox = form.getCheckBox(fieldName);
   if (checked) checkbox.check();
   else checkbox.uncheck();
@@ -80,17 +95,22 @@ function taxClassToCheckboxKey(taxClass: string | undefined): (typeof W9_TAX_CLA
   return null;
 }
 
-function fillW9FormFields(form: PDFForm, payload: SubmitPortalW9Payload, signedAt: Date): void {
-  setOptionalText(form, "legalName", payload.legalName);
+function fillW9FormFields(
+  form: PDFForm,
+  payload: SubmitPortalW9Payload,
+  signedAt: Date,
+  font: PDFFont,
+): void {
+  setRequiredText(form, "legalName", payload.legalName);
   setOptionalText(form, "businessName", payload.businessName);
-  setOptionalText(form, "addressLine1", payload.addressLine1);
-  setOptionalText(form, "cityStateZip", `${payload.city}, ${payload.state} ${payload.zip}`);
-  setOptionalText(form, "requester", W9_REQUESTER_TEXT);
+  setRequiredText(form, "addressLine1", payload.addressLine1);
+  setRequiredText(form, "cityStateZip", `${payload.city}, ${payload.state} ${payload.zip}`);
+  setRequiredText(form, "requester", W9_REQUESTER_TEXT);
   setOptionalText(form, "accountNumbers", payload.accountNumbers);
   setOptionalText(form, "exemptPayeeCode", payload.exemptPayeeCode);
   setOptionalText(form, "fatcaExemptionCode", payload.fatcaExemptionCode);
-  setOptionalText(form, "signatureDate", formatSignatureDate(signedAt));
-  setOptionalText(form, "signature", "");
+  setRequiredText(form, "signatureDate", formatSignatureDate(signedAt));
+  setRequiredText(form, "signature", "");
 
   for (const key of W9_TAX_CLASS_CHECKBOX_KEYS) {
     const activeKey = taxClassToCheckboxKey(payload.taxClass);
@@ -98,28 +118,28 @@ function fillW9FormFields(form: PDFForm, payload: SubmitPortalW9Payload, signedA
   }
 
   if (payload.taxClass === "llc") {
-    setOptionalText(form, "llcClassification", payload.llcClassification ?? "");
+    setRequiredText(form, "llcClassification", payload.llcClassification ?? "");
   }
 
   setCheckbox(form, "hasForeignPartners", payload.hasForeignPartners === true);
 
   if (payload.tinType === "ssn") {
     const [part1, part2, part3] = splitSsn(payload.tin);
-    setOptionalText(form, "ssnPart1", part1);
-    setOptionalText(form, "ssnPart2", part2);
-    setOptionalText(form, "ssnPart3", part3);
+    setRequiredText(form, "ssnPart1", part1);
+    setRequiredText(form, "ssnPart2", part2);
+    setRequiredText(form, "ssnPart3", part3);
     setOptionalText(form, "einPart1", "");
     setOptionalText(form, "einPart2", "");
   } else {
     const [part1, part2] = splitEin(payload.tin);
-    setOptionalText(form, "einPart1", part1);
-    setOptionalText(form, "einPart2", part2);
+    setRequiredText(form, "einPart1", part1);
+    setRequiredText(form, "einPart2", part2);
     setOptionalText(form, "ssnPart1", "");
     setOptionalText(form, "ssnPart2", "");
     setOptionalText(form, "ssnPart3", "");
   }
 
-  form.updateFieldAppearances();
+  form.updateFieldAppearances(font);
   form.flatten();
 }
 
@@ -164,7 +184,7 @@ export async function generateSignedW9Pdf(
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  fillW9FormFields(pdfDoc.getForm(), payload, signedAt);
+  fillW9FormFields(pdfDoc.getForm(), payload, signedAt, font);
 
   if (payload.signatureImageBase64) {
     await drawSignatureImage(pdfDoc, payload.signatureImageBase64);
@@ -201,7 +221,7 @@ export async function generateSignedW9Pdf(
   y = drawLabelValue(certPage, font, boldFont, "Form version", W9_FORM_VERSION, 72, y);
   y = drawLabelValue(certPage, font, boldFont, "Legal name", payload.legalName, 72, y);
   y = drawLabelValue(certPage, font, boldFont, "Tax classification", payload.taxClassification, 72, y);
-  y = drawLabelValue(certPage, font, boldFont, "Signature", "Drawn electronic signature", 72, y);
+  y = drawLabelValue(certPage, font, boldFont, "Certified by", payload.signatureName.trim(), 72, y);
   y = drawLabelValue(certPage, font, boldFont, "Signed at (UTC)", signedAt.toISOString(), 72, y);
 
   if (metadata?.ipAddress) {
@@ -233,6 +253,10 @@ export async function generateSignedW9Pdf(
 
 export function getW9PdfPath(userId: string): string {
   return `${userId}/w9.pdf`;
+}
+
+export function resolveW9PdfPath(record: Pick<PortalW9Record, "user_id" | "pdf_path">): string {
+  return record.pdf_path?.trim() || getW9PdfPath(record.user_id);
 }
 
 export async function generatePortalW9PdfFromRecord(

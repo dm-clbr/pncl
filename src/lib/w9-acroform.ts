@@ -42,9 +42,18 @@ function storageValue(storageAll: Record<string, { value?: unknown }>, fieldId: 
 
 function domValue(container: HTMLElement, fieldId: string): string {
   const el = container.querySelector(`#pdfjs_internal_id_${fieldId}`) as HTMLInputElement | null;
-  if (!el) return "";
-  if (el.type === "checkbox") return el.checked ? "Yes" : "";
-  return el.value.trim();
+  if (el) {
+    if (el.type === "checkbox") return el.checked ? "Yes" : "";
+    return el.value.trim();
+  }
+
+  // Some widgets render without the pdfjs_internal_id prefix in certain pdf.js builds.
+  const fallback = container.querySelector(
+    `[data-element-id="${fieldId}"], [id="${fieldId}"]`,
+  ) as HTMLInputElement | null;
+  if (!fallback) return "";
+  if (fallback.type === "checkbox") return fallback.checked ? "Yes" : "";
+  return fallback.value.trim();
 }
 
 export async function syncW9FormFieldsFromDom(
@@ -60,7 +69,8 @@ export async function syncW9FormFieldsFromDom(
     const field = entries?.[0];
     if (!field?.id) continue;
 
-    const el = container.querySelector(`#pdfjs_internal_id_${field.id}`) as HTMLInputElement | null;
+    const el = container.querySelector(`#pdfjs_internal_id_${field.id}`) as HTMLInputElement | null
+      ?? container.querySelector(`[data-element-id="${field.id}"], [id="${field.id}"]`) as HTMLInputElement | null;
     if (!el) continue;
 
     if (el.type === "checkbox") {
@@ -167,7 +177,6 @@ function readTaxClass(fieldObjects: W9ResolvedFieldObjects, storageAll: Record<s
 export async function extractW9FormValues(
   pdfDocument: PDFDocumentProxy,
   container: HTMLElement,
-  signatureImage?: string | null,
 ): Promise<ExtractedW9FormValues> {
   await syncW9FormFieldsFromDom(container, pdfDocument);
 
@@ -198,13 +207,12 @@ export async function extractW9FormValues(
     accountNumbers: readTextField("accountNumbers", fieldObjects, storageAll, container),
     tinType,
     tin,
-    signatureName: signatureImage ? legalName : readTextField("signature", fieldObjects, storageAll, container),
+    signatureName: legalName,
   };
 }
 
 export function validateExtractedW9FormValues(
   values: ExtractedW9FormValues,
-  signatureImage?: string | null,
   certificationAccepted?: boolean,
 ): string | null {
   if (!values.legalName.trim()) return "Line 1 — name is required.";
@@ -229,18 +237,6 @@ export function validateExtractedW9FormValues(
     return "Enter a valid EIN (12-3456789).";
   }
 
-  if (signatureImage) {
-    if (!signatureImage.startsWith("data:image/png")) {
-      return "Draw a valid signature on the W-9.";
-    }
-  } else if (!values.signatureName.trim()) {
-    return "Draw your signature on the W-9.";
-  } else if (
-    values.legalName.trim().localeCompare(values.signatureName.trim(), undefined, { sensitivity: "accent" }) !== 0
-  ) {
-    return "Your signature must match your legal name exactly.";
-  }
-
   if (!certificationAccepted) return "You must certify the information under Part II.";
 
   return null;
@@ -248,7 +244,6 @@ export function validateExtractedW9FormValues(
 
 export function extractedToSubmitPayload(
   values: ExtractedW9FormValues,
-  signatureImageBase64: string,
   certificationAccepted: boolean,
 ) {
   return {
@@ -264,8 +259,8 @@ export function extractedToSubmitPayload(
     zip: values.zip.trim(),
     tinType: values.tinType,
     tin: values.tin,
-    signatureName: values.signatureName.trim(),
-    signatureImageBase64,
+    signatureName: values.legalName.trim(),
+    signatureImageBase64: "",
     certificationAccepted,
     hasForeignPartners: values.hasForeignPartners,
     exemptPayeeCode: values.exemptPayeeCode.trim() || null,

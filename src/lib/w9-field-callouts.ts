@@ -37,15 +37,7 @@ export const W9_FIELD_CALLOUTS: W9FieldCalloutMeta[] = [
     hint: "Complete Part I",
     page: W9_PDF_PAGES.form,
   },
-  {
-    fieldKey: "signature",
-    label: "Signature",
-    hint: "Click to draw your signature",
-    page: W9_PDF_PAGES.form,
-  },
 ];
-
-export const W9_SIGNATURE_FIELD_KEY: W9FormFieldKey = "signature";
 
 export function calloutFieldSuffix(fieldKey: W9FormFieldKey): string {
   return W9_FORM_FIELD_SUFFIXES[fieldKey];

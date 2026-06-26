@@ -147,7 +147,6 @@ export function validatePortalW9Form(values: PortalW9FormValues): string | null 
   if (values.tinType === "ein" && !/^\d{2}-\d{7}$/.test(formattedTin)) {
     return "Enter a valid EIN (12-3456789).";
   }
-  if (!values.signatureName.trim()) return "Part II — signature is required.";
   if (!values.certificationAccepted) return "You must certify the information under Part II.";
   return null;
 }

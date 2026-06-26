@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import type { DirectDepositRecord } from "./portalDirectDeposit.ts";
 import type { PortalW9Record } from "./portalW9.ts";
-import { createPortalW9SignedUrl, ensureW9Pdf } from "./portalW9Documents.ts";
+import { createPortalW9SignedUrl } from "./portalW9Documents.ts";
+import { resolveW9PdfPath } from "./portalW9Pdf.ts";
 import { DIRECT_DEPOSIT_PDF_BUCKET } from "./portalDirectDeposit.ts";
 import {
   createOnboardingContractSignedUrl,
@@ -46,7 +47,7 @@ export async function loadAdminUserDocuments(
   const seenPaths = new Set<string>();
 
   if (w9Record) {
-    const path = await ensureW9Pdf(adminClient, w9Record, import.meta.url);
+    const path = resolveW9PdfPath(w9Record);
     seenPaths.add(path);
     documents.push({
       id: "w9",

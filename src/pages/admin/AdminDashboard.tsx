@@ -56,7 +56,7 @@ const ADMIN_CARDS = [
   {
     to: "/portal/admin/w9-preview",
     title: "W-9 preview",
-    description: "Test the fillable W-9 form, field validation, and signature flow without saving data.",
+    description: "Test the fillable W-9 form and field validation without saving data.",
     icon: FileText,
   },
   {

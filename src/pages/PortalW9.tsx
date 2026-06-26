@@ -185,7 +185,7 @@ export default function PortalW9() {
               className="portal-w9-signing"
               eyebrow="Portal"
               title="Complete your W-9"
-              lead="Fill in the highlighted fields on Form W-9, draw your signature, and confirm the certification. A signed PDF will be saved to your profile."
+              lead="Fill in the highlighted fields on Form W-9 and confirm the Part II certification. A completed PDF will be saved to your profile."
               finishLabel="Submit W-9 to PNCL"
               prefillLegalName={prefillLegalName}
               onSubmit={handleSubmit}
