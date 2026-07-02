@@ -358,20 +358,19 @@ export function isAutomaticallySuspendedGoogleUser(user: WorkspaceUserDetails): 
   if (!user.suspended) return false;
 
   const reason = user.suspensionReason?.trim().toLowerCase() ?? "";
-  if (reason.includes("suspended by admin") || reason.includes("by admin")) {
+
+  // Only exclude accounts Google explicitly marks as admin-suspended.
+  if (
+    reason.includes("suspended by admin")
+    || reason.includes("admin suspended")
+    || reason.includes("by admin")
+  ) {
     return false;
   }
-  if (
-    reason.includes("automatic")
-    || reason.includes("unverified")
-    || reason.includes("at risk")
-    || reason.includes("risk")
-  ) {
-    return true;
-  }
 
-  // API-created accounts that never signed in are usually auto-suspended for verification.
-  return !user.lastLoginTime;
+  // PNCL suspended accounts are Google-side holds (verification, policy, etc.)
+  // unless Admin Console suspension is indicated in the reason text.
+  return true;
 }
 
 function mapGoogleDirectoryUser(user: Record<string, unknown>): WorkspaceUserDetails | null {
