@@ -3,6 +3,7 @@ import {
   getWorkspaceUser,
   isAutomaticallySuspendedGoogleUser,
   listWorkspaceUsersByEmail,
+  resetWorkspaceUserTemporaryPassword,
   resolveGoogleWorkspaceStatus,
   updateWorkspaceUserRecovery,
   type GoogleWorkspaceStatus,
@@ -10,7 +11,11 @@ import {
 } from "./googleWorkspace.ts";
 import { logOnboarding } from "./logger.ts";
 import { buildGmailUrl, getEmailDomain } from "./onboarding.ts";
-import { decryptTemporaryPassword } from "./security.ts";
+import {
+  decryptTemporaryPassword,
+  encryptTemporaryPassword,
+  generateTemporaryPassword,
+} from "./security.ts";
 import { sendGmailVerificationRetryEmail } from "./resend.ts";
 
 const PLACEHOLDER_PHONE = "000-000-0000";
@@ -67,21 +72,48 @@ function buildOnboardingUrl(
   return `${getSiteUrl()}/onboarding/success/${record.id}?token=${encodeURIComponent(handoffToken)}`;
 }
 
-async function resolveTemporaryPasswordForEmail(
+async function resolveTemporaryPasswordForVerification(
+  supabase: SupabaseClient,
   record: GmailVerificationOnboardingRecord,
+  googleUserKey: string,
 ): Promise<string | null> {
-  if (!record.temporary_password_encrypted) return null;
-  try {
-    return await decryptTemporaryPassword(record.temporary_password_encrypted);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to decrypt temporary password";
+  if (record.temporary_password_encrypted) {
+    try {
+      return await decryptTemporaryPassword(record.temporary_password_encrypted);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to decrypt temporary password";
+      logOnboarding(
+        "gmail_verification_temp_password_decrypt_failed",
+        { onboardingId: record.id, error: message },
+        "error",
+      );
+    }
+  }
+
+  const temporaryPassword = generateTemporaryPassword();
+  const temporaryPasswordEncrypted = await encryptTemporaryPassword(temporaryPassword);
+
+  await resetWorkspaceUserTemporaryPassword(googleUserKey, temporaryPassword);
+
+  const { error } = await supabase
+    .from("onboarding_records")
+    .update({ temporary_password_encrypted: temporaryPasswordEncrypted })
+    .eq("id", record.id);
+
+  if (error) {
     logOnboarding(
-      "gmail_verification_temp_password_decrypt_failed",
-      { onboardingId: record.id, error: message },
+      "gmail_verification_temp_password_store_failed",
+      { onboardingId: record.id, error: error.message },
       "error",
     );
-    return null;
+  } else {
+    logOnboarding("gmail_verification_temp_password_reset", {
+      onboardingId: record.id,
+      workspaceEmail: record.workspace_email,
+    });
   }
+
+  return temporaryPassword;
 }
 
 export async function processSuspendedGmailOnboardingRecord(
@@ -160,14 +192,17 @@ export async function processSuspendedGmailOnboardingRecord(
   }
 
   if (options.sendEmail) {
-    const temporaryPassword = await resolveTemporaryPasswordForEmail(record);
+    const temporaryPassword = await resolveTemporaryPasswordForVerification(
+      supabase,
+      record,
+      googleUser.id,
+    );
 
     await sendGmailVerificationRetryEmail({
       to: personalEmail,
       firstName: record.first_name,
       workspaceEmail,
       gmailUrl: buildGmailUrl(workspaceEmail),
-      onboardingUrl: temporaryPassword ? undefined : buildOnboardingUrl(record, options.handoffToken),
       temporaryPassword,
     });
 

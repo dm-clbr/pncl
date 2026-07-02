@@ -589,3 +589,37 @@ export async function updateWorkspaceUserRecovery(
     recoveryPhone: recoveryPhoneE164 ?? null,
   });
 }
+
+export async function resetWorkspaceUserTemporaryPassword(
+  userKey: string,
+  temporaryPassword: string,
+): Promise<void> {
+  const token = await getAccessToken();
+  const response = await fetch(
+    `https://admin.googleapis.com/admin/directory/v1/users/${encodeURIComponent(userKey)}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        password: temporaryPassword,
+        changePasswordAtNextLogin: true,
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    const body = await response.text();
+    const googleError = parseGoogleErrorBody(body);
+    logOnboarding(
+      "google_user_password_reset_failed",
+      { userKey, googleError },
+      "error",
+    );
+    throw new Error(`Google Workspace password reset failed: ${googleError}`);
+  }
+
+  logOnboarding("google_user_password_reset_succeeded", { userKey });
+}
