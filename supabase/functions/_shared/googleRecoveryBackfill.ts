@@ -53,32 +53,46 @@ export async function processGoogleRecoveryBackfillForRecord(
     return { ...baseResult, status: "skipped", reason: "missing_personal_email" };
   }
 
-  let googleUser;
-  try {
-    googleUser = await getWorkspaceUser(record.google_user_id ?? workspaceEmail);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to load Google user";
-    return { ...baseResult, status: "error", reason: message };
-  }
-
-  if (!googleUser) {
-    return { ...baseResult, status: "skipped", reason: "google_user_not_found" };
-  }
+  let googleUserKey = record.google_user_id?.trim() ?? "";
 
   if (options.dryRun) {
+    if (!googleUserKey) {
+      try {
+        const googleUser = await getWorkspaceUser(workspaceEmail);
+        if (!googleUser) {
+          return { ...baseResult, status: "skipped", reason: "google_user_not_found" };
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Unable to load Google user";
+        return { ...baseResult, status: "error", reason: message };
+      }
+    }
     return { ...baseResult, status: "skipped", reason: "dry_run" };
+  }
+
+  if (!googleUserKey) {
+    try {
+      const googleUser = await getWorkspaceUser(workspaceEmail);
+      if (!googleUser) {
+        return { ...baseResult, status: "skipped", reason: "google_user_not_found" };
+      }
+      googleUserKey = googleUser.id;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to load Google user";
+      return { ...baseResult, status: "error", reason: message };
+    }
   }
 
   try {
     if (recoveryPhone) {
       await updateWorkspaceUserRecovery({
-        userKey: googleUser.id,
+        userKey: googleUserKey,
         recoveryEmail: personalEmail,
         recoveryPhone,
       });
     } else {
       await updateWorkspaceUserRecovery({
-        userKey: googleUser.id,
+        userKey: googleUserKey,
         recoveryEmail: personalEmail,
       });
     }
@@ -102,6 +116,7 @@ export async function backfillGoogleWorkspaceRecovery(
   options: {
     dryRun: boolean;
     limit?: number;
+    offset?: number;
     onboardingId?: string;
     userId?: string;
   },
@@ -111,6 +126,8 @@ export async function backfillGoogleWorkspaceRecovery(
   updated: number;
   skipped: number;
   errors: number;
+  hasMore: boolean;
+  nextOffset: number;
   results: GoogleRecoveryBackfillResult[];
 }> {
   if (options.onboardingId || options.userId) {
@@ -126,6 +143,8 @@ export async function backfillGoogleWorkspaceRecovery(
         updated: 0,
         skipped: 0,
         errors: 0,
+        hasMore: false,
+        nextOffset: 0,
         results: [],
       };
     }
@@ -137,9 +156,15 @@ export async function backfillGoogleWorkspaceRecovery(
       updated: result.status === "updated" ? 1 : 0,
       skipped: result.status === "skipped" ? 1 : 0,
       errors: result.status === "error" ? 1 : 0,
+      hasMore: false,
+      nextOffset: 0,
       results: [result],
     };
   }
+
+  const batchSize = options.limit && options.limit > 0 ? options.limit : 10;
+  const offset = options.offset && options.offset > 0 ? options.offset : 0;
+  const rangeEnd = offset + batchSize - 1;
 
   let query = supabase
     .from("onboarding_records")
@@ -147,11 +172,8 @@ export async function backfillGoogleWorkspaceRecovery(
       "id, first_name, personal_email, phone_number, workspace_email, google_user_id, gmail_verification_email_sent_at, handoff_token_expires_at",
     )
     .not("workspace_email", "is", null)
-    .order("created_at", { ascending: true });
-
-  if (options.limit && options.limit > 0) {
-    query = query.limit(options.limit);
-  }
+    .order("created_at", { ascending: true })
+    .range(offset, rangeEnd);
 
   const { data, error } = await query;
   if (error) {
@@ -181,9 +203,11 @@ export async function backfillGoogleWorkspaceRecovery(
     }
 
     if (!options.dryRun) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
   }
+
+  const hasMore = (data ?? []).length === batchSize;
 
   return {
     dryRun: options.dryRun,
@@ -191,6 +215,8 @@ export async function backfillGoogleWorkspaceRecovery(
     updated: results.filter((result) => result.status === "updated").length,
     skipped: results.filter((result) => result.status === "skipped").length,
     errors: results.filter((result) => result.status === "error").length,
+    hasMore,
+    nextOffset: hasMore ? offset + batchSize : offset + results.length,
     results,
   };
 }

@@ -5,6 +5,7 @@ import AdminUserRowActionsMenu from "@/components/admin/AdminUserRowActionsMenu"
 import { useAuth } from "@/contexts/AuthContext";
 import {
   backfillGoogleRecovery,
+  backfillGoogleRecoveryAll,
   deleteUser,
   resendActivationEmail,
   sendGmailVerificationEmail,
@@ -188,7 +189,7 @@ export default function AdminUsers() {
 
     setPreviewingRecoverySync(true);
     try {
-      const result = await backfillGoogleRecovery(token, { dryRun: true });
+      const result = await backfillGoogleRecoveryAll(token, { dryRun: true });
       toast.success(result.message);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Unable to preview Google recovery sync");
@@ -209,8 +210,9 @@ export default function AdminUsers() {
 
     setSyncingAllRecovery(true);
     try {
-      const result = await backfillGoogleRecovery(token, { dryRun: false });
+      const result = await backfillGoogleRecoveryAll(token, { dryRun: false });
       toast.success(result.message);
+      await reload();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Unable to sync Google recovery info");
     } finally {

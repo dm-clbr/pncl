@@ -7,6 +7,7 @@ import { logOnboarding } from "../_shared/logger.ts";
 interface BackfillPayload {
   dryRun?: boolean;
   limit?: number;
+  offset?: number;
   onboardingId?: string;
   userId?: string;
 }
@@ -24,12 +25,20 @@ function validatePayload(body: unknown): BackfillPayload {
     ? Number.parseInt(limitRaw, 10)
     : undefined;
 
+  const offsetRaw = data.offset;
+  const offset = typeof offsetRaw === "number"
+    ? offsetRaw
+    : typeof offsetRaw === "string"
+    ? Number.parseInt(offsetRaw, 10)
+    : undefined;
+
   const onboardingId = typeof data.onboardingId === "string" ? data.onboardingId.trim() : "";
   const userId = typeof data.userId === "string" ? data.userId.trim() : "";
 
   return {
     dryRun: data.dryRun === true,
     limit: Number.isFinite(limit) && (limit as number) > 0 ? limit as number : undefined,
+    offset: Number.isFinite(offset) && (offset as number) >= 0 ? offset as number : undefined,
     onboardingId: onboardingId || undefined,
     userId: userId || undefined,
   };
@@ -88,6 +97,7 @@ serve(async (req) => {
     const summary = await backfillGoogleWorkspaceRecovery(adminClient, {
       dryRun: payload.dryRun ?? false,
       limit: payload.limit,
+      offset: payload.offset,
       onboardingId: payload.onboardingId,
       userId: payload.userId,
     });

@@ -276,6 +276,8 @@ export interface GoogleRecoveryBackfillSummary {
   updated: number;
   skipped: number;
   errors: number;
+  hasMore?: boolean;
+  nextOffset?: number;
   message: string;
   results: GoogleRecoveryBackfillResult[];
 }
@@ -285,6 +287,7 @@ export async function backfillGoogleRecovery(
   payload: {
     dryRun?: boolean;
     limit?: number;
+    offset?: number;
     onboardingId?: string;
     userId?: string;
   } = {},
@@ -293,6 +296,56 @@ export async function backfillGoogleRecovery(
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+const RECOVERY_BACKFILL_BATCH_SIZE = 10;
+
+export async function backfillGoogleRecoveryAll(
+  accessToken: string,
+  payload: { dryRun?: boolean; batchSize?: number } = {},
+): Promise<GoogleRecoveryBackfillSummary> {
+  const batchSize = payload.batchSize ?? RECOVERY_BACKFILL_BATCH_SIZE;
+  let offset = 0;
+  let hasMore = true;
+  const totals = {
+    dryRun: payload.dryRun ?? false,
+    scanned: 0,
+    updated: 0,
+    skipped: 0,
+    errors: 0,
+    results: [] as GoogleRecoveryBackfillResult[],
+  };
+
+  while (hasMore) {
+    const batch = await backfillGoogleRecovery(accessToken, {
+      dryRun: payload.dryRun,
+      limit: batchSize,
+      offset,
+    });
+
+    totals.scanned += batch.scanned;
+    totals.updated += batch.updated;
+    totals.skipped += batch.skipped;
+    totals.errors += batch.errors;
+    totals.results.push(...batch.results);
+    hasMore = Boolean(batch.hasMore);
+    offset = batch.nextOffset ?? offset + batchSize;
+
+    if (batch.scanned === 0) {
+      break;
+    }
+  }
+
+  const wouldUpdateCount = totals.results.filter((result) => result.reason === "dry_run").length;
+
+  return {
+    ...totals,
+    hasMore: false,
+    nextOffset: offset,
+    message: totals.dryRun
+      ? `Dry run complete. ${wouldUpdateCount} Google account${wouldUpdateCount === 1 ? "" : "s"} would receive updated recovery info.`
+      : `Updated Google recovery info for ${totals.updated} account${totals.updated === 1 ? "" : "s"}.`,
+  };
 }
 
 export interface GmailVerificationCandidate {
