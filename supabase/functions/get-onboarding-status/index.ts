@@ -3,6 +3,7 @@ import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import {
   buildGmailUrl,
   getServiceClient,
+  isAutoSuspendedOnboardingFailure,
   isTokenExpired,
   type OnboardingRecord,
 } from "../_shared/onboarding.ts";
@@ -22,6 +23,18 @@ function buildStatusResponse(record: OnboardingRecord) {
   const gmailUrl = email ? buildGmailUrl(email) : undefined;
 
   if (record.status === "failed") {
+    if (isAutoSuspendedOnboardingFailure(record)) {
+      return {
+        status: "ready",
+        email,
+        credentialsViewed: false,
+        gmailUrl,
+        portalInviteSent: false,
+        message: "Your PNCL email was created. Google needs a quick verification before you can sign in.",
+        pendingGmailVerification: true,
+      };
+    }
+
     return {
       status: "failed",
       message: "We couldn’t finish creating your PNCL email.",

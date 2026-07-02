@@ -5,8 +5,11 @@ import AdminOnboardingDetailsPanel from "@/components/admin/AdminOnboardingDetai
 import AdminUserDocumentsList from "@/components/admin/AdminUserDocumentsList";
 import { useAuth } from "@/contexts/AuthContext";
 import {
+  backfillGoogleRecovery,
   getAdminUserProfile,
+  sendGmailVerificationEmail,
   type AdminUserProfileDetail,
+  type GoogleWorkspaceStatus,
 } from "@/lib/admin-api";
 import { formatRoleLabel } from "@/lib/roles";
 import { trackPageView } from "@/lib/analytics";
@@ -41,12 +44,79 @@ function profileField(label: string, value: string | null | undefined) {
   );
 }
 
+function formatGooglePhone(value: string | null | undefined): string {
+  if (!value?.trim()) return "—";
+  const digits = value.replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+  return value.trim();
+}
+
+function googleStatusLabel(status: GoogleWorkspaceStatus | "unknown" | null | undefined): string {
+  switch (status) {
+    case "active":
+      return "Active";
+    case "auto_suspended":
+      return "Auto-suspended";
+    case "suspended":
+      return "Suspended";
+    case "not_found":
+      return "Not in Google";
+    case "unknown":
+      return "Unknown";
+    default:
+      return "—";
+  }
+}
+
+function normalizeEmail(value: string | null | undefined): string {
+  return value?.trim().toLowerCase() ?? "";
+}
+
+function normalizePhoneDigits(value: string | null | undefined): string {
+  return value?.replace(/\D/g, "") ?? "";
+}
+
+function recoveryEmailMatches(
+  googleRecoveryEmail: string | null | undefined,
+  expectedPersonalEmail: string | null | undefined,
+): boolean | null {
+  const googleEmail = normalizeEmail(googleRecoveryEmail);
+  const expectedEmail = normalizeEmail(expectedPersonalEmail);
+  if (!expectedEmail) return null;
+  if (!googleEmail) return false;
+  return googleEmail === expectedEmail;
+}
+
+function recoveryPhoneMatches(
+  googleRecoveryPhone: string | null | undefined,
+  expectedPhone: string | null | undefined,
+): boolean | null {
+  const googleDigits = normalizePhoneDigits(googleRecoveryPhone);
+  const expectedDigits = normalizePhoneDigits(expectedPhone);
+  if (!expectedDigits || expectedDigits === "0000000000") return null;
+  if (!googleDigits) return false;
+  const normalizedGoogle = googleDigits.length === 11 && googleDigits.startsWith("1")
+    ? googleDigits.slice(1)
+    : googleDigits;
+  const normalizedExpected = expectedDigits.length === 11 && expectedDigits.startsWith("1")
+    ? expectedDigits.slice(1)
+    : expectedDigits;
+  return normalizedGoogle === normalizedExpected;
+}
+
 export default function AdminUserDetail() {
   const { userId = "" } = useParams();
   const { session } = useAuth();
   const [profile, setProfile] = useState<AdminUserProfileDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sendingGmailVerification, setSendingGmailVerification] = useState(false);
+  const [syncingGoogleRecovery, setSyncingGoogleRecovery] = useState(false);
 
   useEffect(() => {
     document.title = "User profile — PNCL Admin";
@@ -97,6 +167,66 @@ export default function AdminUserDetail() {
   };
 
   const agent = profile?.agent;
+  const canSendGmailVerification = Boolean(
+    agent?.onboardingId
+      && agent.personalEmail
+      && agent.onboarding?.workspaceEmail
+      && agent.googleWorkspaceStatus === "auto_suspended",
+  );
+  const canSyncGoogleRecovery = canSendGmailVerification;
+  const googleWorkspace = profile?.googleWorkspace;
+  const recoveryEmailIsExpected = recoveryEmailMatches(
+    googleWorkspace?.recoveryEmail,
+    agent?.personalEmail,
+  );
+  const recoveryPhoneIsExpected = recoveryPhoneMatches(
+    googleWorkspace?.recoveryPhone ?? googleWorkspace?.mobilePhone,
+    agent?.onboarding?.phoneNumber,
+  );
+
+  const handleSendGmailVerification = async () => {
+    const token = session?.access_token;
+    if (!token || !agent) return;
+
+    const destination = agent.personalEmail ?? "the agent's personal email";
+    const actionLabel = agent.gmailVerificationEmailSentAt ? "Resend" : "Send";
+    if (!window.confirm(`${actionLabel} Gmail verification instructions to ${destination}?`)) return;
+
+    setSendingGmailVerification(true);
+    try {
+      const result = await sendGmailVerificationEmail(token, {
+        userId: agent.id,
+        forceResend: Boolean(agent.gmailVerificationEmailSentAt),
+      });
+      toast.success(result.message);
+      const refreshed = await getAdminUserProfile(token, agent.id);
+      setProfile(refreshed);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to send Gmail verification email");
+    } finally {
+      setSendingGmailVerification(false);
+    }
+  };
+
+  const handleSyncGoogleRecovery = async () => {
+    const token = session?.access_token;
+    if (!token || !agent) return;
+
+    const destination = agent.personalEmail ?? "the agent's personal email";
+    if (!window.confirm(`Push Google recovery email and phone to ${agent.email} using ${destination}?`)) return;
+
+    setSyncingGoogleRecovery(true);
+    try {
+      const result = await backfillGoogleRecovery(token, { userId: agent.id });
+      toast.success(result.message);
+      const refreshed = await getAdminUserProfile(token, agent.id);
+      setProfile(refreshed);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to sync Google recovery info");
+    } finally {
+      setSyncingGoogleRecovery(false);
+    }
+  };
 
   return (
     <section className="admin-panel">
@@ -168,11 +298,94 @@ export default function AdminUserDetail() {
           </div>
 
           <div className="admin-user-profile-section">
-            <div className="admin-panel-head">
+            <div className="admin-panel-head admin-panel-head-row">
+              <div>
+                <h2>Google Workspace</h2>
+                <p>Live recovery contact info stored on the agent&apos;s Google account.</p>
+              </div>
+              {canSyncGoogleRecovery && (
+                <button
+                  type="button"
+                  className="admin-secondary-btn"
+                  disabled={syncingGoogleRecovery}
+                  onClick={() => void handleSyncGoogleRecovery()}
+                >
+                  {syncingGoogleRecovery ? "Syncing…" : "Sync Google recovery"}
+                </button>
+              )}
+            </div>
+
+            {googleWorkspace ? (
+              <>
+                {googleWorkspace.loadError && (
+                  <p className="admin-error">{googleWorkspace.loadError}</p>
+                )}
+                <dl className="admin-genesis-details-grid">
+                  <div className="admin-genesis-details-item">
+                    <dt>Google status</dt>
+                    <dd>{googleStatusLabel(googleWorkspace.status)}</dd>
+                  </div>
+                  {profileField("Last Google sign-in", formatDateTime(googleWorkspace.lastLoginTime))}
+                  <div className="admin-genesis-details-item">
+                    <dt>Recovery email</dt>
+                    <dd>
+                      {googleWorkspace.recoveryEmail ?? "—"}
+                      {recoveryEmailIsExpected === true && (
+                        <span className="admin-inline-note"> Matches onboarding personal email</span>
+                      )}
+                      {recoveryEmailIsExpected === false && agent.personalEmail && (
+                        <span className="admin-inline-note"> Expected {agent.personalEmail}</span>
+                      )}
+                    </dd>
+                  </div>
+                  <div className="admin-genesis-details-item">
+                    <dt>Recovery phone</dt>
+                    <dd>
+                      {formatGooglePhone(googleWorkspace.recoveryPhone)}
+                      {recoveryPhoneIsExpected === true && (
+                        <span className="admin-inline-note"> Matches onboarding phone</span>
+                      )}
+                      {recoveryPhoneIsExpected === false && agent.onboarding?.phoneNumber && (
+                        <span className="admin-inline-note">
+                          {" "}
+                          Expected {formatGooglePhone(agent.onboarding.phoneNumber)}
+                        </span>
+                      )}
+                    </dd>
+                  </div>
+                  {profileField("Mobile phone", formatGooglePhone(googleWorkspace.mobilePhone))}
+                  {googleWorkspace.suspensionReason && (
+                    profileField("Suspension reason", googleWorkspace.suspensionReason)
+                  )}
+                  {profileField("Expected personal email", agent.personalEmail)}
+                  {profileField("Expected phone", formatGooglePhone(agent.onboarding?.phoneNumber))}
+                </dl>
+              </>
+            ) : (
+              <p className="admin-empty">No Google Workspace email is linked to this user.</p>
+            )}
+          </div>
+
+          <div className="admin-user-profile-section">
+            <div className="admin-panel-head admin-panel-head-row">
               <div>
                 <h2>Onboarding information</h2>
                 <p>Details collected during agent onboarding.</p>
               </div>
+              {canSendGmailVerification && (
+                <button
+                  type="button"
+                  className="admin-primary-btn"
+                  disabled={sendingGmailVerification}
+                  onClick={() => void handleSendGmailVerification()}
+                >
+                  {sendingGmailVerification
+                    ? "Sending…"
+                    : agent.gmailVerificationEmailSentAt
+                      ? "Resend Gmail verification"
+                      : "Send Gmail verification"}
+                </button>
+              )}
             </div>
             {agent.onboarding ? (
               <AdminOnboardingDetailsPanel

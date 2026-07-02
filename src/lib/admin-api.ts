@@ -3,6 +3,8 @@ import type { PortalRole } from "@/lib/roles";
 
 export type GenesisAccountStatus = "pending" | "created" | "skipped";
 
+export type GoogleWorkspaceStatus = "active" | "suspended" | "auto_suspended" | "not_found";
+
 export interface AgentOnboardingDetails {
   legalName: string;
   firstName: string;
@@ -35,6 +37,11 @@ export interface AgentSummary {
   onboardingCompletedAt: string | null;
   onboarding: AgentOnboardingDetails | null;
   hasOnboardingRecord: boolean;
+  onboardingId: string | null;
+  personalEmail: string | null;
+  gmailVerificationEmailSentAt: string | null;
+  googleWorkspaceStatus: GoogleWorkspaceStatus | null;
+  googleSuspensionReason: string | null;
   createdAt: string;
   source: string | null;
 }
@@ -222,6 +229,102 @@ export async function sendTestGenesisNotification(
   return adminFetch("admin-test-genesis-notification", accessToken, {
     method: "POST",
     body: JSON.stringify({}),
+  });
+}
+
+export interface NotifySuspendedGmailResult {
+  onboardingId: string;
+  workspaceEmail: string;
+  personalEmail: string;
+  status: "sent" | "skipped" | "error";
+  reason?: string;
+  suspensionReason?: string | null;
+}
+
+export interface NotifySuspendedGmailSummary {
+  dryRun: boolean;
+  scanned: number;
+  sent: number;
+  skipped: number;
+  errors: number;
+  message: string;
+  results: NotifySuspendedGmailResult[];
+}
+
+export async function notifySuspendedGmailUsers(
+  accessToken: string,
+  payload: { dryRun?: boolean; forceResend?: boolean; limit?: number } = {},
+): Promise<NotifySuspendedGmailSummary> {
+  return adminFetch("admin-notify-suspended-gmail", accessToken, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export interface GoogleRecoveryBackfillResult {
+  onboardingId: string;
+  workspaceEmail: string;
+  personalEmail: string;
+  recoveryPhone: string | null;
+  status: "updated" | "skipped" | "error";
+  reason?: string;
+}
+
+export interface GoogleRecoveryBackfillSummary {
+  dryRun: boolean;
+  scanned: number;
+  updated: number;
+  skipped: number;
+  errors: number;
+  message: string;
+  results: GoogleRecoveryBackfillResult[];
+}
+
+export async function backfillGoogleRecovery(
+  accessToken: string,
+  payload: {
+    dryRun?: boolean;
+    limit?: number;
+    onboardingId?: string;
+    userId?: string;
+  } = {},
+): Promise<GoogleRecoveryBackfillSummary> {
+  return adminFetch("admin-backfill-google-recovery", accessToken, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export interface GmailVerificationCandidate {
+  onboardingId: string;
+  legalName: string;
+  firstName: string;
+  workspaceEmail: string;
+  personalEmail: string;
+  phoneNumber: string;
+  status: string;
+  gmailVerificationEmailSentAt: string | null;
+  supabaseUserId: string | null;
+  createdAt: string;
+  googleWorkspaceStatus: GoogleWorkspaceStatus | null;
+  googleSuspensionReason: string | null;
+}
+
+export async function listGmailVerificationCandidates(
+  accessToken: string,
+): Promise<{ candidates: GmailVerificationCandidate[] }> {
+  return adminFetch("admin-list-gmail-verification-candidates", accessToken, {
+    method: "GET",
+  });
+}
+
+export async function sendGmailVerificationEmail(
+  accessToken: string,
+  payload: { onboardingId?: string; userId?: string; forceResend?: boolean },
+): Promise<NotifySuspendedGmailResult & { message: string }> {
+  return adminFetch("admin-send-gmail-verification", accessToken, {
+    method: "POST",
+    body: JSON.stringify(payload),
   });
 }
 
@@ -740,8 +843,19 @@ export interface AdminUserDirectDepositSummary {
   pdfPath: string;
 }
 
+export interface AdminUserGoogleWorkspaceSummary {
+  status: GoogleWorkspaceStatus | "unknown";
+  suspensionReason: string | null;
+  recoveryEmail: string | null;
+  recoveryPhone: string | null;
+  mobilePhone: string | null;
+  lastLoginTime: string | null;
+  loadError: string | null;
+}
+
 export interface AdminUserProfileDetail {
   agent: AgentSummary;
+  googleWorkspace: AdminUserGoogleWorkspaceSummary | null;
   portalProfile: AdminUserPortalProfile | null;
   w9: AdminUserW9Summary | null;
   directDeposit: AdminUserDirectDepositSummary | null;

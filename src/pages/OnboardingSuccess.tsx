@@ -213,7 +213,12 @@ export default function OnboardingSuccess() {
             </div>
           )}
           <p className="lead">
-            {portalInviteSent ? (
+            {statusData?.pendingGmailVerification ? (
+              <>
+                {statusData.message ?? "Your PNCL email was created, but Google needs a quick verification before you can sign in."}
+                {" "}Check your personal email for instructions, then reveal your temporary Gmail password below.
+              </>
+            ) : portalInviteSent ? (
               <>
                 A portal welcome email was sent to <strong>{email}</strong>. Sign in to Gmail first,
                 then use <strong>Sign in with Google</strong> on the portal login page.

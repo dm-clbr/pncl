@@ -2,6 +2,10 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requireGenesisAdminOrAdmin } from "../_shared/adminAuth.ts";
 import { buildAgentSummaryForUser } from "../_shared/adminAgents.ts";
 import {
+  getWorkspaceUser,
+  resolveGoogleWorkspaceStatus,
+} from "../_shared/googleWorkspace.ts";
+import {
   loadAdminUserDocumentsWithContract,
   validateAdminUserProfileQuery,
   type AdminUserDocument,
@@ -93,10 +97,72 @@ serve(async (req) => {
       userData.user?.user_metadata as Record<string, unknown> | undefined,
     );
 
+    let googleWorkspace: {
+      status: string;
+      suspensionReason: string | null;
+      recoveryEmail: string | null;
+      recoveryPhone: string | null;
+      mobilePhone: string | null;
+      lastLoginTime: string | null;
+      loadError: string | null;
+    } | null = null;
+
+    const workspaceEmail = agent.onboarding?.workspaceEmail?.trim().toLowerCase()
+      ?? agent.email.trim().toLowerCase();
+
+    if (workspaceEmail) {
+      try {
+        const googleUser = await getWorkspaceUser(workspaceEmail);
+        if (googleUser) {
+          const resolved = resolveGoogleWorkspaceStatus(googleUser);
+          agent.googleWorkspaceStatus = resolved.status;
+          agent.googleSuspensionReason = resolved.suspensionReason;
+          googleWorkspace = {
+            status: resolved.status,
+            suspensionReason: resolved.suspensionReason,
+            recoveryEmail: googleUser.recoveryEmail,
+            recoveryPhone: googleUser.recoveryPhone,
+            mobilePhone: googleUser.mobilePhone,
+            lastLoginTime: googleUser.lastLoginTime,
+            loadError: null,
+          };
+        } else {
+          agent.googleWorkspaceStatus = "not_found";
+          agent.googleSuspensionReason = null;
+          googleWorkspace = {
+            status: "not_found",
+            suspensionReason: null,
+            recoveryEmail: null,
+            recoveryPhone: null,
+            mobilePhone: null,
+            lastLoginTime: null,
+            loadError: null,
+          };
+        }
+      } catch (googleError) {
+        const message = googleError instanceof Error
+          ? googleError.message
+          : "Unable to load Google Workspace user";
+        agent.googleWorkspaceStatus = "unknown";
+        agent.googleSuspensionReason = null;
+        googleWorkspace = {
+          status: "unknown",
+          suspensionReason: null,
+          recoveryEmail: null,
+          recoveryPhone: null,
+          mobilePhone: null,
+          lastLoginTime: null,
+          loadError: message,
+        };
+        logOnboarding("admin_user_profile_google_load_failed", { userId, error: message }, "warn");
+      }
+    }
+
     logOnboarding("admin_user_profile_viewed", { userId });
 
     return jsonResponse({
       agent,
+      googleWorkspace,
       portalProfile: profile
         ? {
             firstName: profile.first_name,

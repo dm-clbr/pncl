@@ -294,16 +294,21 @@ export async function findActiveOnboardingBySsnHash(
 ): Promise<boolean> {
   const { data, error } = await supabase
     .from("onboarding_records")
-    .select("id")
+    .select("id, status, workspace_email")
     .eq("ssn_hash", ssnHash)
-    .in("status", [...ACTIVE_ONBOARDING_STATUSES_FOR_DEDUP])
-    .maybeSingle();
+    .not("status", "eq", "expired");
 
   if (error) {
     throw new Error("Unable to verify applicant identity");
   }
 
-  return Boolean(data);
+  return (data ?? []).some((row) => {
+    const status = row.status as string;
+    if ((ACTIVE_ONBOARDING_STATUSES_FOR_DEDUP as readonly string[]).includes(status)) {
+      return true;
+    }
+    return status === "failed" && Boolean(row.workspace_email);
+  });
 }
 
 export async function upsertPortalProfileCompLevel(

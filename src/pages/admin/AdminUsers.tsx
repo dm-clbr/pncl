@@ -4,12 +4,15 @@ import { UserPlus, Users, X } from "lucide-react";
 import AdminUserRowActionsMenu from "@/components/admin/AdminUserRowActionsMenu";
 import { useAuth } from "@/contexts/AuthContext";
 import {
+  backfillGoogleRecovery,
   deleteUser,
   resendActivationEmail,
+  sendGmailVerificationEmail,
   updateUserCompLevel,
   updateUserEmail,
   updateUserRole,
   type AgentSummary,
+  type GoogleWorkspaceStatus,
 } from "@/lib/admin-api";
 import { AdminCompLevelSelect } from "@/components/admin/AdminCompLevelSelect";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
@@ -26,18 +29,64 @@ function statusLabel(agent: AgentSummary): string {
   return "Active";
 }
 
+function googleStatusLabel(status: GoogleWorkspaceStatus | null | undefined): string {
+  switch (status) {
+    case "active":
+      return "Active";
+    case "auto_suspended":
+      return "Auto-suspended";
+    case "suspended":
+      return "Suspended";
+    case "not_found":
+      return "Not in Google";
+    default:
+      return "Unknown";
+  }
+}
+
+function googleStatusClass(status: GoogleWorkspaceStatus | null | undefined): string {
+  switch (status) {
+    case "active":
+      return " active";
+    case "auto_suspended":
+      return " error";
+    case "suspended":
+      return " error";
+    case "not_found":
+      return " skipped";
+    default:
+      return "";
+  }
+}
+
 function roleChangeMessage(agent: AgentSummary, nextRole: PortalRole): string {
   if (nextRole === "admin") return `Set ${agent.name}'s role to admin?`;
   if (nextRole === "genesis_admin") return `Set ${agent.name}'s role to Genesis admin?`;
   return `Remove elevated access from ${agent.name}?`;
 }
 
+type GoogleStatusFilter = "all" | GoogleWorkspaceStatus | "unknown";
+
+function matchesGoogleStatusFilter(
+  agent: AgentSummary,
+  filter: GoogleStatusFilter,
+): boolean {
+  if (filter === "all") return true;
+  if (filter === "unknown") return !agent.googleWorkspaceStatus;
+  return agent.googleWorkspaceStatus === filter;
+}
+
 export default function AdminUsers() {
   const { user, session } = useAuth();
   const { agents, loading, error, reload } = useAdminAgents();
   const [query, setQuery] = useState("");
+  const [googleFilter, setGoogleFilter] = useState<GoogleStatusFilter>("all");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [sendingGmailVerificationId, setSendingGmailVerificationId] = useState<string | null>(null);
+  const [syncingRecoveryId, setSyncingRecoveryId] = useState<string | null>(null);
+  const [previewingRecoverySync, setPreviewingRecoverySync] = useState(false);
+  const [syncingAllRecovery, setSyncingAllRecovery] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [emailEditAgent, setEmailEditAgent] = useState<AgentSummary | null>(null);
   const [emailDraft, setEmailDraft] = useState("");
@@ -51,13 +100,23 @@ export default function AdminUsers() {
 
   const filteredAgents = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    if (!normalized) return agents;
-    return agents.filter((agent) =>
-      agent.name.toLowerCase().includes(normalized)
-      || agent.email.toLowerCase().includes(normalized)
-      || (agent.referrerName?.toLowerCase().includes(normalized) ?? false),
-    );
-  }, [agents, query]);
+    return agents.filter((agent) => {
+      if (!matchesGoogleStatusFilter(agent, googleFilter)) return false;
+      if (!normalized) return true;
+      return agent.name.toLowerCase().includes(normalized)
+        || agent.email.toLowerCase().includes(normalized)
+        || (agent.referrerName?.toLowerCase().includes(normalized) ?? false);
+    });
+  }, [agents, query, googleFilter]);
+
+  const googleFilterCounts = useMemo(() => ({
+    all: agents.length,
+    active: agents.filter((agent) => agent.googleWorkspaceStatus === "active").length,
+    auto_suspended: agents.filter((agent) => agent.googleWorkspaceStatus === "auto_suspended").length,
+    suspended: agents.filter((agent) => agent.googleWorkspaceStatus === "suspended").length,
+    not_found: agents.filter((agent) => agent.googleWorkspaceStatus === "not_found").length,
+    unknown: agents.filter((agent) => !agent.googleWorkspaceStatus).length,
+  }), [agents]);
 
   const agentsById = useMemo(
     () => new Map(agents.map((agent) => [agent.id, agent])),
@@ -78,6 +137,84 @@ export default function AdminUsers() {
       toast.error(err instanceof Error ? err.message : "Unable to resend welcome email");
     } finally {
       setResendingId(null);
+    }
+  };
+
+  const handleSendGmailVerification = async (agent: AgentSummary) => {
+    const token = session?.access_token;
+    if (!token) return;
+
+    const destination = agent.personalEmail ?? "the agent's personal email";
+    const actionLabel = agent.gmailVerificationEmailSentAt ? "Resend" : "Send";
+    if (!window.confirm(`${actionLabel} Gmail verification instructions to ${destination}?`)) return;
+
+    setSendingGmailVerificationId(agent.id);
+    try {
+      const result = await sendGmailVerificationEmail(token, {
+        userId: agent.id,
+        forceResend: Boolean(agent.gmailVerificationEmailSentAt),
+      });
+      toast.success(result.message);
+      await reload();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to send Gmail verification email");
+    } finally {
+      setSendingGmailVerificationId(null);
+    }
+  };
+
+  const handleSyncGoogleRecovery = async (agent: AgentSummary) => {
+    const token = session?.access_token;
+    if (!token) return;
+
+    const destination = agent.personalEmail ?? "the agent's personal email";
+    if (!window.confirm(`Push Google recovery email and phone to ${agent.email} using ${destination}?`)) return;
+
+    setSyncingRecoveryId(agent.id);
+    try {
+      const result = await backfillGoogleRecovery(token, { userId: agent.id });
+      toast.success(result.message);
+      await reload();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to sync Google recovery info");
+    } finally {
+      setSyncingRecoveryId(null);
+    }
+  };
+
+  const handlePreviewRecoverySync = async () => {
+    const token = session?.access_token;
+    if (!token) return;
+
+    setPreviewingRecoverySync(true);
+    try {
+      const result = await backfillGoogleRecovery(token, { dryRun: true });
+      toast.success(result.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to preview Google recovery sync");
+    } finally {
+      setPreviewingRecoverySync(false);
+    }
+  };
+
+  const handleSyncAllRecovery = async () => {
+    const token = session?.access_token;
+    if (!token) return;
+
+    if (!window.confirm(
+      "Push personal recovery email and phone to all Google Workspace accounts with onboarding records?",
+    )) {
+      return;
+    }
+
+    setSyncingAllRecovery(true);
+    try {
+      const result = await backfillGoogleRecovery(token, { dryRun: false });
+      toast.success(result.message);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to sync Google recovery info");
+    } finally {
+      setSyncingAllRecovery(false);
     }
   };
 
@@ -211,6 +348,39 @@ export default function AdminUsers() {
             placeholder="Name, email, or upline"
           />
         </label>
+
+        <label className="admin-field">
+          <span>Google status</span>
+          <select
+            value={googleFilter}
+            onChange={(event) => setGoogleFilter(event.target.value as GoogleStatusFilter)}
+          >
+            <option value="all">All ({googleFilterCounts.all})</option>
+            <option value="active">Active ({googleFilterCounts.active})</option>
+            <option value="auto_suspended">Auto-suspended ({googleFilterCounts.auto_suspended})</option>
+            <option value="suspended">Suspended ({googleFilterCounts.suspended})</option>
+            <option value="not_found">Not in Google ({googleFilterCounts.not_found})</option>
+            <option value="unknown">Unknown ({googleFilterCounts.unknown})</option>
+          </select>
+        </label>
+
+        <button
+          type="button"
+          className="admin-icon-btn"
+          disabled={previewingRecoverySync || syncingAllRecovery}
+          onClick={() => void handlePreviewRecoverySync()}
+        >
+          {previewingRecoverySync ? "Checking…" : "Preview recovery sync"}
+        </button>
+
+        <button
+          type="button"
+          className="admin-secondary-btn"
+          disabled={syncingAllRecovery || previewingRecoverySync}
+          onClick={() => void handleSyncAllRecovery()}
+        >
+          {syncingAllRecovery ? "Syncing…" : "Sync all Google recovery"}
+        </button>
       </div>
 
       {loading && <div className="onboarding-spinner admin-spinner" aria-label="Loading users" />}
@@ -227,6 +397,7 @@ export default function AdminUsers() {
                 <th>Upline</th>
                 <th>Comp</th>
                 <th>Status</th>
+                <th>Google</th>
                 <th>Role</th>
                 <th aria-label="Actions" />
               </tr>
@@ -237,6 +408,8 @@ export default function AdminUsers() {
                 const isUpdating = updatingId === agent.id;
                 const isUpdatingComp = updatingCompId === agent.id;
                 const isResending = resendingId === agent.id;
+                const isSendingGmailVerification = sendingGmailVerificationId === agent.id;
+                const isSyncingRecovery = syncingRecoveryId === agent.id;
                 const isDeleting = deletingId === agent.id;
 
                 return (
@@ -263,6 +436,14 @@ export default function AdminUsers() {
                       </span>
                     </td>
                     <td>
+                      <span
+                        className={`admin-status${googleStatusClass(agent.googleWorkspaceStatus)}`}
+                        title={agent.googleSuspensionReason ?? undefined}
+                      >
+                        {googleStatusLabel(agent.googleWorkspaceStatus)}
+                      </span>
+                    </td>
+                    <td>
                       <span className={roleBadgeClass(agent.role)}>
                         {formatRoleLabel(agent.role)}
                       </span>
@@ -273,10 +454,14 @@ export default function AdminUsers() {
                         isSelf={isSelf}
                         savingEmail={savingEmail}
                         isResending={isResending}
+                        isSendingGmailVerification={isSendingGmailVerification}
+                        isSyncingRecovery={isSyncingRecovery}
                         isUpdating={isUpdating}
                         isDeleting={isDeleting}
                         onEditEmail={openEmailEditor}
                         onResendActivation={handleResendActivation}
+                        onSendGmailVerification={handleSendGmailVerification}
+                        onSyncGoogleRecovery={handleSyncGoogleRecovery}
                         onRoleChange={handleRoleSelect}
                         onDelete={handleDeleteUser}
                       />
@@ -288,7 +473,7 @@ export default function AdminUsers() {
           </table>
 
           {filteredAgents.length === 0 && (
-            <p className="admin-empty">No users match your search.</p>
+            <p className="admin-empty">No users match your search or filters.</p>
           )}
         </div>
       )}

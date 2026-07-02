@@ -63,6 +63,18 @@ verify_jwt = true
 [functions.admin-test-genesis-notification]
 verify_jwt = true
 
+[functions.admin-notify-suspended-gmail]
+verify_jwt = true
+
+[functions.admin-list-gmail-verification-candidates]
+verify_jwt = true
+
+[functions.admin-send-gmail-verification]
+verify_jwt = true
+
+[functions.admin-backfill-google-recovery]
+verify_jwt = true
+
 [functions.admin-update-user-email]
 verify_jwt = true
 

@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { Mail, MoreHorizontal, Pencil, Shield, ShieldCheck, Trash2, UserMinus } from "lucide-react";
+import { Mail, MoreHorizontal, Pencil, RefreshCw, Shield, ShieldCheck, Trash2, UserMinus } from "lucide-react";
 import type { AgentSummary } from "@/lib/admin-api";
 import type { PortalRole } from "@/lib/roles";
 
@@ -8,10 +8,14 @@ interface AdminUserRowActionsMenuProps {
   isSelf: boolean;
   savingEmail: boolean;
   isResending: boolean;
+  isSendingGmailVerification: boolean;
+  isSyncingRecovery: boolean;
   isUpdating: boolean;
   isDeleting: boolean;
   onEditEmail: (agent: AgentSummary) => void;
   onResendActivation: (agent: AgentSummary) => void;
+  onSendGmailVerification: (agent: AgentSummary) => void;
+  onSyncGoogleRecovery: (agent: AgentSummary) => void;
   onRoleChange: (agent: AgentSummary, role: PortalRole) => void;
   onDelete: (agent: AgentSummary) => void;
 }
@@ -21,10 +25,14 @@ export default function AdminUserRowActionsMenu({
   isSelf,
   savingEmail,
   isResending,
+  isSendingGmailVerification,
+  isSyncingRecovery,
   isUpdating,
   isDeleting,
   onEditEmail,
   onResendActivation,
+  onSendGmailVerification,
+  onSyncGoogleRecovery,
   onRoleChange,
   onDelete,
 }: AdminUserRowActionsMenuProps) {
@@ -34,7 +42,16 @@ export default function AdminUserRowActionsMenu({
   const [open, setOpen] = useState(false);
   const [menuStyle, setMenuStyle] = useState<{ top: number; left: number; minWidth: number } | null>(null);
 
-  const busy = savingEmail || isResending || isUpdating || isDeleting;
+  const busy = savingEmail || isResending || isSendingGmailVerification || isSyncingRecovery || isUpdating || isDeleting;
+  const canSendGmailVerification = Boolean(
+    agent.onboardingId
+      && agent.personalEmail
+      && agent.onboarding?.workspaceEmail
+      && agent.googleWorkspaceStatus === "auto_suspended",
+  );
+  const canSyncGoogleRecovery = Boolean(
+    agent.onboardingId && agent.personalEmail && agent.onboarding?.workspaceEmail,
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -127,7 +144,7 @@ export default function AdminUserRowActionsMenu({
         onClick={() => setOpen((current) => !current)}
       >
         <MoreHorizontal size={16} aria-hidden="true" />
-        {isDeleting ? "Deleting…" : isUpdating ? "Updating…" : isResending ? "Sending…" : "Actions"}
+        {isDeleting ? "Deleting…" : isUpdating ? "Updating…" : isSyncingRecovery ? "Syncing…" : isSendingGmailVerification ? "Sending…" : isResending ? "Sending…" : "Actions"}
       </button>
 
       {open && menuStyle && (
@@ -163,6 +180,36 @@ export default function AdminUserRowActionsMenu({
             >
               <Mail size={15} aria-hidden="true" />
               {isResending ? "Sending welcome email…" : "Resend welcome email"}
+            </button>
+          )}
+
+          {canSendGmailVerification && (
+            <button
+              type="button"
+              className="admin-actions-menu-item"
+              role="menuitem"
+              disabled={isSendingGmailVerification}
+              onClick={() => runAction(() => onSendGmailVerification(agent))}
+            >
+              <Mail size={15} aria-hidden="true" />
+              {isSendingGmailVerification
+                ? "Sending Gmail verification…"
+                : agent.gmailVerificationEmailSentAt
+                  ? "Resend Gmail verification"
+                  : "Send Gmail verification"}
+            </button>
+          )}
+
+          {canSyncGoogleRecovery && (
+            <button
+              type="button"
+              className="admin-actions-menu-item"
+              role="menuitem"
+              disabled={isSyncingRecovery}
+              onClick={() => runAction(() => onSyncGoogleRecovery(agent))}
+            >
+              <RefreshCw size={15} aria-hidden="true" />
+              {isSyncingRecovery ? "Syncing Google recovery…" : "Sync Google recovery"}
             </button>
           )}
 

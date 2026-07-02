@@ -49,6 +49,7 @@ export interface OnboardingStatusResponse {
   credentialsViewed?: boolean;
   gmailUrl?: string;
   portalInviteSent?: boolean;
+  pendingGmailVerification?: boolean;
   error?: string;
 }
 

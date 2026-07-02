@@ -38,6 +38,7 @@ import AdminIncentives from "./pages/admin/AdminIncentives.tsx";
 import AdminBrandAssets from "./pages/admin/AdminBrandAssets.tsx";
 import AdminCarriers from "./pages/admin/AdminCarriers.tsx";
 import AdminGenesis from "./pages/admin/AdminGenesis.tsx";
+import AdminGmailVerification from "./pages/admin/AdminGmailVerification.tsx";
 import AdminClients from "./pages/admin/AdminClients.tsx";
 import AdminDashboardTabs from "./pages/admin/AdminDashboardTabs.tsx";
 import AdminTodos from "./pages/admin/AdminTodos.tsx";
@@ -156,6 +157,7 @@ const App = () => (
             <Route index element={<AdminIndexRedirect />} />
             <Route path="hierarchy" element={<AdminFullRoute><AdminHierarchy /></AdminFullRoute>} />
             <Route path="users" element={<AdminFullRoute><AdminUsers /></AdminFullRoute>} />
+            <Route path="gmail-verification" element={<AdminFullRoute><AdminGmailVerification /></AdminFullRoute>} />
             <Route path="users/new" element={<AdminFullRoute><AdminAddUser /></AdminFullRoute>} />
             <Route path="users/:userId" element={<AdminFullRoute><AdminUserDetail /></AdminFullRoute>} />
             <Route path="incentives" element={<AdminFullRoute><AdminIncentives /></AdminFullRoute>} />

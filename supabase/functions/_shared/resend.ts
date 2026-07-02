@@ -147,6 +147,80 @@ export async function sendPortalWelcomeEmail(input: {
   });
 }
 
+export function buildGmailVerificationRetryEmailHtml(input: {
+  firstName: string;
+  workspaceEmail: string;
+  gmailUrl: string;
+  onboardingUrl?: string;
+}): string {
+  const greeting = input.firstName ? `Hi ${input.firstName},` : "Hi,";
+  const onboardingBlock = input.onboardingUrl
+    ? `
+        <p style="margin:28px 0;">
+          <a href="${input.onboardingUrl}"
+             style="display:inline-block;background:#0f0f0f;color:#fff;padding:12px 20px;
+                    text-decoration:none;font-weight:600;border-radius:4px;margin-right:8px;">
+            Get temporary password
+          </a>
+        </p>
+        <p style="color:#555;font-size:13px;">
+          If that link has expired, contact PNCL support for a password reset.
+        </p>`
+    : `
+        <p style="color:#555;font-size:13px;">
+          If you do not have your temporary password, contact PNCL support for help.
+        </p>`;
+
+  return `
+    <div style="font-family:sans-serif;max-width:560px;margin:0 auto;">
+      <h2 style="background:#0f0f0f;color:#fff;margin:0;padding:20px 24px;font-size:16px;">
+        Finish setting up your PNCL email
+      </h2>
+      <div style="padding:24px;font-size:14px;color:#111;line-height:1.6;">
+        <p>${greeting}</p>
+        <p>
+          Your PNCL email <strong>${input.workspaceEmail}</strong> needs a one-time Google verification
+          before you can sign in and create your password.
+        </p>
+        <p>
+          We linked this personal email address as your Google account recovery option so you can choose
+          <strong>Try another way</strong> during verification if Google asks for phone confirmation.
+        </p>
+        <ol style="padding-left:1.25rem;margin:20px 0;">
+          <li style="margin-bottom:8px;">Open Gmail sign-in using the button below</li>
+          <li style="margin-bottom:8px;">Sign in with your PNCL email and temporary password</li>
+          <li style="margin-bottom:8px;">Complete Google&apos;s verification step</li>
+          <li>Create your new Google password when prompted</li>
+        </ol>
+        <p style="margin:28px 0;">
+          <a href="${input.gmailUrl}"
+             style="display:inline-block;background:#c8ff00;color:#0f0f0f;padding:12px 20px;
+                    text-decoration:none;font-weight:600;border-radius:4px;">
+            Sign in to Gmail
+          </a>
+        </p>
+        ${onboardingBlock}
+        <p style="color:#555;font-size:13px;margin-top:24px;">
+          After Gmail is set up, sign in to the PNCL Employee Portal with Google using your @thepncl.com account.
+        </p>
+      </div>
+    </div>`;
+}
+
+export async function sendGmailVerificationRetryEmail(input: {
+  to: string;
+  firstName: string;
+  workspaceEmail: string;
+  gmailUrl: string;
+  onboardingUrl?: string;
+}): Promise<void> {
+  await sendEmail({
+    to: input.to,
+    subject: "Action needed: verify your PNCL email",
+    html: buildGmailVerificationRetryEmailHtml(input),
+  });
+}
+
 function formatGenesisNotificationDate(value: string): string {
   return new Date(value).toLocaleString("en-US", {
     month: "short",

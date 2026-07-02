@@ -1,13 +1,15 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { generateAvailableWorkspaceEmail } from "../_shared/email.ts";
-import { createWorkspaceUser, waitForWorkspaceMailboxReady } from "../_shared/googleWorkspace.ts";
+import { createWorkspaceUser, GoogleWorkspaceAutoSuspendedError, waitForWorkspaceMailboxReady } from "../_shared/googleWorkspace.ts";
+import { notifySuspendedGmailForOnboarding } from "../_shared/gmailVerificationNotifications.ts";
 import { logOnboarding } from "../_shared/logger.ts";
 import {
   isContractSignatureExpired,
   type OnboardingContractRecord,
 } from "../_shared/onboardingContract.ts";
 import {
+  getEmailDomain,
   getServiceClient,
   validateSubmitPayload,
 } from "../_shared/onboarding.ts";
@@ -96,6 +98,23 @@ serve(async (req) => {
         "Your legal name must match the name on your signed contract.",
         400,
         "contract_name_mismatch",
+      );
+    }
+
+    const personalEmail = contract.personal_email?.trim().toLowerCase() ?? "";
+    const workspaceDomain = getEmailDomain().toLowerCase();
+    if (!personalEmail || !personalEmail.includes("@")) {
+      return errorResponse(
+        "Your signed contract is missing a personal email. Please sign the agreement again.",
+        400,
+        "missing_personal_email",
+      );
+    }
+    if (personalEmail.endsWith(`@${workspaceDomain}`)) {
+      return errorResponse(
+        "Your personal email on the contract cannot be a @thepncl.com address. Please sign the agreement again with a personal email.",
+        400,
+        "invalid_personal_email",
       );
     }
 
@@ -226,6 +245,8 @@ serve(async (req) => {
         lastName: payload.lastName,
         email: workspaceEmail,
         temporaryPassword,
+        recoveryEmail: personalEmail,
+        recoveryPhone: payload.phoneNumber,
       });
 
       await waitForWorkspaceMailboxReady(workspaceEmail);
@@ -318,23 +339,50 @@ serve(async (req) => {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Google Workspace user creation failed";
+      const isAutoSuspended = error instanceof GoogleWorkspaceAutoSuspendedError
+        || errorMessage.includes("automatically suspended");
+      const autoSuspendedGoogleUserId = error instanceof GoogleWorkspaceAutoSuspendedError
+        ? error.googleUserId
+        : null;
       logOnboarding(
         "submit_google_provisioning_failed",
-        { requestId, onboardingId, workspaceEmail, error: errorMessage },
+        { requestId, onboardingId, workspaceEmail, error: errorMessage, isAutoSuspended },
         "error",
       );
-      failureError = errorMessage;
+      failureError = isAutoSuspended
+        ? "Your PNCL email was created but Google requires verification before you can sign in. Check your personal email for next steps."
+        : errorMessage;
       finalStatus = "failed";
       await supabase
         .from("onboarding_records")
         .update({
           status: "failed",
           google_creation_error: errorMessage,
-          temporary_password_encrypted: null,
+          google_user_id: autoSuspendedGoogleUserId,
+          temporary_password_encrypted: isAutoSuspended ? temporaryPasswordEncrypted : null,
         })
         .eq("id", onboardingId);
 
-      if (claimedInviteId) {
+      if (isAutoSuspended) {
+        try {
+          await notifySuspendedGmailForOnboarding(supabase, {
+            onboardingId,
+            handoffToken,
+            forceResend: true,
+          });
+        } catch (notificationError) {
+          const message = notificationError instanceof Error
+            ? notificationError.message
+            : "Gmail verification notification failed";
+          logOnboarding(
+            "submit_gmail_verification_notification_failed",
+            { requestId, onboardingId, workspaceEmail, error: message },
+            "error",
+          );
+        }
+      }
+
+      if (claimedInviteId && !isAutoSuspended) {
         await releaseReferralInvite(supabase, claimedInviteId);
       }
     }

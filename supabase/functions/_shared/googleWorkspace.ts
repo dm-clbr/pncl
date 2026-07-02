@@ -1,4 +1,5 @@
 import { SignJWT, importPKCS8 } from "https://deno.land/x/jose@v5.2.0/index.ts";
+import { getEmailDomain } from "./onboarding.ts";
 import { logOnboarding } from "./logger.ts";
 
 const DIRECTORY_USER_SCOPE = "https://www.googleapis.com/auth/admin.directory.user";
@@ -207,7 +208,7 @@ export interface CreateWorkspaceUserInput {
   email: string;
   temporaryPassword: string;
   recoveryEmail?: string;
-  orgUnitPath?: string;
+  recoveryPhone?: string;
 }
 
 function getFallbackRecoveryEmail(): string {
@@ -216,10 +217,42 @@ function getFallbackRecoveryEmail(): string {
     ?? "";
 }
 
-export async function createWorkspaceUser(input: CreateWorkspaceUserInput): Promise<string> {
-  const recoveryEmail = input.recoveryEmail?.trim() || getFallbackRecoveryEmail();
-  if (!recoveryEmail) {
+/** Normalize a US phone (111-222-3333) to E.164 (+11112223333) for Google Admin SDK. */
+export function normalizeUsPhoneToE164(phone: string): string | null {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length !== 10) return null;
+  return `+1${digits}`;
+}
+
+function resolveRecoveryEmail(input: CreateWorkspaceUserInput): string {
+  const workspaceDomain = getEmailDomain().toLowerCase();
+  const provided = input.recoveryEmail?.trim().toLowerCase() ?? "";
+
+  if (provided) {
+    if (!provided.includes("@")) {
+      throw new Error("Invalid recovery email for Google Workspace user");
+    }
+    if (provided.endsWith(`@${workspaceDomain}`)) {
+      throw new Error("Recovery email cannot use the PNCL workspace domain");
+    }
+    return provided;
+  }
+
+  const fallback = getFallbackRecoveryEmail().trim().toLowerCase();
+  if (!fallback) {
     throw new Error("Missing recovery email for Google Workspace user");
+  }
+  return fallback;
+}
+
+export async function createWorkspaceUser(input: CreateWorkspaceUserInput): Promise<string> {
+  const recoveryEmail = resolveRecoveryEmail(input);
+  const recoveryPhoneE164 = input.recoveryPhone
+    ? normalizeUsPhoneToE164(input.recoveryPhone)
+    : null;
+
+  if (input.recoveryPhone && !recoveryPhoneE164) {
+    throw new Error("Invalid phone number for Google Workspace user recovery");
   }
 
   logOnboarding("google_user_create_started", {
@@ -227,7 +260,7 @@ export async function createWorkspaceUser(input: CreateWorkspaceUserInput): Prom
     firstName: input.firstName,
     lastName: input.lastName,
     recoveryEmail,
-    orgUnitPath: input.orgUnitPath ?? "(root)",
+    recoveryPhone: recoveryPhoneE164 ?? null,
   });
 
   const token = await getAccessToken();
@@ -250,10 +283,12 @@ export async function createWorkspaceUser(input: CreateWorkspaceUserInput): Prom
         password: input.temporaryPassword,
         changePasswordAtNextLogin: true,
         recoveryEmail,
-        // Standard agent accounts only — admin privileges are never granted here.
-        // Phone is stored in onboarding_records only — not on the Google profile.
-        // recoveryEmail enables "Try another way" during Google's first sign-in challenge.
-        ...(input.orgUnitPath ? { orgUnitPath: input.orgUnitPath } : {}),
+        ...(recoveryPhoneE164
+          ? {
+            recoveryPhone: recoveryPhoneE164,
+            phones: [{ value: recoveryPhoneE164, type: "mobile", primary: true }],
+          }
+          : {}),
       }),
     },
   );
@@ -280,14 +315,131 @@ export async function createWorkspaceUser(input: CreateWorkspaceUserInput): Prom
     throw new Error("Google Workspace user was created with admin privileges");
   }
 
+  if (user.suspended) {
+    const suspensionReason = typeof user.suspensionReason === "string"
+      ? user.suspensionReason
+      : "unknown reason";
+    logOnboarding(
+      "google_user_auto_suspended",
+      {
+        email: input.email,
+        googleUserId: user.id,
+        suspensionReason,
+      },
+      "error",
+    );
+    throw new GoogleWorkspaceAutoSuspendedError(user.id as string, suspensionReason);
+  }
+
   logOnboarding("google_user_create_succeeded", {
     email: input.email,
     googleUserId: user.id,
     isAdmin: user.isAdmin,
     isDelegatedAdmin: user.isDelegatedAdmin,
+    recoveryEmail,
   });
 
   return user.id as string;
+}
+
+export class GoogleWorkspaceAutoSuspendedError extends Error {
+  readonly googleUserId: string;
+  readonly suspensionReason: string;
+
+  constructor(googleUserId: string, suspensionReason: string) {
+    super(`Google Workspace account was automatically suspended: ${suspensionReason}`);
+    this.name = "GoogleWorkspaceAutoSuspendedError";
+    this.googleUserId = googleUserId;
+    this.suspensionReason = suspensionReason;
+  }
+}
+
+export function isAutomaticallySuspendedGoogleUser(user: WorkspaceUserDetails): boolean {
+  if (!user.suspended) return false;
+
+  const reason = user.suspensionReason?.trim().toLowerCase() ?? "";
+  if (reason.includes("suspended by admin") || reason.includes("by admin")) {
+    return false;
+  }
+  if (
+    reason.includes("automatic")
+    || reason.includes("unverified")
+    || reason.includes("at risk")
+    || reason.includes("risk")
+  ) {
+    return true;
+  }
+
+  // API-created accounts that never signed in are usually auto-suspended for verification.
+  return !user.lastLoginTime;
+}
+
+function mapGoogleDirectoryUser(user: Record<string, unknown>): WorkspaceUserDetails | null {
+  const primaryEmail = typeof user.primaryEmail === "string" ? user.primaryEmail.toLowerCase() : "";
+  const id = typeof user.id === "string" ? user.id : "";
+  if (!primaryEmail || !id) return null;
+
+  return {
+    id,
+    primaryEmail,
+    suspended: Boolean(user.suspended),
+    suspensionReason: typeof user.suspensionReason === "string" ? user.suspensionReason : null,
+    lastLoginTime: typeof user.lastLoginTime === "string" ? user.lastLoginTime : null,
+    recoveryEmail: parseGoogleRecoveryEmail(user.recoveryEmail),
+    recoveryPhone: parseGooglePhoneValue(user.recoveryPhone),
+    mobilePhone: parsePrimaryMobilePhone(user),
+  };
+}
+
+/** Paginated directory listing keyed by primary email — one sync pass for admin status columns. */
+export async function listWorkspaceUsersByEmail(): Promise<Map<string, WorkspaceUserDetails>> {
+  const token = await getAccessToken();
+  const customerId = getRequiredEnv("GOOGLE_WORKSPACE_CUSTOMER_ID");
+  const byEmail = new Map<string, WorkspaceUserDetails>();
+  let pageToken: string | undefined;
+
+  do {
+    const url = new URL("https://admin.googleapis.com/admin/directory/v1/users");
+    url.searchParams.set("customer", customerId);
+    url.searchParams.set("maxResults", "500");
+    if (pageToken) url.searchParams.set("pageToken", pageToken);
+
+    const response = await fetch(url.toString(), {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(`Unable to list Google Workspace users (${response.status}): ${body.slice(0, 300)}`);
+    }
+
+    const payload = await response.json();
+    for (const rawUser of payload.users ?? []) {
+      const mapped = mapGoogleDirectoryUser(rawUser as Record<string, unknown>);
+      if (mapped) byEmail.set(mapped.primaryEmail, mapped);
+    }
+    pageToken = payload.nextPageToken;
+  } while (pageToken);
+
+  logOnboarding("google_workspace_directory_listed", { count: byEmail.size });
+  return byEmail;
+}
+
+export type GoogleWorkspaceStatus = "active" | "suspended" | "auto_suspended" | "not_found";
+
+export function resolveGoogleWorkspaceStatus(
+  googleUser: WorkspaceUserDetails | undefined,
+): { status: GoogleWorkspaceStatus; suspensionReason: string | null } {
+  if (!googleUser) {
+    return { status: "not_found", suspensionReason: null };
+  }
+  if (!googleUser.suspended) {
+    return { status: "active", suspensionReason: null };
+  }
+  if (isAutomaticallySuspendedGoogleUser(googleUser)) {
+    return { status: "auto_suspended", suspensionReason: googleUser.suspensionReason };
+  }
+  return { status: "suspended", suspensionReason: googleUser.suspensionReason };
 }
 
 const DEFAULT_MAILBOX_READY_DELAY_MS = 30_000;
@@ -308,4 +460,133 @@ export async function waitForWorkspaceMailboxReady(email: string): Promise<void>
   logOnboarding("google_mailbox_ready_wait_started", { email, delayMs });
   await new Promise((resolve) => setTimeout(resolve, delayMs));
   logOnboarding("google_mailbox_ready_wait_completed", { email, delayMs });
+}
+
+export interface WorkspaceUserDetails {
+  id: string;
+  primaryEmail: string;
+  suspended: boolean;
+  suspensionReason: string | null;
+  lastLoginTime: string | null;
+  recoveryEmail: string | null;
+  recoveryPhone: string | null;
+  mobilePhone: string | null;
+}
+
+function parseGoogleRecoveryEmail(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  return value.trim().toLowerCase();
+}
+
+function parseGooglePhoneValue(value: unknown): string | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  return value.trim();
+}
+
+function parsePrimaryMobilePhone(user: Record<string, unknown>): string | null {
+  const phones = user.phones;
+  if (!Array.isArray(phones)) return null;
+
+  const mobilePhone = phones.find((entry) => {
+    if (!entry || typeof entry !== "object") return false;
+    return (entry as { type?: string }).type === "mobile";
+  });
+
+  if (!mobilePhone || typeof mobilePhone !== "object") return null;
+  return parseGooglePhoneValue((mobilePhone as { value?: string }).value);
+}
+
+function mapWorkspaceUserDetails(user: Record<string, unknown>): WorkspaceUserDetails {
+  return {
+    id: user.id as string,
+    primaryEmail: user.primaryEmail as string,
+    suspended: Boolean(user.suspended),
+    suspensionReason: typeof user.suspensionReason === "string" ? user.suspensionReason : null,
+    lastLoginTime: typeof user.lastLoginTime === "string" ? user.lastLoginTime : null,
+    recoveryEmail: parseGoogleRecoveryEmail(user.recoveryEmail),
+    recoveryPhone: parseGooglePhoneValue(user.recoveryPhone),
+    mobilePhone: parsePrimaryMobilePhone(user),
+  };
+}
+
+export async function getWorkspaceUser(userKey: string): Promise<WorkspaceUserDetails | null> {
+  const token = await getAccessToken();
+  const customerId = getRequiredEnv("GOOGLE_WORKSPACE_CUSTOMER_ID");
+  const response = await fetch(
+    `https://admin.googleapis.com/admin/directory/v1/users/${encodeURIComponent(userKey)}?customer=${customerId}`,
+    { headers: { Authorization: `Bearer ${token}` } },
+  );
+
+  if (response.status === 404) return null;
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Unable to load Google Workspace user (${response.status}): ${body.slice(0, 300)}`);
+  }
+
+  const user = await response.json();
+  return mapWorkspaceUserDetails(user as Record<string, unknown>);
+}
+
+export interface UpdateWorkspaceUserRecoveryInput {
+  userKey: string;
+  recoveryEmail: string;
+  recoveryPhone?: string;
+}
+
+export async function updateWorkspaceUserRecovery(
+  input: UpdateWorkspaceUserRecoveryInput,
+): Promise<void> {
+  const recoveryEmail = input.recoveryEmail.trim().toLowerCase();
+  const workspaceDomain = getEmailDomain().toLowerCase();
+  if (!recoveryEmail.includes("@")) {
+    throw new Error("Invalid recovery email for Google Workspace user");
+  }
+  if (recoveryEmail.endsWith(`@${workspaceDomain}`)) {
+    throw new Error("Recovery email cannot use the PNCL workspace domain");
+  }
+
+  const recoveryPhoneE164 = input.recoveryPhone
+    ? normalizeUsPhoneToE164(input.recoveryPhone)
+    : null;
+  if (input.recoveryPhone && !recoveryPhoneE164) {
+    throw new Error("Invalid phone number for Google Workspace user recovery");
+  }
+
+  const token = await getAccessToken();
+  const response = await fetch(
+    `https://admin.googleapis.com/admin/directory/v1/users/${encodeURIComponent(input.userKey)}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        recoveryEmail,
+        ...(recoveryPhoneE164
+          ? {
+            recoveryPhone: recoveryPhoneE164,
+            phones: [{ value: recoveryPhoneE164, type: "mobile", primary: true }],
+          }
+          : {}),
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    const body = await response.text();
+    const googleError = parseGoogleErrorBody(body);
+    logOnboarding(
+      "google_user_recovery_update_failed",
+      { userKey: input.userKey, recoveryEmail, googleError },
+      "error",
+    );
+    throw new Error(`Google Workspace recovery update failed: ${googleError}`);
+  }
+
+  logOnboarding("google_user_recovery_update_succeeded", {
+    userKey: input.userKey,
+    recoveryEmail,
+    recoveryPhone: recoveryPhoneE164 ?? null,
+  });
 }

@@ -3,6 +3,12 @@ import { getEmailDomain } from "./onboarding.ts";
 import { getUserRole, type PortalRole } from "./adminAuth.ts";
 import { decryptTemporaryPassword } from "./security.ts";
 import { loadCompLevelsByUserId } from "./portalReferralInvites.ts";
+import {
+  listWorkspaceUsersByEmail,
+  resolveGoogleWorkspaceStatus,
+  type GoogleWorkspaceStatus,
+} from "./googleWorkspace.ts";
+import { logOnboarding } from "./logger.ts";
 
 export type GenesisAccountStatus = "pending" | "created" | "skipped";
 
@@ -21,6 +27,8 @@ export interface AgentOnboardingDetails {
   workspaceEmail: string | null;
 }
 
+export type { GoogleWorkspaceStatus };
+
 export interface AgentSummary {
   id: string;
   email: string;
@@ -38,6 +46,11 @@ export interface AgentSummary {
   onboardingCompletedAt: string | null;
   onboarding: AgentOnboardingDetails | null;
   hasOnboardingRecord: boolean;
+  onboardingId: string | null;
+  personalEmail: string | null;
+  gmailVerificationEmailSentAt: string | null;
+  googleWorkspaceStatus: GoogleWorkspaceStatus | null;
+  googleSuspensionReason: string | null;
   createdAt: string;
   source: string | null;
 }
@@ -60,6 +73,7 @@ interface PortalProfilePhotoRow {
 }
 
 interface OnboardingRow {
+  id: string;
   supabase_user_id: string | null;
   legal_name: string;
   first_name: string;
@@ -75,6 +89,8 @@ interface OnboardingRow {
   has_eo_insurance: string;
   status: string;
   workspace_email: string | null;
+  personal_email: string | null;
+  gmail_verification_email_sent_at: string | null;
   onboarding_completed_at: string | null;
 }
 
@@ -144,6 +160,8 @@ async function loadOnboardingMaps(
       has_eo_insurance,
       status,
       workspace_email,
+      personal_email,
+      gmail_verification_email_sent_at,
       onboarding_completed_at,
       created_at
     `)
@@ -298,6 +316,11 @@ export async function buildAgentSummaries(
       onboardingCompletedAt: onboarding?.onboarding_completed_at ?? null,
       onboarding: onboardingDetails,
       hasOnboardingRecord: Boolean(onboarding),
+      onboardingId: onboarding?.id ?? null,
+      personalEmail: onboarding?.personal_email ?? null,
+      gmailVerificationEmailSentAt: onboarding?.gmail_verification_email_sent_at ?? null,
+      googleWorkspaceStatus: null,
+      googleSuspensionReason: null,
       createdAt: user.created_at,
       source: typeof user.app_metadata?.source === "string" ? user.app_metadata.source : null,
     };
@@ -360,9 +383,37 @@ export async function buildAgentSummaryForUser(
     onboardingCompletedAt: onboarding?.onboarding_completed_at ?? null,
     onboarding: onboardingDetails,
     hasOnboardingRecord: Boolean(onboarding),
+    onboardingId: onboarding?.id ?? null,
+    personalEmail: onboarding?.personal_email ?? null,
+    gmailVerificationEmailSentAt: onboarding?.gmail_verification_email_sent_at ?? null,
+    googleWorkspaceStatus: null,
+    googleSuspensionReason: null,
     createdAt: user.created_at,
     source: typeof user.app_metadata?.source === "string" ? user.app_metadata.source : null,
   };
+}
+
+export async function attachGoogleWorkspaceStatusToAgents(
+  agents: AgentSummary[],
+): Promise<AgentSummary[]> {
+  try {
+    const directory = await listWorkspaceUsersByEmail();
+    return agents.map((agent) => {
+      const email = agent.email.trim().toLowerCase();
+      const workspaceEmail = agent.onboarding?.workspaceEmail?.trim().toLowerCase() ?? email;
+      const googleUser = directory.get(workspaceEmail) ?? directory.get(email);
+      const resolved = resolveGoogleWorkspaceStatus(googleUser);
+      return {
+        ...agent,
+        googleWorkspaceStatus: resolved.status,
+        googleSuspensionReason: resolved.suspensionReason,
+      };
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to load Google Workspace directory";
+    logOnboarding("google_workspace_status_attach_failed", { error: message }, "error");
+    return agents;
+  }
 }
 
 export async function loadPortalProfilePhotos(

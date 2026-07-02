@@ -58,6 +58,7 @@ export interface OnboardingRecord {
   genesis_notification_sent_at: string | null;
   google_creation_error: string | null;
   group_assignment_error: string | null;
+  gmail_verification_email_sent_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -274,4 +275,12 @@ function normalizeYesNo(value: unknown, field: string): string {
 
 export function isTokenExpired(expiresAt: string): boolean {
   return new Date(expiresAt).getTime() <= Date.now();
+}
+
+/** Failed onboarding where Google created the account but auto-suspended it before first sign-in. */
+export function isAutoSuspendedOnboardingFailure(record: OnboardingRecord): boolean {
+  if (record.status !== "failed") return false;
+  if (!record.temporary_password_encrypted) return false;
+  const error = record.google_creation_error?.toLowerCase() ?? "";
+  return error.includes("automatically suspended");
 }

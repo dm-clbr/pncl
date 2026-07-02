@@ -3,6 +3,7 @@ import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import {
   buildGmailUrl,
   getServiceClient,
+  isAutoSuspendedOnboardingFailure,
   isTokenExpired,
   type OnboardingRecord,
 } from "../_shared/onboarding.ts";
@@ -64,7 +65,11 @@ serve(async (req) => {
       );
     }
 
-    if (onboarding.status !== "ready" && onboarding.status !== "email_created") {
+    const credentialsReady = onboarding.status === "ready"
+      || onboarding.status === "email_created"
+      || isAutoSuspendedOnboardingFailure(onboarding);
+
+    if (!credentialsReady) {
       logOnboarding("reveal_not_ready", { onboardingId: id, status: onboarding.status }, "warn");
       return errorResponse("Credentials are not ready yet.", 409, "credentials_not_ready");
     }

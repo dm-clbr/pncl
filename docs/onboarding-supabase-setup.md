@@ -69,8 +69,7 @@ npm run dev
      https://www.googleapis.com/auth/admin.directory.group,https://www.googleapis.com/auth/admin.directory.group.member
      ```
 3. Confirm **Admin SDK** is enabled for your domain.
-4. Confirm org unit **`/Agents`** exists (Admin → Directory → Organizational units), or ask to change the code default.
-5. Optional: create Google Groups `agents@thepncl.com`, `training@thepncl.com` if you want auto group assignment.
+4. Optional: create Google Groups `agents@thepncl.com`, `training@thepncl.com` if you want auto group assignment.
 
 **Security:** If you pasted the service account private key anywhere public, rotate the key in [Google Cloud Console](https://console.cloud.google.com/iam-admin/serviceaccounts?project=employee-onboarding-499721) before production.
 
@@ -79,9 +78,11 @@ npm run dev
 Google may show **"Verify it's you"** and ask for a phone number on first Gmail sign-in — this is Google's risk-based security, not something we can fully disable via API.
 
 **What we do in code:**
-- Phone is **not** attached to the Google account profile
-- Agent's **personal email** is set as `recoveryEmail` on the Google account
-- Agents should click **Try another way** → verify via personal email instead of phone
+- Agent's **personal email** (from the signed ICA contract) is set as `recoveryEmail` on the Google account
+- Agent's **onboarding phone number** is set as `recoveryPhone` and on the Google profile
+- `PNCL_GOOGLE_RECOVERY_EMAIL` / `GOOGLE_WORKSPACE_ADMIN_EMAIL` are **fallback only** if personal email is missing (should not happen in normal onboarding)
+- New users use your Google Workspace **default org unit** (no org unit is set via API)
+- Agents should click **Try another way** → verify via personal email instead of phone when Google prompts on first sign-in
 
 **Recommended Google Admin settings** ([admin.google.com](https://admin.google.com) → Security → Authentication):
 - **2-Step Verification** → Enforcement: **Off** (allow users to opt in, don't require)
@@ -151,6 +152,12 @@ This sets on Supabase:
 | `GOOGLE_WORKSPACE_CUSTOMER_ID` | `my_customer` |
 | `PNCL_EMAIL_DOMAIN` | `thepncl.com` |
 | `CREDENTIAL_ENCRYPTION_KEY` | your generated key |
+
+Optional fallback (not used when contract personal email is present):
+
+| Secret | Value |
+|--------|--------|
+| `PNCL_GOOGLE_RECOVERY_EMAIL` | admin fallback recovery email only |
 
 Verify secrets (names only):
 
@@ -228,7 +235,33 @@ npm run dev
 After a test submission, check:
 
 - **Table Editor → `onboarding_records`** — row with `status = ready`, `workspace_email` populated
-- **Edge Functions → Logs** — no Google auth errors
+- **Edge Functions → Logs** — no Google auth errors; look for `google_user_create_succeeded` (not `google_user_auto_suspended`)
+- **Google Admin → Users** — new user is **Active** (not Suspended), recovery email = agent personal email
+
+---
+
+## Recovering suspended Google accounts (Reactivate greyed out)
+
+If a user shows **Suspended** before first sign-in and **Reactivate** is greyed out in Google Admin:
+
+1. Open the user profile and read the **exact suspension banner** at the top.
+2. For **Unverified sign-in** (common with API-created accounts):
+   - In Admin Console, **UPDATE USER** → set recovery email to the agent's personal email and recovery phone to their onboarding phone (from `onboarding_records`).
+   - Agent signs in at [accounts.google.com](https://accounts.google.com) with `@thepncl.com` + temp/reset password and completes verification.
+   - Or admin [temporarily turns off login challenges](https://support.google.com/a/answer/7587187) for that user (~10 min) while they sign in.
+3. If still blocked after 24–48 hours, contact **Google Workspace Support** with customer ID, affected emails, and the suspension banner text.
+4. Last resort for accounts with no mail/data: delete user in Admin Console (remove from **Recently deleted** if reusing the address), then re-onboard after this fix is deployed.
+
+### Notify automatically suspended agents by email
+
+Admins can send a personal-email verification message only to onboarding accounts that Google still shows as **automatically suspended**:
+
+1. Open **Admin → Gmail verification**
+2. Review onboarding records with PNCL email, personal email, and prior send status
+3. Use **Send verification email** on one row, or **Send to auto-suspended** for bulk delivery
+4. You can also send from **Admin → Users** actions or an individual user profile
+
+Each send updates Google recovery info from onboarding + ICA data, emails the agent's personal address with a Gmail sign-in link, and records `gmail_verification_email_sent_at` so duplicates are skipped unless you explicitly resend.
 
 ---
 
@@ -239,7 +272,9 @@ After a test submission, check:
 | `Supabase is not configured` in browser | Set `VITE_SUPABASE_*` in `.env.local`, restart dev server |
 | `Missing Google service account private key` | Run step 5 secrets script |
 | `Unable to authenticate with Google Workspace` | Check domain-wide delegation (step 2), admin email `dm@thepncl.com` is super admin |
-| `Google Workspace user creation failed` | Confirm `/Agents` org unit exists; check Edge Function logs for API error |
+| `Google Workspace user creation failed` | Check Edge Function logs for Google API error details |
+| `Google Workspace account was automatically suspended` | Check Google Admin suspension reason; verify recovery email/phone on user profile |
+| Gmail **Suspended**, **Reactivate** greyed out | See **Recovering suspended Google accounts** above |
 | `Unable to create onboarding record` | Run `supabase db push` (step 6) |
 | CORS / 401 on functions | Anon key in `.env.local` must match project; functions have `verify_jwt = false` |
 
