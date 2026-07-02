@@ -152,9 +152,23 @@ export function buildGmailVerificationRetryEmailHtml(input: {
   workspaceEmail: string;
   gmailUrl: string;
   onboardingUrl?: string;
+  temporaryPassword?: string;
 }): string {
   const greeting = input.firstName ? `Hi ${input.firstName},` : "Hi,";
-  const onboardingBlock = input.onboardingUrl
+
+  const credentialsBlock = input.temporaryPassword
+    ? `
+        <div style="margin:24px 0;padding:16px 18px;background:#f6f6f6;border-radius:8px;">
+          <p style="margin:0 0 10px;font-size:13px;color:#555;text-transform:uppercase;letter-spacing:0.04em;">
+            Gmail sign-in details
+          </p>
+          <p style="margin:0 0 8px;"><strong>Email:</strong> ${input.workspaceEmail}</p>
+          <p style="margin:0;"><strong>Temporary password:</strong> ${input.temporaryPassword}</p>
+        </div>
+        <p style="color:#555;font-size:13px;">
+          You will be asked to create a new Google password after you sign in.
+        </p>`
+    : input.onboardingUrl
     ? `
         <p style="margin:28px 0;">
           <a href="${input.onboardingUrl}"
@@ -199,7 +213,7 @@ export function buildGmailVerificationRetryEmailHtml(input: {
             Sign in to Gmail
           </a>
         </p>
-        ${onboardingBlock}
+        ${credentialsBlock}
         <p style="color:#555;font-size:13px;margin-top:24px;">
           After Gmail is set up, sign in to the PNCL Employee Portal with Google using your @thepncl.com account.
         </p>
@@ -213,11 +227,18 @@ export async function sendGmailVerificationRetryEmail(input: {
   workspaceEmail: string;
   gmailUrl: string;
   onboardingUrl?: string;
+  temporaryPassword?: string | null;
 }): Promise<void> {
   await sendEmail({
     to: input.to,
     subject: "Action needed: verify your PNCL email",
-    html: buildGmailVerificationRetryEmailHtml(input),
+    html: buildGmailVerificationRetryEmailHtml({
+      firstName: input.firstName,
+      workspaceEmail: input.workspaceEmail,
+      gmailUrl: input.gmailUrl,
+      onboardingUrl: input.onboardingUrl,
+      temporaryPassword: input.temporaryPassword ?? undefined,
+    }),
   });
 }
 

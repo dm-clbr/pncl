@@ -10,10 +10,14 @@ import {
 } from "./googleWorkspace.ts";
 import { logOnboarding } from "./logger.ts";
 import { buildGmailUrl, getEmailDomain } from "./onboarding.ts";
+import { decryptTemporaryPassword } from "./security.ts";
 import { sendGmailVerificationRetryEmail } from "./resend.ts";
 
 const PLACEHOLDER_PHONE = "000-000-0000";
 const ELIGIBLE_ONBOARDING_STATUSES = ["ready", "credentials_viewed", "failed"] as const;
+
+const VERIFICATION_RECORD_SELECT =
+  "id, first_name, personal_email, phone_number, workspace_email, google_user_id, gmail_verification_email_sent_at, handoff_token_expires_at, temporary_password_encrypted";
 
 export interface GmailVerificationOnboardingRecord {
   id: string;
@@ -25,6 +29,7 @@ export interface GmailVerificationOnboardingRecord {
   gmail_verification_email_sent_at: string | null;
   handoff_token_hash?: string;
   handoff_token_expires_at?: string;
+  temporary_password_encrypted?: string | null;
 }
 
 export interface ProcessSuspendedGmailResult {
@@ -60,6 +65,23 @@ function buildOnboardingUrl(
   if (!record.handoff_token_expires_at) return undefined;
   if (new Date(record.handoff_token_expires_at).getTime() <= Date.now()) return undefined;
   return `${getSiteUrl()}/onboarding/success/${record.id}?token=${encodeURIComponent(handoffToken)}`;
+}
+
+async function resolveTemporaryPasswordForEmail(
+  record: GmailVerificationOnboardingRecord,
+): Promise<string | null> {
+  if (!record.temporary_password_encrypted) return null;
+  try {
+    return await decryptTemporaryPassword(record.temporary_password_encrypted);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to decrypt temporary password";
+    logOnboarding(
+      "gmail_verification_temp_password_decrypt_failed",
+      { onboardingId: record.id, error: message },
+      "error",
+    );
+    return null;
+  }
 }
 
 export async function processSuspendedGmailOnboardingRecord(
@@ -138,12 +160,15 @@ export async function processSuspendedGmailOnboardingRecord(
   }
 
   if (options.sendEmail) {
+    const temporaryPassword = await resolveTemporaryPasswordForEmail(record);
+
     await sendGmailVerificationRetryEmail({
       to: personalEmail,
       firstName: record.first_name,
       workspaceEmail,
       gmailUrl: buildGmailUrl(workspaceEmail),
-      onboardingUrl: buildOnboardingUrl(record, options.handoffToken),
+      onboardingUrl: temporaryPassword ? undefined : buildOnboardingUrl(record, options.handoffToken),
+      temporaryPassword,
     });
 
     const sentAt = new Date().toISOString();
@@ -185,9 +210,7 @@ export async function notifySuspendedGmailForOnboarding(
 ): Promise<ProcessSuspendedGmailResult> {
   const { data, error } = await supabase
     .from("onboarding_records")
-    .select(
-      "id, first_name, personal_email, phone_number, workspace_email, google_user_id, gmail_verification_email_sent_at, handoff_token_expires_at",
-    )
+    .select(VERIFICATION_RECORD_SELECT)
     .eq("id", input.onboardingId)
     .maybeSingle();
 
@@ -291,9 +314,7 @@ export async function resolveOnboardingRecordForVerification(
   if (input.onboardingId) {
     const { data, error } = await supabase
       .from("onboarding_records")
-      .select(
-        "id, first_name, personal_email, phone_number, workspace_email, google_user_id, gmail_verification_email_sent_at, handoff_token_expires_at",
-      )
+      .select(VERIFICATION_RECORD_SELECT)
       .eq("id", input.onboardingId)
       .maybeSingle();
 
@@ -309,9 +330,7 @@ export async function resolveOnboardingRecordForVerification(
   const email = userData.user.email.toLowerCase();
   const { data: byUserId } = await supabase
     .from("onboarding_records")
-    .select(
-      "id, first_name, personal_email, phone_number, workspace_email, google_user_id, gmail_verification_email_sent_at, handoff_token_expires_at",
-    )
+    .select(VERIFICATION_RECORD_SELECT)
     .eq("supabase_user_id", input.userId)
     .maybeSingle();
 
@@ -319,9 +338,7 @@ export async function resolveOnboardingRecordForVerification(
 
   const { data: byEmail } = await supabase
     .from("onboarding_records")
-    .select(
-      "id, first_name, personal_email, phone_number, workspace_email, google_user_id, gmail_verification_email_sent_at, handoff_token_expires_at",
-    )
+    .select(VERIFICATION_RECORD_SELECT)
     .eq("workspace_email", email)
     .maybeSingle();
 
@@ -345,9 +362,7 @@ export async function backfillSuspendedGmailVerificationEmails(
 }> {
   let query = supabase
     .from("onboarding_records")
-    .select(
-      "id, first_name, personal_email, phone_number, workspace_email, google_user_id, gmail_verification_email_sent_at, handoff_token_expires_at",
-    )
+    .select(VERIFICATION_RECORD_SELECT)
     .not("workspace_email", "is", null)
     .in("status", [...ELIGIBLE_ONBOARDING_STATUSES])
     .order("created_at", { ascending: true });
