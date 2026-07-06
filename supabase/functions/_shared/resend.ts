@@ -329,3 +329,67 @@ export async function sendGenesisOnboardingNotificationEmail(input: {
     html: buildGenesisOnboardingNotificationEmailHtml(input),
   });
 }
+
+export function buildGoogleAdminUserUrl(workspaceEmail: string): string {
+  return `https://admin.google.com/ac/users/${encodeURIComponent(workspaceEmail)}`;
+}
+
+export function buildGoogleFirstSignInAdminEmailHtml(input: {
+  legalName: string;
+  workspaceEmail: string;
+  googleAdminUserUrl: string;
+  autoSuspended?: boolean;
+}): string {
+  const suspensionNote = input.autoSuspended
+    ? `<p style="margin:0 0 16px;padding:10px 12px;background:#fff3cd;color:#664d03;font-size:13px;border-radius:4px;">
+         Google auto-suspended this account. Reactivate it in Admin if needed, then disable login challenges before the agent signs in.
+       </p>`
+    : "";
+
+  return `
+    <div style="font-family:sans-serif;max-width:560px;margin:0 auto;">
+      <h2 style="background:#0f0f0f;color:#fff;margin:0;padding:20px 24px;font-size:16px;">
+        First Gmail sign-in — admin action required
+      </h2>
+      <div style="padding:24px;font-size:14px;color:#111;line-height:1.6;">
+        ${suspensionNote}
+        <p><strong>${input.legalName}</strong> (${input.workspaceEmail}) finished onboarding. Google often shows a <strong>Verify it&apos;s you</strong> phone challenge on first sign-in for API-created accounts.</p>
+        <p>Before the agent opens Gmail, temporarily turn off login challenges for this user:</p>
+        <ol style="margin:16px 0;padding-left:20px;">
+          <li>Open the user in Google Admin</li>
+          <li>Go to <strong>Security → Login challenge</strong></li>
+          <li>Click <strong>Turn off for 10 minutes</strong></li>
+          <li>Have the agent sign in with their temporary password, then set a new Google password</li>
+        </ol>
+        <p style="margin:28px 0;">
+          <a href="${input.googleAdminUserUrl}"
+             style="display:inline-block;background:#c8ff00;color:#0f0f0f;padding:12px 20px;
+                    text-decoration:none;font-weight:600;border-radius:4px;">
+            Open user in Google Admin
+          </a>
+        </p>
+        <p style="color:#555;font-size:13px;">
+          If phone verification already failed, do not keep retrying the same number — Google rate-limits reuse.
+          <a href="https://support.google.com/a/answer/12077697">Google help: turn off login challenges</a>
+        </p>
+      </div>
+    </div>`;
+}
+
+export async function sendGoogleFirstSignInAdminEmail(input: {
+  to: string;
+  legalName: string;
+  workspaceEmail: string;
+  autoSuspended?: boolean;
+}): Promise<void> {
+  await sendEmail({
+    to: input.to,
+    subject: `First Gmail sign-in: disable login challenge for ${input.legalName}`,
+    html: buildGoogleFirstSignInAdminEmailHtml({
+      legalName: input.legalName,
+      workspaceEmail: input.workspaceEmail,
+      googleAdminUserUrl: buildGoogleAdminUserUrl(input.workspaceEmail),
+      autoSuspended: input.autoSuspended,
+    }),
+  });
+}

@@ -208,7 +208,6 @@ export interface CreateWorkspaceUserInput {
   email: string;
   temporaryPassword: string;
   recoveryEmail?: string;
-  recoveryPhone?: string;
 }
 
 function getFallbackRecoveryEmail(): string {
@@ -247,20 +246,12 @@ function resolveRecoveryEmail(input: CreateWorkspaceUserInput): string {
 
 export async function createWorkspaceUser(input: CreateWorkspaceUserInput): Promise<string> {
   const recoveryEmail = resolveRecoveryEmail(input);
-  const recoveryPhoneE164 = input.recoveryPhone
-    ? normalizeUsPhoneToE164(input.recoveryPhone)
-    : null;
-
-  if (input.recoveryPhone && !recoveryPhoneE164) {
-    throw new Error("Invalid phone number for Google Workspace user recovery");
-  }
 
   logOnboarding("google_user_create_started", {
     email: input.email,
     firstName: input.firstName,
     lastName: input.lastName,
     recoveryEmail,
-    recoveryPhone: recoveryPhoneE164 ?? null,
   });
 
   const token = await getAccessToken();
@@ -282,13 +273,12 @@ export async function createWorkspaceUser(input: CreateWorkspaceUserInput): Prom
         },
         password: input.temporaryPassword,
         changePasswordAtNextLogin: true,
+        // Recovery phone is intentionally NOT set at creation. Attaching the
+        // same phone to accounts before first sign-in accumulates
+        // phone-to-account associations in Google's abuse systems and burns
+        // the number for SMS verification. The phone is synced later via
+        // recovery sync once the account is active.
         recoveryEmail,
-        ...(recoveryPhoneE164
-          ? {
-            recoveryPhone: recoveryPhoneE164,
-            phones: [{ value: recoveryPhoneE164, type: "mobile", primary: true }],
-          }
-          : {}),
       }),
     },
   );
@@ -530,11 +520,26 @@ export interface UpdateWorkspaceUserRecoveryInput {
   userKey: string;
   recoveryEmail: string;
   recoveryPhone?: string;
+  /** Pass when already loaded to avoid an extra Google API read. */
+  currentUser?: WorkspaceUserDetails | null;
+}
+
+function phoneDigits(value: string | null | undefined): string {
+  return value?.replace(/\D/g, "") ?? "";
+}
+
+function phonesMatch(a: string | null | undefined, b: string | null | undefined): boolean {
+  const digitsA = phoneDigits(a);
+  const digitsB = phoneDigits(b);
+  if (!digitsA || !digitsB) return false;
+  const normalizedA = digitsA.length === 11 && digitsA.startsWith("1") ? digitsA.slice(1) : digitsA;
+  const normalizedB = digitsB.length === 11 && digitsB.startsWith("1") ? digitsB.slice(1) : digitsB;
+  return normalizedA === normalizedB;
 }
 
 export async function updateWorkspaceUserRecovery(
   input: UpdateWorkspaceUserRecoveryInput,
-): Promise<void> {
+): Promise<{ updated: boolean }> {
   const recoveryEmail = input.recoveryEmail.trim().toLowerCase();
   const workspaceDomain = getEmailDomain().toLowerCase();
   if (!recoveryEmail.includes("@")) {
@@ -551,6 +556,36 @@ export async function updateWorkspaceUserRecovery(
     throw new Error("Invalid phone number for Google Workspace user recovery");
   }
 
+  // Only PATCH fields that differ from what Google already has. Re-asserting
+  // the same phone across accounts feeds Google's phone-abuse signals.
+  const currentUser = input.currentUser !== undefined
+    ? input.currentUser
+    : await getWorkspaceUser(input.userKey);
+
+  const emailUpToDate = currentUser?.recoveryEmail === recoveryEmail;
+  const phoneUpToDate = !recoveryPhoneE164 || (
+    phonesMatch(currentUser?.recoveryPhone, recoveryPhoneE164)
+    && phonesMatch(currentUser?.mobilePhone, recoveryPhoneE164)
+  );
+
+  if (currentUser && emailUpToDate && phoneUpToDate) {
+    logOnboarding("google_user_recovery_update_skipped", {
+      userKey: input.userKey,
+      recoveryEmail,
+      reason: "already_up_to_date",
+    });
+    return { updated: false };
+  }
+
+  const body: Record<string, unknown> = {};
+  if (!currentUser || !emailUpToDate) {
+    body.recoveryEmail = recoveryEmail;
+  }
+  if (recoveryPhoneE164 && (!currentUser || !phoneUpToDate)) {
+    body.recoveryPhone = recoveryPhoneE164;
+    body.phones = [{ value: recoveryPhoneE164, type: "mobile", primary: true }];
+  }
+
   const token = await getAccessToken();
   const response = await fetch(
     `https://admin.googleapis.com/admin/directory/v1/users/${encodeURIComponent(input.userKey)}`,
@@ -560,21 +595,13 @@ export async function updateWorkspaceUserRecovery(
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        recoveryEmail,
-        ...(recoveryPhoneE164
-          ? {
-            recoveryPhone: recoveryPhoneE164,
-            phones: [{ value: recoveryPhoneE164, type: "mobile", primary: true }],
-          }
-          : {}),
-      }),
+      body: JSON.stringify(body),
     },
   );
 
   if (!response.ok) {
-    const body = await response.text();
-    const googleError = parseGoogleErrorBody(body);
+    const responseBody = await response.text();
+    const googleError = parseGoogleErrorBody(responseBody);
     logOnboarding(
       "google_user_recovery_update_failed",
       { userKey: input.userKey, recoveryEmail, googleError },
@@ -587,7 +614,9 @@ export async function updateWorkspaceUserRecovery(
     userKey: input.userKey,
     recoveryEmail,
     recoveryPhone: recoveryPhoneE164 ?? null,
+    updatedFields: Object.keys(body),
   });
+  return { updated: true };
 }
 
 export async function resetWorkspaceUserTemporaryPassword(
@@ -622,4 +651,32 @@ export async function resetWorkspaceUserTemporaryPassword(
   }
 
   logOnboarding("google_user_password_reset_succeeded", { userKey });
+}
+
+export async function unsuspendWorkspaceUser(userKey: string): Promise<void> {
+  const token = await getAccessToken();
+  const response = await fetch(
+    `https://admin.googleapis.com/admin/directory/v1/users/${encodeURIComponent(userKey)}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ suspended: false }),
+    },
+  );
+
+  if (!response.ok) {
+    const body = await response.text();
+    const googleError = parseGoogleErrorBody(body);
+    logOnboarding(
+      "google_user_unsuspend_failed",
+      { userKey, googleError },
+      "error",
+    );
+    throw new Error(`Google Workspace unsuspend failed: ${googleError}`);
+  }
+
+  logOnboarding("google_user_unsuspend_succeeded", { userKey });
 }

@@ -311,6 +311,34 @@ export async function findActiveOnboardingBySsnHash(
   });
 }
 
+/**
+ * Phone numbers are attached to Google accounts as recovery info, and Google
+ * rate-limits SMS verification per phone number across accounts. Reusing a
+ * phone across onboardings burns the number, so treat it like SSN dedup.
+ */
+export async function findActiveOnboardingByPhoneNumber(
+  supabase: SupabaseClient,
+  phoneNumber: string,
+): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("onboarding_records")
+    .select("id, status, workspace_email")
+    .eq("phone_number", phoneNumber)
+    .not("status", "eq", "expired");
+
+  if (error) {
+    throw new Error("Unable to verify applicant phone number");
+  }
+
+  return (data ?? []).some((row) => {
+    const status = row.status as string;
+    if ((ACTIVE_ONBOARDING_STATUSES_FOR_DEDUP as readonly string[]).includes(status)) {
+      return true;
+    }
+    return status === "failed" && Boolean(row.workspace_email);
+  });
+}
+
 export async function upsertPortalProfileCompLevel(
   supabase: SupabaseClient,
   userId: string,

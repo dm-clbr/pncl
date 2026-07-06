@@ -75,14 +75,33 @@ npm run dev
 
 ### Google first sign-in phone verification
 
-Google may show **"Verify it's you"** and ask for a phone number on first Gmail sign-in — this is Google's risk-based security, not something we can fully disable via API.
+Google may show **"Verify it's you"** and ask for a phone number on first Gmail sign-in — this is Google's risk-based security for API-created accounts. **There is no API to disable it**; a Google Workspace super admin must temporarily turn it off per user.
+
+**Required admin step (every new agent):**
+
+1. When onboarding completes, the Google Workspace admin (`GOOGLE_WORKSPACE_ADMIN_EMAIL`) receives an email: **First Gmail sign-in — admin action required**.
+2. Open the user in [Google Admin](https://admin.google.com) → **Security → Login challenge → Turn off for 10 minutes** ([help](https://support.google.com/a/answer/12077697)).
+3. Only then have the agent sign in with their temporary password and set a new Google password.
+
+Optional env `PNCL_GOOGLE_FIRST_SIGNIN_NOTIFY_EMAILS` (comma-separated) adds more notification recipients.
 
 **What we do in code:**
-- Agent's **personal email** (from the signed ICA contract) is set as `recoveryEmail` on the Google account
-- Agent's **onboarding phone number** is set as `recoveryPhone` and on the Google profile
+- Agent's **personal email** (from the signed ICA contract) is set as `recoveryEmail` on the Google account at creation
+- The onboarding **phone number is NOT set at creation** — attaching phones to accounts before first sign-in accumulates phone-to-account associations in Google's abuse systems and burns the number for SMS verification. The phone is added later via **Sync Google recovery** (admin action) once the account is active.
+- **Duplicate phone numbers are rejected** at onboarding submit (`duplicate_phone` 409) — each agent needs their own mobile number, and reuse across accounts triggers Google's *already been used too many times* error
+- **Recovery sync is idempotent** — it reads the current Google values first and only PATCHes fields that changed, so repeated syncs don't re-assert the same phone
 - `PNCL_GOOGLE_RECOVERY_EMAIL` / `GOOGLE_WORKSPACE_ADMIN_EMAIL` are **fallback only** if personal email is missing (should not happen in normal onboarding)
 - New users use your Google Workspace **default org unit** (no org unit is set via API)
-- Agents should click **Try another way** → verify via personal email instead of phone when Google prompts on first sign-in
+- Agents should click **Try another way** → verify via personal email instead of phone when Google offers that option (often it does not for first sign-in)
+
+**Testing onboarding:** Use a fresh phone number per test account, or always disable login challenges in Google Admin before clicking **Open Gmail**. Reusing the same phone across many test sign-ins triggers Google's *already been used too many times* error — and duplicate phones are now blocked at submit anyway.
+
+**If phone verification is blocked** (`This phone number has already been used too many times`) and **Try another way** only shows phone:
+
+1. In **Admin → Users → [agent profile]**, click **Sync Google recovery** so the personal email and onboarding phone are set on the Google account.
+2. In [Google Admin](https://admin.google.com) → **Directory → Users → [user] → Security**, [turn off login challenges](https://support.google.com/a/answer/7587187) for ~10 minutes while the agent signs in at [accounts.google.com](https://accounts.google.com) with their `@thepncl.com` email and the temporary password from the verification email.
+3. Do **not** keep re-entering the same phone number — Google rate-limits reuse across accounts. Use a different mobile number only if Google offers it, or rely on the login-challenge bypass above.
+4. If the account still shows **Suspended** or **Auto-suspended**, use **Reactivate Google account** on the admin user profile or Gmail verification page, then resend the verification email.
 
 **Recommended Google Admin settings** ([admin.google.com](https://admin.google.com) → Security → Authentication):
 - **2-Step Verification** → Enforcement: **Off** (allow users to opt in, don't require)
@@ -274,7 +293,8 @@ Each send updates Google recovery info from onboarding + ICA data, emails the ag
 | `Unable to authenticate with Google Workspace` | Check domain-wide delegation (step 2), admin email `dm@thepncl.com` is super admin |
 | `Google Workspace user creation failed` | Check Edge Function logs for Google API error details |
 | `Google Workspace account was automatically suspended` | Check Google Admin suspension reason; verify recovery email/phone on user profile |
-| Gmail **Suspended**, **Reactivate** greyed out | See **Recovering suspended Google accounts** above |
+| Gmail **Suspended**, **Reactivate** greyed out | See **Recovering suspended Google accounts** above; or use **Reactivate Google account** in Admin |
+| Phone verification blocked / Try another way only shows phone | Sync Google recovery, then [turn off login challenges](https://support.google.com/a/answer/7587187) for 10 min |
 | `Unable to create onboarding record` | Run `supabase db push` (step 6) |
 | CORS / 401 on functions | Anon key in `.env.local` must match project; functions have `verify_jwt = false` |
 

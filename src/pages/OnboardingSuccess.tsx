@@ -299,10 +299,14 @@ export default function OnboardingSuccess() {
           )}
           <ol className="onboarding-steps">
             <li>Open Gmail and sign in with your temporary password</li>
-            <li>If Google asks for phone verification, click <strong>Try another way</strong></li>
             <li>Create your new Google password when prompted</li>
             <li>Sign in to the Employee Portal with Google using your @thepncl.com account</li>
           </ol>
+          <p className="onboarding-help-text">
+            Google may show <strong>Verify it&apos;s you</strong> on first sign-in. If phone verification fails
+            or asks for a number you cannot use, stop and contact PNCL support — do not keep retrying the same
+            phone number. An admin can briefly allow sign-in while you complete setup.
+          </p>
           <div className="onboarding-action-row" style={{ marginTop: "0.75rem" }}>
             <a
               href={revealed?.gmailUrl ?? gmailUrl}
@@ -330,7 +334,6 @@ export default function OnboardingSuccess() {
           </div>
           <p className="onboarding-help-text">
             After Gmail is set up, use <strong>Sign in with Google</strong> on the portal login page.
-            Google may ask for phone verification on first sign-in — use <strong>Try another way</strong> if needed.
           </p>
         </>
       )}

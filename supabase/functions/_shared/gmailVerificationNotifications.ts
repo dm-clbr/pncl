@@ -178,16 +178,14 @@ export async function processSuspendedGmailOnboardingRecord(
     };
   }
 
-  if (options.updateRecovery && isValidRecoveryPhone(record.phone_number)) {
+  if (options.updateRecovery) {
     await updateWorkspaceUserRecovery({
       userKey: googleUser.id,
       recoveryEmail: personalEmail,
-      recoveryPhone: record.phone_number,
-    });
-  } else if (options.updateRecovery) {
-    await updateWorkspaceUserRecovery({
-      userKey: googleUser.id,
-      recoveryEmail: personalEmail,
+      ...(isValidRecoveryPhone(record.phone_number)
+        ? { recoveryPhone: record.phone_number }
+        : {}),
+      currentUser: googleUser,
     });
   }
 

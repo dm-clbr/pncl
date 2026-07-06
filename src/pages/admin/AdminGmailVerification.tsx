@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   listGmailVerificationCandidates,
   notifySuspendedGmailUsers,
+  reactivateGoogleUser,
   sendGmailVerificationEmail,
   type GmailVerificationCandidate,
   type GoogleWorkspaceStatus,
@@ -46,6 +47,11 @@ function canSendGmailVerification(candidate: GmailVerificationCandidate): boolea
   return candidate.googleWorkspaceStatus === "auto_suspended";
 }
 
+function canReactivateGoogle(candidate: GmailVerificationCandidate): boolean {
+  return candidate.googleWorkspaceStatus === "auto_suspended"
+    || candidate.googleWorkspaceStatus === "suspended";
+}
+
 export default function AdminGmailVerification() {
   const { session } = useAuth();
   const [candidates, setCandidates] = useState<GmailVerificationCandidate[]>([]);
@@ -53,6 +59,7 @@ export default function AdminGmailVerification() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [sendingId, setSendingId] = useState<string | null>(null);
+  const [reactivatingId, setReactivatingId] = useState<string | null>(null);
   const [previewingAll, setPreviewingAll] = useState(false);
   const [sendingAll, setSendingAll] = useState(false);
 
@@ -119,6 +126,26 @@ export default function AdminGmailVerification() {
       toast.error(err instanceof Error ? err.message : "Unable to send Gmail verification email");
     } finally {
       setSendingId(null);
+    }
+  };
+
+  const handleReactivateOne = async (candidate: GmailVerificationCandidate) => {
+    const token = session?.access_token;
+    if (!token) return;
+
+    if (!canReactivateGoogle(candidate)) return;
+
+    if (!window.confirm(`Reactivate ${candidate.workspaceEmail} in Google Workspace?`)) return;
+
+    setReactivatingId(candidate.onboardingId);
+    try {
+      const result = await reactivateGoogleUser(token, { onboardingId: candidate.onboardingId });
+      toast.success(result.message);
+      await loadCandidates();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to reactivate Google account");
+    } finally {
+      setReactivatingId(null);
     }
   };
 
@@ -234,7 +261,9 @@ export default function AdminGmailVerification() {
             <tbody>
               {filteredCandidates.map((candidate) => {
                 const isSending = sendingId === candidate.onboardingId;
+                const isReactivating = reactivatingId === candidate.onboardingId;
                 const sendAllowed = canSendGmailVerification(candidate);
+                const reactivateAllowed = canReactivateGoogle(candidate);
                 return (
                   <tr key={candidate.onboardingId}>
                     <td>{candidate.legalName}</td>
@@ -254,6 +283,16 @@ export default function AdminGmailVerification() {
                           >
                             View user
                           </Link>
+                        )}
+                        {reactivateAllowed && (
+                          <button
+                            type="button"
+                            className="admin-secondary-btn"
+                            disabled={isReactivating}
+                            onClick={() => void handleReactivateOne(candidate)}
+                          >
+                            {isReactivating ? "Reactivating…" : "Reactivate"}
+                          </button>
                         )}
                         <button
                           type="button"

@@ -53,52 +53,38 @@ export async function processGoogleRecoveryBackfillForRecord(
     return { ...baseResult, status: "skipped", reason: "missing_personal_email" };
   }
 
-  let googleUserKey = record.google_user_id?.trim() ?? "";
+  let googleUser;
+  try {
+    googleUser = await getWorkspaceUser(record.google_user_id?.trim() || workspaceEmail);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unable to load Google user";
+    return { ...baseResult, status: "error", reason: message };
+  }
+
+  if (!googleUser) {
+    return { ...baseResult, status: "skipped", reason: "google_user_not_found" };
+  }
 
   if (options.dryRun) {
-    if (!googleUserKey) {
-      try {
-        const googleUser = await getWorkspaceUser(workspaceEmail);
-        if (!googleUser) {
-          return { ...baseResult, status: "skipped", reason: "google_user_not_found" };
-        }
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Unable to load Google user";
-        return { ...baseResult, status: "error", reason: message };
-      }
-    }
     return { ...baseResult, status: "skipped", reason: "dry_run" };
   }
 
-  if (!googleUserKey) {
-    try {
-      const googleUser = await getWorkspaceUser(workspaceEmail);
-      if (!googleUser) {
-        return { ...baseResult, status: "skipped", reason: "google_user_not_found" };
-      }
-      googleUserKey = googleUser.id;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Unable to load Google user";
-      return { ...baseResult, status: "error", reason: message };
-    }
-  }
-
+  let updated: boolean;
   try {
-    if (recoveryPhone) {
-      await updateWorkspaceUserRecovery({
-        userKey: googleUserKey,
-        recoveryEmail: personalEmail,
-        recoveryPhone,
-      });
-    } else {
-      await updateWorkspaceUserRecovery({
-        userKey: googleUserKey,
-        recoveryEmail: personalEmail,
-      });
-    }
+    const result = await updateWorkspaceUserRecovery({
+      userKey: googleUser.id,
+      recoveryEmail: personalEmail,
+      ...(recoveryPhone ? { recoveryPhone } : {}),
+      currentUser: googleUser,
+    });
+    updated = result.updated;
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to update Google recovery info";
     return { ...baseResult, status: "error", reason: message };
+  }
+
+  if (!updated) {
+    return { ...baseResult, status: "skipped", reason: "already_up_to_date" };
   }
 
   logOnboarding("google_recovery_backfill_updated", {
@@ -166,7 +152,7 @@ export async function backfillGoogleWorkspaceRecovery(
   const offset = options.offset && options.offset > 0 ? options.offset : 0;
   const rangeEnd = offset + batchSize - 1;
 
-  let query = supabase
+  const query = supabase
     .from("onboarding_records")
     .select(
       "id, first_name, personal_email, phone_number, workspace_email, google_user_id, gmail_verification_email_sent_at, handoff_token_expires_at",
