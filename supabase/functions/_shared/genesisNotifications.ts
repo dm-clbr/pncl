@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { getUserRole } from "./adminAuth.ts";
+import { hasAdminConsoleAccess } from "./adminAuth.ts";
 import { listPortalUsers } from "./adminAgents.ts";
 import { logOnboarding } from "./logger.ts";
 import { sendGenesisOnboardingNotificationEmail } from "./resend.ts";
@@ -17,10 +17,11 @@ export interface GenesisOnboardingNotificationInput {
   completedAt: string;
 }
 
+/** New-signup notifications go to every admin and genesis admin. */
 export async function listGenesisAdminEmails(adminClient: SupabaseClient): Promise<string[]> {
   const users = await listPortalUsers(adminClient);
   return users
-    .filter((user) => getUserRole(user) === "genesis_admin" && user.email?.trim())
+    .filter((user) => hasAdminConsoleAccess(user) && user.email?.trim())
     .map((user) => user.email!.trim());
 }
 
@@ -102,7 +103,7 @@ export async function sendTestGenesisNotificationToAdmins(
 ): Promise<{ recipients: string[] }> {
   const recipients = await listGenesisAdminEmails(adminClient);
   if (!recipients.length) {
-    throw new Error("No users with the genesis admin role were found.");
+    throw new Error("No users with the admin or genesis admin role were found.");
   }
 
   const genesisUrl = getGenesisAdminUrl();
