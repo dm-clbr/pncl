@@ -2,11 +2,12 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requireAdmin } from "../_shared/adminAuth.ts";
 import { listPortalUsers } from "../_shared/adminAgents.ts";
 import {
-  countTodoCompletions,
+  computeAutoCompletionSets,
+  getCompletedTodosFromMetadata,
+  isTodoCompleteForUser,
   mapPortalTodoRecord,
   type PortalTodoRecord,
 } from "../_shared/portalTodos.ts";
-import { ICA_TODO_SLUG, listIcaSignedUserIds } from "../_shared/portalIca.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
 
@@ -35,23 +36,37 @@ serve(async (req) => {
     }
 
     const rows = (data ?? []) as PortalTodoRecord[];
-    const slugs = rows.map((row) => row.slug);
-    const { totalUsers, completionsBySlug } = countTodoCompletions(users, slugs);
-    const icaSignedUserIds = slugs.includes(ICA_TODO_SLUG)
-      ? await listIcaSignedUserIds(adminClient, users.map((user) => user.id))
-      : null;
+    const userIds = users.map((user) => user.id);
+    const autoKeys = new Set(
+      rows
+        .filter((row) => row.completion_type === "auto" && row.auto_key)
+        .map((row) => row.auto_key as string),
+    );
+    const autoSets = await computeAutoCompletionSets(adminClient, autoKeys, userIds);
 
+    const completedMetadataByUser = new Map(
+      users.map((user) => [
+        user.id,
+        getCompletedTodosFromMetadata(user.user_metadata as Record<string, unknown> | undefined),
+      ]),
+    );
+
+    const totalUsers = users.length;
     const todos = rows.map((row) => {
-      const mapped = mapPortalTodoRecord(row);
-      const completedCount = row.slug === ICA_TODO_SLUG && icaSignedUserIds
-        ? icaSignedUserIds.size
-        : (completionsBySlug[row.slug] ?? 0);
+      let completedCount = 0;
+      for (const user of users) {
+        const completedMetadata = completedMetadataByUser.get(user.id) ?? {};
+        if (isTodoCompleteForUser(row, user.id, completedMetadata, autoSets)) {
+          completedCount += 1;
+        }
+      }
+
       const completionPercent = totalUsers > 0
         ? Math.round((completedCount / totalUsers) * 100)
         : 0;
 
       return {
-        ...mapped,
+        ...mapPortalTodoRecord(row),
         completedCount,
         totalUsers,
         completionPercent,

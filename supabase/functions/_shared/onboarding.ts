@@ -63,6 +63,12 @@ export interface OnboardingRecord {
   updated_at: string;
 }
 
+export interface OnboardingImagePayload {
+  base64: string;
+  contentType: string;
+  extension: string;
+}
+
 export interface SubmitOnboardingPayload {
   legalName: string;
   firstName: string;
@@ -77,6 +83,8 @@ export interface SubmitOnboardingPayload {
   hasEoInsurance: string;
   referralInviteId?: string;
   contractSignatureId: string;
+  driversLicenseImage?: OnboardingImagePayload;
+  profilePhotoImage?: OnboardingImagePayload;
 }
 
 export interface ReferrerInfo {
@@ -183,6 +191,49 @@ const US_STATES = new Set([
   "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
 ]);
 
+const IMAGE_MIME_EXTENSIONS: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+// ~5 MB decoded (base64 inflates by ~4/3).
+const MAX_IMAGE_BASE64_LENGTH = 7_200_000;
+
+function normalizeOptionalImage(value: unknown, field: string): OnboardingImagePayload | undefined {
+  if (value == null || value === "") {
+    return undefined;
+  }
+  if (typeof value !== "string") {
+    throw new Error(`${field} must be an image`);
+  }
+
+  const match = value.trim().match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/]+=*)$/);
+  if (!match) {
+    throw new Error(`${field} must be a JPG, PNG, or WebP image`);
+  }
+
+  const [, contentType, base64] = match;
+  if (base64.length > MAX_IMAGE_BASE64_LENGTH) {
+    throw new Error(`${field} must be 5 MB or smaller`);
+  }
+
+  return {
+    base64,
+    contentType,
+    extension: IMAGE_MIME_EXTENSIONS[contentType] ?? "jpg",
+  };
+}
+
+export function decodeImageBytes(payload: OnboardingImagePayload): Uint8Array {
+  const binary = atob(payload.base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
 export function parseLegalName(legalName: string): { firstName: string; lastName: string } {
   const parts = legalName.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) {
@@ -242,6 +293,15 @@ export function validateSubmitPayload(body: unknown): SubmitOnboardingPayload {
     throw new Error("A signed Independent Contractor Agreement is required before submitting");
   }
 
+  const driversLicenseImage = normalizeOptionalImage(
+    data.driversLicenseImageBase64,
+    "Driver's license image",
+  );
+  const profilePhotoImage = normalizeOptionalImage(
+    data.profilePhotoImageBase64,
+    "Profile photo",
+  );
+
   return {
     legalName,
     firstName,
@@ -256,6 +316,8 @@ export function validateSubmitPayload(body: unknown): SubmitOnboardingPayload {
     hasEoInsurance,
     referralInviteId,
     contractSignatureId,
+    driversLicenseImage,
+    profilePhotoImage,
   };
 }
 

@@ -64,6 +64,7 @@ serve(async (req) => {
           loginUrl: carrier.eAppUrl,
           username: credential?.username?.trim() ? credential.username.trim() : null,
           password,
+          writingNumber: credential?.writing_number?.trim() ? credential.writing_number.trim() : null,
         };
       }),
     );

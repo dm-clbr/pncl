@@ -72,15 +72,16 @@ function CredentialForm({
   item: CarrierCredentialItem;
   submitting: boolean;
   onCancel: () => void;
-  onSave: (values: { username: string; password: string }) => Promise<void>;
+  onSave: (values: { username: string; password: string; writingNumber: string }) => Promise<void>;
 }) {
   const [username, setUsername] = useState(item.username ?? "");
   const [password, setPassword] = useState("");
+  const [writingNumber, setWritingNumber] = useState(item.writingNumber ?? "");
   const isNew = !hasCarrierCredentials(item);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    await onSave({ username, password });
+    await onSave({ username, password, writingNumber });
   };
 
   return (
@@ -104,6 +105,16 @@ function CredentialForm({
           autoComplete="new-password"
           required={isNew}
           placeholder={isNew ? "Enter password" : "Leave blank to keep current password"}
+        />
+      </label>
+      <label className="admin-field">
+        <span>Writing number</span>
+        <input
+          type="text"
+          value={writingNumber}
+          onChange={(event) => setWritingNumber(event.target.value)}
+          autoComplete="off"
+          placeholder="From your carrier welcome letter"
         />
       </label>
       <div className="portal-carrier-credential-form-actions">
@@ -131,7 +142,7 @@ function CredentialRow({
   submitting: boolean;
   onEdit: () => void;
   onCancel: () => void;
-  onSave: (values: { username: string; password: string }) => Promise<void>;
+  onSave: (values: { username: string; password: string; writingNumber: string }) => Promise<void>;
 }) {
   const isEditing = editing?.carrierId === item.carrierId;
   const saved = hasCarrierCredentials(item);
@@ -139,7 +150,7 @@ function CredentialRow({
   if (isEditing) {
     return (
       <tr>
-        <td colSpan={4}>
+        <td colSpan={5}>
           <div className="portal-carrier-credential-edit-wrap">
             <div className="portal-carrier-credential-edit-head">
               <strong>{item.carrier || "Carrier"}</strong>
@@ -187,6 +198,13 @@ function CredentialRow({
         )}
       </td>
       <td>
+        {item.writingNumber ? (
+          <CredentialValue value={item.writingNumber} label="Writing number" />
+        ) : (
+          <span className="portal-carrier-credential-empty">Not added</span>
+        )}
+      </td>
+      <td>
         <button
           type="button"
           className="portal-carrier-credential-action-btn"
@@ -216,7 +234,7 @@ export default function PortalCarrierCredentials() {
 
   const handleSave = async (
     item: CarrierCredentialItem,
-    values: { username: string; password: string },
+    values: { username: string; password: string; writingNumber: string },
   ) => {
     setSubmitting(true);
     try {
@@ -224,6 +242,7 @@ export default function PortalCarrierCredentials() {
         carrierId: item.carrierId,
         username: values.username.trim(),
         password: values.password.trim() || undefined,
+        writingNumber: values.writingNumber.trim(),
       });
       setEditing(null);
       toast.success(`${item.carrier || "Carrier"} credentials saved.`);
@@ -240,8 +259,8 @@ export default function PortalCarrierCredentials() {
         <div>
           <h1>Carrier accounts</h1>
           <p>
-            Save your carrier login usernames and passwords here for quick access. Carrier names
-            link to each portal when available.
+            Save your carrier login usernames, passwords, and writing numbers here for quick
+            access. Carrier names link to each portal when available.
           </p>
         </div>
       </div>
@@ -263,6 +282,7 @@ export default function PortalCarrierCredentials() {
                 <th>Carrier</th>
                 <th>Username</th>
                 <th>Password</th>
+                <th>Writing #</th>
                 <th aria-label="Actions" />
               </tr>
             </thead>

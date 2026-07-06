@@ -6,18 +6,23 @@ import { notifySuspendedGmailForOnboarding } from "../_shared/gmailVerificationN
 import { logOnboarding } from "../_shared/logger.ts";
 import {
   isContractSignatureExpired,
+  ONBOARDING_CONTRACT_BUCKET,
   type OnboardingContractRecord,
 } from "../_shared/onboardingContract.ts";
 import {
+  decodeImageBytes,
   getEmailDomain,
   getServiceClient,
   validateSubmitPayload,
 } from "../_shared/onboarding.ts";
 import { provisionPortalAccount } from "../_shared/portalAuth.ts";
+import { syncOnboardingProfileAssets } from "../_shared/portalProfileSetup.ts";
 import { notifyGenesisAdminsOfNewOnboarding } from "../_shared/genesisNotifications.ts";
+import { notifyGoogleWorkspaceAdminOfFirstSignIn } from "../_shared/googleFirstSignInNotifications.ts";
 import {
   attachOnboardingToReferralInvite,
   claimReferralInvite,
+  findActiveOnboardingByPhoneNumber,
   findActiveOnboardingBySsnHash,
   releaseReferralInvite,
   resolveReferralInviteForOnboarding,
@@ -128,6 +133,19 @@ serve(async (req) => {
       );
     }
 
+    if (await findActiveOnboardingByPhoneNumber(supabase, payload.phoneNumber)) {
+      logOnboarding(
+        "submit_duplicate_phone_rejected",
+        { requestId, phoneNumber: payload.phoneNumber },
+        "warn",
+      );
+      return errorResponse(
+        "This phone number is already linked to another PNCL account. Each agent needs their own mobile number for Google account verification. Contact PNCL support if you need help.",
+        409,
+        "duplicate_phone",
+      );
+    }
+
     let uplineNetwork = payload.uplineNetwork;
     let referrerUserId: string | null = null;
     let referralInviteId: string | null = null;
@@ -234,6 +252,38 @@ serve(async (req) => {
       await attachOnboardingToReferralInvite(supabase, claimedInviteId, onboardingId);
     }
 
+    if (payload.driversLicenseImage) {
+      const driversLicensePath =
+        `licenses/${onboardingId}/drivers-license.${payload.driversLicenseImage.extension}`;
+      const { error: licenseUploadError } = await supabase.storage
+        .from(ONBOARDING_CONTRACT_BUCKET)
+        .upload(driversLicensePath, decodeImageBytes(payload.driversLicenseImage), {
+          upsert: true,
+          contentType: payload.driversLicenseImage.contentType,
+        });
+
+      if (licenseUploadError) {
+        logOnboarding(
+          "submit_drivers_license_upload_failed",
+          { requestId, onboardingId, error: licenseUploadError.message },
+          "error",
+        );
+      } else {
+        const { error: licensePathError } = await supabase
+          .from("onboarding_records")
+          .update({ drivers_license_path: driversLicensePath })
+          .eq("id", onboardingId);
+
+        if (licensePathError) {
+          logOnboarding(
+            "submit_drivers_license_path_update_failed",
+            { requestId, onboardingId, error: licensePathError.message },
+            "error",
+          );
+        }
+      }
+    }
+
     logOnboarding("submit_db_record_created", { requestId, onboardingId, workspaceEmail });
 
     let finalStatus = "creating_email";
@@ -246,7 +296,6 @@ serve(async (req) => {
         email: workspaceEmail,
         temporaryPassword,
         recoveryEmail: personalEmail,
-        recoveryPhone: payload.phoneNumber,
       });
 
       await waitForWorkspaceMailboxReady(workspaceEmail);
@@ -273,6 +322,18 @@ serve(async (req) => {
             payload.firstName,
             payload.lastName,
           );
+        }
+
+        if (supabaseUserId) {
+          await syncOnboardingProfileAssets(supabase, {
+            userId: supabaseUserId,
+            onboardingId,
+            firstName: payload.firstName,
+            lastName: payload.lastName,
+            npn: payload.npn ?? null,
+            driversLicense: payload.driversLicenseImage,
+            profilePhoto: payload.profilePhotoImage,
+          });
         }
       } catch (portalError) {
         portalProvisionError = portalError instanceof Error
@@ -312,6 +373,22 @@ serve(async (req) => {
           portalProvisionError: portalProvisionError ?? null,
           invitedCompLevel,
         });
+
+        try {
+          await notifyGoogleWorkspaceAdminOfFirstSignIn({
+            legalName: payload.legalName,
+            workspaceEmail,
+          });
+        } catch (notificationError) {
+          const message = notificationError instanceof Error
+            ? notificationError.message
+            : "Google first sign-in admin notification failed";
+          logOnboarding(
+            "submit_google_first_signin_notification_failed",
+            { requestId, onboardingId, error: message },
+            "error",
+          );
+        }
 
         try {
           await notifyGenesisAdminsOfNewOnboarding(supabase, onboardingId, {
@@ -364,6 +441,23 @@ serve(async (req) => {
         .eq("id", onboardingId);
 
       if (isAutoSuspended) {
+        try {
+          await notifyGoogleWorkspaceAdminOfFirstSignIn({
+            legalName: payload.legalName,
+            workspaceEmail,
+            autoSuspended: true,
+          });
+        } catch (notificationError) {
+          const message = notificationError instanceof Error
+            ? notificationError.message
+            : "Google first sign-in admin notification failed";
+          logOnboarding(
+            "submit_google_first_signin_notification_failed",
+            { requestId, onboardingId, error: message },
+            "error",
+          );
+        }
+
         try {
           await notifySuspendedGmailForOnboarding(supabase, {
             onboardingId,

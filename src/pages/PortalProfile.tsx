@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowUpRight, Camera } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
 import ProfilePhotoCropModal from "@/components/ProfilePhotoCropModal";
 import PortalCarrierCredentials from "@/components/PortalCarrierCredentials";
+import PortalLicensingSection from "@/components/PortalLicensingSection";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   CLOTHING_SIZES,
@@ -15,6 +16,7 @@ import {
   savePortalProfile,
   SHOE_SIZES,
   WAIST_SIZES,
+  type PortalProfile,
   type PortalProfileFormValues,
 } from "@/lib/portal-profile";
 import { getDirectDepositPdfUrl } from "@/lib/portal-direct-deposit";
@@ -72,6 +74,7 @@ export default function PortalProfile() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<PortalProfileFormValues>(EMPTY_FORM);
+  const [profileRow, setProfileRow] = useState<PortalProfile | null>(null);
   const [photoPath, setPhotoPath] = useState<string | null>(null);
   const [photoCacheBuster, setPhotoCacheBuster] = useState<string | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
@@ -203,6 +206,7 @@ export default function PortalProfile() {
       .then((profile) => {
         if (cancelled) return;
         if (profile) {
+          setProfileRow(profile);
           setForm(profileToFormValues(profile));
           setPhotoPath(profile.profile_photo_path);
           setPhotoCacheBuster(profile.updated_at);
@@ -292,6 +296,7 @@ export default function PortalProfile() {
     setSubmitting(true);
     try {
       const profile = await savePortalProfile(user, form, pendingPhotoFile, photoPath);
+      setProfileRow(profile);
       setPhotoPath(profile.profile_photo_path);
       setPhotoCacheBuster(profile.updated_at);
       setPendingPhotoFile(null);
@@ -449,6 +454,14 @@ export default function PortalProfile() {
               </form>
             )}
           </div>
+
+          <PortalLicensingSection
+            user={user}
+            profile={profileRow}
+            loading={loading}
+            names={{ firstName: form.firstName, lastName: form.lastName }}
+            onSaved={setProfileRow}
+          />
 
           <div className="carrier-sheet-panel portal-profile-panel">
             <div className="carrier-sheet-panel-head">

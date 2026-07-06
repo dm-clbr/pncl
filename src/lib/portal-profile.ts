@@ -2,7 +2,17 @@ import type { User } from "@supabase/supabase-js";
 import { getSupabaseClient } from "@/lib/supabase";
 
 export const PROFILE_PHOTO_BUCKET = "portal-profile-photos";
+export const PROFILE_DOCUMENTS_BUCKET = "portal-profile-documents";
 export const MAX_PROFILE_PHOTO_BYTES = 300 * 1024;
+export const MAX_DRIVERS_LICENSE_BYTES = 5 * 1024 * 1024;
+
+export const US_STATES = [
+  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+] as const;
 
 export const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL"] as const;
 export const WAIST_SIZES = ["28", "30", "32", "34", "36", "38", "40", "42", "44", "46", "48"] as const;
@@ -21,8 +31,18 @@ export interface PortalProfile {
   shoe_size: string | null;
   comp_level: number | null;
   profile_photo_path: string | null;
+  npn: string | null;
+  eo_policy_number: string | null;
+  state_licenses: string[] | null;
+  drivers_license_path: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface PortalLicensingFormValues {
+  npn: string;
+  eoPolicyNumber: string;
+  stateLicenses: string[];
 }
 
 export interface PortalProfileFormValues {
@@ -187,4 +207,99 @@ export function getProfileInitials(firstName: string, lastName: string): string 
   const first = firstName.trim()[0] ?? "";
   const last = lastName.trim()[0] ?? "";
   return (first + last).toUpperCase() || "?";
+}
+
+export function profileToLicensingValues(profile: PortalProfile | null): PortalLicensingFormValues {
+  return {
+    npn: profile?.npn ?? "",
+    eoPolicyNumber: profile?.eo_policy_number ?? "",
+    stateLicenses: profile?.state_licenses ?? [],
+  };
+}
+
+export async function getDriversLicenseUrl(path: string | null | undefined): Promise<string | null> {
+  if (!path) return null;
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.storage
+    .from(PROFILE_DOCUMENTS_BUCKET)
+    .createSignedUrl(path, 3600);
+
+  if (error || !data?.signedUrl) return null;
+  return data.signedUrl;
+}
+
+export async function uploadDriversLicense(userId: string, file: File): Promise<string> {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Driver's license must be an image file.");
+  }
+  if (file.size > MAX_DRIVERS_LICENSE_BYTES) {
+    throw new Error("Driver's license image must be 5 MB or smaller.");
+  }
+
+  const supabase = getSupabaseClient();
+  const path = `${userId}/drivers-license.${getPhotoExtension(file)}`;
+
+  const { error } = await supabase.storage
+    .from(PROFILE_DOCUMENTS_BUCKET)
+    .upload(path, file, { upsert: true, contentType: file.type });
+
+  if (error) throw error;
+  return path;
+}
+
+export async function saveLicensingProfile(
+  user: User,
+  names: { firstName: string; lastName: string },
+  values: PortalLicensingFormValues,
+  driversLicenseFile: File | null,
+  existingDriversLicensePath: string | null,
+): Promise<PortalProfile> {
+  const supabase = getSupabaseClient();
+
+  let driversLicensePath = existingDriversLicensePath;
+  if (driversLicenseFile) {
+    driversLicensePath = await uploadDriversLicense(user.id, driversLicenseFile);
+  }
+
+  const licensingColumns = {
+    npn: values.npn.trim() || null,
+    eo_policy_number: values.eoPolicyNumber.trim() || null,
+    state_licenses: values.stateLicenses,
+    drivers_license_path: driversLicensePath,
+  };
+
+  const { data: existing, error: existingError } = await supabase
+    .from("portal_profiles")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (existingError) throw existingError;
+
+  if (existing) {
+    const { data, error } = await supabase
+      .from("portal_profiles")
+      .update(licensingColumns)
+      .eq("user_id", user.id)
+      .select("*")
+      .single();
+
+    if (error) throw error;
+    return data as PortalProfile;
+  }
+
+  const fallbackNames = getDefaultProfileValues(user);
+  const { data, error } = await supabase
+    .from("portal_profiles")
+    .insert({
+      user_id: user.id,
+      first_name: names.firstName.trim() || fallbackNames.firstName,
+      last_name: names.lastName.trim() || fallbackNames.lastName,
+      ...licensingColumns,
+    })
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return data as PortalProfile;
 }

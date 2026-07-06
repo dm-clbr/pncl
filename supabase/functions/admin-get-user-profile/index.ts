@@ -12,6 +12,13 @@ import {
 } from "../_shared/adminUserProfile.ts";
 import { mapDirectDepositSummary, type DirectDepositRecord } from "../_shared/portalDirectDeposit.ts";
 import { mapPortalW9Summary, type PortalW9Record } from "../_shared/portalW9.ts";
+import {
+  computeAutoCompletionSets,
+  getCompletedTodosFromMetadata,
+  isTodoCompleteForUser,
+  type PortalTodoRecord,
+} from "../_shared/portalTodos.ts";
+import { PORTAL_PROFILE_DOCUMENTS_BUCKET } from "../_shared/portalProfileSetup.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
 
@@ -25,15 +32,11 @@ interface PortalProfileRow {
   waist_size: string | null;
   shoe_size: string | null;
   profile_photo_path: string | null;
+  npn: string | null;
+  eo_policy_number: string | null;
+  state_licenses: string[] | null;
+  drivers_license_path: string | null;
   updated_at: string;
-}
-
-function getCompletedTodos(metadata: Record<string, unknown> | undefined): Record<string, boolean> {
-  const value = metadata?.completed_portal_todos;
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return {};
-  }
-  return value as Record<string, boolean>;
 }
 
 serve(async (req) => {
@@ -58,12 +61,23 @@ serve(async (req) => {
       { data: w9Row },
       { data: directDepositRow },
       { data: userData },
+      { data: todoRows, error: todoError },
     ] = await Promise.all([
       adminClient.from("portal_profiles").select("*").eq("user_id", userId).maybeSingle(),
       adminClient.from("portal_w9_forms").select("*").eq("user_id", userId).maybeSingle(),
       adminClient.from("portal_direct_deposit_forms").select("*").eq("user_id", userId).maybeSingle(),
       adminClient.auth.admin.getUserById(userId),
+      adminClient
+        .from("portal_todos")
+        .select("*")
+        .eq("published", true)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true }),
     ]);
+
+    if (todoError) {
+      throw new Error(todoError.message);
+    }
 
     const w9Record = w9Row as PortalW9Record | null;
     const directDepositRecord = directDepositRow as DirectDepositRecord | null;
@@ -93,9 +107,35 @@ serve(async (req) => {
       profilePhotoUrl = photoData.publicUrl;
     }
 
-    const completedTodos = getCompletedTodos(
+    let driversLicenseUrl: string | null = null;
+    if (profile?.drivers_license_path) {
+      const { data: licenseData } = await adminClient.storage
+        .from(PORTAL_PROFILE_DOCUMENTS_BUCKET)
+        .createSignedUrl(profile.drivers_license_path, 3600);
+      driversLicenseUrl = licenseData?.signedUrl ?? null;
+    }
+
+    const completedTodos = getCompletedTodosFromMetadata(
       userData.user?.user_metadata as Record<string, unknown> | undefined,
     );
+
+    const todoRecords = (todoRows ?? []) as PortalTodoRecord[];
+    const autoKeys = new Set(
+      todoRecords
+        .filter((row) => row.completion_type === "auto" && row.auto_key)
+        .map((row) => row.auto_key as string),
+    );
+    const autoSets = await computeAutoCompletionSets(adminClient, autoKeys, [userId]);
+    const todos = todoRecords.map((row) => ({
+      slug: row.slug,
+      title: row.title,
+      description: row.description,
+      phase: row.phase ?? "on_board",
+      completionType: row.completion_type ?? "agent",
+      autoKey: row.auto_key ?? null,
+      completed: isTodoCompleteForUser(row, userId, completedTodos, autoSets),
+      manuallyCompleted: completedTodos[row.slug] === true,
+    }));
 
     let googleWorkspace: {
       status: string;
@@ -173,12 +213,17 @@ serve(async (req) => {
             waistSize: profile.waist_size,
             shoeSize: profile.shoe_size,
             profilePhotoUrl,
+            npn: profile.npn,
+            eoPolicyNumber: profile.eo_policy_number,
+            stateLicenses: profile.state_licenses ?? [],
+            driversLicenseUrl,
             updatedAt: profile.updated_at,
           }
         : null,
       w9: w9Record ? mapPortalW9Summary(w9Record) : null,
       directDeposit: directDepositRecord ? mapDirectDepositSummary(directDepositRecord) : null,
       completedPortalTodos: completedTodos,
+      todos,
       documents,
     });
   } catch (error) {

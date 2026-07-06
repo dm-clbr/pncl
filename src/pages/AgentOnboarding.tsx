@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import OnboardingLayout from "@/components/OnboardingLayout";
 import OnboardingContractStep from "@/components/OnboardingContractStep";
@@ -40,6 +40,8 @@ interface OnboardingData {
   dateOfBirth: string;
   ssn: string;
   stateOfResidence: string;
+  driversLicense: string;
+  profilePhoto: string;
   uplineNetwork: string;
   hasLicense: string;
   npn: string;
@@ -48,11 +50,13 @@ interface OnboardingData {
 
 type StepKey = Exclude<keyof OnboardingData, "legalName">;
 
+type FileStepKey = "driversLicense" | "profilePhoto";
+
 interface Step {
   key: StepKey;
   question: string;
   subtitle: string;
-  type: "text" | "tel" | "select" | "yesno";
+  type: "text" | "tel" | "select" | "yesno" | "file";
   placeholder?: string;
   required?: boolean;
   options?: string[];
@@ -92,6 +96,20 @@ const STEPS: Step[] = [
     type: "select",
     options: US_STATES,
     required: true,
+  },
+  {
+    key: "driversLicense",
+    question: "Driver's license",
+    subtitle: "Upload a clear and legible image of your driver's license.",
+    type: "file",
+    required: true,
+  },
+  {
+    key: "profilePhoto",
+    question: "Profile picture",
+    subtitle: "Add a photo for your PNCL profile. You can skip this and add one later.",
+    type: "file",
+    required: false,
   },
   {
     key: "uplineNetwork",
@@ -174,7 +192,14 @@ function maskSsn(ssn: string): string {
   return `•••-••-${match[1]}`;
 }
 
+function isFileStepKey(key: StepKey | "legalName"): key is FileStepKey {
+  return key === "driversLicense" || key === "profilePhoto";
+}
+
 function formatReviewValue(key: StepKey | "legalName", value: string): string {
+  if (isFileStepKey(key)) {
+    return value ? "Uploaded" : "Not provided";
+  }
   if (!value.trim()) {
     if (key === "npn") return "Not provided";
     return "—";
@@ -183,12 +208,63 @@ function formatReviewValue(key: StepKey | "legalName", value: string): string {
   return value;
 }
 
+const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_UPLOAD_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_UPLOAD_IMAGE_DIMENSION = 1600;
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("Unable to read the selected image."));
+    reader.readAsDataURL(file);
+  });
+}
+
+/** Downscales large photos so uploads stay well under the 5 MB limit. */
+async function processImageFile(file: File): Promise<string> {
+  if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+    throw new Error("Please choose a JPG, PNG, or WebP image.");
+  }
+
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("decode_failed"));
+      img.src = objectUrl;
+    });
+
+    const scale = Math.min(
+      1,
+      MAX_UPLOAD_IMAGE_DIMENSION / Math.max(image.naturalWidth, image.naturalHeight),
+    );
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+    canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("decode_failed");
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", 0.85);
+  } catch {
+    if (file.size > MAX_UPLOAD_IMAGE_BYTES) {
+      throw new Error("Image must be 5 MB or smaller.");
+    }
+    return readFileAsDataUrl(file);
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 const EMPTY_DATA: OnboardingData = {
   legalName: "",
   phoneNumber: "",
   dateOfBirth: "",
   ssn: "",
   stateOfResidence: "",
+  driversLicense: "",
+  profilePhoto: "",
   uplineNetwork: "",
   hasLicense: "",
   npn: "",
@@ -243,6 +319,8 @@ export default function AgentOnboarding({
     readStoredContractSignatureId(preview),
   );
   const [previewSubmittedName, setPreviewSubmittedName] = useState("");
+  const [processingFile, setProcessingFile] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const totalSteps = STEPS.length + 1;
   const isReviewStep = phase === "form" && currentStep === STEPS.length;
@@ -276,9 +354,11 @@ export default function AgentOnboarding({
       ? !!currentValue
       : step.type === "select"
         ? !!currentValue
-        : step.required
-          ? !!currentValue.trim() && !validationError
-          : !validationError;
+        : step.type === "file"
+          ? (step.required ? !!currentValue : true) && !processingFile
+          : step.required
+            ? !!currentValue.trim() && !validationError
+            : !validationError;
 
   const advance = () => {
     setTransitioning(true);
@@ -382,6 +462,20 @@ export default function AgentOnboarding({
     if (step.key === "ssn") value = formatSsn(raw);
     if (step.key === "dateOfBirth") value = formatDateInput(raw);
     setData((prev) => ({ ...prev, [step.key]: value }));
+  };
+
+  const handleFileSelected = async (file: File | undefined) => {
+    if (!step || step.type !== "file" || !file) return;
+
+    setProcessingFile(true);
+    try {
+      const dataUrl = await processImageFile(file);
+      setData((prev) => ({ ...prev, [step.key]: dataUrl }));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to process the selected image.");
+    } finally {
+      setProcessingFile(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -633,6 +727,62 @@ export default function AgentOnboarding({
                   </option>
                 ))}
               </select>
+            </div>
+          )}
+
+          {step.type === "file" && (
+            <div className="onboarding-actions onboarding-actions-stack">
+              <div className="onboarding-file-field">
+                {currentValue ? (
+                  <img
+                    src={currentValue}
+                    alt={`${step.question} preview`}
+                    className="onboarding-file-preview"
+                  />
+                ) : (
+                  <p className="onboarding-file-placeholder">
+                    {step.key === "driversLicense"
+                      ? "Take a photo or choose an image of your driver's license."
+                      : "Choose a photo of yourself."}
+                  </p>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="onboarding-file-input"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = "";
+                    void handleFileSelected(file);
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={processingFile || loading}
+                >
+                  {processingFile
+                    ? "Processing…"
+                    : currentValue
+                      ? "Change image"
+                      : "Choose image"}
+                </button>
+              </div>
+              <button
+                type="button"
+                className="btn btn-accent"
+                onClick={handleSubmit}
+                disabled={!canAdvance || loading}
+                style={{ opacity: canAdvance && !loading ? 1 : 0.4 }}
+              >
+                {returnToReview
+                  ? <>Save &amp; return <span className="arr">→</span></>
+                  : !currentValue && !step.required
+                    ? <>Skip for now <span className="arr">→</span></>
+                    : <>Continue <span className="arr">→</span></>}
+              </button>
             </div>
           )}
 

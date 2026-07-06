@@ -300,6 +300,16 @@ export async function backfillGoogleRecovery(
 
 const RECOVERY_BACKFILL_BATCH_SIZE = 10;
 
+export async function reactivateGoogleUser(
+  accessToken: string,
+  payload: { onboardingId?: string; userId?: string },
+): Promise<{ workspaceEmail: string; wasSuspended: boolean; message: string }> {
+  return adminFetch("admin-reactivate-google-user", accessToken, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export async function backfillGoogleRecoveryAll(
   accessToken: string,
   payload: { dryRun?: boolean; batchSize?: number } = {},
@@ -764,6 +774,9 @@ export async function reorderDashboardFiles(
   });
 }
 
+export type AdminPortalTodoPhase = "on_board" | "pre_license" | "licensing" | "sales_ready";
+export type AdminPortalTodoCompletionType = "auto" | "agent" | "admin";
+
 export interface AdminPortalTodoSummary {
   id: string;
   slug: string;
@@ -775,6 +788,9 @@ export interface AdminPortalTodoSummary {
   showEmailHint: boolean;
   sortOrder: number;
   published: boolean;
+  phase: AdminPortalTodoPhase;
+  completionType: AdminPortalTodoCompletionType;
+  autoKey: string | null;
   completedCount: number;
   totalUsers: number;
   completionPercent: number;
@@ -793,6 +809,9 @@ export interface UpsertPortalTodoPayload {
   showEmailHint?: boolean;
   published?: boolean;
   sortOrder?: number;
+  phase: AdminPortalTodoPhase;
+  completionType: AdminPortalTodoCompletionType;
+  autoKey: string | null;
 }
 
 export async function listPortalTodos(
@@ -865,7 +884,22 @@ export interface AdminUserPortalProfile {
   waistSize: string | null;
   shoeSize: string | null;
   profilePhotoUrl: string | null;
+  npn: string | null;
+  eoPolicyNumber: string | null;
+  stateLicenses: string[];
+  driversLicenseUrl: string | null;
   updatedAt: string;
+}
+
+export interface AdminUserTodoStatus {
+  slug: string;
+  title: string;
+  description: string;
+  phase: AdminPortalTodoPhase;
+  completionType: AdminPortalTodoCompletionType;
+  autoKey: string | null;
+  completed: boolean;
+  manuallyCompleted: boolean;
 }
 
 export interface AdminUserW9Summary {
@@ -913,6 +947,7 @@ export interface AdminUserProfileDetail {
   w9: AdminUserW9Summary | null;
   directDeposit: AdminUserDirectDepositSummary | null;
   completedPortalTodos: Record<string, boolean>;
+  todos: AdminUserTodoStatus[];
   documents: AdminUserDocument[];
 }
 
@@ -933,5 +968,15 @@ export async function getAdminUserProfile(
   const params = new URLSearchParams({ userId });
   return adminFetch(`admin-get-user-profile?${params.toString()}`, accessToken, {
     method: "GET",
+  });
+}
+
+export async function setUserTodoCompletion(
+  accessToken: string,
+  input: { userId: string; slug: string; completed: boolean },
+): Promise<{ message: string }> {
+  return adminFetch("admin-set-user-todo-completion", accessToken, {
+    method: "POST",
+    body: JSON.stringify(input),
   });
 }

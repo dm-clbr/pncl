@@ -6,12 +6,14 @@ export interface CarrierCredentialItem {
   loginUrl: string | null;
   username: string | null;
   password: string | null;
+  writingNumber: string | null;
 }
 
 export interface UpsertCarrierCredentialInput {
   carrierId: string;
   username: string;
   password?: string;
+  writingNumber?: string;
 }
 
 function getFunctionUrl(name: string): string {

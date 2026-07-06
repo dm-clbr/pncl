@@ -1,6 +1,9 @@
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseClient, getSupabaseConfig, isSupabaseAuthConfigured } from "@/lib/supabase";
 
+export type PortalTodoPhase = "on_board" | "pre_license" | "licensing" | "sales_ready";
+export type PortalTodoCompletionType = "auto" | "agent" | "admin";
+
 export interface PortalTodo {
   id: string;
   title: string;
@@ -9,7 +12,18 @@ export interface PortalTodo {
   external: boolean;
   actionLabel: string;
   showEmailHint?: boolean;
+  phase: PortalTodoPhase;
+  completionType: PortalTodoCompletionType;
+  /** Server-resolved completion (auto rules + manual check-offs). */
+  completed?: boolean;
 }
+
+export const PORTAL_TODO_PHASES: { id: PortalTodoPhase; label: string }[] = [
+  { id: "on_board", label: "On-Board" },
+  { id: "pre_license", label: "Pre-License" },
+  { id: "licensing", label: "Licensing" },
+  { id: "sales_ready", label: "Sales Ready" },
+];
 
 /** Fallback when the API is unavailable (local dev without migration). */
 export const FALLBACK_PORTAL_TODOS: PortalTodo[] = [
@@ -22,6 +36,8 @@ export const FALLBACK_PORTAL_TODOS: PortalTodo[] = [
     external: false,
     actionLabel: "Review and sign agreement",
     showEmailHint: false,
+    phase: "on_board",
+    completionType: "auto",
   },
   {
     id: "w9_setup",
@@ -32,6 +48,8 @@ export const FALLBACK_PORTAL_TODOS: PortalTodo[] = [
     external: false,
     actionLabel: "Fill out W-9",
     showEmailHint: false,
+    phase: "on_board",
+    completionType: "auto",
   },
   {
     id: "direct_deposit_setup",
@@ -42,6 +60,8 @@ export const FALLBACK_PORTAL_TODOS: PortalTodo[] = [
     external: false,
     actionLabel: "Fill out direct deposit form",
     showEmailHint: false,
+    phase: "on_board",
+    completionType: "auto",
   },
   {
     id: "leadspply_account",
@@ -51,6 +71,8 @@ export const FALLBACK_PORTAL_TODOS: PortalTodo[] = [
     href: "https://leadspply.com/register",
     external: true,
     actionLabel: "Go to LeadSpply",
+    phase: "sales_ready",
+    completionType: "agent",
   },
   {
     id: "discord_account",
@@ -61,6 +83,8 @@ export const FALLBACK_PORTAL_TODOS: PortalTodo[] = [
     external: true,
     actionLabel: "Join Discord",
     showEmailHint: false,
+    phase: "sales_ready",
+    completionType: "agent",
   },
   {
     id: "instagram_follow",
@@ -70,6 +94,8 @@ export const FALLBACK_PORTAL_TODOS: PortalTodo[] = [
     external: true,
     actionLabel: "Follow on Instagram",
     showEmailHint: false,
+    phase: "sales_ready",
+    completionType: "agent",
   },
   {
     id: "linkedin_follow",
@@ -79,6 +105,8 @@ export const FALLBACK_PORTAL_TODOS: PortalTodo[] = [
     external: true,
     actionLabel: "Follow on LinkedIn",
     showEmailHint: false,
+    phase: "sales_ready",
+    completionType: "agent",
   },
   {
     id: "facebook_follow",
@@ -88,6 +116,8 @@ export const FALLBACK_PORTAL_TODOS: PortalTodo[] = [
     external: true,
     actionLabel: "Follow on Facebook",
     showEmailHint: false,
+    phase: "sales_ready",
+    completionType: "agent",
   },
 ];
 
@@ -99,6 +129,9 @@ interface PortalTodoResponse {
   external: boolean;
   actionLabel: string;
   showEmailHint: boolean;
+  phase?: PortalTodoPhase;
+  completionType?: PortalTodoCompletionType;
+  completed?: boolean;
 }
 
 function mapPortalTodo(row: PortalTodoResponse): PortalTodo {
@@ -110,6 +143,9 @@ function mapPortalTodo(row: PortalTodoResponse): PortalTodo {
     external: row.external,
     actionLabel: row.actionLabel,
     showEmailHint: row.showEmailHint,
+    phase: row.phase ?? "on_board",
+    completionType: row.completionType ?? "agent",
+    completed: row.completed,
   };
 }
 
@@ -156,23 +192,47 @@ export function isRequiredFormTodo(todoId: string): boolean {
   return (REQUIRED_FORM_TODO_IDS as readonly string[]).includes(todoId);
 }
 
+export interface ResolveTodoOptions {
+  icaSubmitted?: boolean;
+  w9Submitted?: boolean;
+  directDepositSubmitted?: boolean;
+}
+
+/**
+ * Combines the server-resolved completion with local signals: metadata
+ * check-offs (fresh after completePortalTodo) and the form hooks used as a
+ * fallback when the API doesn't report completion.
+ */
+export function isTodoCompleted(
+  user: User | null,
+  todo: PortalTodo,
+  options?: ResolveTodoOptions,
+): boolean {
+  if (todo.completed) return true;
+  if (todo.id === "ica_setup" && options?.icaSubmitted) return true;
+  if (todo.id === "w9_setup" && options?.w9Submitted) return true;
+  if (todo.id === "direct_deposit_setup" && options?.directDepositSubmitted) return true;
+  return isPortalTodoCompleted(user, todo.id);
+}
+
 export function getPendingPortalTodos(
   user: User | null,
   todos: PortalTodo[],
-  options?: { icaSubmitted?: boolean; w9Submitted?: boolean; directDepositSubmitted?: boolean },
+  options?: ResolveTodoOptions,
 ): PortalTodo[] {
-  return todos.filter((todo) => {
-    if (todo.id === "ica_setup" && options?.icaSubmitted) {
-      return false;
-    }
-    if (todo.id === "w9_setup" && options?.w9Submitted) {
-      return false;
-    }
-    if (todo.id === "direct_deposit_setup" && options?.directDepositSubmitted) {
-      return false;
-    }
-    return !isPortalTodoCompleted(user, todo.id);
-  });
+  return todos.filter((todo) => !isTodoCompleted(user, todo, options));
+}
+
+export function groupTodosByPhase(todos: PortalTodo[]): Map<PortalTodoPhase, PortalTodo[]> {
+  const groups = new Map<PortalTodoPhase, PortalTodo[]>();
+  for (const { id } of PORTAL_TODO_PHASES) {
+    groups.set(id, []);
+  }
+  for (const todo of todos) {
+    const group = groups.get(todo.phase) ?? groups.get("on_board")!;
+    group.push(todo);
+  }
+  return groups;
 }
 
 export async function completePortalTodo(todoId: string): Promise<void> {

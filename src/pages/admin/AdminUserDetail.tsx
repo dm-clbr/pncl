@@ -1,19 +1,40 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, UserRound } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Circle, ExternalLink, UserRound } from "lucide-react";
 import AdminOnboardingDetailsPanel from "@/components/admin/AdminOnboardingDetailsPanel";
 import AdminUserDocumentsList from "@/components/admin/AdminUserDocumentsList";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   backfillGoogleRecovery,
   getAdminUserProfile,
+  reactivateGoogleUser,
   sendGmailVerificationEmail,
+  setUserTodoCompletion,
+  type AdminPortalTodoPhase,
   type AdminUserProfileDetail,
+  type AdminUserTodoStatus,
   type GoogleWorkspaceStatus,
 } from "@/lib/admin-api";
 import { formatRoleLabel } from "@/lib/roles";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
+
+const CHECKLIST_PHASES: { value: AdminPortalTodoPhase; label: string }[] = [
+  { value: "on_board", label: "On-Board" },
+  { value: "pre_license", label: "Pre-License" },
+  { value: "licensing", label: "Licensing" },
+  { value: "sales_ready", label: "Sales Ready" },
+];
+
+function todoCompletionNote(todo: AdminUserTodoStatus): string | null {
+  if (todo.completionType === "auto" && todo.completed && !todo.manuallyCompleted) {
+    return "Auto-completed from data";
+  }
+  if (todo.completionType === "admin") {
+    return "Admin step";
+  }
+  return null;
+}
 
 function formatDateTime(value: string | null | undefined): string {
   if (!value) return "—";
@@ -117,6 +138,8 @@ export default function AdminUserDetail() {
   const [error, setError] = useState<string | null>(null);
   const [sendingGmailVerification, setSendingGmailVerification] = useState(false);
   const [syncingGoogleRecovery, setSyncingGoogleRecovery] = useState(false);
+  const [reactivatingGoogle, setReactivatingGoogle] = useState(false);
+  const [togglingTodoSlug, setTogglingTodoSlug] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = "User profile — PNCL Admin";
@@ -167,13 +190,21 @@ export default function AdminUserDetail() {
   };
 
   const agent = profile?.agent;
-  const canSendGmailVerification = Boolean(
+  const hasGoogleWorkspaceAccount = Boolean(
     agent?.onboardingId
-      && agent.personalEmail
       && agent.onboarding?.workspaceEmail
+      && agent.googleWorkspaceStatus !== "not_found",
+  );
+  const canSendGmailVerification = Boolean(
+    hasGoogleWorkspaceAccount
+      && agent?.personalEmail
       && agent.googleWorkspaceStatus === "auto_suspended",
   );
-  const canSyncGoogleRecovery = canSendGmailVerification;
+  const canSyncGoogleRecovery = hasGoogleWorkspaceAccount;
+  const canReactivateGoogle = Boolean(
+    hasGoogleWorkspaceAccount
+      && (agent?.googleWorkspaceStatus === "auto_suspended" || agent?.googleWorkspaceStatus === "suspended"),
+  );
   const googleWorkspace = profile?.googleWorkspace;
   const recoveryEmailIsExpected = recoveryEmailMatches(
     googleWorkspace?.recoveryEmail,
@@ -225,6 +256,53 @@ export default function AdminUserDetail() {
       toast.error(err instanceof Error ? err.message : "Unable to sync Google recovery info");
     } finally {
       setSyncingGoogleRecovery(false);
+    }
+  };
+
+  const handleToggleTodo = async (todo: AdminUserTodoStatus) => {
+    const token = session?.access_token;
+    if (!token || !agent) return;
+
+    const next = !todo.completed;
+    setTogglingTodoSlug(todo.slug);
+    try {
+      await setUserTodoCompletion(token, { userId: agent.id, slug: todo.slug, completed: next });
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              todos: prev.todos.map((item) =>
+                item.slug === todo.slug
+                  ? { ...item, completed: next, manuallyCompleted: next }
+                  : item,
+              ),
+            }
+          : prev,
+      );
+      toast.success(next ? `"${todo.title}" marked complete.` : `"${todo.title}" marked incomplete.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to update checklist item");
+    } finally {
+      setTogglingTodoSlug(null);
+    }
+  };
+
+  const handleReactivateGoogle = async () => {
+    const token = session?.access_token;
+    if (!token || !agent) return;
+
+    if (!window.confirm(`Reactivate ${agent.email} in Google Workspace?`)) return;
+
+    setReactivatingGoogle(true);
+    try {
+      const result = await reactivateGoogleUser(token, { userId: agent.id });
+      toast.success(result.message);
+      const refreshed = await getAdminUserProfile(token, agent.id);
+      setProfile(refreshed);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to reactivate Google account");
+    } finally {
+      setReactivatingGoogle(false);
     }
   };
 
@@ -304,14 +382,26 @@ export default function AdminUserDetail() {
                 <p>Live recovery contact info stored on the agent&apos;s Google account.</p>
               </div>
               {canSyncGoogleRecovery && (
-                <button
-                  type="button"
-                  className="admin-secondary-btn"
-                  disabled={syncingGoogleRecovery}
-                  onClick={() => void handleSyncGoogleRecovery()}
-                >
-                  {syncingGoogleRecovery ? "Syncing…" : "Sync Google recovery"}
-                </button>
+                <div className="admin-action-row">
+                  {canReactivateGoogle && (
+                    <button
+                      type="button"
+                      className="admin-primary-btn"
+                      disabled={reactivatingGoogle}
+                      onClick={() => void handleReactivateGoogle()}
+                    >
+                      {reactivatingGoogle ? "Reactivating…" : "Reactivate Google account"}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="admin-secondary-btn"
+                    disabled={syncingGoogleRecovery}
+                    onClick={() => void handleSyncGoogleRecovery()}
+                  >
+                    {syncingGoogleRecovery ? "Syncing…" : "Sync Google recovery"}
+                  </button>
+                </div>
               )}
             </div>
 
@@ -413,6 +503,32 @@ export default function AdminUserDetail() {
                 {profileField("Hoodie size", profile.portalProfile.hoodieSize)}
                 {profileField("Waist size", profile.portalProfile.waistSize)}
                 {profileField("Shoe size", profile.portalProfile.shoeSize)}
+                {profileField("NPN", profile.portalProfile.npn)}
+                {profileField("E&O policy number", profile.portalProfile.eoPolicyNumber)}
+                {profileField(
+                  "State licenses",
+                  profile.portalProfile.stateLicenses.length > 0
+                    ? profile.portalProfile.stateLicenses.join(", ")
+                    : null,
+                )}
+                <div className="admin-genesis-details-item">
+                  <dt>Driver&apos;s license</dt>
+                  <dd>
+                    {profile.portalProfile.driversLicenseUrl ? (
+                      <a
+                        href={profile.portalProfile.driversLicenseUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="admin-secondary-link"
+                      >
+                        View upload
+                        <ExternalLink size={13} aria-hidden="true" />
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </dd>
+                </div>
                 <div className="admin-genesis-details-item">
                   <dt>Profile updated</dt>
                   <dd>{formatDateTime(profile.portalProfile.updatedAt)}</dd>
@@ -420,6 +536,69 @@ export default function AdminUserDetail() {
               </dl>
             ) : (
               <p className="admin-empty">This user has not saved a portal profile yet.</p>
+            )}
+          </div>
+
+          <div className="admin-user-profile-section">
+            <div className="admin-panel-head">
+              <div>
+                <h2>Onboarding checklist</h2>
+                <p>
+                  Check off steps for this agent — including admin-completed steps like Sure LC
+                  and carrier assignment requests. Auto-completed items resolve from saved data.
+                </p>
+              </div>
+            </div>
+            {profile.todos.length === 0 ? (
+              <p className="admin-empty">No published checklist items.</p>
+            ) : (
+              <div className="admin-user-todo-phases">
+                {CHECKLIST_PHASES.map((phase) => {
+                  const items = profile.todos.filter((todo) => todo.phase === phase.value);
+                  if (items.length === 0) return null;
+                  const doneCount = items.filter((todo) => todo.completed).length;
+                  return (
+                    <div key={phase.value} className="admin-user-todo-phase">
+                      <div className="admin-user-todo-phase-head">
+                        <h3>{phase.label}</h3>
+                        <span>{doneCount}/{items.length}</span>
+                      </div>
+                      <ul className="admin-user-todo-list">
+                        {items.map((todo) => {
+                          const note = todoCompletionNote(todo);
+                          const lockedAutoComplete =
+                            todo.completionType === "auto" && todo.completed && !todo.manuallyCompleted;
+                          return (
+                            <li key={todo.slug} className={todo.completed ? "done" : undefined}>
+                              <button
+                                type="button"
+                                className="admin-user-todo-toggle"
+                                disabled={togglingTodoSlug === todo.slug || lockedAutoComplete}
+                                onClick={() => void handleToggleTodo(todo)}
+                                aria-label={
+                                  todo.completed
+                                    ? `Mark "${todo.title}" incomplete`
+                                    : `Mark "${todo.title}" complete`
+                                }
+                              >
+                                {todo.completed ? (
+                                  <CheckCircle2 size={17} aria-hidden="true" />
+                                ) : (
+                                  <Circle size={17} aria-hidden="true" />
+                                )}
+                              </button>
+                              <div className="admin-user-todo-body">
+                                <span className="admin-user-todo-title">{todo.title}</span>
+                                {note && <span className="admin-user-todo-note">{note}</span>}
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
 

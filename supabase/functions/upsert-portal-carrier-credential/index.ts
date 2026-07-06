@@ -66,6 +66,7 @@ serve(async (req) => {
       carrier_id: payload.carrierId,
       username: payload.username,
       password_encrypted: passwordEncrypted,
+      writing_number: payload.writingNumber ?? existingRecord?.writing_number ?? "",
     };
 
     const { data, error } = await adminClient

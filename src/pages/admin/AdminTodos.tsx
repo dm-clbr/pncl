@@ -15,9 +15,44 @@ import {
   useAdminTodos,
   type AdminPortalTodoSummary,
 } from "@/hooks/useAdminTodos";
-import type { UpsertPortalTodoPayload } from "@/lib/admin-api";
+import type {
+  AdminPortalTodoCompletionType,
+  AdminPortalTodoPhase,
+  UpsertPortalTodoPayload,
+} from "@/lib/admin-api";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
+
+const PHASE_OPTIONS: { value: AdminPortalTodoPhase; label: string }[] = [
+  { value: "on_board", label: "On-Board" },
+  { value: "pre_license", label: "Pre-License" },
+  { value: "licensing", label: "Licensing" },
+  { value: "sales_ready", label: "Sales Ready" },
+];
+
+const COMPLETION_TYPE_OPTIONS: { value: AdminPortalTodoCompletionType; label: string }[] = [
+  { value: "agent", label: "Agent checks it off" },
+  { value: "admin", label: "PNCL admin checks it off" },
+  { value: "auto", label: "Auto-completed from data" },
+];
+
+const AUTO_KEY_OPTIONS: { value: string; label: string }[] = [
+  { value: "account_created", label: "Portal account created" },
+  { value: "ica", label: "ICA signed" },
+  { value: "w9", label: "W-9 submitted" },
+  { value: "direct_deposit", label: "Direct deposit submitted" },
+  { value: "profile", label: "Portal profile saved" },
+  { value: "drivers_license", label: "Driver's license uploaded" },
+  { value: "npn", label: "NPN recorded" },
+  { value: "eo_policy", label: "E&O policy number recorded" },
+  { value: "state_licenses", label: "State license added" },
+  { value: "writing_numbers", label: "Carrier writing number recorded" },
+  { value: "carrier_credentials", label: "Carrier credentials saved" },
+];
+
+function phaseLabel(phase: AdminPortalTodoPhase): string {
+  return PHASE_OPTIONS.find((option) => option.value === phase)?.label ?? phase;
+}
 
 type TodoFormState = {
   id?: string;
@@ -29,6 +64,9 @@ type TodoFormState = {
   actionLabel: string;
   showEmailHint: boolean;
   published: boolean;
+  phase: AdminPortalTodoPhase;
+  completionType: AdminPortalTodoCompletionType;
+  autoKey: string;
 };
 
 const EMPTY_FORM: TodoFormState = {
@@ -40,6 +78,9 @@ const EMPTY_FORM: TodoFormState = {
   actionLabel: "",
   showEmailHint: true,
   published: true,
+  phase: "on_board",
+  completionType: "agent",
+  autoKey: "",
 };
 
 function slugify(value: string): string {
@@ -62,6 +103,9 @@ function toFormState(todo: AdminPortalTodoSummary): TodoFormState {
     actionLabel: todo.actionLabel,
     showEmailHint: todo.showEmailHint,
     published: todo.published,
+    phase: todo.phase,
+    completionType: todo.completionType,
+    autoKey: todo.autoKey ?? "",
   };
 }
 
@@ -76,6 +120,9 @@ function toPayload(form: TodoFormState): UpsertPortalTodoPayload {
     actionLabel: form.actionLabel.trim(),
     showEmailHint: form.showEmailHint,
     published: form.published,
+    phase: form.phase,
+    completionType: form.completionType,
+    autoKey: form.completionType === "auto" ? form.autoKey.trim() || null : null,
   };
 }
 
@@ -290,13 +337,68 @@ export default function AdminTodos() {
           </label>
 
           <label className="admin-field">
-            <span>Link URL</span>
+            <span>Phase</span>
+            <select
+              value={form.phase}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, phase: event.target.value as AdminPortalTodoPhase }))
+              }
+            >
+              {PHASE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="admin-field">
+            <span>Completed by</span>
+            <select
+              value={form.completionType}
+              onChange={(event) =>
+                setForm((prev) => ({
+                  ...prev,
+                  completionType: event.target.value as AdminPortalTodoCompletionType,
+                }))
+              }
+            >
+              {COMPLETION_TYPE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          {form.completionType === "auto" && (
+            <label className="admin-field">
+              <span>Auto-completion rule</span>
+              <select
+                value={form.autoKey}
+                onChange={(event) => setForm((prev) => ({ ...prev, autoKey: event.target.value }))}
+                required
+              >
+                <option value="">Select a rule...</option>
+                {AUTO_KEY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <span className="admin-field-hint">
+                The step checks itself off when this data exists for the agent.
+              </span>
+            </label>
+          )}
+
+          <label className="admin-field">
+            <span>Link URL (optional)</span>
             <input
               type="url"
               value={form.href}
               onChange={(event) => setForm((prev) => ({ ...prev, href: event.target.value }))}
               placeholder="https://..."
-              required
             />
           </label>
 
@@ -307,7 +409,7 @@ export default function AdminTodos() {
               value={form.actionLabel}
               onChange={(event) => setForm((prev) => ({ ...prev, actionLabel: event.target.value }))}
               placeholder="Go to LeadSpply"
-              required
+              required={Boolean(form.href.trim())}
             />
           </label>
 
@@ -359,6 +461,7 @@ export default function AdminTodos() {
             <thead>
               <tr>
                 <th>To-do</th>
+                <th>Phase</th>
                 <th>Completion</th>
                 <th>Status</th>
                 <th aria-label="Actions" />
@@ -375,6 +478,13 @@ export default function AdminTodos() {
                     <td>
                       <strong>{todo.title}</strong>
                       <span className="admin-todo-slug">{todo.slug}</span>
+                    </td>
+                    <td>
+                      <span className="admin-todo-phase">{phaseLabel(todo.phase)}</span>
+                      <span className="admin-todo-slug">
+                        {COMPLETION_TYPE_OPTIONS.find((option) => option.value === todo.completionType)?.label
+                          ?? todo.completionType}
+                      </span>
                     </td>
                     <td>
                       <CompletionCell todo={todo} onViewUsers={setCompletionTodo} />

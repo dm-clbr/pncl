@@ -3,13 +3,16 @@ import { Link } from "react-router-dom";
 import {
   ArrowUpRight,
   ChevronDown,
-  Circle,
+  ClipboardList,
   GraduationCap,
   LogOut,
   Shield,
   X,
 } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
+import PortalOnboardingChecklist, {
+  PortalUrgentIcon,
+} from "@/components/PortalOnboardingChecklist";
 import { useAuth } from "@/contexts/AuthContext";
 import { PORTAL_SECTIONS } from "@/lib/portal-links";
 import { usePortalDashboardTabs } from "@/hooks/usePortalDashboardTabs";
@@ -19,9 +22,8 @@ import PortalReferralPanel from "@/components/PortalReferralPanel";
 import { hasAdminConsoleAccess, isGenesisAdmin } from "@/lib/roles";
 import {
   completePortalTodo,
-  getPendingPortalTodos,
   isRequiredFormTodo,
-  type PortalTodo,
+  isTodoCompleted,
 } from "@/lib/portal-todos";
 import { usePortalTodos } from "@/hooks/usePortalTodos";
 import { usePortalW9 } from "@/hooks/usePortalW9";
@@ -63,23 +65,6 @@ const PORTAL_SOCIAL_LINKS = [
     iconSrc: "/linkedin.svg",
   },
 ] as const;
-
-function PortalUrgentIcon({ size = 22 }: { size?: number }) {
-  return (
-    <span className="portal-urgent-icon" aria-hidden="true">
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="10" className="portal-urgent-icon-circle" />
-        <path
-          className="portal-urgent-icon-mark"
-          d="M12 8v5"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-        />
-        <circle cx="12" cy="16.5" r="1.25" className="portal-urgent-icon-dot" />
-      </svg>
-    </span>
-  );
-}
 
 function PortalSubLink({
   link,
@@ -149,76 +134,6 @@ function PortalTile({
   );
 }
 
-function PortalTodoItem({
-  todo,
-  agentEmail,
-  completing,
-  onComplete,
-}: {
-  todo: PortalTodo;
-  agentEmail: string;
-  completing: boolean;
-  onComplete: (todoId: string) => void;
-}) {
-  const isRequiredForm = isRequiredFormTodo(todo.id);
-  const actionContent = (
-    <>
-      {todo.actionLabel}
-      <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
-    </>
-  );
-
-  return (
-    <div className="portal-todo-item urgent">
-      {!isRequiredForm && (
-        <button
-          type="button"
-          className="portal-todo-check"
-          onClick={() => onComplete(todo.id)}
-          disabled={completing}
-          aria-label={`Mark "${todo.title}" as complete`}
-        >
-          {completing ? (
-            <span className="onboarding-spinner portal-todo-check-spinner" aria-hidden="true" />
-          ) : (
-            <Circle size={20} strokeWidth={2} aria-hidden="true" />
-          )}
-        </button>
-      )}
-
-      <div className={`portal-todo-copy${isRequiredForm ? " portal-todo-copy-required" : ""}`}>
-        <div className="portal-todo-title-row">
-          <PortalUrgentIcon size={16} />
-          <strong>{todo.title}</strong>
-          <span className="portal-todo-urgent-tag">
-            {isRequiredForm ? "Required — top priority" : "Do this ASAP"}
-          </span>
-        </div>
-        <p>{todo.description}</p>
-        {agentEmail && todo.showEmailHint !== false && (
-          <p className="portal-todo-email">
-            Use <span>{agentEmail}</span> when you sign up.
-          </p>
-        )}
-        {todo.external ? (
-          <a
-            href={todo.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="portal-todo-link"
-          >
-            {actionContent}
-          </a>
-        ) : (
-          <Link to={todo.href} className="portal-todo-link">
-            {actionContent}
-          </Link>
-        )}
-      </div>
-    </div>
-  );
-}
-
 export default function PortalDashboard() {
   const { user: authUser, signOut } = useAuth();
   const [portalUser, setPortalUser] = useState(authUser);
@@ -226,6 +141,7 @@ export default function PortalDashboard() {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [completingTodoId, setCompletingTodoId] = useState<string | null>(null);
   const [dismissingGenesisNotice, setDismissingGenesisNotice] = useState(false);
+  const [checklistOpen, setChecklistOpen] = useState(false);
 
   const { incentives, loading: incentivesLoading } = usePortalIncentives();
   const { assets: brandAssets, loading: brandAssetsLoading } = usePortalBrandAssets();
@@ -236,10 +152,23 @@ export default function PortalDashboard() {
   const { submitted: directDepositSubmitted } = usePortalDirectDeposit();
   const { photoUrl, initials, displayName } = usePortalProfile(portalUser);
 
-  const pendingTodos = useMemo(
-    () => getPendingPortalTodos(portalUser, portalTodos, { icaSubmitted, w9Submitted, directDepositSubmitted }),
+  const resolvedTodos = useMemo(
+    () =>
+      portalTodos.map((todo) => ({
+        ...todo,
+        completed: isTodoCompleted(portalUser, todo, {
+          icaSubmitted,
+          w9Submitted,
+          directDepositSubmitted,
+        }),
+      })),
     [portalUser, portalTodos, icaSubmitted, w9Submitted, directDepositSubmitted],
   );
+  const pendingTodos = useMemo(
+    () => resolvedTodos.filter((todo) => !todo.completed),
+    [resolvedTodos],
+  );
+  const completedTodoCount = resolvedTodos.length - pendingTodos.length;
   const pendingRequiredForms = pendingTodos.some((todo) => isRequiredFormTodo(todo.id));
   const showGenesisNotice = shouldShowGenesisNotice(portalUser);
 
@@ -303,10 +232,17 @@ export default function PortalDashboard() {
   }, []);
 
   useEffect(() => {
-    if (pendingTodos.length > 0) {
-      setOpenSections((prev) => ({ ...prev, todos: true }));
-    }
-  }, [pendingTodos.length]);
+    if (!checklistOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setChecklistOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [checklistOpen]);
 
   const toggleSection = (id: string) => {
     setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -410,49 +346,30 @@ export default function PortalDashboard() {
           )}
 
           {pendingTodos.length > 0 && (
-            <div className="portal-urgent-banner" role="status">
+            <button
+              type="button"
+              className="portal-urgent-banner portal-urgent-banner-btn"
+              onClick={() => setChecklistOpen(true)}
+            >
               <PortalUrgentIcon />
               <p>
-                <strong>{pendingTodos.length} urgent item{pendingTodos.length === 1 ? "" : "s"}</strong>
+                <strong>{pendingTodos.length} onboarding item{pendingTodos.length === 1 ? "" : "s"} left</strong>
                 <span>
                   {pendingRequiredForms
                     ? "Complete your required forms first — sign your ICA, submit your W-9, and set up direct deposit before getting started."
-                    : "Complete your setup steps before getting started."}
+                    : "Open your checklist and keep working toward sales ready."}
                 </span>
               </p>
-            </div>
+              <ArrowUpRight size={18} strokeWidth={2.5} aria-hidden="true" />
+            </button>
           )}
 
-          <PortalReferralPanel />
+          <div className="portal-columns">
+            <div className="portal-main">
+              <PortalReferralPanel />
 
-          <div className="portal-tiles">
-            {pendingTodos.length > 0 && (
-              <PortalTile
-                label="Getting started"
-                count={pendingTodos.length}
-                urgent
-                open={Boolean(openSections.todos)}
-                onToggle={() => toggleSection("todos")}
-              >
-                <p className="portal-panel-note">
-                  Complete these steps when you first join PNCL.
-                  {pendingRequiredForms
-                    ? " Required forms must be submitted before marking other items done."
-                    : " Mark each item done once you\u2019ve finished it."}
-                </p>
-                {pendingTodos.map((todo) => (
-                  <PortalTodoItem
-                    key={todo.id}
-                    todo={todo}
-                    agentEmail={agentEmail}
-                    completing={completingTodoId === todo.id}
-                    onComplete={(id) => void handleCompleteTodo(id)}
-                  />
-                ))}
-              </PortalTile>
-            )}
-
-            {displaySections.map((section) => {
+              <div className="portal-tiles">
+                {displaySections.map((section) => {
               const count = isLinksDashboardSection(section)
                 ? section.links.length
                 : isDownloadsDashboardSection(section)
@@ -546,8 +463,70 @@ export default function PortalDashboard() {
                 </a>
               ))}
             </div>
+              </div>
+            </div>
+
+            {resolvedTodos.length > 0 && (
+              <aside className="portal-checklist-rail" aria-label="Onboarding checklist">
+                <PortalOnboardingChecklist
+                  todos={resolvedTodos}
+                  agentEmail={agentEmail}
+                  completingTodoId={completingTodoId}
+                  onComplete={(id) => void handleCompleteTodo(id)}
+                />
+              </aside>
+            )}
           </div>
         </div>
+
+        {resolvedTodos.length > 0 && (
+          <>
+            {checklistOpen && (
+              <div
+                className="portal-checklist-overlay"
+                onClick={() => setChecklistOpen(false)}
+                aria-hidden="true"
+              />
+            )}
+            <div
+              className={`portal-checklist-drawer${checklistOpen ? " open" : ""}`}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Onboarding checklist"
+              aria-hidden={!checklistOpen}
+            >
+              <button
+                type="button"
+                className="portal-checklist-drawer-close"
+                onClick={() => setChecklistOpen(false)}
+                aria-label="Close checklist"
+                tabIndex={checklistOpen ? 0 : -1}
+              >
+                <X size={18} strokeWidth={2.5} aria-hidden="true" />
+              </button>
+              <PortalOnboardingChecklist
+                todos={resolvedTodos}
+                agentEmail={agentEmail}
+                completingTodoId={completingTodoId}
+                onComplete={(id) => void handleCompleteTodo(id)}
+              />
+            </div>
+
+            {!checklistOpen && (
+              <button
+                type="button"
+                className={`portal-checklist-fab${pendingTodos.length > 0 ? " has-pending" : ""}`}
+                onClick={() => setChecklistOpen(true)}
+              >
+                <ClipboardList size={18} strokeWidth={2.25} aria-hidden="true" />
+                Checklist
+                <span className="portal-checklist-fab-count">
+                  {completedTodoCount}/{resolvedTodos.length}
+                </span>
+              </button>
+            )}
+          </>
+        )}
       </main>
     </div>
   );

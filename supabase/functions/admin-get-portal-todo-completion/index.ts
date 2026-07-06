@@ -2,12 +2,13 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requireAdmin } from "../_shared/adminAuth.ts";
 import { buildAgentSummaries, listPortalUsers } from "../_shared/adminAgents.ts";
 import {
-  isPortalTodoCompletedForUser,
+  computeAutoCompletionSets,
+  getCompletedTodosFromMetadata,
+  isTodoCompleteForUser,
   mapPortalTodoRecord,
   type PortalTodoRecord,
   validateTodoCompletionQuery,
 } from "../_shared/portalTodos.ts";
-import { ICA_TODO_SLUG, isIcaSignedForUser, listIcaSignedUserIds } from "../_shared/portalIca.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
 
@@ -44,9 +45,17 @@ serve(async (req) => {
     ]);
 
     const usersById = new Map(users.map((user) => [user.id, user]));
-    const icaSignedUserIds = todo.slug === ICA_TODO_SLUG
-      ? await listIcaSignedUserIds(adminClient, users.map((user) => user.id))
-      : null;
+    const todoRecord = todoRow as PortalTodoRecord;
+    const autoKeys = new Set(
+      todoRecord.completion_type === "auto" && todoRecord.auto_key
+        ? [todoRecord.auto_key]
+        : [],
+    );
+    const autoSets = await computeAutoCompletionSets(
+      adminClient,
+      autoKeys,
+      users.map((user) => user.id),
+    );
     const completed = [];
     const pending = [];
 
@@ -58,9 +67,15 @@ serve(async (req) => {
         email: agent.email,
       };
 
-      const isCompleted = todo.slug === ICA_TODO_SLUG && icaSignedUserIds
-        ? isIcaSignedForUser(agent.id, user?.user_metadata, icaSignedUserIds)
-        : user && isPortalTodoCompletedForUser(user, todo.slug);
+      const completedMetadata = getCompletedTodosFromMetadata(
+        user?.user_metadata as Record<string, unknown> | undefined,
+      );
+      const isCompleted = isTodoCompleteForUser(
+        todoRecord,
+        agent.id,
+        completedMetadata,
+        autoSets,
+      );
 
       if (isCompleted) {
         completed.push(entry);

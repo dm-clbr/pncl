@@ -4,6 +4,7 @@ export interface PortalCarrierCredentialRecord {
   carrier_id: string;
   username: string;
   password_encrypted: string | null;
+  writing_number: string;
   created_at: string;
   updated_at: string;
 }
@@ -12,6 +13,7 @@ export interface UpsertCarrierCredentialPayload {
   carrierId: string;
   username: string;
   password?: string;
+  writingNumber?: string;
 }
 
 export interface CarrierCredentialItem {
@@ -20,6 +22,7 @@ export interface CarrierCredentialItem {
   loginUrl: string | null;
   username: string | null;
   password: string | null;
+  writingNumber: string | null;
 }
 
 function optionalText(value: unknown): string {
@@ -35,6 +38,9 @@ export function validateUpsertCarrierCredentialPayload(body: unknown): UpsertCar
   const carrierId = optionalText(data.carrierId);
   const username = optionalText(data.username);
   const password = typeof data.password === "string" ? data.password : undefined;
+  const writingNumber = typeof data.writingNumber === "string"
+    ? data.writingNumber.trim()
+    : undefined;
 
   if (!carrierId) {
     throw new Error("Carrier is required");
@@ -44,7 +50,7 @@ export function validateUpsertCarrierCredentialPayload(body: unknown): UpsertCar
     throw new Error("Username is required");
   }
 
-  return { carrierId, username, password };
+  return { carrierId, username, password, writingNumber };
 }
 
 export function mapCredentialRecord(row: PortalCarrierCredentialRecord) {
@@ -54,6 +60,7 @@ export function mapCredentialRecord(row: PortalCarrierCredentialRecord) {
     carrierId: row.carrier_id,
     username: row.username,
     hasPassword: Boolean(row.password_encrypted),
+    writingNumber: row.writing_number?.trim() ? row.writing_number.trim() : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

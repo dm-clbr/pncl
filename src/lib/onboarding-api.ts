@@ -17,6 +17,8 @@ export interface SubmitOnboardingInput {
   dateOfBirth: string;
   ssn: string;
   stateOfResidence: string;
+  driversLicense?: string;
+  profilePhoto?: string;
   uplineNetwork: string;
   hasLicense: string;
   npn: string;
@@ -101,6 +103,8 @@ export async function submitOnboarding(
       hasEoInsurance: input.hasEoInsurance,
       referralInviteId: input.referralInviteId,
       contractSignatureId: input.contractSignatureId,
+      driversLicenseImageBase64: input.driversLicense || undefined,
+      profilePhotoImageBase64: input.profilePhoto || undefined,
     }),
   });
 

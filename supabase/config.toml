@@ -75,6 +75,9 @@ verify_jwt = true
 [functions.admin-backfill-google-recovery]
 verify_jwt = true
 
+[functions.admin-reactivate-google-user]
+verify_jwt = true
+
 [functions.admin-update-user-email]
 verify_jwt = true
 
@@ -177,6 +180,9 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.admin-get-portal-todo-completion]
+verify_jwt = true
+
+[functions.admin-set-user-todo-completion]
 verify_jwt = true
 
 [functions.admin-upload-dashboard-file]

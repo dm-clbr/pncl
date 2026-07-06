@@ -33,6 +33,9 @@ serve(async (req) => {
           action_label: payload.actionLabel,
           show_email_hint: payload.showEmailHint ?? true,
           published: payload.published ?? true,
+          phase: payload.phase,
+          completion_type: payload.completionType,
+          auto_key: payload.autoKey,
           ...(payload.sortOrder !== undefined ? { sort_order: payload.sortOrder } : {}),
           updated_at: now,
         })
@@ -76,6 +79,9 @@ serve(async (req) => {
         action_label: payload.actionLabel,
         show_email_hint: payload.showEmailHint ?? true,
         published: payload.published ?? true,
+        phase: payload.phase,
+        completion_type: payload.completionType,
+        auto_key: payload.autoKey,
         sort_order: sortOrder,
         updated_at: now,
       })
