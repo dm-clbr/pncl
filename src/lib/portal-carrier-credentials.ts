@@ -7,6 +7,8 @@ export interface CarrierCredentialItem {
   username: string | null;
   password: string | null;
   writingNumber: string | null;
+  /** Set by admins once PNCL submits the agent's carrier application. */
+  applicationSubmitted?: boolean;
 }
 
 export interface UpsertCarrierCredentialInput {

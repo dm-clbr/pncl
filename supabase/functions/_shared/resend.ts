@@ -330,6 +330,191 @@ export async function sendGenesisOnboardingNotificationEmail(input: {
   });
 }
 
+export function buildLicensingCompleteNotificationEmailHtml(input: {
+  agentName: string;
+  agentEmail: string;
+  npn: string;
+  eoPolicyNumber: string;
+  hasEoCertificate: boolean;
+  contractingUrl: string;
+}): string {
+  return `
+    <div style="font-family:sans-serif;max-width:560px;margin:0 auto;">
+      <h2 style="background:#0f0f0f;color:#fff;margin:0;padding:20px 24px;font-size:16px;">
+        Agent ready for contracting
+      </h2>
+      <div style="padding:24px;font-size:14px;color:#111;line-height:1.6;">
+        <p>
+          <strong>${input.agentName}</strong> has entered both their NPN and E&amp;O policy
+          number in PNCL Hub. Contracting can be initiated.
+        </p>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;margin:20px 0;">
+          <tr><td style="padding:6px 0;color:#555;">Agent</td><td style="padding:6px 0;"><strong>${input.agentName}</strong></td></tr>
+          <tr><td style="padding:6px 0;color:#555;">PNCL email</td><td style="padding:6px 0;">${input.agentEmail}</td></tr>
+          <tr><td style="padding:6px 0;color:#555;">NPN</td><td style="padding:6px 0;">${input.npn}</td></tr>
+          <tr><td style="padding:6px 0;color:#555;">E&amp;O policy number</td><td style="padding:6px 0;">${input.eoPolicyNumber}</td></tr>
+          <tr><td style="padding:6px 0;color:#555;">E&amp;O certificate</td><td style="padding:6px 0;">${input.hasEoCertificate ? "Uploaded" : "Not uploaded yet"}</td></tr>
+        </table>
+        <p style="margin:28px 0;">
+          <a href="${input.contractingUrl}"
+             style="display:inline-block;background:#c8ff00;color:#0f0f0f;padding:12px 20px;
+                    text-decoration:none;font-weight:600;border-radius:4px;">
+            Open contracting queue
+          </a>
+        </p>
+      </div>
+    </div>`;
+}
+
+export async function sendLicensingCompleteNotificationEmail(input: {
+  to: string;
+  agentName: string;
+  agentEmail: string;
+  npn: string;
+  eoPolicyNumber: string;
+  hasEoCertificate: boolean;
+  contractingUrl: string;
+}): Promise<void> {
+  await sendEmail({
+    to: input.to,
+    subject: `Ready for contracting: ${input.agentName}`,
+    html: buildLicensingCompleteNotificationEmailHtml(input),
+  });
+}
+
+export function buildIcaSignedNotificationEmailHtml(input: {
+  agentName: string;
+  agentEmail: string;
+  signedAt: string;
+  contractingUrl: string;
+}): string {
+  return `
+    <div style="font-family:sans-serif;max-width:560px;margin:0 auto;">
+      <h2 style="background:#0f0f0f;color:#fff;margin:0;padding:20px 24px;font-size:16px;">
+        ICA signed — comp attachment needed
+      </h2>
+      <div style="padding:24px;font-size:14px;color:#111;line-height:1.6;">
+        <p>
+          <strong>${input.agentName}</strong> (${input.agentEmail}) signed their Independent
+          Contractor Agreement in PNCL Hub on
+          ${formatGenesisNotificationDate(input.signedAt)}. Their comp attachment can now be sent.
+        </p>
+        <p style="margin:28px 0;">
+          <a href="${input.contractingUrl}"
+             style="display:inline-block;background:#c8ff00;color:#0f0f0f;padding:12px 20px;
+                    text-decoration:none;font-weight:600;border-radius:4px;">
+            Open contracting queue
+          </a>
+        </p>
+      </div>
+    </div>`;
+}
+
+export async function sendIcaSignedNotificationEmail(input: {
+  to: string;
+  agentName: string;
+  agentEmail: string;
+  signedAt: string;
+  contractingUrl: string;
+}): Promise<void> {
+  await sendEmail({
+    to: input.to,
+    subject: `ICA signed: ${input.agentName}`,
+    html: buildIcaSignedNotificationEmailHtml(input),
+  });
+}
+
+export function buildTicketSubmittedNotificationEmailHtml(input: {
+  agentName: string;
+  agentEmail: string;
+  ticketType: string;
+  subject: string;
+  description: string;
+  ticketsUrl: string;
+}): string {
+  return `
+    <div style="font-family:sans-serif;max-width:560px;margin:0 auto;">
+      <h2 style="background:#0f0f0f;color:#fff;margin:0;padding:20px 24px;font-size:16px;">
+        New support ticket
+      </h2>
+      <div style="padding:24px;font-size:14px;color:#111;line-height:1.6;">
+        <p>
+          <strong>${input.agentName}</strong> (${input.agentEmail}) submitted a ticket in PNCL Hub.
+        </p>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;margin:20px 0;">
+          <tr><td style="padding:6px 0;color:#555;">Type</td><td style="padding:6px 0;"><strong>${input.ticketType}</strong></td></tr>
+          <tr><td style="padding:6px 0;color:#555;">Subject</td><td style="padding:6px 0;">${input.subject}</td></tr>
+        </table>
+        <p style="white-space:pre-wrap;background:#f5f5f5;padding:14px;border-radius:4px;">${input.description}</p>
+        <p style="margin:28px 0;">
+          <a href="${input.ticketsUrl}"
+             style="display:inline-block;background:#c8ff00;color:#0f0f0f;padding:12px 20px;
+                    text-decoration:none;font-weight:600;border-radius:4px;">
+            Open ticket queue
+          </a>
+        </p>
+      </div>
+    </div>`;
+}
+
+export async function sendTicketSubmittedNotificationEmail(input: {
+  to: string;
+  agentName: string;
+  agentEmail: string;
+  ticketType: string;
+  subject: string;
+  description: string;
+  ticketsUrl: string;
+}): Promise<void> {
+  await sendEmail({
+    to: input.to,
+    subject: `New ticket: ${input.subject}`,
+    html: buildTicketSubmittedNotificationEmailHtml(input),
+  });
+}
+
+export function buildCompAttachmentAssignedEmailHtml(input: {
+  firstName: string;
+  title: string;
+  signUrl: string;
+}): string {
+  const greeting = input.firstName ? `Hi ${input.firstName},` : "Hi,";
+
+  return `
+    <div style="font-family:sans-serif;max-width:560px;margin:0 auto;">
+      <h2 style="background:#0f0f0f;color:#fff;margin:0;padding:20px 24px;font-size:16px;">
+        Your comp attachment is ready to sign
+      </h2>
+      <div style="padding:24px;font-size:14px;color:#111;line-height:1.6;">
+        <p>${greeting}</p>
+        <p>
+          PNCL has assigned your <strong>${input.title}</strong> in PNCL Hub. Review and sign it
+          so we know how to pay you.
+        </p>
+        <p style="margin:28px 0;">
+          <a href="${input.signUrl}"
+             style="display:inline-block;background:#c8ff00;color:#0f0f0f;padding:12px 20px;
+                    text-decoration:none;font-weight:600;border-radius:4px;">
+            Review &amp; sign
+          </a>
+        </p>
+      </div>
+    </div>`;
+}
+
+export async function sendCompAttachmentAssignedEmail(input: {
+  to: string;
+  firstName: string;
+  title: string;
+  signUrl: string;
+}): Promise<void> {
+  await sendEmail({
+    to: input.to,
+    subject: "Your PNCL comp attachment is ready to sign",
+    html: buildCompAttachmentAssignedEmailHtml(input),
+  });
+}
+
 export function buildGoogleAdminUserUrl(workspaceEmail: string): string {
   return `https://admin.google.com/ac/users/${encodeURIComponent(workspaceEmail)}`;
 }

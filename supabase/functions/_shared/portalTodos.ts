@@ -19,6 +19,7 @@ export const PORTAL_TODO_AUTO_KEYS = [
   "state_licenses",
   "writing_numbers",
   "carrier_credentials",
+  "disclosures",
 ] as const;
 export type PortalTodoAutoKey = (typeof PORTAL_TODO_AUTO_KEYS)[number];
 
@@ -285,6 +286,47 @@ export async function computeAutoCompletionSets(
           );
         }),
     );
+  }
+
+  if (autoKeys.has("disclosures")) {
+    tasks.push((async () => {
+      const { data: disclosureRows, error: disclosureError } = await adminClient
+        .from("portal_disclosures")
+        .select("id")
+        .eq("published", true);
+
+      if (disclosureError) throw new Error(disclosureError.message);
+
+      const publishedIds = new Set(((disclosureRows ?? []) as { id: string }[]).map((row) => row.id));
+      if (publishedIds.size === 0) {
+        sets.set("disclosures", new Set());
+        return;
+      }
+
+      const { data: ackRows, error: ackError } = await adminClient
+        .from("portal_disclosure_acknowledgments")
+        .select("user_id, disclosure_id")
+        .in("user_id", userIds);
+
+      if (ackError) throw new Error(ackError.message);
+
+      const ackCounts = new Map<string, Set<string>>();
+      for (const row of (ackRows ?? []) as { user_id: string; disclosure_id: string }[]) {
+        if (!publishedIds.has(row.disclosure_id)) continue;
+        const acked = ackCounts.get(row.user_id) ?? new Set<string>();
+        acked.add(row.disclosure_id);
+        ackCounts.set(row.user_id, acked);
+      }
+
+      sets.set(
+        "disclosures",
+        new Set(
+          [...ackCounts.entries()]
+            .filter(([, acked]) => acked.size >= publishedIds.size)
+            .map(([userId]) => userId),
+        ),
+      );
+    })());
   }
 
   if (autoKeys.has("writing_numbers") || autoKeys.has("carrier_credentials")) {

@@ -34,8 +34,14 @@ interface PortalProfileRow {
   profile_photo_path: string | null;
   npn: string | null;
   eo_policy_number: string | null;
+  eo_certificate_path: string | null;
   state_licenses: string[] | null;
   drivers_license_path: string | null;
+  address_line1: string | null;
+  address_city: string | null;
+  address_state: string | null;
+  address_zip: string | null;
+  county: string | null;
   updated_at: string;
 }
 
@@ -115,9 +121,58 @@ serve(async (req) => {
       driversLicenseUrl = licenseData?.signedUrl ?? null;
     }
 
+    let eoCertificateUrl: string | null = null;
+    if (profile?.eo_certificate_path) {
+      const { data: eoData } = await adminClient.storage
+        .from(PORTAL_PROFILE_DOCUMENTS_BUCKET)
+        .createSignedUrl(profile.eo_certificate_path, 3600);
+      eoCertificateUrl = eoData?.signedUrl ?? null;
+    }
+
     const completedTodos = getCompletedTodosFromMetadata(
       userData.user?.user_metadata as Record<string, unknown> | undefined,
     );
+
+    const [
+      { data: carrierRows },
+      { data: carrierStatusRows },
+      { data: carrierCredentialRows },
+    ] = await Promise.all([
+      adminClient
+        .from("portal_carriers")
+        .select("id, carrier")
+        .eq("published", true)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true }),
+      adminClient
+        .from("portal_carrier_statuses")
+        .select("carrier_id, application_submitted_at")
+        .eq("user_id", userId),
+      adminClient
+        .from("portal_carrier_credentials")
+        .select("carrier_id, username, writing_number")
+        .eq("user_id", userId),
+    ]);
+
+    const statusByCarrierId = new Map(
+      ((carrierStatusRows ?? []) as { carrier_id: string; application_submitted_at: string | null }[])
+        .map((row) => [row.carrier_id, row.application_submitted_at]),
+    );
+    const credentialByCarrierId = new Map(
+      ((carrierCredentialRows ?? []) as { carrier_id: string; username: string | null; writing_number: string | null }[])
+        .map((row) => [row.carrier_id, row]),
+    );
+
+    const carrierStatuses = ((carrierRows ?? []) as { id: string; carrier: string }[]).map((row) => {
+      const credential = credentialByCarrierId.get(row.id);
+      return {
+        carrierId: row.id,
+        carrier: row.carrier,
+        applicationSubmittedAt: statusByCarrierId.get(row.id) ?? null,
+        hasCredentials: Boolean(credential?.username?.trim()),
+        writingNumber: credential?.writing_number?.trim() || null,
+      };
+    });
 
     const todoRecords = (todoRows ?? []) as PortalTodoRecord[];
     const autoKeys = new Set(
@@ -215,8 +270,14 @@ serve(async (req) => {
             profilePhotoUrl,
             npn: profile.npn,
             eoPolicyNumber: profile.eo_policy_number,
+            eoCertificateUrl,
             stateLicenses: profile.state_licenses ?? [],
             driversLicenseUrl,
+            addressLine1: profile.address_line1,
+            addressCity: profile.address_city,
+            addressState: profile.address_state,
+            addressZip: profile.address_zip,
+            county: profile.county,
             updatedAt: profile.updated_at,
           }
         : null,
@@ -225,6 +286,7 @@ serve(async (req) => {
       completedPortalTodos: completedTodos,
       todos,
       documents,
+      carrierStatuses,
     });
   } catch (error) {
     if (error instanceof AdminAuthError) {

@@ -1,5 +1,5 @@
 import { NavLink, Outlet, Link } from "react-router-dom";
-import { ArrowLeft, Building2, CheckSquare, ClipboardList, Eye, FileText, GitBranch, GraduationCap, LayoutDashboard, LayoutGrid, Mail, Palette, Trophy, UserPlus, Users } from "lucide-react";
+import { ArrowLeft, Building2, CheckSquare, ClipboardCheck, ClipboardList, DollarSign, Eye, FileSignature, FileText, GitBranch, GraduationCap, LayoutDashboard, LayoutGrid, Mail, Palette, Receipt, Trophy, UserPlus, Users } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { isGenesisAdmin } from "@/lib/roles";
@@ -10,6 +10,10 @@ const FULL_ADMIN_NAV = [
   { to: "/portal/admin/hierarchy", label: "Hierarchy", icon: GitBranch, end: false },
   { to: "/portal/admin/users", label: "Users", icon: Users, end: false },
   { to: "/portal/admin/gmail-verification", label: "Gmail verification", icon: Mail, end: false },
+  { to: "/portal/admin/contracting", label: "Contracting", icon: FileSignature, end: false },
+  { to: "/portal/admin/lead-charges", label: "Lead charges", icon: Receipt, end: false },
+  { to: "/portal/admin/tickets", label: "Tickets", icon: ClipboardCheck, end: false },
+  { to: "/portal/admin/pay-policy", label: "Pay policy", icon: DollarSign, end: false },
   { to: "/portal/admin/users/new", label: "Add user", icon: UserPlus, end: false },
   { to: "/portal/admin/incentives", label: "Incentives", icon: Trophy, end: false },
   { to: "/portal/admin/brand-assets", label: "Brand assets", icon: Palette, end: false },

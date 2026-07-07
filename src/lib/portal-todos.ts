@@ -25,6 +25,27 @@ export const PORTAL_TODO_PHASES: { id: PortalTodoPhase; label: string }[] = [
   { id: "sales_ready", label: "Sales Ready" },
 ];
 
+/** An agent's current phase: first phase with an incomplete step, or complete. */
+export type PortalPhaseId = PortalTodoPhase | "complete";
+
+export const PORTAL_PHASE_LABELS: Record<PortalPhaseId, string> = {
+  on_board: "On-Board",
+  pre_license: "Pre-License",
+  licensing: "Licensing",
+  sales_ready: "Sales Ready",
+  complete: "Sales Ready ✓",
+};
+
+/** Derives the current phase from todos whose `completed` is already resolved. */
+export function derivePortalPhase(todos: PortalTodo[]): PortalPhaseId {
+  if (todos.length === 0) return "on_board";
+  for (const { id } of PORTAL_TODO_PHASES) {
+    const items = todos.filter((todo) => todo.phase === id);
+    if (items.some((todo) => !todo.completed)) return id;
+  }
+  return "complete";
+}
+
 /** Fallback when the API is unavailable (local dev without migration). */
 export const FALLBACK_PORTAL_TODOS: PortalTodo[] = [
   {

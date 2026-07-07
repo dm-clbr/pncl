@@ -17,6 +17,13 @@ export interface SyncOnboardingProfileAssetsInput {
   npn?: string | null;
   driversLicense?: OnboardingImagePayload;
   profilePhoto?: OnboardingImagePayload;
+  address?: {
+    line1: string | null;
+    city: string | null;
+    state: string | null;
+    zip: string | null;
+    county: string | null;
+  };
 }
 
 /**
@@ -72,7 +79,11 @@ export async function syncOnboardingProfileAssets(
   }
 
   const npn = input.npn?.trim() ?? "";
-  if (!driversLicensePath && !profilePhotoPath && !npn) {
+  const address = input.address;
+  const hasAddress = Boolean(
+    address && (address.line1 || address.city || address.zip || address.county),
+  );
+  if (!driversLicensePath && !profilePhotoPath && !npn && !hasAddress) {
     return;
   }
 
@@ -84,6 +95,13 @@ export async function syncOnboardingProfileAssets(
   if (driversLicensePath) payload.drivers_license_path = driversLicensePath;
   if (profilePhotoPath) payload.profile_photo_path = profilePhotoPath;
   if (npn) payload.npn = npn;
+  if (hasAddress && address) {
+    if (address.line1) payload.address_line1 = address.line1;
+    if (address.city) payload.address_city = address.city;
+    if (address.state) payload.address_state = address.state;
+    if (address.zip) payload.address_zip = address.zip;
+    if (address.county) payload.county = address.county;
+  }
 
   const { error } = await supabase
     .from("portal_profiles")

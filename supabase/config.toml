@@ -39,6 +39,42 @@ verify_jwt = true
 [functions.admin-list-agents]
 verify_jwt = true
 
+[functions.admin-export-agents]
+verify_jwt = true
+
+[functions.admin-upload-lead-charges]
+verify_jwt = true
+
+[functions.admin-list-lead-charges]
+verify_jwt = true
+
+[functions.admin-set-carrier-status]
+verify_jwt = true
+
+[functions.admin-update-user-profile]
+verify_jwt = true
+
+[functions.submit-portal-ticket]
+verify_jwt = true
+
+[functions.list-portal-tickets]
+verify_jwt = true
+
+[functions.admin-list-tickets]
+verify_jwt = true
+
+[functions.admin-update-ticket]
+verify_jwt = true
+
+[functions.admin-list-pay-policy]
+verify_jwt = true
+
+[functions.admin-upsert-pay-policy-entry]
+verify_jwt = true
+
+[functions.admin-delete-pay-policy-entry]
+verify_jwt = true
+
 [functions.admin-get-hierarchy]
 verify_jwt = true
 
@@ -195,4 +231,28 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.admin-reorder-dashboard-files]
+verify_jwt = true
+
+[functions.notify-licensing-complete]
+verify_jwt = true
+
+[functions.admin-assign-comp-attachment]
+verify_jwt = true
+
+[functions.admin-list-comp-attachments]
+verify_jwt = true
+
+[functions.admin-delete-comp-attachment]
+verify_jwt = true
+
+[functions.list-portal-comp-attachments]
+verify_jwt = true
+
+[functions.sign-portal-comp-attachment]
+verify_jwt = true
+
+[functions.admin-list-contracting]
+verify_jwt = true
+
+[functions.admin-mark-contracting-initiated]
 verify_jwt = true

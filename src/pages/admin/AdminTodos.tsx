@@ -48,6 +48,7 @@ const AUTO_KEY_OPTIONS: { value: string; label: string }[] = [
   { value: "state_licenses", label: "State license added" },
   { value: "writing_numbers", label: "Carrier writing number recorded" },
   { value: "carrier_credentials", label: "Carrier credentials saved" },
+  { value: "disclosures", label: "All disclosures acknowledged" },
 ];
 
 function phaseLabel(phase: AdminPortalTodoPhase): string {

@@ -40,6 +40,10 @@ interface OnboardingData {
   dateOfBirth: string;
   ssn: string;
   stateOfResidence: string;
+  addressLine1: string;
+  addressCity: string;
+  addressZip: string;
+  county: string;
   driversLicense: string;
   profilePhoto: string;
   uplineNetwork: string;
@@ -95,6 +99,38 @@ const STEPS: Step[] = [
       "This must be where you are living now, and where you will have your resident license.",
     type: "select",
     options: US_STATES,
+    required: true,
+  },
+  {
+    key: "addressLine1",
+    question: "Street address",
+    subtitle: "Your home street address, including apartment or unit number.",
+    type: "text",
+    placeholder: "123 Main St, Apt 4",
+    required: true,
+  },
+  {
+    key: "addressCity",
+    question: "City",
+    subtitle: "The city you live in.",
+    type: "text",
+    placeholder: "City",
+    required: true,
+  },
+  {
+    key: "addressZip",
+    question: "ZIP code",
+    subtitle: "Your 5-digit ZIP code.",
+    type: "tel",
+    placeholder: "12345",
+    required: true,
+  },
+  {
+    key: "county",
+    question: "County",
+    subtitle: "The county you live in — we need this to initiate contracting.",
+    type: "text",
+    placeholder: "County name",
     required: true,
   },
   {
@@ -158,6 +194,14 @@ function formatSsn(value: string): string {
   if (digits.length <= 3) return digits;
   if (digits.length <= 5) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
   return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`;
+}
+
+function formatZip(value: string): string {
+  return value.replace(/\D/g, "").slice(0, 5);
+}
+
+function isValidZip(zip: string): boolean {
+  return /^\d{5}$/.test(zip);
 }
 
 function formatDateInput(value: string): string {
@@ -263,6 +307,10 @@ const EMPTY_DATA: OnboardingData = {
   dateOfBirth: "",
   ssn: "",
   stateOfResidence: "",
+  addressLine1: "",
+  addressCity: "",
+  addressZip: "",
+  county: "",
   driversLicense: "",
   profilePhoto: "",
   uplineNetwork: "",
@@ -343,6 +391,9 @@ export default function AgentOnboarding({
     }
     if (step.key === "dateOfBirth" && currentValue && !isValidDate(currentValue)) {
       return "Please use mm/dd/yyyy format.";
+    }
+    if (step.key === "addressZip" && currentValue && !isValidZip(currentValue)) {
+      return "Please enter a 5-digit ZIP code.";
     }
     return null;
   }, [step, currentValue]);
@@ -461,6 +512,7 @@ export default function AgentOnboarding({
     if (step.key === "phoneNumber") value = formatPhone(raw);
     if (step.key === "ssn") value = formatSsn(raw);
     if (step.key === "dateOfBirth") value = formatDateInput(raw);
+    if (step.key === "addressZip") value = formatZip(raw);
     setData((prev) => ({ ...prev, [step.key]: value }));
   };
 
@@ -799,7 +851,10 @@ export default function AgentOnboarding({
                       key={step.key}
                       type={step.key === "ssn" ? "password" : "text"}
                       inputMode={
-                        step.key === "dateOfBirth" || step.key === "phoneNumber" || step.key === "ssn"
+                        step.key === "dateOfBirth" ||
+                        step.key === "phoneNumber" ||
+                        step.key === "ssn" ||
+                        step.key === "addressZip"
                           ? "numeric"
                           : undefined
                       }

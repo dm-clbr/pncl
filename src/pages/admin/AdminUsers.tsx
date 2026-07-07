@@ -1,17 +1,21 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { UserPlus, Users, X } from "lucide-react";
+import { Download, UserPlus, Users, X } from "lucide-react";
 import AdminUserRowActionsMenu from "@/components/admin/AdminUserRowActionsMenu";
 import { useAuth } from "@/contexts/AuthContext";
 import {
+  AGENT_PHASE_LABELS,
   backfillGoogleRecovery,
   backfillGoogleRecoveryAll,
   deleteUser,
+  downloadAgentsCsv,
+  formatAgentNumber,
   resendActivationEmail,
   sendGmailVerificationEmail,
   updateUserCompLevel,
   updateUserEmail,
   updateUserRole,
+  type AgentPhase,
   type AgentSummary,
   type GoogleWorkspaceStatus,
 } from "@/lib/admin-api";
@@ -66,6 +70,15 @@ function roleChangeMessage(agent: AgentSummary, nextRole: PortalRole): string {
   return `Remove elevated access from ${agent.name}?`;
 }
 
+function phaseBadge(phase: AgentPhase | null) {
+  if (!phase) return <span className="admin-status">—</span>;
+  return (
+    <span className={`admin-phase-badge phase-${phase}`}>
+      {AGENT_PHASE_LABELS[phase]}
+    </span>
+  );
+}
+
 type GoogleStatusFilter = "all" | GoogleWorkspaceStatus | "unknown";
 
 function matchesGoogleStatusFilter(
@@ -93,6 +106,21 @@ export default function AdminUsers() {
   const [emailDraft, setEmailDraft] = useState("");
   const [savingEmail, setSavingEmail] = useState(false);
   const [updatingCompId, setUpdatingCompId] = useState<string | null>(null);
+  const [exportingCsv, setExportingCsv] = useState(false);
+
+  const handleExportCsv = async () => {
+    const token = session?.access_token;
+    if (!token) return;
+
+    setExportingCsv(true);
+    try {
+      await downloadAgentsCsv(token);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to export agents");
+    } finally {
+      setExportingCsv(false);
+    }
+  };
 
   useEffect(() => {
     document.title = "Users — PNCL Admin";
@@ -106,6 +134,7 @@ export default function AdminUsers() {
       if (!normalized) return true;
       return agent.name.toLowerCase().includes(normalized)
         || agent.email.toLowerCase().includes(normalized)
+        || (agent.npn?.toLowerCase().includes(normalized) ?? false)
         || (agent.referrerName?.toLowerCase().includes(normalized) ?? false);
     });
   }, [agents, query, googleFilter]);
@@ -347,7 +376,7 @@ export default function AdminUsers() {
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Name, email, or upline"
+            placeholder="Name, email, NPN, or upline"
           />
         </label>
 
@@ -383,6 +412,16 @@ export default function AdminUsers() {
         >
           {syncingAllRecovery ? "Syncing…" : "Sync all Google recovery"}
         </button>
+
+        <button
+          type="button"
+          className="admin-secondary-btn"
+          disabled={exportingCsv}
+          onClick={() => void handleExportCsv()}
+        >
+          <Download size={14} aria-hidden="true" />
+          {exportingCsv ? "Exporting…" : "Download CSV"}
+        </button>
       </div>
 
       {loading && <div className="onboarding-spinner admin-spinner" aria-label="Loading users" />}
@@ -397,6 +436,8 @@ export default function AdminUsers() {
                 <th>Name</th>
                 <th>Email</th>
                 <th>Upline</th>
+                <th>NPN</th>
+                <th>Phase</th>
                 <th>Comp</th>
                 <th>Status</th>
                 <th>Google</th>
@@ -420,9 +461,14 @@ export default function AdminUsers() {
                       <Link to={`/portal/admin/users/${agent.id}`} className="admin-user-link">
                         {agent.name}
                       </Link>
+                      {agent.agentNumber !== null && (
+                        <span className="admin-user-subtext">{formatAgentNumber(agent.agentNumber)}</span>
+                      )}
                     </td>
                     <td>{agent.email}</td>
                     <td>{agent.referrerName ?? agent.uplineNetwork ?? "—"}</td>
+                    <td>{agent.npn ?? "—"}</td>
+                    <td>{phaseBadge(agent.phase)}</td>
                     <td>
                       <AdminCompLevelSelect
                         agent={agent}

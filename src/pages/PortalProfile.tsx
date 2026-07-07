@@ -5,16 +5,19 @@ import PNCLLogo from "@/components/PNCLLogo";
 import ProfilePhotoCropModal from "@/components/ProfilePhotoCropModal";
 import PortalCarrierCredentials from "@/components/PortalCarrierCredentials";
 import PortalLicensingSection from "@/components/PortalLicensingSection";
+import PortalProfileDocumentsSection from "@/components/PortalProfileDocumentsSection";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   CLOTHING_SIZES,
   fetchPortalProfile,
+  formatAgentNumber,
   getDefaultProfileValues,
   getProfileInitials,
   getProfilePhotoUrl,
   profileToFormValues,
   savePortalProfile,
   SHOE_SIZES,
+  US_STATES,
   WAIST_SIZES,
   type PortalProfile,
   type PortalProfileFormValues,
@@ -25,6 +28,12 @@ import { fetchPortalIcaDocument } from "@/lib/portal-ica";
 import { usePortalDirectDeposit } from "@/hooks/usePortalDirectDeposit";
 import { usePortalW9 } from "@/hooks/usePortalW9";
 import { usePortalIca } from "@/hooks/usePortalIca";
+import { usePortalTodos } from "@/hooks/usePortalTodos";
+import {
+  derivePortalPhase,
+  isTodoCompleted,
+  PORTAL_PHASE_LABELS,
+} from "@/lib/portal-todos";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 import "@/styles/home2.css";
@@ -37,6 +46,11 @@ const EMPTY_FORM: PortalProfileFormValues = {
   hoodieSize: "",
   waistSize: "",
   shoeSize: "",
+  addressLine1: "",
+  addressCity: "",
+  addressState: "",
+  addressZip: "",
+  county: "",
 };
 
 function SizeSelect({
@@ -70,6 +84,7 @@ export default function PortalProfile() {
   const { w9, submitted: w9Submitted, loading: w9Loading } = usePortalW9();
   const { directDeposit, submitted: directDepositSubmitted, loading: directDepositLoading } = usePortalDirectDeposit();
   const { ica, submitted: icaSubmitted, loading: icaLoading } = usePortalIca();
+  const { todos, loading: todosLoading } = usePortalTodos();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -262,6 +277,7 @@ export default function PortalProfile() {
   const displayPhotoUrl = photoPreviewUrl ?? savedPhotoUrl;
   const initials = getProfileInitials(form.firstName, form.lastName);
   const agentEmail = user?.email ?? "";
+  const agentNumber = formatAgentNumber(profileRow?.agent_number);
 
   const updateField = <K extends keyof PortalProfileFormValues>(key: K, value: PortalProfileFormValues[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -288,6 +304,19 @@ export default function PortalProfile() {
   const handleCropConfirm = (file: File, previewUrl: string) => {
     setProcessedPhoto(file, previewUrl);
   };
+
+  const resolvedTodos = useMemo(
+    () =>
+      todos.map((todo) => ({
+        ...todo,
+        completed: isTodoCompleted(user, todo, { icaSubmitted, w9Submitted, directDepositSubmitted }),
+      })),
+    [todos, user, icaSubmitted, w9Submitted, directDepositSubmitted],
+  );
+  const todoTotal = resolvedTodos.length;
+  const todoDone = resolvedTodos.filter((todo) => todo.completed).length;
+  const todoPercent = todoTotal === 0 ? 0 : Math.round((todoDone / todoTotal) * 100);
+  const currentPhase = derivePortalPhase(resolvedTodos);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -324,13 +353,40 @@ export default function PortalProfile() {
             </Link>
             <div className="carrier-sheet-header-copy">
               <p className="portal-welcome">My profile</p>
-              {agentEmail && <p className="portal-meta">{agentEmail}</p>}
+              {agentEmail && (
+                <p className="portal-meta">
+                  {agentEmail}
+                  {agentNumber ? ` · Agent ID ${agentNumber}` : ""}
+                </p>
+              )}
             </div>
             <Link to="/portal" className="admin-back-link">
               <ArrowLeft size={16} aria-hidden="true" />
               Back to portal
             </Link>
           </header>
+
+          {!todosLoading && todoTotal > 0 && (
+            <div className="portal-profile-progress" aria-label="Onboarding progress">
+              <div className="portal-profile-progress-head">
+                <span className={`portal-phase-badge phase-${currentPhase}`}>
+                  {PORTAL_PHASE_LABELS[currentPhase]}
+                </span>
+                <span className="portal-profile-progress-count">
+                  {todoDone} of {todoTotal} steps complete
+                </span>
+              </div>
+              <div
+                className="portal-profile-progress-bar"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={todoPercent}
+              >
+                <span style={{ width: `${todoPercent}%` }} />
+              </div>
+            </div>
+          )}
 
           <div className="carrier-sheet-panel portal-profile-panel">
             <div className="carrier-sheet-panel-head">
@@ -408,6 +464,73 @@ export default function PortalProfile() {
                     />
                   </label>
                 </div>
+
+                <div className="portal-profile-form-grid">
+                  <label className="admin-field">
+                    <span>Street address</span>
+                    <input
+                      type="text"
+                      value={form.addressLine1}
+                      onChange={(event) => updateField("addressLine1", event.target.value)}
+                      placeholder="123 Main St, Apt 4"
+                      autoComplete="address-line1"
+                    />
+                  </label>
+
+                  <label className="admin-field">
+                    <span>City</span>
+                    <input
+                      type="text"
+                      value={form.addressCity}
+                      onChange={(event) => updateField("addressCity", event.target.value)}
+                      placeholder="City"
+                      autoComplete="address-level2"
+                    />
+                  </label>
+                </div>
+
+                <div className="portal-profile-form-grid">
+                  <label className="admin-field">
+                    <span>State</span>
+                    <select
+                      value={form.addressState}
+                      onChange={(event) => updateField("addressState", event.target.value)}
+                      autoComplete="address-level1"
+                    >
+                      <option value="">Select state</option>
+                      {US_STATES.map((state) => (
+                        <option key={state} value={state}>
+                          {state}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="admin-field">
+                    <span>ZIP code</span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={form.addressZip}
+                      onChange={(event) =>
+                        updateField("addressZip", event.target.value.replace(/\D/g, "").slice(0, 5))
+                      }
+                      placeholder="12345"
+                      autoComplete="postal-code"
+                    />
+                  </label>
+                </div>
+
+                <label className="admin-field">
+                  <span>County</span>
+                  <input
+                    type="text"
+                    value={form.county}
+                    onChange={(event) => updateField("county", event.target.value)}
+                    placeholder="County name"
+                    autoComplete="off"
+                  />
+                </label>
 
                 <div className="portal-profile-form-grid">
                   <SizeSelect
@@ -580,6 +703,8 @@ export default function PortalProfile() {
               </p>
             )}
           </div>
+
+          <PortalProfileDocumentsSection user={user} />
 
           <PortalCarrierCredentials />
         </div>

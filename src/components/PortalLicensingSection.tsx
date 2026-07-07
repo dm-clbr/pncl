@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import { IdCard, X } from "lucide-react";
+import { FileCheck2, IdCard, X } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import {
   getDriversLicenseUrl,
+  getEoCertificateUrl,
+  notifyLicensingComplete,
   profileToLicensingValues,
   saveLicensingProfile,
   US_STATES,
@@ -31,16 +33,41 @@ export default function PortalLicensingSection({
     stateLicenses: [],
   });
   const [stateToAdd, setStateToAdd] = useState("");
+  const eoFileInputRef = useRef<HTMLInputElement>(null);
   const [licensePath, setLicensePath] = useState<string | null>(null);
   const [licenseUrl, setLicenseUrl] = useState<string | null>(null);
   const [pendingLicenseFile, setPendingLicenseFile] = useState<File | null>(null);
   const [licensePreviewUrl, setLicensePreviewUrl] = useState<string | null>(null);
+  const [eoCertificatePath, setEoCertificatePath] = useState<string | null>(null);
+  const [eoCertificateUrl, setEoCertificateUrl] = useState<string | null>(null);
+  const [pendingEoCertificateFile, setPendingEoCertificateFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     setForm(profileToLicensingValues(profile));
     setLicensePath(profile?.drivers_license_path ?? null);
+    setEoCertificatePath(profile?.eo_certificate_path ?? null);
   }, [profile]);
+
+  useEffect(() => {
+    if (!eoCertificatePath) {
+      setEoCertificateUrl(null);
+      return;
+    }
+
+    let cancelled = false;
+    void getEoCertificateUrl(eoCertificatePath)
+      .then((url) => {
+        if (!cancelled) setEoCertificateUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setEoCertificateUrl(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [eoCertificatePath]);
 
   useEffect(() => {
     if (!licensePath) {
@@ -87,6 +114,19 @@ export default function PortalLicensingSection({
     setLicensePreviewUrl(URL.createObjectURL(file));
   };
 
+  const handleEoCertificateChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    if (file.type !== "application/pdf" && !file.type.startsWith("image/")) {
+      toast.error("Please choose a PDF, JPG, PNG, or WebP file.");
+      return;
+    }
+
+    setPendingEoCertificateFile(file);
+  };
+
   const addStateLicense = () => {
     if (!stateToAdd) return;
     setForm((prev) =>
@@ -110,8 +150,18 @@ export default function PortalLicensingSection({
 
     setSubmitting(true);
     try {
-      const saved = await saveLicensingProfile(user, names, form, pendingLicenseFile, licensePath);
+      const saved = await saveLicensingProfile(
+        user,
+        names,
+        form,
+        pendingLicenseFile,
+        licensePath,
+        pendingEoCertificateFile,
+        eoCertificatePath,
+      );
       setLicensePath(saved.drivers_license_path);
+      setEoCertificatePath(saved.eo_certificate_path);
+      setPendingEoCertificateFile(null);
       setPendingLicenseFile(null);
       if (licensePreviewUrl?.startsWith("blob:")) {
         URL.revokeObjectURL(licensePreviewUrl);
@@ -119,6 +169,9 @@ export default function PortalLicensingSection({
       setLicensePreviewUrl(null);
       onSaved?.(saved);
       toast.success("Licensing details saved.");
+      if (saved.npn?.trim() && saved.eo_policy_number?.trim()) {
+        void notifyLicensingComplete();
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Unable to save licensing details.");
     } finally {
@@ -172,6 +225,44 @@ export default function PortalLicensingSection({
                 autoComplete="off"
               />
             </label>
+          </div>
+
+          <div className="portal-licensing-dl-section">
+            <div className="portal-licensing-dl-preview-wrap">
+              <span className="portal-licensing-dl-placeholder" aria-hidden="true">
+                <FileCheck2 size={28} strokeWidth={1.5} />
+              </span>
+            </div>
+            <div className="portal-profile-photo-copy">
+              <strong>E&amp;O certificate</strong>
+              <p>
+                Upload your E&amp;O certificate of coverage (PDF or image, up to 5 MB) so PNCL can
+                initiate contracting.
+              </p>
+              {pendingEoCertificateFile ? (
+                <p className="portal-panel-note">Selected: {pendingEoCertificateFile.name}</p>
+              ) : eoCertificateUrl ? (
+                <p className="portal-panel-note">
+                  <a href={eoCertificateUrl} target="_blank" rel="noopener noreferrer">
+                    View current certificate
+                  </a>
+                </p>
+              ) : null}
+              <input
+                ref={eoFileInputRef}
+                type="file"
+                accept="application/pdf,image/jpeg,image/png,image/webp"
+                className="portal-profile-photo-input"
+                onChange={handleEoCertificateChange}
+              />
+              <button
+                type="button"
+                className="portal-panel-btn portal-profile-photo-btn"
+                onClick={() => eoFileInputRef.current?.click()}
+              >
+                {eoCertificatePath || pendingEoCertificateFile ? "Replace certificate" : "Upload certificate"}
+              </button>
+            </div>
           </div>
 
           <div className="admin-field">

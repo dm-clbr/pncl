@@ -24,6 +24,10 @@ import PortalProfile from "./pages/PortalProfile.tsx";
 import PortalW9 from "./pages/PortalW9.tsx";
 import PortalIca from "./pages/PortalIca.tsx";
 import PortalDirectDeposit from "./pages/PortalDirectDeposit.tsx";
+import PortalCompAgreement from "./pages/PortalCompAgreement.tsx";
+import PortalDisclosures from "./pages/PortalDisclosures.tsx";
+import PortalSupport from "./pages/PortalSupport.tsx";
+import PortalPayPolicy from "./pages/PortalPayPolicy.tsx";
 import PortalClients from "./pages/PortalClients.tsx";
 import PortalClientIntake from "./pages/PortalClientIntake.tsx";
 import AdminLayout from "./components/AdminLayout.tsx";
@@ -38,6 +42,10 @@ import AdminIncentives from "./pages/admin/AdminIncentives.tsx";
 import AdminBrandAssets from "./pages/admin/AdminBrandAssets.tsx";
 import AdminCarriers from "./pages/admin/AdminCarriers.tsx";
 import AdminGenesis from "./pages/admin/AdminGenesis.tsx";
+import AdminContracting from "./pages/admin/AdminContracting.tsx";
+import AdminLeadCharges from "./pages/admin/AdminLeadCharges.tsx";
+import AdminTickets from "./pages/admin/AdminTickets.tsx";
+import AdminPayPolicy from "./pages/admin/AdminPayPolicy.tsx";
 import AdminGmailVerification from "./pages/admin/AdminGmailVerification.tsx";
 import AdminClients from "./pages/admin/AdminClients.tsx";
 import AdminDashboardTabs from "./pages/admin/AdminDashboardTabs.tsx";
@@ -129,6 +137,38 @@ const App = () => (
             }
           />
           <Route
+            path="/portal/comp-agreement"
+            element={
+              <ProtectedRoute>
+                <PortalCompAgreement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/portal/disclosures"
+            element={
+              <ProtectedRoute>
+                <PortalDisclosures />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/portal/support"
+            element={
+              <ProtectedRoute>
+                <PortalSupport />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/portal/pay-policy"
+            element={
+              <ProtectedRoute>
+                <PortalPayPolicy />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/portal/clients"
             element={
               <ProtectedRoute>
@@ -167,6 +207,10 @@ const App = () => (
             <Route path="dashboard-tabs" element={<AdminFullRoute><AdminDashboardTabs /></AdminFullRoute>} />
             <Route path="todos" element={<AdminFullRoute><AdminTodos /></AdminFullRoute>} />
             <Route path="genesis" element={<AdminGenesis />} />
+            <Route path="contracting" element={<AdminFullRoute><AdminContracting /></AdminFullRoute>} />
+            <Route path="lead-charges" element={<AdminFullRoute><AdminLeadCharges /></AdminFullRoute>} />
+            <Route path="tickets" element={<AdminFullRoute><AdminTickets /></AdminFullRoute>} />
+            <Route path="pay-policy" element={<AdminFullRoute><AdminPayPolicy /></AdminFullRoute>} />
           </Route>
           <Route
             path="/portal/admin/w9-preview"

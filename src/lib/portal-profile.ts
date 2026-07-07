@@ -1,5 +1,5 @@
 import type { User } from "@supabase/supabase-js";
-import { getSupabaseClient } from "@/lib/supabase";
+import { getSupabaseClient, getSupabaseConfig } from "@/lib/supabase";
 
 export const PROFILE_PHOTO_BUCKET = "portal-profile-photos";
 export const PROFILE_DOCUMENTS_BUCKET = "portal-profile-documents";
@@ -22,6 +22,7 @@ export const SHOE_SIZES = [
 
 export interface PortalProfile {
   user_id: string;
+  agent_number: number | null;
   first_name: string;
   last_name: string;
   shirt_size: string | null;
@@ -33,8 +34,14 @@ export interface PortalProfile {
   profile_photo_path: string | null;
   npn: string | null;
   eo_policy_number: string | null;
+  eo_certificate_path: string | null;
   state_licenses: string[] | null;
   drivers_license_path: string | null;
+  address_line1: string | null;
+  address_city: string | null;
+  address_state: string | null;
+  address_zip: string | null;
+  county: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -53,6 +60,11 @@ export interface PortalProfileFormValues {
   hoodieSize: string;
   waistSize: string;
   shoeSize: string;
+  addressLine1: string;
+  addressCity: string;
+  addressState: string;
+  addressZip: string;
+  county: string;
 }
 
 function readMetadataString(user: User | null, key: string): string {
@@ -82,6 +94,11 @@ export function getDefaultProfileValues(user: User | null): PortalProfileFormVal
     hoodieSize: "",
     waistSize: "",
     shoeSize: "",
+    addressLine1: "",
+    addressCity: "",
+    addressState: "",
+    addressZip: "",
+    county: "",
   };
 }
 
@@ -94,6 +111,11 @@ export function profileToFormValues(profile: PortalProfile): PortalProfileFormVa
     hoodieSize: profile.hoodie_size ?? "",
     waistSize: profile.waist_size ?? "",
     shoeSize: profile.shoe_size ?? "",
+    addressLine1: profile.address_line1 ?? "",
+    addressCity: profile.address_city ?? "",
+    addressState: profile.address_state ?? "",
+    addressZip: profile.address_zip ?? "",
+    county: profile.county ?? "",
   };
 }
 
@@ -177,6 +199,11 @@ export async function savePortalProfile(
     hoodie_size: values.hoodieSize || null,
     waist_size: values.waistSize || null,
     shoe_size: values.shoeSize || null,
+    address_line1: values.addressLine1.trim() || null,
+    address_city: values.addressCity.trim() || null,
+    address_state: values.addressState || null,
+    address_zip: values.addressZip.trim() || null,
+    county: values.county.trim() || null,
     profile_photo_path: profilePhotoPath,
   };
 
@@ -201,6 +228,38 @@ export async function savePortalProfile(
   if (metadataError) throw metadataError;
 
   return data as PortalProfile;
+}
+
+/**
+ * Best-effort ping so admins get a "ready for contracting" email once the
+ * agent has both an NPN and E&O policy number on file. Server dedupes.
+ */
+export async function notifyLicensingComplete(): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    const { data } = await supabase.auth.getSession();
+    const accessToken = data.session?.access_token;
+    if (!accessToken) return;
+
+    const { url, anonKey } = getSupabaseConfig();
+    await fetch(`${url.replace(/\/$/, "")}/functions/v1/notify-licensing-complete`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        apikey: anonKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    });
+  } catch {
+    // Notification is best-effort; saving licensing details already succeeded.
+  }
+}
+
+/** Formats the auto-assigned agent number as the display ID, e.g. PNCL-00042. */
+export function formatAgentNumber(agentNumber: number | null | undefined): string | null {
+  if (agentNumber === null || agentNumber === undefined) return null;
+  return `PNCL-${String(agentNumber).padStart(5, "0")}`;
 }
 
 export function getProfileInitials(firstName: string, lastName: string): string {
@@ -247,12 +306,52 @@ export async function uploadDriversLicense(userId: string, file: File): Promise<
   return path;
 }
 
+const EO_CERTIFICATE_TYPES: Record<string, string> = {
+  "application/pdf": "pdf",
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
+
+export async function uploadEoCertificate(userId: string, file: File): Promise<string> {
+  const extension = EO_CERTIFICATE_TYPES[file.type];
+  if (!extension) {
+    throw new Error("E&O certificate must be a PDF, JPG, PNG, or WebP file.");
+  }
+  if (file.size > MAX_DRIVERS_LICENSE_BYTES) {
+    throw new Error("E&O certificate must be 5 MB or smaller.");
+  }
+
+  const supabase = getSupabaseClient();
+  const path = `${userId}/eo-certificate.${extension}`;
+
+  const { error } = await supabase.storage
+    .from(PROFILE_DOCUMENTS_BUCKET)
+    .upload(path, file, { upsert: true, contentType: file.type });
+
+  if (error) throw error;
+  return path;
+}
+
+export async function getEoCertificateUrl(path: string | null | undefined): Promise<string | null> {
+  if (!path) return null;
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.storage
+    .from(PROFILE_DOCUMENTS_BUCKET)
+    .createSignedUrl(path, 3600);
+
+  if (error || !data?.signedUrl) return null;
+  return data.signedUrl;
+}
+
 export async function saveLicensingProfile(
   user: User,
   names: { firstName: string; lastName: string },
   values: PortalLicensingFormValues,
   driversLicenseFile: File | null,
   existingDriversLicensePath: string | null,
+  eoCertificateFile: File | null = null,
+  existingEoCertificatePath: string | null = null,
 ): Promise<PortalProfile> {
   const supabase = getSupabaseClient();
 
@@ -261,11 +360,17 @@ export async function saveLicensingProfile(
     driversLicensePath = await uploadDriversLicense(user.id, driversLicenseFile);
   }
 
+  let eoCertificatePath = existingEoCertificatePath;
+  if (eoCertificateFile) {
+    eoCertificatePath = await uploadEoCertificate(user.id, eoCertificateFile);
+  }
+
   const licensingColumns = {
     npn: values.npn.trim() || null,
     eo_policy_number: values.eoPolicyNumber.trim() || null,
     state_licenses: values.stateLicenses,
     drivers_license_path: driversLicensePath,
+    eo_certificate_path: eoCertificatePath,
   };
 
   const { data: existing, error: existingError } = await supabase

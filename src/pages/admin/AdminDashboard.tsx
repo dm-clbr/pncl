@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Building2, CheckSquare, Eye, FileText, GitBranch, GraduationCap, LayoutGrid, Palette, Shield, Trophy, UserPlus, Users } from "lucide-react";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
+import { AGENT_PHASE_LABELS, AGENT_PHASE_ORDER } from "@/lib/admin-api";
 import { trackPageView } from "@/lib/analytics";
 
 const ADMIN_CARDS = [
@@ -84,6 +85,16 @@ export default function AdminDashboard() {
   const adminCount = agents.filter((agent) => agent.role === "admin").length;
   const activeCount = agents.filter((agent) => agent.emailConfirmed).length;
 
+  const phaseCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const agent of agents) {
+      if (!agent.phase) continue;
+      counts.set(agent.phase, (counts.get(agent.phase) ?? 0) + 1);
+    }
+    return counts;
+  }, [agents]);
+  const hasPhaseData = phaseCounts.size > 0;
+
   return (
     <section className="admin-panel">
       <div className="admin-panel-head">
@@ -99,20 +110,37 @@ export default function AdminDashboard() {
       {!loading && error && <p className="admin-error">{error}</p>}
 
       {!loading && !error && (
-        <div className="admin-stats">
-          <div className="admin-stat">
-            <strong>{agents.length}</strong>
-            <span>Total agents</span>
+        <>
+          <div className="admin-stats">
+            <div className="admin-stat">
+              <strong>{agents.length}</strong>
+              <span>Total agents</span>
+            </div>
+            <div className="admin-stat">
+              <strong>{activeCount}</strong>
+              <span>Active portal users</span>
+            </div>
+            <div className="admin-stat">
+              <strong>{adminCount}</strong>
+              <span>Admins</span>
+            </div>
           </div>
-          <div className="admin-stat">
-            <strong>{activeCount}</strong>
-            <span>Active portal users</span>
-          </div>
-          <div className="admin-stat">
-            <strong>{adminCount}</strong>
-            <span>Admins</span>
-          </div>
-        </div>
+
+          {hasPhaseData && (
+            <div className="admin-stats admin-phase-stats">
+              {AGENT_PHASE_ORDER.map((phase) => (
+                <Link
+                  key={phase}
+                  to="/portal/admin/users"
+                  className={`admin-stat admin-phase-stat phase-${phase}`}
+                >
+                  <strong>{phaseCounts.get(phase) ?? 0}</strong>
+                  <span>{AGENT_PHASE_LABELS[phase]}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       <div className="admin-card-grid">

@@ -32,3 +32,6 @@ npm-debug.log*
 # Vite cache
 .vite/
 src/.DS_Store
+
+# TypeScript incremental build info
+*.tsbuildinfo

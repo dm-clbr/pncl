@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { ArrowUpRight, Copy, Pencil, Plus } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, Copy, Pencil, Plus } from "lucide-react";
 import { usePortalCarrierCredentials } from "@/hooks/usePortalCarrierCredentials";
 import {
   copyCredentialValue,
@@ -182,6 +182,12 @@ function CredentialRow({
     <tr>
       <td>
         <CarrierName item={item} />
+        {item.applicationSubmitted && (
+          <span className="portal-carrier-submitted-badge">
+            <CheckCircle2 size={12} aria-hidden="true" />
+            Application submitted
+          </span>
+        )}
       </td>
       <td>
         {saved && item.username ? (

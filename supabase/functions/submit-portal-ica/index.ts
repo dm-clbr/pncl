@@ -14,6 +14,7 @@ import {
   PORTAL_ICA_PDF_BUCKET,
   type PortalIcaRecord,
 } from "../_shared/portalIca.ts";
+import { notifyAdminsOfIcaSigned } from "../_shared/contractingNotifications.ts";
 
 function getCompletedTodos(metadata: Record<string, unknown> | undefined): Record<string, boolean> {
   const value = metadata?.completed_portal_todos;
@@ -105,6 +106,20 @@ serve(async (req) => {
     }
 
     logOnboarding("portal_ica_submitted", { userId: user.id });
+
+    try {
+      await notifyAdminsOfIcaSigned(adminClient, {
+        userId: user.id,
+        agentName: payload.legalName,
+        agentEmail: user.email ?? "",
+        signedAt: now,
+      });
+    } catch (notifyError) {
+      const message = notifyError instanceof Error
+        ? notifyError.message
+        : "ICA admin notification failed";
+      logOnboarding("portal_ica_notification_failed", { userId: user.id, error: message }, "error");
+    }
 
     return jsonResponse({
       ica: mapPortalIcaSummary(data as PortalIcaRecord),

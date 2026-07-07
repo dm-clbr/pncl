@@ -9,6 +9,7 @@ import {
   type OnboardingContractRecord,
 } from "./onboardingContract.ts";
 import { createPortalIcaSignedUrl, type PortalIcaRecord } from "./portalIca.ts";
+import { PORTAL_PROFILE_DOCUMENTS_BUCKET } from "./portalProfileSetup.ts";
 
 export interface AdminUserDocument {
   id: string;
@@ -141,6 +142,46 @@ export async function loadOnboardingContractDocument(
   };
 }
 
+interface ManualProfileDocumentRow {
+  id: string;
+  label: string;
+  file_path: string;
+  created_at: string;
+}
+
+/** Documents the agent uploaded via the "My documents" profile section. */
+export async function loadManualProfileDocuments(
+  adminClient: SupabaseClient,
+  userId: string,
+): Promise<AdminUserDocument[]> {
+  const { data, error } = await adminClient
+    .from("portal_profile_documents")
+    .select("id, label, file_path, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+
+  const documents: AdminUserDocument[] = [];
+  for (const row of data as ManualProfileDocumentRow[]) {
+    const { data: signed } = await adminClient.storage
+      .from(PORTAL_PROFILE_DOCUMENTS_BUCKET)
+      .createSignedUrl(row.file_path, 60 * 60);
+
+    if (!signed?.signedUrl) continue;
+
+    documents.push({
+      id: `manual-${row.id}`,
+      label: `${row.label} (agent upload)`,
+      fileName: row.file_path.split("/").pop() ?? row.label,
+      signedAt: row.created_at,
+      downloadUrl: signed.signedUrl,
+    });
+  }
+
+  return documents;
+}
+
 export async function loadAdminUserDocumentsWithContract(
   adminClient: SupabaseClient,
   userId: string,
@@ -148,8 +189,11 @@ export async function loadAdminUserDocumentsWithContract(
   w9Record: PortalW9Record | null,
   directDepositRecord: DirectDepositRecord | null,
 ): Promise<AdminUserDocument[]> {
-  const documents = await loadAdminUserDocuments(adminClient, userId, w9Record, directDepositRecord);
-  const withoutIcaDuplicates = documents.filter(
+  const [documents, manualDocuments] = await Promise.all([
+    loadAdminUserDocuments(adminClient, userId, w9Record, directDepositRecord),
+    loadManualProfileDocuments(adminClient, userId),
+  ]);
+  const withoutIcaDuplicates = [...documents, ...manualDocuments].filter(
     (document) => document.fileName.toLowerCase() !== "ica-signed.pdf",
   );
 
@@ -159,12 +203,12 @@ export async function loadAdminUserDocumentsWithContract(
   }
 
   if (!onboardingId) {
-    return withoutIcaDuplicates;
+    return withoutIcaDuplicates.sort((a, b) => a.label.localeCompare(b.label));
   }
 
   const contractDocument = await loadOnboardingContractDocument(adminClient, onboardingId);
   if (!contractDocument) {
-    return withoutIcaDuplicates;
+    return withoutIcaDuplicates.sort((a, b) => a.label.localeCompare(b.label));
   }
 
   return [contractDocument, ...withoutIcaDuplicates].sort((a, b) => a.label.localeCompare(b.label));

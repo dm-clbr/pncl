@@ -8,9 +8,85 @@ import {
   resolveGoogleWorkspaceStatus,
   type GoogleWorkspaceStatus,
 } from "./googleWorkspace.ts";
+import {
+  computeAutoCompletionSets,
+  getCompletedTodosFromMetadata,
+  isTodoCompleteForUser,
+  PORTAL_TODO_PHASES,
+  type PortalTodoRecord,
+} from "./portalTodos.ts";
 import { logOnboarding } from "./logger.ts";
 
 export type GenesisAccountStatus = "pending" | "created" | "skipped";
+
+/** Current onboarding phase: first phase with an incomplete checklist item. */
+export type AgentPhase = "on_board" | "pre_license" | "licensing" | "sales_ready" | "complete";
+
+/**
+ * Derives each agent's current checklist phase from the published to-dos,
+ * using the same completion logic as the agent-facing checklist.
+ */
+export async function computeAgentPhases(
+  adminClient: SupabaseClient,
+  users: User[],
+): Promise<Map<string, AgentPhase>> {
+  const phases = new Map<string, AgentPhase>();
+  if (users.length === 0) return phases;
+
+  const { data: todoRows, error } = await adminClient
+    .from("portal_todos")
+    .select("*")
+    .eq("published", true);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const todos = (todoRows ?? []) as PortalTodoRecord[];
+  if (todos.length === 0) {
+    return phases;
+  }
+
+  const todosByPhase = new Map<string, PortalTodoRecord[]>();
+  for (const todo of todos) {
+    const phase = todo.phase ?? "on_board";
+    const group = todosByPhase.get(phase) ?? [];
+    group.push(todo);
+    todosByPhase.set(phase, group);
+  }
+
+  const autoKeys = new Set(
+    todos
+      .filter((row) => row.completion_type === "auto" && row.auto_key)
+      .map((row) => row.auto_key as string),
+  );
+  const autoSets = await computeAutoCompletionSets(
+    adminClient,
+    autoKeys,
+    users.map((user) => user.id),
+  );
+
+  for (const user of users) {
+    const completedMetadata = getCompletedTodosFromMetadata(
+      user.user_metadata as Record<string, unknown> | undefined,
+    );
+
+    let phase: AgentPhase = "complete";
+    for (const candidate of PORTAL_TODO_PHASES) {
+      const items = todosByPhase.get(candidate) ?? [];
+      const hasIncomplete = items.some(
+        (todo) => !isTodoCompleteForUser(todo, user.id, completedMetadata, autoSets),
+      );
+      if (hasIncomplete) {
+        phase = candidate;
+        break;
+      }
+    }
+    phases.set(user.id, phase);
+  }
+
+  return phases;
+}
 
 export interface AgentOnboardingDetails {
   legalName: string;
@@ -35,6 +111,9 @@ export interface AgentSummary {
   name: string;
   role: PortalRole;
   compLevel: number | null;
+  npn: string | null;
+  agentNumber: number | null;
+  phase: AgentPhase | null;
   referrerId: string | null;
   referrerName: string | null;
   uplineNetwork: string | null;
@@ -94,7 +173,7 @@ interface OnboardingRow {
   onboarding_completed_at: string | null;
 }
 
-function resolveDisplayName(user: User, onboardingName?: string | null): string {
+export function resolveDisplayName(user: User, onboardingName?: string | null): string {
   if (onboardingName?.trim()) return onboardingName.trim();
 
   const fullName = user.user_metadata?.full_name;
@@ -268,22 +347,54 @@ function resolveReferrerName(
   return resolveDisplayName(user, onboarding?.legal_name);
 }
 
+interface AgentProfileFieldsRow {
+  user_id: string;
+  npn: string | null;
+  agent_number: number | null;
+}
+
+async function loadAgentProfileFields(
+  adminClient: SupabaseClient,
+): Promise<Map<string, AgentProfileFieldsRow>> {
+  const { data, error } = await adminClient
+    .from("portal_profiles")
+    .select("user_id, npn, agent_number");
+
+  if (error) throw new Error(error.message);
+
+  const map = new Map<string, AgentProfileFieldsRow>();
+  for (const row of (data ?? []) as AgentProfileFieldsRow[]) {
+    map.set(row.user_id, row);
+  }
+  return map;
+}
+
 export async function buildAgentSummaries(
   adminClient: SupabaseClient,
   options?: { includeSensitive?: boolean },
 ): Promise<AgentSummary[]> {
   const includeSensitive = options?.includeSensitive ?? false;
-  const [users, onboardingMaps, compLevelsByUserId] = await Promise.all([
+  const [users, onboardingMaps, compLevelsByUserId, profileFields] = await Promise.all([
     listPortalUsers(adminClient),
     loadOnboardingMaps(adminClient),
     loadCompLevelsByUserId(adminClient),
+    loadAgentProfileFields(adminClient),
   ]);
+
+  let phasesByUserId = new Map<string, AgentPhase>();
+  try {
+    phasesByUserId = await computeAgentPhases(adminClient, users);
+  } catch (phaseError) {
+    const message = phaseError instanceof Error ? phaseError.message : "phase computation failed";
+    logOnboarding("agent_phase_computation_failed", { error: message }, "warn");
+  }
 
   const usersById = new Map(users.map((user) => [user.id, user]));
 
   const summaries = await Promise.all(users.map(async (user) => {
     const onboarding = resolveOnboardingForUser(user, onboardingMaps);
     const referrerId = onboarding?.referrer_user_id ?? null;
+    const profile = profileFields.get(user.id);
 
     const genesisCreatedAt = user.user_metadata?.genesis_account_created_at;
     const genesisAccountCreatedAt = typeof genesisCreatedAt === "string" && genesisCreatedAt.trim()
@@ -305,6 +416,9 @@ export async function buildAgentSummaries(
       name: resolveDisplayName(user, onboarding?.legal_name),
       role: getUserRole(user),
       compLevel: compLevelsByUserId.get(user.id) ?? null,
+      npn: profile?.npn?.trim() || onboarding?.npn?.trim() || null,
+      agentNumber: profile?.agent_number ?? null,
+      phase: phasesByUserId.get(user.id) ?? null,
       referrerId,
       referrerName: resolveReferrerName(referrerId, usersById, onboardingMaps.byUserId),
       uplineNetwork: onboarding?.upline_network ?? null,
@@ -366,12 +480,29 @@ export async function buildAgentSummaryForUser(
     ? await buildOnboardingDetails(onboarding, includeSensitive)
     : null;
 
+  const { data: profileRow } = await adminClient
+    .from("portal_profiles")
+    .select("user_id, npn, agent_number")
+    .eq("user_id", user.id)
+    .maybeSingle<AgentProfileFieldsRow>();
+
+  let phase: AgentPhase | null = null;
+  try {
+    const phases = await computeAgentPhases(adminClient, [user]);
+    phase = phases.get(user.id) ?? null;
+  } catch {
+    phase = null;
+  }
+
   return {
     id: user.id,
     email: user.email ?? "",
     name: resolveDisplayName(user, onboarding?.legal_name),
     role: getUserRole(user),
     compLevel: compLevelsByUserId.get(user.id) ?? null,
+    npn: profileRow?.npn?.trim() || onboarding?.npn?.trim() || null,
+    agentNumber: profileRow?.agent_number ?? null,
+    phase,
     referrerId,
     referrerName: resolveReferrerName(referrerId, usersById, onboardingMaps.byUserId),
     uplineNetwork: onboarding?.upline_network ?? null,

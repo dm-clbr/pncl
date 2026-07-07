@@ -43,6 +43,17 @@ serve(async (req) => {
       throw new Error(credentialError.message);
     }
 
+    const { data: statusRows } = await adminClient
+      .from("portal_carrier_statuses")
+      .select("carrier_id, application_submitted_at")
+      .eq("user_id", user.id);
+
+    const submittedCarrierIds = new Set(
+      ((statusRows ?? []) as { carrier_id: string; application_submitted_at: string | null }[])
+        .filter((row) => row.application_submitted_at)
+        .map((row) => row.carrier_id),
+    );
+
     const credentialsByCarrierId = new Map<string, PortalCarrierCredentialRecord>();
     for (const row of (credentialRows ?? []) as PortalCarrierCredentialRecord[]) {
       credentialsByCarrierId.set(row.carrier_id, row);
@@ -65,6 +76,7 @@ serve(async (req) => {
           username: credential?.username?.trim() ? credential.username.trim() : null,
           password,
           writingNumber: credential?.writing_number?.trim() ? credential.writing_number.trim() : null,
+          applicationSubmitted: submittedCarrierIds.has(carrier.id),
         };
       }),
     );

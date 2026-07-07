@@ -194,6 +194,10 @@ serve(async (req) => {
         ssn_encrypted: ssnEncrypted,
         ssn_hash: ssnHash,
         state_of_residence: payload.stateOfResidence,
+        address_line1: payload.addressLine1 ?? null,
+        address_city: payload.addressCity ?? null,
+        address_zip: payload.addressZip ?? null,
+        county: payload.county ?? null,
         upline_network: uplineNetwork,
         has_license: payload.hasLicense,
         npn: payload.npn ?? null,
@@ -333,6 +337,13 @@ serve(async (req) => {
             npn: payload.npn ?? null,
             driversLicense: payload.driversLicenseImage,
             profilePhoto: payload.profilePhotoImage,
+            address: {
+              line1: payload.addressLine1 ?? null,
+              city: payload.addressCity ?? null,
+              state: payload.stateOfResidence,
+              zip: payload.addressZip ?? null,
+              county: payload.county ?? null,
+            },
           });
         }
       } catch (portalError) {

@@ -24,6 +24,12 @@
   --ease: cubic-bezier(.16, 1, .3, 1);
   --radius: 0px;
 
+  /* Admin console type scale — bump these to resize the whole console. */
+  --admin-fs-body: .95rem;
+  --admin-fs-note: .88rem;
+  --admin-fs-label: 11px;
+  --admin-fs-badge: 10.5px;
+
   font-family: var(--ff-sans);
   background: var(--bone);
   color: var(--ink);
@@ -909,6 +915,336 @@
   transition: width .4s var(--ease);
 }
 
+/* --- Support tickets --- */
+
+.home2-page .portal-ticket-item {
+  align-items: flex-start;
+}
+
+.home2-page .portal-ticket-resolution {
+  margin: 6px 0 0;
+  font-size: .82rem;
+  line-height: 1.5;
+  color: var(--bone);
+  white-space: pre-wrap;
+}
+
+.home2-page .admin-ticket-modal {
+  max-width: 560px;
+  width: min(560px, calc(100vw - 32px));
+}
+
+.home2-page .admin-ticket-description {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  font-size: .88rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  background: rgba(240, 237, 228, .05);
+  border: 1px solid rgba(240, 237, 228, .1);
+  max-height: 30vh;
+  overflow-y: auto;
+}
+
+.home2-page .admin-ticket-modal-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 640px) {
+  .home2-page .admin-ticket-modal-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Pay & Commissions page --- */
+
+.home2-page .portal-pay-policy-list {
+  display: grid;
+  gap: 20px;
+}
+
+.home2-page .portal-pay-policy-entry h2 {
+  margin: 0 0 8px;
+  font-size: 1.02rem;
+  letter-spacing: .01em;
+}
+
+.home2-page .portal-pay-policy-entry p {
+  margin: 0;
+  font-size: .9rem;
+  line-height: 1.65;
+  color: var(--bone);
+  white-space: pre-wrap;
+}
+
+.home2-page .portal-faq-list {
+  display: grid;
+  gap: 8px;
+}
+
+.home2-page .portal-faq-item {
+  border: 1px solid rgba(240, 237, 228, .12);
+  background: rgba(240, 237, 228, .03);
+}
+
+.home2-page .portal-faq-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 16px;
+  background: none;
+  border: 0;
+  color: var(--cream, #f0ede4);
+  font: inherit;
+  font-size: .92rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.home2-page .portal-faq-question svg {
+  flex-shrink: 0;
+  transition: transform .18s ease;
+}
+
+.home2-page .portal-faq-question svg.open {
+  transform: rotate(180deg);
+}
+
+.home2-page .portal-faq-answer {
+  margin: 0;
+  padding: 0 16px 14px;
+  font-size: .88rem;
+  line-height: 1.65;
+  color: var(--bone);
+  white-space: pre-wrap;
+}
+
+/* --- Admin edit-profile modal --- */
+
+.home2-page .admin-edit-profile-modal {
+  max-width: 640px;
+  width: min(640px, calc(100vw - 32px));
+}
+
+.home2-page .admin-edit-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  margin-bottom: 16px;
+  max-height: 55vh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+@media (max-width: 640px) {
+  .home2-page .admin-edit-profile-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Carrier application status badge --- */
+
+.home2-page .portal-carrier-submitted-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  padding: 2px 8px;
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  border: 1px solid rgba(127, 176, 105, .45);
+  background: rgba(127, 176, 105, .14);
+  color: #9dc98a;
+  white-space: nowrap;
+}
+
+/* --- Disclosure modules --- */
+
+.home2-page .portal-disclosure-video {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin: 0 0 16px;
+  background: rgba(0, 0, 0, .4);
+  border: 1px solid rgba(240, 237, 228, .1);
+  overflow: hidden;
+}
+
+.home2-page .portal-disclosure-video iframe,
+.home2-page .portal-disclosure-video video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.home2-page .portal-disclosure-check {
+  vertical-align: -3px;
+  margin-right: 8px;
+  color: var(--steel);
+}
+
+.home2-page .portal-disclosure-check.done {
+  color: #9dc98a;
+}
+
+.home2-page .portal-disclosure-pending-video {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* --- Profile "My documents" manual uploads --- */
+
+.home2-page .portal-documents-list {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.home2-page .portal-documents-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(240, 237, 228, .1);
+  background: rgba(240, 237, 228, .03);
+}
+
+.home2-page .portal-documents-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.home2-page .portal-documents-copy strong {
+  font-size: .92rem;
+  color: var(--bone);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home2-page .portal-documents-copy span {
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: .06em;
+  color: var(--steel);
+}
+
+.home2-page .portal-documents-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.home2-page .portal-documents-delete {
+  color: #d98a8a;
+}
+
+@media (max-width: 640px) {
+  .home2-page .portal-documents-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* --- Profile page onboarding progress + phase badge --- */
+
+.home2-page .portal-profile-progress {
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px solid rgba(240, 237, 228, .12);
+  background: rgba(240, 237, 228, .04);
+}
+
+.home2-page .portal-profile-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.home2-page .portal-profile-progress-count {
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  color: var(--steel);
+}
+
+.home2-page .portal-profile-progress-bar {
+  height: 6px;
+  background: rgba(240, 237, 228, .1);
+  overflow: hidden;
+}
+
+.home2-page .portal-profile-progress-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-deep), var(--accent-bright));
+  transition: width .4s var(--ease);
+}
+
+.home2-page .portal-phase-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  border: 1px solid rgba(240, 237, 228, .2);
+  color: var(--bone);
+  background: rgba(240, 237, 228, .06);
+  white-space: nowrap;
+}
+
+.home2-page .portal-phase-badge.phase-on_board {
+  border-color: rgba(200, 149, 108, .45);
+  color: #d9a877;
+  background: rgba(200, 149, 108, .12);
+}
+
+.home2-page .portal-phase-badge.phase-pre_license {
+  border-color: rgba(212, 175, 55, .45);
+  color: #d9c26a;
+  background: rgba(212, 175, 55, .12);
+}
+
+.home2-page .portal-phase-badge.phase-licensing {
+  border-color: rgba(126, 166, 224, .45);
+  color: #9dbdea;
+  background: rgba(126, 166, 224, .12);
+}
+
+.home2-page .portal-phase-badge.phase-sales_ready {
+  border-color: rgba(176, 148, 255, .45);
+  color: #c0acf5;
+  background: rgba(176, 148, 255, .12);
+}
+
+.home2-page .portal-phase-badge.phase-complete {
+  border-color: rgba(127, 176, 105, .5);
+  color: #9dc98a;
+  background: rgba(127, 176, 105, .14);
+}
+
 .home2-page .portal-checklist-note {
   margin: 0;
   font-size: .78rem;
@@ -1108,6 +1444,11 @@
 @media (min-width: 1100px) {
   .home2-page .portal-dash {
     padding-left: 400px;
+  }
+
+  /* Admin console has no checklist rail — no reserved gutter. */
+  .home2-page .portal-dash.admin-dash {
+    padding-left: 0;
   }
 
   .home2-page .portal-checklist-rail {
@@ -2187,7 +2528,7 @@
   align-items: center;
   gap: 8px;
   font-family: var(--ff-mono);
-  font-size: 10px;
+  font-size: var(--admin-fs-label);
   letter-spacing: .14em;
   text-transform: uppercase;
   color: var(--steel);
@@ -2213,7 +2554,7 @@
   border-radius: var(--radius);
   border: 1px solid rgba(240, 237, 228, .1);
   font-family: var(--ff-mono);
-  font-size: 10px;
+  font-size: var(--admin-fs-label);
   letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--steel);
@@ -2268,7 +2609,7 @@
 }
 
 .home2-page .admin-panel-head p {
-  font-size: .88rem;
+  font-size: var(--admin-fs-body);
   line-height: 1.5;
   color: var(--steel);
 }
@@ -2298,10 +2639,81 @@
 
 .home2-page .admin-stat span {
   font-family: var(--ff-mono);
-  font-size: 10px;
+  font-size: var(--admin-fs-label);
   letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--space);
+}
+
+.home2-page .admin-user-subtext {
+  display: block;
+  font-family: var(--ff-mono);
+  font-size: var(--admin-fs-label);
+  letter-spacing: .06em;
+  color: var(--steel);
+}
+
+.home2-page .admin-phase-stats {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.home2-page .admin-phase-stat {
+  text-decoration: none;
+  color: inherit;
+  transition: border-color .2s var(--ease);
+}
+
+.home2-page .admin-phase-stat:hover {
+  border-color: rgba(240, 237, 228, .3);
+}
+
+.home2-page .admin-phase-stat.phase-on_board strong { color: #d9a877; }
+.home2-page .admin-phase-stat.phase-pre_license strong { color: #d9c26a; }
+.home2-page .admin-phase-stat.phase-licensing strong { color: #9dbdea; }
+.home2-page .admin-phase-stat.phase-sales_ready strong { color: #c0acf5; }
+.home2-page .admin-phase-stat.phase-complete strong { color: #9dc98a; }
+
+.home2-page .admin-phase-badge {
+  display: inline-flex;
+  padding: 4px 8px;
+  font-family: var(--ff-mono);
+  font-size: var(--admin-fs-badge);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  border: 1px solid rgba(240, 237, 228, .16);
+  background: rgba(240, 237, 228, .06);
+  color: var(--steel);
+}
+
+.home2-page .admin-phase-badge.phase-on_board {
+  border-color: rgba(200, 149, 108, .4);
+  background: rgba(200, 149, 108, .12);
+  color: #d9a877;
+}
+
+.home2-page .admin-phase-badge.phase-pre_license {
+  border-color: rgba(212, 175, 55, .4);
+  background: rgba(212, 175, 55, .12);
+  color: #d9c26a;
+}
+
+.home2-page .admin-phase-badge.phase-licensing {
+  border-color: rgba(126, 166, 224, .4);
+  background: rgba(126, 166, 224, .12);
+  color: #9dbdea;
+}
+
+.home2-page .admin-phase-badge.phase-sales_ready {
+  border-color: rgba(176, 148, 255, .4);
+  background: rgba(176, 148, 255, .12);
+  color: #c0acf5;
+}
+
+.home2-page .admin-phase-badge.phase-complete {
+  border-color: rgba(127, 176, 105, .45);
+  background: rgba(127, 176, 105, .14);
+  color: #9dc98a;
 }
 
 .home2-page .admin-card-grid {
@@ -2345,7 +2757,7 @@
 }
 
 .home2-page .admin-card span:last-child {
-  font-size: .82rem;
+  font-size: var(--admin-fs-note);
   line-height: 1.45;
   color: var(--steel);
 }
@@ -2369,7 +2781,7 @@
 
 .home2-page .admin-field span {
   font-family: var(--ff-mono);
-  font-size: 10px;
+  font-size: var(--admin-fs-label);
   letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--space);
@@ -2431,7 +2843,7 @@
   background: var(--accent);
   color: var(--bone);
   font-family: var(--ff-mono);
-  font-size: 10px;
+  font-size: var(--admin-fs-label);
   font-weight: 600;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -2460,7 +2872,7 @@
   background: transparent;
   color: var(--bone);
   font-family: var(--ff-mono);
-  font-size: 10px;
+  font-size: var(--admin-fs-label);
   font-weight: 600;
   letter-spacing: .12em;
   text-transform: uppercase;
@@ -2480,7 +2892,7 @@
 
 .home2-page .admin-secondary-link {
   font-family: var(--ff-mono);
-  font-size: 10px;
+  font-size: var(--admin-fs-label);
   letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--steel);
@@ -2497,7 +2909,7 @@
 .home2-page .admin-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: .84rem;
+  font-size: var(--admin-fs-body);
 }
 
 .home2-page .admin-table th,
@@ -2510,7 +2922,7 @@
 
 .home2-page .admin-table th {
   font-family: var(--ff-mono);
-  font-size: 10px;
+  font-size: var(--admin-fs-label);
   letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--space);
@@ -2561,7 +2973,7 @@
   background: rgba(240, 237, 228, .04);
   color: var(--bone);
   font-family: var(--ff-sans);
-  font-size: .84rem;
+  font-size: var(--admin-fs-body);
 }
 
 .home2-page .admin-table-input-wide {
@@ -2573,7 +2985,7 @@
   align-items: center;
   gap: 8px;
   color: var(--steel);
-  font-size: .84rem;
+  font-size: var(--admin-fs-body);
   cursor: pointer;
 }
 
@@ -2586,7 +2998,7 @@
   padding: 4px 8px;
   border-radius: 0;
   font-family: var(--ff-mono);
-  font-size: 9px;
+  font-size: var(--admin-fs-badge);
   letter-spacing: .1em;
   text-transform: uppercase;
   background: rgba(240, 237, 228, .08);
@@ -2608,7 +3020,7 @@
   padding: 4px 8px;
   border-radius: 0;
   font-family: var(--ff-mono);
-  font-size: 9px;
+  font-size: var(--admin-fs-badge);
   letter-spacing: .08em;
   text-transform: uppercase;
   background: rgba(240, 237, 228, .06);
@@ -2644,7 +3056,7 @@
   background: transparent;
   color: var(--steel);
   font-family: var(--ff-mono);
-  font-size: 9px;
+  font-size: var(--admin-fs-badge);
   letter-spacing: .08em;
   text-transform: uppercase;
   cursor: pointer;
@@ -2824,7 +3236,7 @@
 
 .home2-page .admin-user-todo-note {
   font-family: var(--ff-mono);
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: .06em;
   color: var(--steel);
 }
@@ -2897,7 +3309,7 @@
   background: transparent;
   color: var(--bone);
   font-family: var(--ff-mono);
-  font-size: 10px;
+  font-size: var(--admin-fs-label);
   letter-spacing: .06em;
   text-transform: uppercase;
   text-align: left;
@@ -2951,7 +3363,7 @@
   background: transparent;
   color: inherit;
   font-family: var(--ff-mono);
-  font-size: 9px;
+  font-size: var(--admin-fs-badge);
   letter-spacing: .08em;
   text-transform: uppercase;
   cursor: pointer;
@@ -2981,14 +3393,14 @@
   flex-direction: column;
   gap: 4px;
   font-family: var(--ff-mono);
-  font-size: 9px;
+  font-size: var(--admin-fs-badge);
   letter-spacing: .08em;
   text-transform: uppercase;
   color: rgba(245, 240, 232, .65);
 }
 
 .home2-page .admin-comp-level-hint {
-  font-size: 11px;
+  font-size: 12px;
   letter-spacing: 0;
   text-transform: none;
   color: rgba(245, 240, 232, .45);
@@ -3000,7 +3412,7 @@
   gap: 6px;
   color: #7fd99a;
   font-family: var(--ff-mono);
-  font-size: 9px;
+  font-size: var(--admin-fs-badge);
   letter-spacing: .08em;
   text-transform: uppercase;
 }
@@ -3047,7 +3459,7 @@
 .home2-page .admin-genesis-details-item dt {
   margin: 0 0 4px;
   font-family: var(--ff-mono);
-  font-size: 9px;
+  font-size: var(--admin-fs-badge);
   letter-spacing: .1em;
   text-transform: uppercase;
   color: var(--space);
@@ -3056,7 +3468,7 @@
 .home2-page .admin-genesis-details-item dd {
   margin: 0;
   color: var(--bone);
-  font-size: .84rem;
+  font-size: var(--admin-fs-body);
   word-break: break-word;
 }
 
@@ -3430,14 +3842,14 @@
 
 .home2-page .admin-tree-meta {
   font-family: var(--ff-mono);
-  font-size: 10px;
+  font-size: var(--admin-fs-label);
   letter-spacing: .08em;
   color: var(--space);
 }
 
 .home2-page .admin-tree-count {
   font-family: var(--ff-mono);
-  font-size: 9px;
+  font-size: var(--admin-fs-badge);
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--steel);
@@ -3445,12 +3857,12 @@
 
 .home2-page .admin-error {
   color: #ff8f8f;
-  font-size: .88rem;
+  font-size: var(--admin-fs-body);
 }
 
 .home2-page .admin-empty {
   color: var(--steel);
-  font-size: .88rem;
+  font-size: var(--admin-fs-body);
 }
 
 .home2-page .admin-spinner {
@@ -3526,7 +3938,7 @@
   display: block;
   margin-top: 4px;
   font-family: var(--ff-mono);
-  font-size: 10px;
+  font-size: var(--admin-fs-label);
   letter-spacing: .06em;
   color: var(--space);
 }
@@ -3535,7 +3947,7 @@
   display: block;
   margin-top: 4px;
   font-family: var(--ff-mono);
-  font-size: 10px;
+  font-size: var(--admin-fs-label);
   letter-spacing: .06em;
   color: var(--space);
 }

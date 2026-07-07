@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { GitBranch, LayoutGrid, ListTree } from "lucide-react";
+import { Download, GitBranch, LayoutGrid, ListTree } from "lucide-react";
 import { HierarchyCanvas } from "@/components/admin/HierarchyCanvas";
 import { HierarchyEditModal } from "@/components/admin/HierarchyEditModal";
 import { HierarchyTree } from "@/components/admin/HierarchyTree";
 import { useAuth } from "@/contexts/AuthContext";
-import { getHierarchy } from "@/lib/admin-api";
+import { downloadAgentsCsv, getHierarchy } from "@/lib/admin-api";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
 import { trackPageView } from "@/lib/analytics";
+import { toast } from "sonner";
 
 type HierarchyView = "canvas" | "tree";
 
@@ -20,6 +21,21 @@ export default function AdminHierarchy() {
   const [error, setError] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [editAgentId, setEditAgentId] = useState<string | null>(null);
+  const [exportingCsv, setExportingCsv] = useState(false);
+
+  const handleExportCsv = async () => {
+    const token = session?.access_token;
+    if (!token) return;
+
+    setExportingCsv(true);
+    try {
+      await downloadAgentsCsv(token);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to export agents");
+    } finally {
+      setExportingCsv(false);
+    }
+  };
 
   const agentOptions = useMemo(
     () => [...agents].sort((a, b) => a.name.localeCompare(b.name)),
@@ -120,6 +136,16 @@ export default function AdminHierarchy() {
             Tree
           </button>
         </div>
+
+        <button
+          type="button"
+          className="admin-secondary-btn"
+          disabled={exportingCsv}
+          onClick={() => void handleExportCsv()}
+        >
+          <Download size={14} aria-hidden="true" />
+          {exportingCsv ? "Exporting…" : "Download CSV"}
+        </button>
       </div>
 
       {(loading || agentsLoading) && (

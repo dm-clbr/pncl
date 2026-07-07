@@ -62,6 +62,55 @@ const ICA_SIGNATURE_IMAGE_RECT = {
   height: 38.6,
 } as const;
 
+/**
+ * Company counter-signature positions. Page 12 (index 11) holds the execution
+ * COMPANY column ("BY" / "PRINT NAME" / "TITLE" labels); page 14 (index 13)
+ * holds the Debit-Check "FOR COMPANY USE ONLY" block. Coordinates sit just
+ * above each label's baseline.
+ */
+const ICA_COMPANY_EXECUTION_BLOCK = {
+  pageIndex: 11,
+  x: 62,
+  signatureY: 497,
+  printNameY: 453,
+  titleY: 408,
+  lineWidth: 213,
+} as const;
+
+const ICA_COMPANY_DEBIT_CHECK_BLOCK = {
+  pageIndex: 13,
+  x: 75,
+  companyNameY: 346,
+  signatureY: 302,
+  nameAndTitleY: 257,
+  lineWidth: 213,
+} as const;
+
+export interface IcaCompanySigner {
+  name: string;
+  title: string;
+  signatureImageBase64: string | null;
+}
+
+/**
+ * Kam's counter-signature comes from env config so the same deploy works
+ * before and after the signature asset is provisioned:
+ * - PNCL_COMPANY_SIGNER_NAME (required to enable pre-signing, e.g. "Kam ...")
+ * - PNCL_COMPANY_SIGNER_TITLE (defaults to "Managing Member")
+ * - PNCL_COMPANY_SIGNATURE_PNG_BASE64 (optional drawn-signature PNG; falls
+ *   back to a script-style rendering of the signer name)
+ */
+export function getIcaCompanySigner(): IcaCompanySigner | null {
+  const name = Deno.env.get("PNCL_COMPANY_SIGNER_NAME")?.trim();
+  if (!name) return null;
+
+  return {
+    name,
+    title: Deno.env.get("PNCL_COMPANY_SIGNER_TITLE")?.trim() || "Managing Member",
+    signatureImageBase64: Deno.env.get("PNCL_COMPANY_SIGNATURE_PNG_BASE64")?.trim() || null,
+  };
+}
+
 function normalizeSignatureImageBase64(value: unknown): string {
   if (typeof value !== "string" || !value.trim()) {
     throw new Error("A drawn signature is required");
@@ -261,6 +310,83 @@ async function drawSignatureImage(
   });
 }
 
+async function drawCompanyCounterSignature(
+  pdfDoc: PDFDocument,
+  signer: IcaCompanySigner,
+  font: Awaited<ReturnType<PDFDocument["embedFont"]>>,
+  scriptFont: Awaited<ReturnType<PDFDocument["embedFont"]>>,
+): Promise<void> {
+  const pages = pdfDoc.getPages();
+  const signatureImage = signer.signatureImageBase64
+    ? await pdfDoc.embedPng(decodeBase64ToBytes(signer.signatureImageBase64))
+    : null;
+
+  const drawSignature = (
+    page: ReturnType<PDFDocument["getPages"]>[number],
+    x: number,
+    y: number,
+  ) => {
+    if (signatureImage) {
+      const scale = Math.min(
+        ICA_COMPANY_EXECUTION_BLOCK.lineWidth / signatureImage.width,
+        36 / signatureImage.height,
+      );
+      page.drawImage(signatureImage, {
+        x,
+        y,
+        width: signatureImage.width * scale,
+        height: signatureImage.height * scale,
+      });
+    } else {
+      page.drawText(signer.name, {
+        x,
+        y: y + 6,
+        size: 18,
+        font: scriptFont,
+        color: rgb(0.1, 0.1, 0.35),
+      });
+    }
+  };
+
+  const executionPage = pages[ICA_COMPANY_EXECUTION_BLOCK.pageIndex];
+  if (executionPage) {
+    drawSignature(executionPage, ICA_COMPANY_EXECUTION_BLOCK.x, ICA_COMPANY_EXECUTION_BLOCK.signatureY);
+    executionPage.drawText(signer.name, {
+      x: ICA_COMPANY_EXECUTION_BLOCK.x,
+      y: ICA_COMPANY_EXECUTION_BLOCK.printNameY + 6,
+      size: 11,
+      font,
+      color: rgb(0, 0, 0),
+    });
+    executionPage.drawText(signer.title, {
+      x: ICA_COMPANY_EXECUTION_BLOCK.x,
+      y: ICA_COMPANY_EXECUTION_BLOCK.titleY + 6,
+      size: 11,
+      font,
+      color: rgb(0, 0, 0),
+    });
+  }
+
+  const debitPage = pages[ICA_COMPANY_DEBIT_CHECK_BLOCK.pageIndex];
+  if (debitPage) {
+    debitPage.drawText("PNCL, LLC", {
+      x: ICA_COMPANY_DEBIT_CHECK_BLOCK.x,
+      y: ICA_COMPANY_DEBIT_CHECK_BLOCK.companyNameY + 6,
+      size: 11,
+      font,
+      color: rgb(0, 0, 0),
+    });
+    drawSignature(debitPage, ICA_COMPANY_DEBIT_CHECK_BLOCK.x, ICA_COMPANY_DEBIT_CHECK_BLOCK.signatureY);
+    debitPage.drawText(`${signer.name}, ${signer.title}`, {
+      x: ICA_COMPANY_DEBIT_CHECK_BLOCK.x,
+      y: ICA_COMPANY_DEBIT_CHECK_BLOCK.nameAndTitleY + 6,
+      size: 11,
+      font,
+      color: rgb(0, 0, 0),
+    });
+  }
+}
+
 export async function generateSignedIcaPdf(
   payload: SubmitOnboardingContractPayload,
   signedAt: Date,
@@ -274,6 +400,12 @@ export async function generateSignedIcaPdf(
 
   fillIcaFormFields(pdfDoc.getForm(), payload, signedAt);
   await drawSignatureImage(pdfDoc, payload.signatureImageBase64);
+
+  const companySigner = getIcaCompanySigner();
+  if (companySigner) {
+    const scriptFont = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
+    await drawCompanyCounterSignature(pdfDoc, companySigner, font, scriptFont);
+  }
 
   const certPage = pdfDoc.addPage([612, 792]);
   let y = 740;
@@ -308,6 +440,18 @@ export async function generateSignedIcaPdf(
     72,
     y,
   );
+
+  if (companySigner) {
+    y = drawLabelValue(
+      certPage,
+      font,
+      boldFont,
+      "Company counter-signature",
+      `${companySigner.name}, ${companySigner.title} (pre-authorized)`,
+      72,
+      y,
+    );
+  }
 
   if (metadata?.ipAddress) {
     y = drawLabelValue(certPage, font, boldFont, "IP address", metadata.ipAddress, 72, y);

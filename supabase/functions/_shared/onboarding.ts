@@ -40,6 +40,10 @@ export interface OnboardingRecord {
   date_of_birth: string;
   ssn_encrypted: string;
   state_of_residence: string;
+  address_line1: string | null;
+  address_city: string | null;
+  address_zip: string | null;
+  county: string | null;
   upline_network: string;
   has_license: string;
   npn: string | null;
@@ -77,6 +81,10 @@ export interface SubmitOnboardingPayload {
   dateOfBirth: string;
   ssn: string;
   stateOfResidence: string;
+  addressLine1?: string;
+  addressCity?: string;
+  addressZip?: string;
+  county?: string;
   uplineNetwork: string;
   hasLicense: string;
   npn?: string;
@@ -278,6 +286,16 @@ export function validateSubmitPayload(body: unknown): SubmitOnboardingPayload {
     throw new Error("Invalid state of residence");
   }
 
+  // Optional server-side so older cached clients can still submit; the live
+  // onboarding form requires all four.
+  const addressLine1 = typeof data.addressLine1 === "string" ? data.addressLine1.trim() : "";
+  const addressCity = typeof data.addressCity === "string" ? data.addressCity.trim() : "";
+  const addressZipRaw = typeof data.addressZip === "string" ? data.addressZip.replace(/\D/g, "") : "";
+  if (addressZipRaw && addressZipRaw.length !== 5) {
+    throw new Error("ZIP code must be 5 digits");
+  }
+  const county = typeof data.county === "string" ? data.county.trim() : "";
+
   const uplineNetwork = normalizeRequiredString(data.uplineNetwork, "uplineNetwork");
   const hasLicense = normalizeYesNo(data.hasLicense, "hasLicense");
   const hasEoInsurance = normalizeYesNo(data.hasEoInsurance, "hasEoInsurance");
@@ -310,6 +328,10 @@ export function validateSubmitPayload(body: unknown): SubmitOnboardingPayload {
     dateOfBirth,
     ssn,
     stateOfResidence,
+    addressLine1: addressLine1 || undefined,
+    addressCity: addressCity || undefined,
+    addressZip: addressZipRaw || undefined,
+    county: county || undefined,
     uplineNetwork,
     hasLicense,
     npn: npn || undefined,

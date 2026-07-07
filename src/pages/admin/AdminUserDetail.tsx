@@ -1,16 +1,20 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, CheckCircle2, Circle, ExternalLink, UserRound } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Circle, ExternalLink, Pencil, UserRound } from "lucide-react";
 import AdminOnboardingDetailsPanel from "@/components/admin/AdminOnboardingDetailsPanel";
+import AdminEditProfileModal from "@/components/admin/AdminEditProfileModal";
 import AdminUserDocumentsList from "@/components/admin/AdminUserDocumentsList";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   backfillGoogleRecovery,
+  formatAgentNumber,
   getAdminUserProfile,
   reactivateGoogleUser,
   sendGmailVerificationEmail,
+  setCarrierApplicationStatus,
   setUserTodoCompletion,
   type AdminPortalTodoPhase,
+  type AdminUserCarrierStatus,
   type AdminUserProfileDetail,
   type AdminUserTodoStatus,
   type GoogleWorkspaceStatus,
@@ -140,6 +144,8 @@ export default function AdminUserDetail() {
   const [syncingGoogleRecovery, setSyncingGoogleRecovery] = useState(false);
   const [reactivatingGoogle, setReactivatingGoogle] = useState(false);
   const [togglingTodoSlug, setTogglingTodoSlug] = useState<string | null>(null);
+  const [togglingCarrierId, setTogglingCarrierId] = useState<string | null>(null);
+  const [editingProfile, setEditingProfile] = useState(false);
 
   useEffect(() => {
     document.title = "User profile — PNCL Admin";
@@ -186,6 +192,18 @@ export default function AdminUserDetail() {
       toast.success("Documents refreshed.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Unable to refresh documents");
+    }
+  };
+
+  const handleRefreshProfile = async () => {
+    const token = session?.access_token;
+    if (!token || !userId) return;
+
+    try {
+      const data = await getAdminUserProfile(token, userId);
+      setProfile(data);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to reload profile");
     }
   };
 
@@ -256,6 +274,38 @@ export default function AdminUserDetail() {
       toast.error(err instanceof Error ? err.message : "Unable to sync Google recovery info");
     } finally {
       setSyncingGoogleRecovery(false);
+    }
+  };
+
+  const handleToggleCarrierStatus = async (status: AdminUserCarrierStatus) => {
+    const token = session?.access_token;
+    if (!token || !agent) return;
+
+    const submitted = !status.applicationSubmittedAt;
+    setTogglingCarrierId(status.carrierId);
+    try {
+      const result = await setCarrierApplicationStatus(token, {
+        userId: agent.id,
+        carrierId: status.carrierId,
+        submitted,
+      });
+      toast.success(result.message);
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              carrierStatuses: prev.carrierStatuses.map((row) =>
+                row.carrierId === status.carrierId
+                  ? { ...row, applicationSubmittedAt: submitted ? new Date().toISOString() : null }
+                  : row,
+              ),
+            }
+          : prev,
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to update carrier status");
+    } finally {
+      setTogglingCarrierId(null);
     }
   };
 
@@ -488,14 +538,23 @@ export default function AdminUserDetail() {
           </div>
 
           <div className="admin-user-profile-section">
-            <div className="admin-panel-head">
+            <div className="admin-panel-head admin-panel-head-row">
               <div>
                 <h2>Portal profile</h2>
                 <p>Apparel sizes and profile details from the agent portal.</p>
               </div>
+              <button
+                type="button"
+                className="admin-icon-btn"
+                onClick={() => setEditingProfile(true)}
+              >
+                <Pencil size={14} aria-hidden="true" />
+                Edit profile
+              </button>
             </div>
             {profile.portalProfile ? (
               <dl className="admin-genesis-details-grid">
+                {profileField("Agent ID", formatAgentNumber(agent.agentNumber))}
                 {profileField("First name", profile.portalProfile.firstName)}
                 {profileField("Last name", profile.portalProfile.lastName)}
                 {profileField("Shirt size", profile.portalProfile.shirtSize)}
@@ -503,12 +562,42 @@ export default function AdminUserDetail() {
                 {profileField("Hoodie size", profile.portalProfile.hoodieSize)}
                 {profileField("Waist size", profile.portalProfile.waistSize)}
                 {profileField("Shoe size", profile.portalProfile.shoeSize)}
+                {profileField(
+                  "Home address",
+                  [
+                    profile.portalProfile.addressLine1,
+                    profile.portalProfile.addressCity,
+                    profile.portalProfile.addressState,
+                    profile.portalProfile.addressZip,
+                  ]
+                    .filter(Boolean)
+                    .join(", ") || null,
+                )}
+                {profileField("County", profile.portalProfile.county)}
                 {profileField("NPN", profile.portalProfile.npn)}
                 {profileField("E&O policy number", profile.portalProfile.eoPolicyNumber)}
+                <div className="admin-genesis-details-item">
+                  <dt>E&amp;O certificate</dt>
+                  <dd>
+                    {profile.portalProfile.eoCertificateUrl ? (
+                      <a
+                        href={profile.portalProfile.eoCertificateUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="admin-secondary-link"
+                      >
+                        View upload
+                        <ExternalLink size={13} aria-hidden="true" />
+                      </a>
+                    ) : (
+                      "—"
+                    )}
+                  </dd>
+                </div>
                 {profileField(
                   "State licenses",
-                  profile.portalProfile.stateLicenses.length > 0
-                    ? profile.portalProfile.stateLicenses.join(", ")
+                  (profile.portalProfile.stateLicenses ?? []).length > 0
+                    ? (profile.portalProfile.stateLicenses ?? []).join(", ")
                     : null,
                 )}
                 <div className="admin-genesis-details-item">
@@ -536,6 +625,55 @@ export default function AdminUserDetail() {
               </dl>
             ) : (
               <p className="admin-empty">This user has not saved a portal profile yet.</p>
+            )}
+          </div>
+
+          <div className="admin-user-profile-section">
+            <div className="admin-panel-head">
+              <div>
+                <h2>Carrier applications</h2>
+                <p>
+                  Mark each carrier application as submitted once PNCL sends it. The agent sees a
+                  green badge on their carrier accounts table.
+                </p>
+              </div>
+            </div>
+            {(profile.carrierStatuses ?? []).length === 0 ? (
+              <p className="admin-empty">No published carriers.</p>
+            ) : (
+              <ul className="admin-user-todo-list admin-carrier-status-list">
+                {(profile.carrierStatuses ?? []).map((status) => (
+                  <li key={status.carrierId} className={status.applicationSubmittedAt ? "done" : undefined}>
+                    <button
+                      type="button"
+                      className="admin-user-todo-toggle"
+                      disabled={togglingCarrierId === status.carrierId}
+                      onClick={() => void handleToggleCarrierStatus(status)}
+                      aria-label={
+                        status.applicationSubmittedAt
+                          ? `Mark ${status.carrier} application not submitted`
+                          : `Mark ${status.carrier} application submitted`
+                      }
+                    >
+                      {status.applicationSubmittedAt ? (
+                        <CheckCircle2 size={17} aria-hidden="true" />
+                      ) : (
+                        <Circle size={17} aria-hidden="true" />
+                      )}
+                    </button>
+                    <div className="admin-user-todo-body">
+                      <span className="admin-user-todo-title">{status.carrier}</span>
+                      <span className="admin-user-todo-note">
+                        {status.applicationSubmittedAt
+                          ? `Application submitted ${formatDate(status.applicationSubmittedAt)}`
+                          : "Application not submitted"}
+                        {status.writingNumber ? ` · Writing # ${status.writingNumber}` : ""}
+                        {status.hasCredentials ? " · Agent saved login" : ""}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
 
@@ -635,6 +773,20 @@ export default function AdminUserDetail() {
 
             <AdminUserDocumentsList documents={profile.documents} />
           </div>
+
+          {editingProfile && session?.access_token && (
+            <AdminEditProfileModal
+              userId={userId}
+              userName={agent?.name ?? "this user"}
+              profile={profile.portalProfile}
+              accessToken={session.access_token}
+              onClose={() => setEditingProfile(false)}
+              onSaved={() => {
+                setEditingProfile(false);
+                void handleRefreshProfile();
+              }}
+            />
+          )}
         </div>
       )}
     </section>

@@ -20,12 +20,39 @@ export interface AgentOnboardingDetails {
   workspaceEmail: string | null;
 }
 
+export type AgentPhase = "on_board" | "pre_license" | "licensing" | "sales_ready" | "complete";
+
+export const AGENT_PHASE_LABELS: Record<AgentPhase, string> = {
+  on_board: "On-Board",
+  pre_license: "Pre-License",
+  licensing: "Licensing",
+  sales_ready: "Sales Ready",
+  complete: "Complete",
+};
+
+export const AGENT_PHASE_ORDER: AgentPhase[] = [
+  "on_board",
+  "pre_license",
+  "licensing",
+  "sales_ready",
+  "complete",
+];
+
+/** Formats a numeric agent number as the display ID, e.g. PNCL-00042. */
+export function formatAgentNumber(agentNumber: number | null | undefined): string | null {
+  if (agentNumber === null || agentNumber === undefined) return null;
+  return `PNCL-${String(agentNumber).padStart(5, "0")}`;
+}
+
 export interface AgentSummary {
   id: string;
   email: string;
   name: string;
   role: PortalRole;
   compLevel: number | null;
+  npn: string | null;
+  agentNumber: number | null;
+  phase: AgentPhase | null;
   referrerId: string | null;
   referrerName: string | null;
   uplineNetwork: string | null;
@@ -100,6 +127,39 @@ async function adminFetch<T>(
     throw new Error(data.message ?? "Admin request failed");
   }
   return data as T;
+}
+
+/** Downloads the agent roster CSV and triggers a browser save. */
+export async function downloadAgentsCsv(accessToken: string): Promise<void> {
+  const { url, anonKey } = getSupabaseConfig();
+  const response = await fetch(`${url.replace(/\/$/, "")}/functions/v1/admin-export-agents`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      apikey: anonKey,
+    },
+  });
+
+  if (!response.ok) {
+    let message = "Unable to export agents";
+    try {
+      const data = await response.json();
+      if (typeof data.message === "string") message = data.message;
+    } catch {
+      // non-JSON error body
+    }
+    throw new Error(message);
+  }
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = objectUrl;
+  anchor.download = `pncl-agents-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(objectUrl);
 }
 
 export async function listAgents(accessToken: string): Promise<AgentSummary[]> {
@@ -886,8 +946,14 @@ export interface AdminUserPortalProfile {
   profilePhotoUrl: string | null;
   npn: string | null;
   eoPolicyNumber: string | null;
+  eoCertificateUrl: string | null;
   stateLicenses: string[];
   driversLicenseUrl: string | null;
+  addressLine1: string | null;
+  addressCity: string | null;
+  addressState: string | null;
+  addressZip: string | null;
+  county: string | null;
   updatedAt: string;
 }
 
@@ -940,6 +1006,14 @@ export interface AdminUserGoogleWorkspaceSummary {
   loadError: string | null;
 }
 
+export interface AdminUserCarrierStatus {
+  carrierId: string;
+  carrier: string;
+  applicationSubmittedAt: string | null;
+  hasCredentials: boolean;
+  writingNumber: string | null;
+}
+
 export interface AdminUserProfileDetail {
   agent: AgentSummary;
   googleWorkspace: AdminUserGoogleWorkspaceSummary | null;
@@ -949,6 +1023,46 @@ export interface AdminUserProfileDetail {
   completedPortalTodos: Record<string, boolean>;
   todos: AdminUserTodoStatus[];
   documents: AdminUserDocument[];
+  carrierStatuses: AdminUserCarrierStatus[];
+}
+
+export interface AdminEditableProfileFields {
+  firstName?: string | null;
+  lastName?: string | null;
+  shirtSize?: string | null;
+  poloShirtSize?: string | null;
+  hoodieSize?: string | null;
+  waistSize?: string | null;
+  shoeSize?: string | null;
+  addressLine1?: string | null;
+  addressCity?: string | null;
+  addressState?: string | null;
+  addressZip?: string | null;
+  county?: string | null;
+  npn?: string | null;
+  eoPolicyNumber?: string | null;
+  stateLicenses?: string[];
+}
+
+/** Admin correction of an agent's portal profile; changes are audit-logged server-side. */
+export async function updateUserProfileFields(
+  accessToken: string,
+  input: { userId: string; fields: AdminEditableProfileFields },
+): Promise<{ message: string }> {
+  return adminFetch("admin-update-user-profile", accessToken, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function setCarrierApplicationStatus(
+  accessToken: string,
+  input: { userId: string; carrierId: string; submitted: boolean },
+): Promise<{ message: string }> {
+  return adminFetch("admin-set-carrier-status", accessToken, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 
 export async function getPortalTodoCompletion(
@@ -978,5 +1092,225 @@ export async function setUserTodoCompletion(
   return adminFetch("admin-set-user-todo-completion", accessToken, {
     method: "POST",
     body: JSON.stringify(input),
+  });
+}
+
+export type AdminCompAttachmentStatus = "none" | "pending" | "signed";
+
+export interface AdminContractingRow {
+  userId: string;
+  name: string;
+  email: string;
+  npn: string | null;
+  eoPolicyNumber: string | null;
+  hasEoCertificate: boolean;
+  licensingReady: boolean;
+  licensingCompletedAt: string | null;
+  contractingInitiatedAt: string | null;
+  icaSigned: boolean;
+  icaSignedAt: string | null;
+  compStatus: AdminCompAttachmentStatus;
+  compTitle: string | null;
+  compAssignedAt: string | null;
+  compSignedAt: string | null;
+}
+
+export interface AdminCompAttachment {
+  id: string;
+  userId: string;
+  title: string;
+  status: "pending" | "signed";
+  assignedAt: string;
+  signatureName: string | null;
+  signedAt: string | null;
+  unsignedUrl: string | null;
+  signedUrl: string | null;
+}
+
+export interface AdminLeadChargeUploadRow {
+  email?: string;
+  name?: string;
+  agentNumber?: number;
+  description?: string;
+  amountCents: number;
+}
+
+export interface AdminLeadCharge {
+  id: string;
+  weekOf: string;
+  userId: string | null;
+  portalName: string | null;
+  portalEmail: string | null;
+  agentEmail: string | null;
+  agentName: string | null;
+  description: string | null;
+  amountCents: number;
+  sourceFile: string | null;
+}
+
+export async function uploadLeadCharges(
+  accessToken: string,
+  input: { weekOf: string; sourceFile: string | null; rows: AdminLeadChargeUploadRow[] },
+): Promise<{ message: string; matched: number; unmatched: number }> {
+  return adminFetch("admin-upload-lead-charges", accessToken, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function listLeadCharges(
+  accessToken: string,
+  weekOf?: string,
+): Promise<{ weeks: string[]; weekOf: string | null; charges: AdminLeadCharge[] }> {
+  const query = weekOf ? `?weekOf=${encodeURIComponent(weekOf)}` : "";
+  return adminFetch(`admin-list-lead-charges${query}`, accessToken, { method: "GET" });
+}
+
+export type AdminTicketType = "hierarchy_change" | "pay_tier" | "commission_dispute" | "other";
+export type AdminTicketStatus = "open" | "in_progress" | "resolved";
+
+export interface AdminTicket {
+  id: string;
+  userId: string;
+  type: AdminTicketType;
+  subject: string;
+  description: string;
+  status: AdminTicketStatus;
+  assignedTo: string | null;
+  assignedToName: string | null;
+  resolution: string | null;
+  createdAt: string;
+  updatedAt: string;
+  agentName: string;
+  agentEmail: string | null;
+}
+
+export interface AdminTicketAssignee {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export async function listAdminTickets(
+  accessToken: string,
+): Promise<{ tickets: AdminTicket[]; admins: AdminTicketAssignee[] }> {
+  return adminFetch("admin-list-tickets", accessToken, { method: "GET" });
+}
+
+export async function updateAdminTicket(
+  accessToken: string,
+  input: {
+    ticketId: string;
+    status?: AdminTicketStatus;
+    assignedTo?: string | null;
+    resolution?: string | null;
+  },
+): Promise<{ message: string }> {
+  return adminFetch("admin-update-ticket", accessToken, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export interface AdminPayPolicyEntry {
+  id: string;
+  title: string;
+  body: string;
+  category: "policy" | "faq";
+  sort_order: number;
+  published: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function listAdminPayPolicyEntries(
+  accessToken: string,
+): Promise<AdminPayPolicyEntry[]> {
+  const data = await adminFetch<{ entries: AdminPayPolicyEntry[] }>(
+    "admin-list-pay-policy",
+    accessToken,
+    { method: "GET" },
+  );
+  return data.entries;
+}
+
+export async function upsertPayPolicyEntry(
+  accessToken: string,
+  input: {
+    id?: string;
+    title: string;
+    body: string;
+    category: "policy" | "faq";
+    sortOrder: number;
+    published: boolean;
+  },
+): Promise<{ message: string }> {
+  return adminFetch("admin-upsert-pay-policy-entry", accessToken, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deletePayPolicyEntry(
+  accessToken: string,
+  id: string,
+): Promise<{ message: string }> {
+  return adminFetch("admin-delete-pay-policy-entry", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ id }),
+  });
+}
+
+export async function listContractingQueue(accessToken: string): Promise<AdminContractingRow[]> {
+  const data = await adminFetch<{ rows: AdminContractingRow[] }>(
+    "admin-list-contracting",
+    accessToken,
+    { method: "GET" },
+  );
+  return data.rows;
+}
+
+export async function markContractingInitiated(
+  accessToken: string,
+  input: { userId: string; initiated: boolean },
+): Promise<{ message: string }> {
+  return adminFetch("admin-mark-contracting-initiated", accessToken, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function assignCompAttachment(
+  accessToken: string,
+  input: { userId: string; title: string; pdfBase64: string },
+): Promise<{ message: string }> {
+  return adminFetch("admin-assign-comp-attachment", accessToken, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function listCompAttachments(
+  accessToken: string,
+  userId?: string,
+): Promise<AdminCompAttachment[]> {
+  const params = new URLSearchParams();
+  if (userId) params.set("userId", userId);
+  const query = params.toString();
+  const data = await adminFetch<{ attachments: AdminCompAttachment[] }>(
+    `admin-list-comp-attachments${query ? `?${query}` : ""}`,
+    accessToken,
+    { method: "GET" },
+  );
+  return data.attachments;
+}
+
+export async function deleteCompAttachment(
+  accessToken: string,
+  attachmentId: string,
+): Promise<{ message: string }> {
+  return adminFetch("admin-delete-comp-attachment", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ attachmentId }),
   });
 }

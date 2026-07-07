@@ -17,6 +17,10 @@ export interface SubmitOnboardingInput {
   dateOfBirth: string;
   ssn: string;
   stateOfResidence: string;
+  addressLine1: string;
+  addressCity: string;
+  addressZip: string;
+  county: string;
   driversLicense?: string;
   profilePhoto?: string;
   uplineNetwork: string;
@@ -97,6 +101,10 @@ export async function submitOnboarding(
       dateOfBirth: input.dateOfBirth,
       ssn: input.ssn,
       stateOfResidence: input.stateOfResidence,
+      addressLine1: input.addressLine1,
+      addressCity: input.addressCity,
+      addressZip: input.addressZip,
+      county: input.county,
       uplineNetwork: input.uplineNetwork,
       hasLicense: input.hasLicense,
       npn: input.npn || undefined,
