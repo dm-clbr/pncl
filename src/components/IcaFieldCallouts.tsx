@@ -27,6 +27,11 @@ interface IcaFieldCalloutsProps {
 const CALLOUT_WIDTH = 168;
 const MOBILE_BREAKPOINT = 560;
 
+const SIGNATURE_FIELD_NAMES: readonly string[] = [
+  ICA_FORM_FIELDS.signature,
+  ICA_FORM_FIELDS.executionSignature,
+];
+
 function isMobileLayout(): boolean {
   return window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`).matches;
 }
@@ -78,7 +83,7 @@ export default function IcaFieldCallouts({
       const inputRight = inputRect.right - hostRect.left;
       const inputBottom = inputRect.bottom - hostRect.top;
 
-      const isSignatureField = meta.fieldName === ICA_FORM_FIELDS.signature;
+      const isSignatureField = SIGNATURE_FIELD_NAMES.includes(meta.fieldName);
       const filled = isSignatureField
         ? Boolean(signatureImage)
         : Boolean(input.value?.trim());
@@ -177,7 +182,7 @@ export default function IcaFieldCallouts({
   }, [active, containerRef, hostRef, layoutCallouts]);
 
   const handleCalloutClick = (callout: PlacedCallout) => {
-    if (callout.fieldName === ICA_FORM_FIELDS.signature && onSignatureRequest) {
+    if (SIGNATURE_FIELD_NAMES.includes(callout.fieldName) && onSignatureRequest) {
       onSignatureRequest();
       return;
     }

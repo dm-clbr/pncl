@@ -47,7 +47,11 @@ const ICA_SECTION_JUMPS = [
 const FIELD_RENDER_PAGES = [ICA_PDF_PAGES.signature, ICA_PDF_PAGES.debitCheck] as const;
 
 const FIELDS_BY_PAGE: Record<number, string[]> = {
-  [ICA_PDF_PAGES.signature]: [ICA_FORM_FIELDS.fullName, ICA_FORM_FIELDS.email],
+  [ICA_PDF_PAGES.signature]: [
+    ICA_FORM_FIELDS.fullName,
+    ICA_FORM_FIELDS.email,
+    ICA_FORM_FIELDS.executionSignature,
+  ],
   [ICA_PDF_PAGES.debitCheck]: [
     ICA_FORM_FIELDS.signature,
     ICA_FORM_FIELDS.initialA,
@@ -56,6 +60,12 @@ const FIELDS_BY_PAGE: Record<number, string[]> = {
     ICA_FORM_FIELDS.initialD,
     ICA_FORM_FIELDS.initialE,
   ],
+};
+
+/** Drawn-signature fields: the execution "BY" line and the Debit-Check line. */
+const SIGNATURE_FIELD_BY_PAGE: Record<number, string> = {
+  [ICA_PDF_PAGES.signature]: ICA_FORM_FIELDS.executionSignature,
+  [ICA_PDF_PAGES.debitCheck]: ICA_FORM_FIELDS.signature,
 };
 
 async function fetchIcaPdfBytes(): Promise<Uint8Array> {
@@ -148,7 +158,7 @@ const IcaFillablePdfViewer = forwardRef<IcaFillablePdfViewerHandle, IcaFillableP
     const [signatureImage, setSignatureImage] = useState<string | null>(null);
     const [signatureModalOpen, setSignatureModalOpen] = useState(false);
     const [signatureOverlayStyle, setSignatureOverlayStyle] = useState<CSSProperties | null>(null);
-    const signatureFieldIdRef = useRef<string | null>(null);
+    const signatureFieldIdsRef = useRef<Map<string, string>>(new Map());
 
     const syncHostHeightForPage = useCallback((page: number) => {
       const viewer = viewerRef.current;
@@ -480,20 +490,25 @@ const IcaFillablePdfViewer = forwardRef<IcaFillablePdfViewerHandle, IcaFillableP
       const container = containerRef.current;
       if (!viewerReady || !container) return;
 
-      const fieldId = signatureFieldIdRef.current;
-      if (!fieldId) return;
-
-      const input = container.querySelector(`#pdfjs_internal_id_${fieldId}`) as HTMLInputElement | null;
-      if (!input) return;
-
-      input.readOnly = true;
-      input.tabIndex = -1;
-      input.placeholder = "Draw signature";
-      input.classList.add("ica-signature-field-input");
-
       const openModal = () => setSignatureModalOpen(true);
-      input.addEventListener("click", openModal);
-      return () => input.removeEventListener("click", openModal);
+      const boundInputs: HTMLInputElement[] = [];
+
+      for (const fieldId of signatureFieldIdsRef.current.values()) {
+        const input = container.querySelector(`#pdfjs_internal_id_${fieldId}`) as HTMLInputElement | null;
+        if (!input) continue;
+
+        input.readOnly = true;
+        input.tabIndex = -1;
+        input.placeholder = "Draw signature";
+        input.classList.add("ica-signature-field-input");
+
+        input.addEventListener("click", openModal);
+        boundInputs.push(input);
+      }
+
+      return () => {
+        for (const input of boundInputs) input.removeEventListener("click", openModal);
+      };
     }, [currentPage, viewerReady]);
 
     useEffect(() => {
@@ -502,16 +517,21 @@ const IcaFillablePdfViewer = forwardRef<IcaFillablePdfViewerHandle, IcaFillableP
       if (!viewerReady || !container || !pdfDocumentLocal) return;
 
       void pdfDocumentLocal.getFieldObjects().then((fieldObjects) => {
-        const entry = fieldObjects?.[ICA_FORM_FIELDS.signature]?.[0];
-        signatureFieldIdRef.current = entry?.id ?? null;
+        const map = new Map<string, string>();
+        for (const fieldName of Object.values(SIGNATURE_FIELD_BY_PAGE)) {
+          const entry = fieldObjects?.[fieldName]?.[0];
+          if (entry?.id) map.set(fieldName, entry.id);
+        }
+        signatureFieldIdsRef.current = map;
       });
     }, [viewerReady, pdfDocument]);
 
     const layoutSignatureOverlay = useCallback(() => {
       const container = containerRef.current;
       const host = hostRef.current;
-      const fieldId = signatureFieldIdRef.current;
-      if (!signatureImage || !container || !host || !fieldId || currentPage !== ICA_PDF_PAGES.debitCheck) {
+      const fieldName = SIGNATURE_FIELD_BY_PAGE[currentPage];
+      const fieldId = fieldName ? signatureFieldIdsRef.current.get(fieldName) : undefined;
+      if (!signatureImage || !container || !host || !fieldId) {
         setSignatureOverlayStyle(null);
         return;
       }

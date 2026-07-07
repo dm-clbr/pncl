@@ -17,6 +17,9 @@ employee-onboarding-*.json
 .secrets/
 supabase/.temp/
 
+# Signed-document backups from reset scripts (contain PII)
+backups/
+
 # Logs
 *.log
 npm-debug.log*

@@ -16,6 +16,14 @@ export function shouldShowGenesisNotice(user: User | null): boolean {
   return Boolean(getGenesisAccountCreatedAt(user)) && !isGenesisNoticeDismissed(user);
 }
 
+/**
+ * Set by scripts/reset-portal-ica.mjs after an ICA template reset; cleared by
+ * submit-portal-ica when the user signs the new agreement.
+ */
+export function shouldShowIcaResignNotice(user: User | null): boolean {
+  return user?.user_metadata?.ica_resign_required === true;
+}
+
 export async function refreshPortalUser(): Promise<User | null> {
   const supabase = getSupabaseClient();
   const { data: { user }, error } = await supabase.auth.getUser();

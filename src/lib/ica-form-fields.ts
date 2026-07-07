@@ -4,7 +4,11 @@ export const ICA_FORM_FIELDS = {
   month: "month",
   yearLast2: "last-2-digit-year",
   introName: "Name",
-  introDate: "todays-date",
+  /**
+   * Execution-page contractor "BY" line. Despite the legacy AcroForm name,
+   * this holds the drawn signature (image stamped server-side), not a date.
+   */
+  executionSignature: "todays-date",
   fullName: "full-name",
   email: "email-address",
   signatureDate: "date",

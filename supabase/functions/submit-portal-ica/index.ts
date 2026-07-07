@@ -98,6 +98,8 @@ serve(async (req) => {
       user_metadata: {
         ...user.user_metadata,
         completed_portal_todos: completedTodos,
+        // Clear the re-sign notice shown after an ICA template reset.
+        ica_resign_required: false,
       },
     });
 

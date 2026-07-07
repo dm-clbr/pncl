@@ -4,6 +4,7 @@ import {
   ArrowUpRight,
   ChevronDown,
   ClipboardList,
+  FileSignature,
   GraduationCap,
   LogOut,
   Shield,
@@ -34,6 +35,7 @@ import {
   GENESIS_LOGIN_URL,
   refreshPortalUser,
   shouldShowGenesisNotice,
+  shouldShowIcaResignNotice,
 } from "@/lib/portal-messages";
 import PortalIncentivesList from "@/components/PortalIncentivesList";
 import PortalBrandAssetsList from "@/components/PortalBrandAssetsList";
@@ -171,6 +173,7 @@ export default function PortalDashboard() {
   const completedTodoCount = resolvedTodos.length - pendingTodos.length;
   const pendingRequiredForms = pendingTodos.some((todo) => isRequiredFormTodo(todo.id));
   const showGenesisNotice = shouldShowGenesisNotice(portalUser);
+  const showIcaResignNotice = shouldShowIcaResignNotice(portalUser) && !icaSubmitted;
 
   const displaySections = useMemo((): PortalDashboardSection[] => {
     if (dashboardSections.length > 0) {
@@ -310,6 +313,25 @@ export default function PortalDashboard() {
               </span>
             </Link>
           </header>
+
+          {showIcaResignNotice && (
+            <div className="portal-notice-banner" role="alert">
+              <span className="portal-notice-icon" aria-hidden="true">
+                <FileSignature size={20} strokeWidth={2.25} />
+              </span>
+              <div className="portal-notice-copy">
+                <strong>Please re-sign your Independent Contractor Agreement</strong>
+                <p>
+                  We updated the ICA document, so your previous signature is no longer on
+                  file. It only takes a couple of minutes to sign the new version.
+                </p>
+                <Link to="/portal/ica" className="portal-notice-link">
+                  Re-sign agreement
+                  <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
+                </Link>
+              </div>
+            </div>
+          )}
 
           {showGenesisNotice && (
             <div className="portal-notice-banner" role="status">

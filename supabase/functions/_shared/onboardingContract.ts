@@ -2,7 +2,9 @@ import { PDFDocument, StandardFonts, rgb, type PDFForm } from "https://esm.sh/pd
 import { ICA_FORM_FIELDS, assertValidDebitCheckInitial } from "./icaFormFields.ts";
 import { loadIcaTemplateBytes } from "./icaTemplate.ts";
 
-export const ICA_VERSION = "2026-standard";
+// r2: template pre-fills the company counter-signature; contractor signature
+// is stamped on the execution "BY" line (previously held the signing date).
+export const ICA_VERSION = "2026-standard-r2";
 export const ONBOARDING_CONTRACT_BUCKET = "onboarding-documents";
 export const CONTRACT_SIGNATURE_TTL_MS = 48 * 60 * 60 * 1000;
 
@@ -53,61 +55,33 @@ export interface OnboardingContractSummary {
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/** Page 14 signature field bounds in PDF user space (bottom-left origin). */
-const ICA_SIGNATURE_IMAGE_RECT = {
-  pageIndex: 13,
-  x: 61.4836,
-  y: 464.866,
-  width: 213.7,
-  height: 38.6,
-} as const;
-
 /**
- * Company counter-signature positions. Page 12 (index 11) holds the execution
- * COMPANY column ("BY" / "PRINT NAME" / "TITLE" labels); page 14 (index 13)
- * holds the Debit-Check "FOR COMPANY USE ONLY" block. Coordinates sit just
- * above each label's baseline.
+ * Contractor signature placements in PDF user space (bottom-left origin):
+ * the execution-page CONTRACTOR "BY" line (page 12, over the flattened
+ * "todays-date" field) and the Debit-Check signature line (page 14).
  */
-const ICA_COMPANY_EXECUTION_BLOCK = {
-  pageIndex: 11,
-  x: 62,
-  signatureY: 497,
-  printNameY: 453,
-  titleY: 408,
-  lineWidth: 213,
-} as const;
-
-const ICA_COMPANY_DEBIT_CHECK_BLOCK = {
-  pageIndex: 13,
-  x: 75,
-  companyNameY: 346,
-  signatureY: 302,
-  nameAndTitleY: 257,
-  lineWidth: 213,
-} as const;
+const ICA_SIGNATURE_IMAGE_RECTS = [
+  { pageIndex: 11, x: 320.16, y: 500.87, width: 213.7, height: 38.6 },
+  { pageIndex: 13, x: 61.4836, y: 464.866, width: 213.7, height: 38.6 },
+] as const;
 
 export interface IcaCompanySigner {
   name: string;
   title: string;
-  signatureImageBase64: string | null;
 }
 
 /**
- * Kam's counter-signature comes from env config so the same deploy works
- * before and after the signature asset is provisioned:
- * - PNCL_COMPANY_SIGNER_NAME (required to enable pre-signing, e.g. "Kam ...")
- * - PNCL_COMPANY_SIGNER_TITLE (defaults to "Managing Member")
- * - PNCL_COMPANY_SIGNATURE_PNG_BASE64 (optional drawn-signature PNG; falls
- *   back to a script-style rendering of the signer name)
+ * The company counter-signature (signature, print name, and title on the
+ * execution page, plus the Debit-Check "FOR COMPANY USE ONLY" block) is baked
+ * into the template PDF, so nothing is drawn on those pages at signing time.
+ * This identity is only recorded on the Electronic Signature Record page.
+ * Defaults match the template; env overrides:
+ * PNCL_COMPANY_SIGNER_NAME / PNCL_COMPANY_SIGNER_TITLE.
  */
-export function getIcaCompanySigner(): IcaCompanySigner | null {
-  const name = Deno.env.get("PNCL_COMPANY_SIGNER_NAME")?.trim();
-  if (!name) return null;
-
+export function getIcaCompanySigner(): IcaCompanySigner {
   return {
-    name,
-    title: Deno.env.get("PNCL_COMPANY_SIGNER_TITLE")?.trim() || "Managing Member",
-    signatureImageBase64: Deno.env.get("PNCL_COMPANY_SIGNATURE_PNG_BASE64")?.trim() || null,
+    name: Deno.env.get("PNCL_COMPANY_SIGNER_NAME")?.trim() || "Kam Gray",
+    title: Deno.env.get("PNCL_COMPANY_SIGNER_TITLE")?.trim() || "President of Sales",
   };
 }
 
@@ -273,7 +247,9 @@ function fillIcaFormFields(
   setFormText(form, ICA_FORM_FIELDS.month, dateParts.month);
   setFormText(form, ICA_FORM_FIELDS.yearLast2, dateParts.yearLast2);
   setFormText(form, ICA_FORM_FIELDS.introName, payload.legalName);
-  setFormText(form, ICA_FORM_FIELDS.introDate, dateParts.full);
+  // Execution "BY" line: cleared here, then the drawn signature image is
+  // stamped over it after the form is flattened.
+  setFormText(form, ICA_FORM_FIELDS.executionSignature, "");
 
   setFormText(form, ICA_FORM_FIELDS.fullName, payload.legalName);
   setFormText(form, ICA_FORM_FIELDS.email, payload.personalEmail);
@@ -297,92 +273,19 @@ async function drawSignatureImage(
 ): Promise<void> {
   const pngBytes = decodeBase64ToBytes(signatureImageBase64);
   const image = await pdfDoc.embedPng(pngBytes);
-  const page = pdfDoc.getPages()[ICA_SIGNATURE_IMAGE_RECT.pageIndex];
-  if (!page) {
-    throw new Error("Unable to place signature on agreement PDF");
-  }
-
-  page.drawImage(image, {
-    x: ICA_SIGNATURE_IMAGE_RECT.x,
-    y: ICA_SIGNATURE_IMAGE_RECT.y,
-    width: ICA_SIGNATURE_IMAGE_RECT.width,
-    height: ICA_SIGNATURE_IMAGE_RECT.height,
-  });
-}
-
-async function drawCompanyCounterSignature(
-  pdfDoc: PDFDocument,
-  signer: IcaCompanySigner,
-  font: Awaited<ReturnType<PDFDocument["embedFont"]>>,
-  scriptFont: Awaited<ReturnType<PDFDocument["embedFont"]>>,
-): Promise<void> {
   const pages = pdfDoc.getPages();
-  const signatureImage = signer.signatureImageBase64
-    ? await pdfDoc.embedPng(decodeBase64ToBytes(signer.signatureImageBase64))
-    : null;
 
-  const drawSignature = (
-    page: ReturnType<PDFDocument["getPages"]>[number],
-    x: number,
-    y: number,
-  ) => {
-    if (signatureImage) {
-      const scale = Math.min(
-        ICA_COMPANY_EXECUTION_BLOCK.lineWidth / signatureImage.width,
-        36 / signatureImage.height,
-      );
-      page.drawImage(signatureImage, {
-        x,
-        y,
-        width: signatureImage.width * scale,
-        height: signatureImage.height * scale,
-      });
-    } else {
-      page.drawText(signer.name, {
-        x,
-        y: y + 6,
-        size: 18,
-        font: scriptFont,
-        color: rgb(0.1, 0.1, 0.35),
-      });
+  for (const rect of ICA_SIGNATURE_IMAGE_RECTS) {
+    const page = pages[rect.pageIndex];
+    if (!page) {
+      throw new Error("Unable to place signature on agreement PDF");
     }
-  };
 
-  const executionPage = pages[ICA_COMPANY_EXECUTION_BLOCK.pageIndex];
-  if (executionPage) {
-    drawSignature(executionPage, ICA_COMPANY_EXECUTION_BLOCK.x, ICA_COMPANY_EXECUTION_BLOCK.signatureY);
-    executionPage.drawText(signer.name, {
-      x: ICA_COMPANY_EXECUTION_BLOCK.x,
-      y: ICA_COMPANY_EXECUTION_BLOCK.printNameY + 6,
-      size: 11,
-      font,
-      color: rgb(0, 0, 0),
-    });
-    executionPage.drawText(signer.title, {
-      x: ICA_COMPANY_EXECUTION_BLOCK.x,
-      y: ICA_COMPANY_EXECUTION_BLOCK.titleY + 6,
-      size: 11,
-      font,
-      color: rgb(0, 0, 0),
-    });
-  }
-
-  const debitPage = pages[ICA_COMPANY_DEBIT_CHECK_BLOCK.pageIndex];
-  if (debitPage) {
-    debitPage.drawText("PNCL, LLC", {
-      x: ICA_COMPANY_DEBIT_CHECK_BLOCK.x,
-      y: ICA_COMPANY_DEBIT_CHECK_BLOCK.companyNameY + 6,
-      size: 11,
-      font,
-      color: rgb(0, 0, 0),
-    });
-    drawSignature(debitPage, ICA_COMPANY_DEBIT_CHECK_BLOCK.x, ICA_COMPANY_DEBIT_CHECK_BLOCK.signatureY);
-    debitPage.drawText(`${signer.name}, ${signer.title}`, {
-      x: ICA_COMPANY_DEBIT_CHECK_BLOCK.x,
-      y: ICA_COMPANY_DEBIT_CHECK_BLOCK.nameAndTitleY + 6,
-      size: 11,
-      font,
-      color: rgb(0, 0, 0),
+    page.drawImage(image, {
+      x: rect.x,
+      y: rect.y,
+      width: rect.width,
+      height: rect.height,
     });
   }
 }
@@ -402,10 +305,6 @@ export async function generateSignedIcaPdf(
   await drawSignatureImage(pdfDoc, payload.signatureImageBase64);
 
   const companySigner = getIcaCompanySigner();
-  if (companySigner) {
-    const scriptFont = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
-    await drawCompanyCounterSignature(pdfDoc, companySigner, font, scriptFont);
-  }
 
   const certPage = pdfDoc.addPage([612, 792]);
   let y = 740;
@@ -441,17 +340,15 @@ export async function generateSignedIcaPdf(
     y,
   );
 
-  if (companySigner) {
-    y = drawLabelValue(
-      certPage,
-      font,
-      boldFont,
-      "Company counter-signature",
-      `${companySigner.name}, ${companySigner.title} (pre-authorized)`,
-      72,
-      y,
-    );
-  }
+  y = drawLabelValue(
+    certPage,
+    font,
+    boldFont,
+    "Company counter-signature",
+    `${companySigner.name}, ${companySigner.title} (pre-authorized)`,
+    72,
+    y,
+  );
 
   if (metadata?.ipAddress) {
     y = drawLabelValue(certPage, font, boldFont, "IP address", metadata.ipAddress, 72, y);

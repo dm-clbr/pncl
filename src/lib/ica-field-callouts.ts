@@ -22,6 +22,12 @@ export const ICA_FIELD_CALLOUTS: IcaFieldCalloutMeta[] = [
     page: ICA_PDF_PAGES.signature,
   },
   {
+    fieldName: ICA_FORM_FIELDS.executionSignature,
+    label: "Signature",
+    hint: "Click to draw your signature",
+    page: ICA_PDF_PAGES.signature,
+  },
+  {
     fieldName: ICA_FORM_FIELDS.signature,
     label: "Signature",
     hint: "Click to draw your signature",

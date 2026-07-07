@@ -39,7 +39,6 @@ export async function prefillIcaServerFields(
     [ICA_FORM_FIELDS.day, dateParts.day],
     [ICA_FORM_FIELDS.month, dateParts.month],
     [ICA_FORM_FIELDS.yearLast2, dateParts.yearLast2],
-    [ICA_FORM_FIELDS.introDate, dateParts.full],
     [ICA_FORM_FIELDS.signatureDate, dateParts.full],
     [ICA_FORM_FIELDS.introName, legalName],
     [ICA_FORM_FIELDS.agentName, legalName],
