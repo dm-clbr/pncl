@@ -38,6 +38,15 @@ import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 import "@/styles/home2.css";
 
+type ProfileTab = "details" | "licensing" | "documents" | "carriers";
+
+const PROFILE_TABS: { id: ProfileTab; label: string }[] = [
+  { id: "details", label: "Profile details" },
+  { id: "licensing", label: "Licensing" },
+  { id: "documents", label: "Documents" },
+  { id: "carriers", label: "Carrier logins" },
+];
+
 const EMPTY_FORM: PortalProfileFormValues = {
   firstName: "",
   lastName: "",
@@ -98,6 +107,7 @@ export default function PortalProfile() {
   const [directDepositPdfUrl, setDirectDepositPdfUrl] = useState<string | null>(null);
   const [w9PdfUrl, setW9PdfUrl] = useState<string | null>(null);
   const [icaPdfUrl, setIcaPdfUrl] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ProfileTab>("details");
 
   useEffect(() => {
     if (!directDeposit?.pdfPath) {
@@ -345,7 +355,7 @@ export default function PortalProfile() {
     <div className="home2-page">
       <div className="grain" aria-hidden="true" />
 
-      <main className="portal-dash dark carrier-sheet-dash">
+      <main className="portal-dash dark carrier-sheet-dash portal-profile-dash">
         <div className="wrap carrier-sheet-wrap">
           <header className="carrier-sheet-header">
             <Link to="/" className="portal-hero-logo" aria-label="PNCL home">
@@ -388,6 +398,30 @@ export default function PortalProfile() {
             </div>
           )}
 
+          <div className="carrier-sheet-tabs" role="tablist" aria-label="Profile sections">
+            {PROFILE_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                id={`profile-tab-${tab.id}`}
+                aria-selected={activeTab === tab.id}
+                aria-controls={`profile-panel-${tab.id}`}
+                className={`carrier-sheet-tab${activeTab === tab.id ? " active" : ""}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div
+            role="tabpanel"
+            className="portal-profile-tabpanel"
+            id="profile-panel-details"
+            aria-labelledby="profile-tab-details"
+            hidden={activeTab !== "details"}
+          >
           <div className="carrier-sheet-panel portal-profile-panel">
             <div className="carrier-sheet-panel-head">
               <div>
@@ -577,15 +611,31 @@ export default function PortalProfile() {
               </form>
             )}
           </div>
+          </div>
 
-          <PortalLicensingSection
-            user={user}
-            profile={profileRow}
-            loading={loading}
-            names={{ firstName: form.firstName, lastName: form.lastName }}
-            onSaved={setProfileRow}
-          />
+          <div
+            role="tabpanel"
+            className="portal-profile-tabpanel"
+            id="profile-panel-licensing"
+            aria-labelledby="profile-tab-licensing"
+            hidden={activeTab !== "licensing"}
+          >
+            <PortalLicensingSection
+              user={user}
+              profile={profileRow}
+              loading={loading}
+              names={{ firstName: form.firstName, lastName: form.lastName }}
+              onSaved={setProfileRow}
+            />
+          </div>
 
+          <div
+            role="tabpanel"
+            className="portal-profile-tabpanel"
+            id="profile-panel-documents"
+            aria-labelledby="profile-tab-documents"
+            hidden={activeTab !== "documents"}
+          >
           <div className="carrier-sheet-panel portal-profile-panel">
             <div className="carrier-sheet-panel-head">
               <div>
@@ -705,8 +755,17 @@ export default function PortalProfile() {
           </div>
 
           <PortalProfileDocumentsSection user={user} />
+          </div>
 
-          <PortalCarrierCredentials />
+          <div
+            role="tabpanel"
+            className="portal-profile-tabpanel"
+            id="profile-panel-carriers"
+            aria-labelledby="profile-tab-carriers"
+            hidden={activeTab !== "carriers"}
+          >
+            <PortalCarrierCredentials />
+          </div>
         </div>
       </main>
 

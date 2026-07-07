@@ -1451,6 +1451,11 @@
     padding-left: 0;
   }
 
+  /* Profile page has no checklist rail either. */
+  .home2-page .portal-dash.portal-profile-dash {
+    padding-left: 0;
+  }
+
   .home2-page .portal-checklist-rail {
     display: block;
     position: fixed;
@@ -4345,6 +4350,14 @@
   color: var(--bone);
   border-color: rgba(194, 78, 28, .35);
   background: rgba(194, 78, 28, .1);
+}
+
+.home2-page .portal-profile-tabpanel > * + * {
+  margin-top: 24px;
+}
+
+.home2-page .portal-profile-tabpanel .portal-carrier-credentials-panel {
+  margin-top: 0;
 }
 
 .home2-page .carrier-sheet-meta {
