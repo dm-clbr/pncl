@@ -1440,20 +1440,11 @@
   border-color: rgba(240, 237, 228, .4);
 }
 
-/* Wide screens: checklist becomes a fixed panel on the left edge of the viewport */
+/* Wide screens: checklist becomes a fixed panel on the left edge of the viewport.
+   Only the main portal dashboard renders the rail, so only it reserves the gutter. */
 @media (min-width: 1100px) {
-  .home2-page .portal-dash {
+  .home2-page .portal-dash.portal-home-dash {
     padding-left: 400px;
-  }
-
-  /* Admin console has no checklist rail — no reserved gutter. */
-  .home2-page .portal-dash.admin-dash {
-    padding-left: 0;
-  }
-
-  /* Profile page has no checklist rail either. */
-  .home2-page .portal-dash.portal-profile-dash {
-    padding-left: 0;
   }
 
   .home2-page .portal-checklist-rail {

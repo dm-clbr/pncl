@@ -293,7 +293,7 @@ export default function PortalDashboard() {
     <div className="home2-page">
       <div className="grain" aria-hidden="true" />
 
-      <main className="portal-dash dark">
+      <main className="portal-dash dark portal-home-dash">
         <div className="wrap portal-wrap">
           <header className="portal-hero">
             <Link to="/" className="portal-hero-logo" aria-label="PNCL home">
