@@ -31,6 +31,15 @@ function labelForFileName(fileName: string): string {
   return fileName.replace(/[-_]/g, " ").replace(/\.pdf$/i, "");
 }
 
+/** Archived files carry a timestamp suffix (e.g. w9-2026-07-01T....pdf). */
+function labelForArchivedFileName(fileName: string): string {
+  const normalized = fileName.toLowerCase();
+  if (normalized.startsWith("w9")) return DOCUMENT_LABELS["w9.pdf"];
+  if (normalized.startsWith("direct-deposit")) return DOCUMENT_LABELS["direct-deposit.pdf"];
+  if (normalized.startsWith("ica")) return DOCUMENT_LABELS["ica-signed.pdf"];
+  return labelForFileName(fileName);
+}
+
 async function createSignedDownloadUrl(
   adminClient: SupabaseClient,
   path: string,
@@ -77,7 +86,8 @@ export async function loadAdminUserDocuments(
 
   if (!listError && listed) {
     for (const file of listed) {
-      if (!file.name || file.name.endsWith("/")) continue;
+      // Entries without an id are folders (e.g. archive/, documents/).
+      if (!file.name || !file.id || file.name.endsWith("/")) continue;
       const path = `${userId}/${file.name}`;
       if (seenPaths.has(path)) continue;
 
@@ -86,6 +96,25 @@ export async function loadAdminUserDocuments(
         label: labelForFileName(file.name),
         fileName: file.name,
         signedAt: file.updated_at ?? file.created_at ?? null,
+        downloadUrl: await createSignedDownloadUrl(adminClient, path),
+      });
+    }
+  }
+
+  const { data: archivedFiles, error: archiveListError } = await adminClient.storage
+    .from(DIRECT_DEPOSIT_PDF_BUCKET)
+    .list(`${userId}/archive`, { limit: 100 });
+
+  if (!archiveListError && archivedFiles) {
+    for (const file of archivedFiles) {
+      if (!file.name || !file.id) continue;
+      const path = `${userId}/archive/${file.name}`;
+
+      documents.push({
+        id: path,
+        label: `${labelForArchivedFileName(file.name)} (archived)`,
+        fileName: file.name,
+        signedAt: file.created_at ?? file.updated_at ?? null,
         downloadUrl: await createSignedDownloadUrl(adminClient, path),
       });
     }

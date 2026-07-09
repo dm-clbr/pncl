@@ -1095,6 +1095,17 @@ export async function setUserTodoCompletion(
   });
 }
 
+/** Archives the user's current W-9 and reopens the checklist item so they submit a new one. */
+export async function resetUserW9(
+  accessToken: string,
+  input: { userId: string },
+): Promise<{ message: string; archivedPath: string | null }> {
+  return adminFetch("admin-reset-portal-w9", accessToken, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
 export type AdminCompAttachmentStatus = "none" | "pending" | "signed";
 
 export interface AdminContractingRow {

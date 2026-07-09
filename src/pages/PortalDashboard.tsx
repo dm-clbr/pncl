@@ -36,6 +36,7 @@ import {
   refreshPortalUser,
   shouldShowGenesisNotice,
   shouldShowIcaResignNotice,
+  shouldShowW9ResignNotice,
 } from "@/lib/portal-messages";
 import PortalIncentivesList from "@/components/PortalIncentivesList";
 import PortalBrandAssetsList from "@/components/PortalBrandAssetsList";
@@ -174,6 +175,7 @@ export default function PortalDashboard() {
   const pendingRequiredForms = pendingTodos.some((todo) => isRequiredFormTodo(todo.id));
   const showGenesisNotice = shouldShowGenesisNotice(portalUser);
   const showIcaResignNotice = shouldShowIcaResignNotice(portalUser) && !icaSubmitted;
+  const showW9ResignNotice = shouldShowW9ResignNotice(portalUser) && !w9Submitted;
 
   const displaySections = useMemo((): PortalDashboardSection[] => {
     if (dashboardSections.length > 0) {
@@ -327,6 +329,25 @@ export default function PortalDashboard() {
                 </p>
                 <Link to="/portal/ica" className="portal-notice-link">
                   Re-sign agreement
+                  <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {showW9ResignNotice && (
+            <div className="portal-notice-banner" role="alert">
+              <span className="portal-notice-icon" aria-hidden="true">
+                <FileSignature size={20} strokeWidth={2.25} />
+              </span>
+              <div className="portal-notice-copy">
+                <strong>Please fill out a new W-9</strong>
+                <p>
+                  Your previous W-9 was removed and needs to be completed again. It only
+                  takes a couple of minutes to fill out and sign a new form.
+                </p>
+                <Link to="/portal/w9" className="portal-notice-link">
+                  Complete W-9
                   <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
                 </Link>
               </div>

@@ -101,6 +101,8 @@ serve(async (req) => {
       user_metadata: {
         ...user.user_metadata,
         completed_portal_todos: completedTodos,
+        // Clear the re-submit notice shown after an admin W-9 reset.
+        w9_resign_required: false,
       },
     });
 

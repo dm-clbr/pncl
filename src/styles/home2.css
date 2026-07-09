@@ -2898,6 +2898,7 @@
   color: var(--accent-bright);
 }
 
+
 .home2-page .admin-table-wrap {
   overflow-x: auto;
 }
@@ -3263,6 +3264,14 @@
 .home2-page .admin-user-document-item strong {
   display: block;
   margin-bottom: 4px;
+}
+
+.home2-page .admin-user-document-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .home2-page .admin-row-actions {

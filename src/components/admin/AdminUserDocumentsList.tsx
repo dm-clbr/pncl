@@ -1,4 +1,4 @@
-import { ArrowUpRight, Download } from "lucide-react";
+import { ArchiveRestore, ArrowUpRight, Download } from "lucide-react";
 import type { AdminUserDocument } from "@/lib/admin-api";
 
 function formatDocumentDate(value: string | null | undefined): string {
@@ -13,9 +13,13 @@ function formatDocumentDate(value: string | null | undefined): string {
 export default function AdminUserDocumentsList({
   documents,
   emptyLabel = "No documents saved to this profile yet.",
+  onResetW9,
+  resettingW9 = false,
 }: {
   documents: AdminUserDocument[];
   emptyLabel?: string;
+  onResetW9?: () => void;
+  resettingW9?: boolean;
 }) {
   if (documents.length === 0) {
     return <p className="admin-empty">{emptyLabel}</p>;
@@ -33,16 +37,29 @@ export default function AdminUserDocumentsList({
                 : document.fileName}
             </p>
           </div>
-          <a
-            href={document.downloadUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="admin-icon-btn"
-          >
-            <Download size={16} aria-hidden="true" />
-            Download PDF
-            <ArrowUpRight size={14} aria-hidden="true" />
-          </a>
+          <div className="admin-user-document-actions">
+            {document.id === "w9" && onResetW9 && (
+              <button
+                type="button"
+                className="admin-icon-btn"
+                disabled={resettingW9}
+                onClick={onResetW9}
+              >
+                <ArchiveRestore size={16} aria-hidden="true" />
+                {resettingW9 ? "Resetting…" : "Archive & request new W-9"}
+              </button>
+            )}
+            <a
+              href={document.downloadUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="admin-icon-btn"
+            >
+              <Download size={16} aria-hidden="true" />
+              Download PDF
+              <ArrowUpRight size={14} aria-hidden="true" />
+            </a>
+          </div>
         </div>
       ))}
     </div>
