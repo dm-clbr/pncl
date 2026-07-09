@@ -1095,12 +1095,14 @@ export async function setUserTodoCompletion(
   });
 }
 
-/** Archives the user's current W-9 and reopens the checklist item so they submit a new one. */
-export async function resetUserW9(
+export type AdminResetDocumentType = "w9" | "direct_deposit" | "ica";
+
+/** Archives the user's current document and reopens the checklist item so they submit a new one. */
+export async function resetUserDocument(
   accessToken: string,
-  input: { userId: string },
-): Promise<{ message: string; archivedPath: string | null }> {
-  return adminFetch("admin-reset-portal-w9", accessToken, {
+  input: { userId: string; documentType: AdminResetDocumentType },
+): Promise<{ message: string; archivedPaths: string[] }> {
+  return adminFetch("admin-reset-portal-document", accessToken, {
     method: "POST",
     body: JSON.stringify(input),
   });

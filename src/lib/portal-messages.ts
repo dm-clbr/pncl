@@ -25,11 +25,19 @@ export function shouldShowIcaResignNotice(user: User | null): boolean {
 }
 
 /**
- * Set by admin-reset-portal-w9 after an admin archives a user's W-9; cleared by
- * submit-portal-w9 when the user submits a new form.
+ * Set by admin-reset-portal-document after an admin archives a user's W-9;
+ * cleared by submit-portal-w9 when the user submits a new form.
  */
 export function shouldShowW9ResignNotice(user: User | null): boolean {
   return user?.user_metadata?.w9_resign_required === true;
+}
+
+/**
+ * Set by admin-reset-portal-document after an admin archives a user's direct
+ * deposit form; cleared by submit-portal-direct-deposit on re-submission.
+ */
+export function shouldShowDirectDepositResignNotice(user: User | null): boolean {
+  return user?.user_metadata?.direct_deposit_resign_required === true;
 }
 
 export async function refreshPortalUser(): Promise<User | null> {

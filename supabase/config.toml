@@ -221,7 +221,7 @@ verify_jwt = true
 [functions.admin-set-user-todo-completion]
 verify_jwt = true
 
-[functions.admin-reset-portal-w9]
+[functions.admin-reset-portal-document]
 verify_jwt = true
 
 [functions.admin-upload-dashboard-file]

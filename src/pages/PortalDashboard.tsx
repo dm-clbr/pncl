@@ -35,6 +35,7 @@ import {
   GENESIS_LOGIN_URL,
   refreshPortalUser,
   shouldShowGenesisNotice,
+  shouldShowDirectDepositResignNotice,
   shouldShowIcaResignNotice,
   shouldShowW9ResignNotice,
 } from "@/lib/portal-messages";
@@ -176,6 +177,8 @@ export default function PortalDashboard() {
   const showGenesisNotice = shouldShowGenesisNotice(portalUser);
   const showIcaResignNotice = shouldShowIcaResignNotice(portalUser) && !icaSubmitted;
   const showW9ResignNotice = shouldShowW9ResignNotice(portalUser) && !w9Submitted;
+  const showDirectDepositResignNotice =
+    shouldShowDirectDepositResignNotice(portalUser) && !directDepositSubmitted;
 
   const displaySections = useMemo((): PortalDashboardSection[] => {
     if (dashboardSections.length > 0) {
@@ -348,6 +351,25 @@ export default function PortalDashboard() {
                 </p>
                 <Link to="/portal/w9" className="portal-notice-link">
                   Complete W-9
+                  <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {showDirectDepositResignNotice && (
+            <div className="portal-notice-banner" role="alert">
+              <span className="portal-notice-icon" aria-hidden="true">
+                <FileSignature size={20} strokeWidth={2.25} />
+              </span>
+              <div className="portal-notice-copy">
+                <strong>Please fill out a new direct deposit form</strong>
+                <p>
+                  Your previous direct deposit form was removed and needs to be completed
+                  again. It only takes a couple of minutes to fill out and sign a new form.
+                </p>
+                <Link to="/portal/direct-deposit" className="portal-notice-link">
+                  Complete direct deposit form
                   <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
                 </Link>
               </div>

@@ -10,11 +10,12 @@ import {
   formatAgentNumber,
   getAdminUserProfile,
   reactivateGoogleUser,
-  resetUserW9,
+  resetUserDocument,
   sendGmailVerificationEmail,
   setCarrierApplicationStatus,
   setUserTodoCompletion,
   type AdminPortalTodoPhase,
+  type AdminResetDocumentType,
   type AdminUserCarrierStatus,
   type AdminUserProfileDetail,
   type AdminUserTodoStatus,
@@ -146,7 +147,8 @@ export default function AdminUserDetail() {
   const [reactivatingGoogle, setReactivatingGoogle] = useState(false);
   const [togglingTodoSlug, setTogglingTodoSlug] = useState<string | null>(null);
   const [togglingCarrierId, setTogglingCarrierId] = useState<string | null>(null);
-  const [resettingW9, setResettingW9] = useState(false);
+  const [resettingDocumentType, setResettingDocumentType] =
+    useState<AdminResetDocumentType | null>(null);
   const [editingProfile, setEditingProfile] = useState(false);
 
   useEffect(() => {
@@ -339,26 +341,32 @@ export default function AdminUserDetail() {
     }
   };
 
-  const handleResetW9 = async () => {
+  const handleResetDocument = async (documentType: AdminResetDocumentType) => {
     const token = session?.access_token;
     if (!token || !agent) return;
 
+    const documentLabel =
+      documentType === "w9"
+        ? "W-9"
+        : documentType === "direct_deposit"
+          ? "direct deposit form"
+          : "Independent Contractor Agreement";
     const confirmed = window.confirm(
-      `Archive ${agent.name}'s current W-9 and ask them to fill out a new one? ` +
+      `Archive ${agent.name}'s current ${documentLabel} and ask them to complete it again? ` +
         "The old PDF stays available under archived documents.",
     );
     if (!confirmed) return;
 
-    setResettingW9(true);
+    setResettingDocumentType(documentType);
     try {
-      const result = await resetUserW9(token, { userId: agent.id });
+      const result = await resetUserDocument(token, { userId: agent.id, documentType });
       toast.success(result.message);
       const refreshed = await getAdminUserProfile(token, agent.id);
       setProfile(refreshed);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Unable to reset W-9");
+      toast.error(err instanceof Error ? err.message : `Unable to reset ${documentLabel}`);
     } finally {
-      setResettingW9(false);
+      setResettingDocumentType(null);
     }
   };
 
@@ -798,8 +806,8 @@ export default function AdminUserDetail() {
 
             <AdminUserDocumentsList
               documents={profile.documents}
-              onResetW9={() => void handleResetW9()}
-              resettingW9={resettingW9}
+              onResetDocument={(documentType) => void handleResetDocument(documentType)}
+              resettingDocumentType={resettingDocumentType}
             />
           </div>
 
