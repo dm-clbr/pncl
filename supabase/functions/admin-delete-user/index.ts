@@ -77,7 +77,12 @@ serve(async (req) => {
       );
     }
 
-    const onboarding = await loadOnboardingForPortalUser(adminClient, payload.userId, email);
+    const onboarding = await loadOnboardingForPortalUser(
+      adminClient,
+      payload.userId,
+      email,
+      targetUser.app_metadata?.onboarding_id,
+    );
     if (onboarding) {
       const { error: onboardingError } = await adminClient
         .from("onboarding_records")

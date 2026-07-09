@@ -638,23 +638,50 @@ export async function findPortalUserIdByEmail(
   return null;
 }
 
+const ONBOARDING_LOOKUP_COLUMNS =
+  "id, supabase_user_id, legal_name, referrer_user_id, upline_network, status, workspace_email";
+
+/**
+ * Resolves the same onboarding record the admin UI displays: the record pinned
+ * in app_metadata.onboarding_id first, then the newest non-failed record by
+ * user id or workspace email. Tolerates duplicate records (unlike maybeSingle
+ * without a limit, which errors and looks like "not found").
+ */
 export async function loadOnboardingForPortalUser(
   adminClient: SupabaseClient,
   userId: string,
   email: string,
+  onboardingId?: unknown,
 ): Promise<OnboardingRow & { id: string } | null> {
+  if (typeof onboardingId === "string" && onboardingId.trim()) {
+    const { data: byId } = await adminClient
+      .from("onboarding_records")
+      .select(ONBOARDING_LOOKUP_COLUMNS)
+      .eq("id", onboardingId.trim())
+      .not("status", "eq", "failed")
+      .maybeSingle();
+
+    if (byId) return byId as OnboardingRow & { id: string };
+  }
+
   const { data: byUserId } = await adminClient
     .from("onboarding_records")
-    .select("id, supabase_user_id, legal_name, referrer_user_id, upline_network, status, workspace_email")
+    .select(ONBOARDING_LOOKUP_COLUMNS)
     .eq("supabase_user_id", userId)
+    .not("status", "eq", "failed")
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (byUserId) return byUserId as OnboardingRow & { id: string };
 
   const { data: byEmail } = await adminClient
     .from("onboarding_records")
-    .select("id, supabase_user_id, legal_name, referrer_user_id, upline_network, status, workspace_email")
+    .select(ONBOARDING_LOOKUP_COLUMNS)
     .eq("workspace_email", email)
+    .not("status", "eq", "failed")
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   return (byEmail as (OnboardingRow & { id: string }) | null) ?? null;

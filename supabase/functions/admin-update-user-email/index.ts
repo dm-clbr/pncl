@@ -102,7 +102,12 @@ serve(async (req) => {
       return errorResponse("Unable to update portal email", 500, "update_failed");
     }
 
-    const onboarding = await loadOnboardingForPortalUser(adminClient, payload.userId, currentEmail);
+    const onboarding = await loadOnboardingForPortalUser(
+      adminClient,
+      payload.userId,
+      currentEmail,
+      targetData.user.app_metadata?.onboarding_id,
+    );
     if (onboarding) {
       const { error: onboardingError } = await adminClient
         .from("onboarding_records")

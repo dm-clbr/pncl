@@ -1,9 +1,23 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { getDescendantUserIds, loadOnboardingForPortalUser } from "../_shared/adminAgents.ts";
+import {
+  getDescendantUserIds,
+  loadOnboardingForPortalUser,
+  resolveDisplayName,
+} from "../_shared/adminAgents.ts";
 import { AdminAuthError, requireAdmin } from "../_shared/adminAuth.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
-import { getEmailDomain, isValidReferrerUserId, resolveReferrer } from "../_shared/onboarding.ts";
+import {
+  getEmailDomain,
+  isValidReferrerUserId,
+  parseLegalName,
+  resolveReferrer,
+} from "../_shared/onboarding.ts";
+import {
+  encryptTemporaryPassword,
+  generateHandoffToken,
+  hashHandoffToken,
+} from "../_shared/security.ts";
 
 interface UpdateReferrerPayload {
   userId: string;
@@ -73,12 +87,14 @@ serve(async (req) => {
       }
     }
 
-    const onboarding = await loadOnboardingForPortalUser(adminClient, payload.userId, email);
-    if (!onboarding) {
-      return errorResponse("Onboarding record not found", 404, "not_found");
-    }
+    const onboarding = await loadOnboardingForPortalUser(
+      adminClient,
+      payload.userId,
+      email,
+      targetData.user.app_metadata?.onboarding_id,
+    );
 
-    let uplineNetwork = onboarding.upline_network;
+    let uplineNetwork = onboarding?.upline_network ?? "PNCL";
     if (payload.referrerUserId) {
       const referrer = await resolveReferrer(adminClient, payload.referrerUserId);
       if (!referrer) {
@@ -87,26 +103,82 @@ serve(async (req) => {
       uplineNetwork = referrer.name;
     }
 
-    const { error: updateError } = await adminClient
-      .from("onboarding_records")
-      .update({
-        referrer_user_id: payload.referrerUserId,
-        upline_network: uplineNetwork,
-      })
-      .eq("id", onboarding.id);
+    let onboardingId = onboarding?.id ?? null;
 
-    if (updateError) {
-      logOnboarding("admin_update_referrer_failed", {
-        userId: payload.userId,
-        error: updateError.message,
-      }, "error");
-      return errorResponse("Unable to update upline", 500, "update_failed");
+    if (onboarding) {
+      const { error: updateError } = await adminClient
+        .from("onboarding_records")
+        .update({
+          referrer_user_id: payload.referrerUserId,
+          upline_network: uplineNetwork,
+        })
+        .eq("id", onboarding.id);
+
+      if (updateError) {
+        logOnboarding("admin_update_referrer_failed", {
+          userId: payload.userId,
+          error: updateError.message,
+        }, "error");
+        return errorResponse("Unable to update upline", 500, "update_failed");
+      }
+    } else {
+      // Manually added accounts may have no onboarding record; create a
+      // minimal one (same shape as admin-create-user) so the hierarchy can
+      // track their upline.
+      const legalName = resolveDisplayName(targetData.user);
+      const { firstName, lastName } = parseLegalName(legalName);
+      const handoffTokenHash = await hashHandoffToken(generateHandoffToken());
+      const handoffTokenExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      const placeholderEncrypted = await encryptTemporaryPassword("manual-provision");
+
+      const { data: record, error: insertError } = await adminClient
+        .from("onboarding_records")
+        .insert({
+          legal_name: legalName,
+          first_name: firstName,
+          last_name: lastName,
+          phone_number: "000-000-0000",
+          date_of_birth: "01/01/1900",
+          ssn_encrypted: placeholderEncrypted,
+          state_of_residence: "TX",
+          upline_network: uplineNetwork,
+          has_license: "No",
+          npn: null,
+          has_eo_insurance: "No",
+          referrer_user_id: payload.referrerUserId,
+          workspace_email: email,
+          supabase_user_id: payload.userId,
+          status: "manual",
+          handoff_token_hash: handoffTokenHash,
+          handoff_token_expires_at: handoffTokenExpiresAt,
+        })
+        .select("id")
+        .single();
+
+      if (insertError || !record) {
+        logOnboarding("admin_update_referrer_create_record_failed", {
+          userId: payload.userId,
+          error: insertError?.message ?? "no record",
+        }, "error");
+        return errorResponse("Unable to create onboarding record for this user", 500, "update_failed");
+      }
+
+      onboardingId = record.id;
+
+      await adminClient.auth.admin.updateUserById(payload.userId, {
+        app_metadata: {
+          ...targetData.user.app_metadata,
+          onboarding_id: record.id,
+        },
+      });
     }
 
     logOnboarding("admin_referrer_updated", {
       adminId: adminUser.id,
       userId: payload.userId,
       referrerUserId: payload.referrerUserId,
+      onboardingId,
+      createdRecord: !onboarding,
     });
 
     return jsonResponse({
