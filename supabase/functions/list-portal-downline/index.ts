@@ -6,6 +6,7 @@ import {
   resolveDisplayName,
   type AgentPhase,
 } from "../_shared/adminAgents.ts";
+import { computePortalTodoProgressByUserId, type PortalTodoProgressSummary } from "../_shared/portalTodos.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 
 interface DownlineOnboardingRow {
@@ -44,6 +45,7 @@ export interface DownlineMemberSummary {
   hasPortalAccount: boolean;
   onboardingCompletedAt: string | null;
   joinedAt: string;
+  todoProgress: PortalTodoProgressSummary | null;
 }
 
 function resolveOnboardingName(row: DownlineOnboardingRow): string {
@@ -63,29 +65,25 @@ function resolveProfileName(row: PortalProfileNameRow): string | null {
   return combined || null;
 }
 
-async function listPortalUsersByIds(
+async function loadPortalUsersByIds(
   adminClient: SupabaseClient,
   userIds: string[],
 ): Promise<Map<string, User>> {
   const usersById = new Map<string, User>();
   if (userIds.length === 0) return usersById;
 
-  const idSet = new Set(userIds);
-  let page = 1;
+  const results = await Promise.all(
+    userIds.map(async (userId) => {
+      const { data, error } = await adminClient.auth.admin.getUserById(userId);
+      if (error || !data.user) return null;
+      return data.user;
+    }),
+  );
 
-  while (page <= 20) {
-    const { data, error } = await adminClient.auth.admin.listUsers({ page, perPage: 200 });
-    if (error) throw error;
-    if (!data.users.length) break;
-
-    for (const user of data.users) {
-      if (idSet.has(user.id)) {
-        usersById.set(user.id, user);
-      }
+  for (const user of results) {
+    if (user) {
+      usersById.set(user.id, user);
     }
-
-    if (usersById.size === idSet.size || data.users.length < 200) break;
-    page++;
   }
 
   return usersById;
@@ -159,7 +157,7 @@ serve(async (req) => {
           .select("user_id, first_name, last_name")
           .in("user_id", userIds)
         : Promise.resolve({ data: [], error: null }),
-      listPortalUsersByIds(adminClient, userIds),
+      loadPortalUsersByIds(adminClient, userIds),
     ]);
 
     if (inviteLabels.error) throw new Error(inviteLabels.error.message);
@@ -176,7 +174,10 @@ serve(async (req) => {
     }
 
     const portalUserList = [...portalUsers.values()];
-    const phasesByUserId = await computeAgentPhases(adminClient, portalUserList);
+    const [phasesByUserId, todoProgressByUserId] = await Promise.all([
+      computeAgentPhases(adminClient, portalUserList),
+      computePortalTodoProgressByUserId(adminClient, portalUserList),
+    ]);
 
     const members: DownlineMemberSummary[] = rows.map((row) => {
       const userId = row.supabase_user_id;
@@ -184,6 +185,7 @@ serve(async (req) => {
       const portalUser = userId ? portalUsers.get(userId) : undefined;
       const profileName = userId ? profileNameByUserId.get(userId) ?? null : null;
       const portalPhase = userId ? phasesByUserId.get(userId) ?? null : null;
+      const todoProgress = userId ? todoProgressByUserId.get(userId) ?? null : null;
 
       const name = profileName
         ?? (portalUser ? resolveDisplayName(portalUser, resolveOnboardingName(row)) : resolveOnboardingName(row));
@@ -203,6 +205,7 @@ serve(async (req) => {
         hasPortalAccount,
         onboardingCompletedAt: row.onboarding_completed_at,
         joinedAt: row.created_at,
+        todoProgress,
       };
     });
 

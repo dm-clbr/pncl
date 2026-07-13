@@ -370,6 +370,113 @@ export function isTodoCompleteForUser(
   return false;
 }
 
+export const PORTAL_TODO_PHASE_LABELS: Record<PortalTodoPhase, string> = {
+  on_board: "On-Board",
+  pre_license: "Pre-License",
+  licensing: "Licensing",
+  sales_ready: "Sales Ready",
+};
+
+export interface PortalTodoPhaseProgress {
+  id: PortalTodoPhase;
+  label: string;
+  completedCount: number;
+  totalCount: number;
+}
+
+export interface PortalTodoProgressSummary {
+  completedCount: number;
+  totalCount: number;
+  phases: PortalTodoPhaseProgress[];
+}
+
+export async function computePortalTodoProgressByUserId(
+  adminClient: SupabaseClient,
+  users: Array<{ id: string; user_metadata?: Record<string, unknown> | null }>,
+  compAgreementSlug = "comp_agreement",
+): Promise<Map<string, PortalTodoProgressSummary>> {
+  const progressByUserId = new Map<string, PortalTodoProgressSummary>();
+  if (users.length === 0) return progressByUserId;
+
+  const { data, error } = await adminClient
+    .from("portal_todos")
+    .select("*")
+    .eq("published", true)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const todos = (data ?? []) as PortalTodoRecord[];
+  if (todos.length === 0) {
+    return progressByUserId;
+  }
+
+  const userIds = users.map((user) => user.id);
+  const hasCompTodo = todos.some((row) => row.slug === compAgreementSlug);
+  let usersWithCompAttachment = new Set<string>();
+
+  if (hasCompTodo && userIds.length > 0) {
+    const { data: compRows, error: compError } = await adminClient
+      .from("portal_comp_attachments")
+      .select("user_id")
+      .in("user_id", userIds);
+
+    if (compError) {
+      throw new Error(compError.message);
+    }
+
+    usersWithCompAttachment = new Set(
+      (compRows ?? []).map((row) => row.user_id as string),
+    );
+  }
+
+  const autoKeys = new Set(
+    todos
+      .filter((row) => row.completion_type === "auto" && row.auto_key)
+      .map((row) => row.auto_key as string),
+  );
+  const autoSets = await computeAutoCompletionSets(adminClient, autoKeys, userIds);
+
+  for (const user of users) {
+    const visibleTodos = hasCompTodo && !usersWithCompAttachment.has(user.id)
+      ? todos.filter((row) => row.slug !== compAgreementSlug)
+      : todos;
+    const completedMetadata = getCompletedTodosFromMetadata(user.user_metadata ?? undefined);
+
+    const phases = PORTAL_TODO_PHASES.map((phaseId) => {
+      const phaseTodos = visibleTodos.filter((row) => (row.phase ?? "on_board") === phaseId);
+      let completedCount = 0;
+
+      for (const todo of phaseTodos) {
+        if (isTodoCompleteForUser(todo, user.id, completedMetadata, autoSets)) {
+          completedCount += 1;
+        }
+      }
+
+      return {
+        id: phaseId,
+        label: PORTAL_TODO_PHASE_LABELS[phaseId],
+        completedCount,
+        totalCount: phaseTodos.length,
+      };
+    }).filter((phase) => phase.totalCount > 0);
+
+    const completedCount = phases.reduce((sum, phase) => sum + phase.completedCount, 0);
+    const totalCount = phases.reduce((sum, phase) => sum + phase.totalCount, 0);
+
+    progressByUserId.set(user.id, {
+      completedCount,
+      totalCount,
+      phases,
+    });
+  }
+
+  return progressByUserId;
+}
+
 export function validateTodoCompletionQuery(url: URL): { todoId: string } {
   const todoId = url.searchParams.get("todoId")?.trim() ?? "";
   if (!todoId) {
