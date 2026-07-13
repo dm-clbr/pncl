@@ -90,6 +90,12 @@ verify_jwt = true
 [functions.admin-update-referrer]
 verify_jwt = true
 
+[functions.admin-link-partners]
+verify_jwt = true
+
+[functions.admin-unlink-partners]
+verify_jwt = true
+
 [functions.admin-resend-activation]
 verify_jwt = true
 

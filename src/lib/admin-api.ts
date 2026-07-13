@@ -71,6 +71,20 @@ export interface AgentSummary {
   googleSuspensionReason: string | null;
   createdAt: string;
   source: string | null;
+  profilePhotoPath: string | null;
+  profileUpdatedAt: string | null;
+  partnerUserId: string | null;
+}
+
+export interface HierarchyMember {
+  id: string;
+  email: string;
+  name: string;
+  role: PortalRole;
+  status: string | null;
+  npn: string | null;
+  profilePhotoPath: string | null;
+  profileUpdatedAt: string | null;
 }
 
 export interface HierarchyNode {
@@ -82,6 +96,17 @@ export interface HierarchyNode {
   profilePhotoPath: string | null;
   profileUpdatedAt: string | null;
   children: HierarchyNode[];
+  isPartnerGroup?: boolean;
+  memberIds?: string[];
+  members?: HierarchyMember[];
+}
+
+export interface AssistHierarchyMember {
+  id: string;
+  email: string;
+  npn: string | null;
+  profilePhotoPath: string | null;
+  profileUpdatedAt: string | null;
 }
 
 export interface AssistHierarchyNode {
@@ -90,7 +115,12 @@ export interface AssistHierarchyNode {
   npn: string | null;
   referrerEmail: string | null;
   referrerNpn: string | null;
+  profilePhotoPath: string | null;
+  profileUpdatedAt: string | null;
   children: AssistHierarchyNode[];
+  isPartnerGroup?: boolean;
+  memberIds?: string[];
+  members?: AssistHierarchyMember[];
 }
 
 export interface HierarchyFocusOption {
@@ -253,6 +283,27 @@ export async function updateUserReferrer(
   return adminFetch("admin-update-referrer", accessToken, {
     method: "POST",
     body: JSON.stringify({ userId, referrerUserId }),
+  });
+}
+
+export async function linkBusinessPartners(
+  accessToken: string,
+  userIdA: string,
+  userIdB: string,
+): Promise<{ userIdA: string; userIdB: string; message: string }> {
+  return adminFetch("admin-link-partners", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ userIdA, userIdB }),
+  });
+}
+
+export async function unlinkBusinessPartners(
+  accessToken: string,
+  userId: string,
+): Promise<{ userId: string; message: string }> {
+  return adminFetch("admin-unlink-partners", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ userId }),
   });
 }
 

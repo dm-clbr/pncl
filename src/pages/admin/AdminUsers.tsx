@@ -20,6 +20,7 @@ import {
   type GoogleWorkspaceStatus,
 } from "@/lib/admin-api";
 import { AdminCompLevelSelect } from "@/components/admin/AdminCompLevelSelect";
+import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
 import { trackPageView } from "@/lib/analytics";
 import { formatRoleLabel, isAdminAssist, type PortalRole } from "@/lib/roles";
@@ -472,16 +473,27 @@ export default function AdminUsers() {
                 return (
                   <tr key={agent.id}>
                     <td>
-                      {assistView ? (
-                        <span>{agent.name}</span>
-                      ) : (
-                        <Link to={`/portal/admin/users/${agent.id}`} className="admin-user-link">
-                          {agent.name}
-                        </Link>
-                      )}
-                      {agent.agentNumber !== null && (
-                        <span className="admin-user-subtext">{formatAgentNumber(agent.agentNumber)}</span>
-                      )}
+                      <div className="admin-user-name-cell">
+                        {assistView && (
+                          <AdminUserAvatar
+                            name={agent.name}
+                            email={agent.email}
+                            profilePhotoPath={agent.profilePhotoPath}
+                            profileUpdatedAt={agent.profileUpdatedAt}
+                            size="sm"
+                          />
+                        )}
+                        {assistView ? (
+                          <span>{agent.name}</span>
+                        ) : (
+                          <Link to={`/portal/admin/users/${agent.id}`} className="admin-user-link">
+                            {agent.name}
+                          </Link>
+                        )}
+                        {agent.agentNumber !== null && (
+                          <span className="admin-user-subtext">{formatAgentNumber(agent.agentNumber)}</span>
+                        )}
+                      </div>
                     </td>
                     <td>{agent.email}</td>
                     <td>{agent.referrerName ?? agent.uplineNetwork ?? "—"}</td>

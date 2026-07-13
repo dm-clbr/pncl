@@ -12,6 +12,8 @@ export interface ReferralInviteSummary {
   consumedAt: string | null;
   createdAt: string;
   link: string;
+  referrerUserId: string;
+  sharedFromPartner: boolean;
 }
 
 export interface ReferralInviteListResponse {

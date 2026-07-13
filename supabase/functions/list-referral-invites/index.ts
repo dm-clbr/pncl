@@ -26,7 +26,7 @@ serve(async (req) => {
     return jsonResponse({
       compLevel,
       compOptions: getReferralCompOptions(compLevel),
-      invites: invites.map(toReferralInviteSummary),
+      invites: invites.map((invite) => toReferralInviteSummary(invite, user.id)),
     });
   } catch (error) {
     if (error instanceof AdminAuthError) {

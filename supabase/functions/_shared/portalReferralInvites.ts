@@ -6,6 +6,7 @@ import {
   getReferralInviteExpiresAt,
   isValidCompLevel,
 } from "./compLevel.ts";
+import { findPartnerLinkForUser, type PartnerLinkRow } from "./hierarchyPartners.ts";
 import { isValidReferrerUserId, resolveReferrer } from "./onboarding.ts";
 
 export type ReferralInviteStatus = "pending" | "consumed" | "expired" | "revoked";
@@ -38,6 +39,8 @@ export interface ReferralInviteSummary {
   consumedAt: string | null;
   createdAt: string;
   link: string;
+  referrerUserId: string;
+  sharedFromPartner: boolean;
 }
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -59,7 +62,10 @@ function getSiteUrl(): string {
   return Deno.env.get("PNCL_SITE_URL") ?? "http://localhost:8080";
 }
 
-export function toReferralInviteSummary(invite: ReferralInviteRow): ReferralInviteSummary {
+export function toReferralInviteSummary(
+  invite: ReferralInviteRow,
+  viewingUserId?: string,
+): ReferralInviteSummary {
   return {
     id: invite.id,
     compLevel: invite.comp_level,
@@ -69,7 +75,20 @@ export function toReferralInviteSummary(invite: ReferralInviteRow): ReferralInvi
     consumedAt: invite.consumed_at,
     createdAt: invite.created_at,
     link: buildReferralInviteUrl(invite.id, getSiteUrl()),
+    referrerUserId: invite.referrer_user_id,
+    sharedFromPartner: viewingUserId ? invite.referrer_user_id !== viewingUserId : false,
   };
+}
+
+function getLinkedReferrerUserIds(
+  userId: string,
+  partnerLink: PartnerLinkRow | null,
+): string[] {
+  if (!partnerLink) return [userId];
+  const partnerId = partnerLink.user_id_a === userId
+    ? partnerLink.user_id_b
+    : partnerLink.user_id_a;
+  return [userId, partnerId];
 }
 
 export function isInviteExpired(invite: Pick<ReferralInviteRow, "expires_at">, now = Date.now()): boolean {
@@ -211,10 +230,13 @@ export async function listReferralInvitesForUser(
   referrerUserId: string,
   limit = 50,
 ): Promise<ReferralInviteRow[]> {
+  const partnerLink = await findPartnerLinkForUser(supabase, referrerUserId);
+  const referrerIds = getLinkedReferrerUserIds(referrerUserId, partnerLink);
+
   const { data, error } = await supabase
     .from("portal_referral_invites")
     .select("*")
-    .eq("referrer_user_id", referrerUserId)
+    .in("referrer_user_id", referrerIds)
     .order("created_at", { ascending: false })
     .limit(limit);
 

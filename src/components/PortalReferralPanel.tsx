@@ -86,6 +86,7 @@ export default function PortalReferralPanel({ embedded = false }: PortalReferral
           <strong>{label}</strong>
           <span>
             Comp {invite.compLevel} · {formatReferralInviteStatus(invite.status)}
+            {invite.sharedFromPartner ? " · Business partner link" : ""}
             {invite.status === "pending" ? ` · Expires ${formatInviteDate(invite.expiresAt)}` : ""}
             {invite.consumedAt ? ` · Used ${formatInviteDate(invite.consumedAt)}` : ""}
           </span>
@@ -126,7 +127,8 @@ export default function PortalReferralPanel({ embedded = false }: PortalReferral
         <>
           <p className="portal-panel-note">
             Create a unique link for each recruit. Each link can only be used once and assigns the comp
-            level you choose. Your comp level: {formatCompLevel(compLevel)}.
+            level you choose. Your comp level: {formatCompLevel(compLevel)}. If you have a linked
+            business partner, you share the same referral link list.
           </p>
 
           <form className="portal-referral-form" onSubmit={(event) => void handleCreate(event)}>

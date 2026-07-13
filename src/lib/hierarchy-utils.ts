@@ -2,6 +2,26 @@ import type { AgentSummary, AssistHierarchyNode, HierarchyNode } from "@/lib/adm
 
 type HierarchyBranch = { children: HierarchyBranch[] };
 
+export function isPartnerGroupId(nodeId: string): boolean {
+  return nodeId.startsWith("partner:");
+}
+
+export function parsePartnerGroupId(nodeId: string): [string, string] | null {
+  if (!isPartnerGroupId(nodeId)) return null;
+  const parts = nodeId.slice("partner:".length).split(":");
+  if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+  return [parts[0], parts[1]];
+}
+
+export function nodeMatchesUserId(
+  node: HierarchyNode | AssistHierarchyNode,
+  userId: string,
+): boolean {
+  if (node.id === userId) return true;
+  if (node.isPartnerGroup && node.memberIds?.includes(userId)) return true;
+  return false;
+}
+
 export function getDescendantAgentIds(agents: AgentSummary[], userId: string): Set<string> {
   const childrenByReferrer = new Map<string, string[]>();
 
@@ -31,7 +51,7 @@ export function countTotalDownline(node: HierarchyBranch): number {
 
 export function findHierarchyNode(roots: HierarchyNode[], nodeId: string): HierarchyNode | null {
   for (const root of roots) {
-    if (root.id === nodeId) return root;
+    if (nodeMatchesUserId(root, nodeId)) return root;
     const match = findHierarchyNode(root.children, nodeId);
     if (match) return match;
   }
@@ -43,7 +63,7 @@ export function findAssistHierarchyNode(
   nodeId: string,
 ): AssistHierarchyNode | null {
   for (const root of roots) {
-    if (root.id === nodeId) return root;
+    if (nodeMatchesUserId(root, nodeId)) return root;
     const match = findAssistHierarchyNode(root.children, nodeId);
     if (match) return match;
   }

@@ -11,6 +11,7 @@ interface AdminCompLevelSelectProps {
   agentsById: Map<string, AgentSummary>;
   disabled?: boolean;
   saving?: boolean;
+  draftValue?: number | null;
   onChange: (compLevel: number | null) => void;
   className?: string;
   showUnavailableHint?: boolean;
@@ -21,6 +22,7 @@ export function AdminCompLevelSelect({
   agentsById,
   disabled = false,
   saving = false,
+  draftValue,
   onChange,
   className = "admin-role-select",
   showUnavailableHint = false,
@@ -50,6 +52,7 @@ export function AdminCompLevelSelect({
     hasOnboardingRecord,
   );
   const canAssign = selectOptions.length > 0 || agent.compLevel != null;
+  const currentValue = draftValue !== undefined ? draftValue : agent.compLevel;
 
   if (!canAssign) {
     return (
@@ -65,8 +68,8 @@ export function AdminCompLevelSelect({
   return (
     <select
       className={className}
-      value={agent.compLevel ?? ""}
-      disabled={disabled || saving || (selectOptions.length === 0 && agent.compLevel == null)}
+      value={currentValue ?? ""}
+      disabled={disabled || saving || (selectOptions.length === 0 && currentValue == null)}
       aria-label={`Update comp level for ${agent.name}`}
       onChange={(event) => {
         const { value } = event.target;
@@ -74,7 +77,7 @@ export function AdminCompLevelSelect({
       }}
     >
       <option value="">
-        {saving ? "Saving…" : formatCompLevel(agent.compLevel)}
+        {saving ? "Saving…" : formatCompLevel(currentValue)}
       </option>
       {selectOptions.map((level) => (
         <option key={level} value={level}>

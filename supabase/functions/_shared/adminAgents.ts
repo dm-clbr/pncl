@@ -16,6 +16,12 @@ import {
   type PortalTodoRecord,
 } from "./portalTodos.ts";
 import { logOnboarding } from "./logger.ts";
+import {
+  buildPartnerLookup,
+  getPartnerGroupId,
+  loadHierarchyPartnerLinks,
+  type PartnerLinkRow,
+} from "./hierarchyPartners.ts";
 
 export type GenesisAccountStatus = "pending" | "created" | "skipped";
 
@@ -132,6 +138,20 @@ export interface AgentSummary {
   googleSuspensionReason: string | null;
   createdAt: string;
   source: string | null;
+  profilePhotoPath: string | null;
+  profileUpdatedAt: string | null;
+  partnerUserId: string | null;
+}
+
+export interface HierarchyMember {
+  id: string;
+  email: string;
+  name: string;
+  role: PortalRole;
+  status: string | null;
+  npn: string | null;
+  profilePhotoPath: string | null;
+  profileUpdatedAt: string | null;
 }
 
 export interface HierarchyNode {
@@ -143,6 +163,17 @@ export interface HierarchyNode {
   profilePhotoPath: string | null;
   profileUpdatedAt: string | null;
   children: HierarchyNode[];
+  isPartnerGroup?: boolean;
+  memberIds?: string[];
+  members?: HierarchyMember[];
+}
+
+export interface AssistHierarchyMember {
+  id: string;
+  email: string;
+  npn: string | null;
+  profilePhotoPath: string | null;
+  profileUpdatedAt: string | null;
 }
 
 export interface AssistHierarchyNode {
@@ -151,7 +182,12 @@ export interface AssistHierarchyNode {
   npn: string | null;
   referrerEmail: string | null;
   referrerNpn: string | null;
+  profilePhotoPath: string | null;
+  profileUpdatedAt: string | null;
   children: AssistHierarchyNode[];
+  isPartnerGroup?: boolean;
+  memberIds?: string[];
+  members?: AssistHierarchyMember[];
 }
 
 export interface HierarchyFocusOption {
@@ -389,12 +425,16 @@ export async function buildAgentSummaries(
   options?: { includeSensitive?: boolean },
 ): Promise<AgentSummary[]> {
   const includeSensitive = options?.includeSensitive ?? false;
-  const [users, onboardingMaps, compLevelsByUserId, profileFields] = await Promise.all([
+  const [users, onboardingMaps, compLevelsByUserId, profileFields, profilesByUserId, partnerLinks] =
+    await Promise.all([
     listPortalUsers(adminClient),
     loadOnboardingMaps(adminClient),
     loadCompLevelsByUserId(adminClient),
     loadAgentProfileFields(adminClient),
+    loadPortalProfilePhotos(adminClient),
+    loadHierarchyPartnerLinks(adminClient),
   ]);
+  const partnerByUserId = buildPartnerLookup(partnerLinks);
 
   let phasesByUserId = new Map<string, AgentPhase>();
   try {
@@ -424,6 +464,7 @@ export async function buildAgentSummaries(
     const onboardingDetails = onboarding
       ? await buildOnboardingDetails(onboarding, includeSensitive)
       : null;
+    const profilePhoto = profilesByUserId.get(user.id);
 
     return {
       id: user.id,
@@ -452,6 +493,9 @@ export async function buildAgentSummaries(
       googleSuspensionReason: null,
       createdAt: user.created_at,
       source: typeof user.app_metadata?.source === "string" ? user.app_metadata.source : null,
+      profilePhotoPath: profilePhoto?.profilePhotoPath ?? null,
+      profileUpdatedAt: profilePhoto?.profileUpdatedAt ?? null,
+      partnerUserId: partnerByUserId.get(user.id) ?? null,
     };
   }));
 
@@ -497,9 +541,9 @@ export async function buildAgentSummaryForUser(
 
   const { data: profileRow } = await adminClient
     .from("portal_profiles")
-    .select("user_id, npn, agent_number")
+    .select("user_id, npn, agent_number, profile_photo_path, updated_at")
     .eq("user_id", user.id)
-    .maybeSingle<AgentProfileFieldsRow>();
+    .maybeSingle<AgentProfileFieldsRow & PortalProfilePhotoRow>();
 
   let phase: AgentPhase | null = null;
   try {
@@ -536,6 +580,9 @@ export async function buildAgentSummaryForUser(
     googleSuspensionReason: null,
     createdAt: user.created_at,
     source: typeof user.app_metadata?.source === "string" ? user.app_metadata.source : null,
+    profilePhotoPath: profileRow?.profile_photo_path ?? null,
+    profileUpdatedAt: profileRow?.updated_at ?? null,
+    partnerUserId: null,
   };
 }
 
@@ -581,12 +628,58 @@ export async function loadPortalProfilePhotos(
   return map;
 }
 
+function collectMergedChildAgents(
+  childrenByReferrer: Map<string, AgentSummary[]>,
+  memberIds: string[],
+  excludeIds: Set<string>,
+): AgentSummary[] {
+  const childAgents = new Map<string, AgentSummary>();
+  for (const memberId of memberIds) {
+    for (const child of childrenByReferrer.get(memberId) ?? []) {
+      if (!excludeIds.has(child.id)) {
+        childAgents.set(child.id, child);
+      }
+    }
+  }
+  return [...childAgents.values()];
+}
+
+function toHierarchyMember(
+  agent: AgentSummary,
+  profilesByUserId?: Map<string, { profilePhotoPath: string | null; profileUpdatedAt: string | null }>,
+): HierarchyMember {
+  const profile = profilesByUserId?.get(agent.id);
+  return {
+    id: agent.id,
+    email: agent.email,
+    name: agent.name,
+    role: agent.role,
+    status: agent.status,
+    npn: agent.npn,
+    profilePhotoPath: profile?.profilePhotoPath ?? agent.profilePhotoPath ?? null,
+    profileUpdatedAt: profile?.profileUpdatedAt ?? agent.profileUpdatedAt ?? null,
+  };
+}
+
+function toAssistHierarchyMember(agent: AgentSummary): AssistHierarchyMember {
+  return {
+    id: agent.id,
+    email: agent.email,
+    npn: agent.npn,
+    profilePhotoPath: agent.profilePhotoPath ?? null,
+    profileUpdatedAt: agent.profileUpdatedAt ?? null,
+  };
+}
+
 export function buildHierarchyTree(
   agents: AgentSummary[],
   rootUserId?: string,
   profilesByUserId?: Map<string, { profilePhotoPath: string | null; profileUpdatedAt: string | null }>,
+  partnerLinks: PartnerLinkRow[] = [],
 ): HierarchyNode[] {
   const byId = new Map(agents.map((agent) => [agent.id, agent]));
+  const partnerByUserId = buildPartnerLookup(partnerLinks);
+  const mergedIntoGroup = new Set<string>();
   const childrenByReferrer = new Map<string, AgentSummary[]>();
 
   for (const agent of agents) {
@@ -596,26 +689,69 @@ export function buildHierarchyTree(
     childrenByReferrer.set(agent.referrerId, siblings);
   }
 
-  const toNode = (agent: AgentSummary): HierarchyNode => {
+  const toNode = (agent: AgentSummary): HierarchyNode | null => {
+    if (mergedIntoGroup.has(agent.id)) return null;
+
+    const partnerId = partnerByUserId.get(agent.id);
+    const partner = partnerId ? byId.get(partnerId) : null;
+
+    if (partner && !mergedIntoGroup.has(partner.id)) {
+      mergedIntoGroup.add(agent.id);
+      mergedIntoGroup.add(partner.id);
+
+      const members = [agent, partner]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((member) => toHierarchyMember(member, profilesByUserId));
+
+      const childAgents = collectMergedChildAgents(
+        childrenByReferrer,
+        [agent.id, partner.id],
+        new Set([agent.id, partner.id]),
+      );
+
+      const children = childAgents
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map(toNode)
+        .filter((node): node is HierarchyNode => node !== null);
+
+      return {
+        id: getPartnerGroupId(agent.id, partner.id),
+        email: members.map((member) => member.email).join(" · "),
+        name: members.map((member) => member.name).join(" & "),
+        role: "agent",
+        status: null,
+        profilePhotoPath: null,
+        profileUpdatedAt: null,
+        isPartnerGroup: true,
+        memberIds: members.map((member) => member.id),
+        members,
+        children,
+      };
+    }
+
     const children = (childrenByReferrer.get(agent.id) ?? [])
       .sort((a, b) => a.name.localeCompare(b.name))
-      .map(toNode);
+      .map(toNode)
+      .filter((node): node is HierarchyNode => node !== null);
     const profile = profilesByUserId?.get(agent.id);
+
     return {
       id: agent.id,
       email: agent.email,
       name: agent.name,
       role: agent.role,
       status: agent.status,
-      profilePhotoPath: profile?.profilePhotoPath ?? null,
-      profileUpdatedAt: profile?.profileUpdatedAt ?? null,
+      profilePhotoPath: profile?.profilePhotoPath ?? agent.profilePhotoPath ?? null,
+      profileUpdatedAt: profile?.profileUpdatedAt ?? agent.profileUpdatedAt ?? null,
       children,
     };
   };
 
   if (rootUserId) {
     const root = byId.get(rootUserId);
-    return root ? [toNode(root)] : [];
+    if (!root) return [];
+    const node = toNode(root);
+    return node ? [node] : [];
   }
 
   const roots = agents.filter(
@@ -624,14 +760,18 @@ export function buildHierarchyTree(
 
   return roots
     .sort((a, b) => a.name.localeCompare(b.name))
-    .map(toNode);
+    .map(toNode)
+    .filter((node): node is HierarchyNode => node !== null);
 }
 
 export function buildAssistHierarchyTree(
   agents: AgentSummary[],
   rootUserId?: string,
+  partnerLinks: PartnerLinkRow[] = [],
 ): AssistHierarchyNode[] {
   const byId = new Map(agents.map((agent) => [agent.id, agent]));
+  const partnerByUserId = buildPartnerLookup(partnerLinks);
+  const mergedIntoGroup = new Set<string>();
   const childrenByReferrer = new Map<string, AgentSummary[]>();
 
   for (const agent of agents) {
@@ -641,11 +781,53 @@ export function buildAssistHierarchyTree(
     childrenByReferrer.set(agent.referrerId, siblings);
   }
 
-  const toNode = (agent: AgentSummary): AssistHierarchyNode => {
+  const toNode = (agent: AgentSummary): AssistHierarchyNode | null => {
+    if (mergedIntoGroup.has(agent.id)) return null;
+
+    const partnerId = partnerByUserId.get(agent.id);
+    const partner = partnerId ? byId.get(partnerId) : null;
+
+    if (partner && !mergedIntoGroup.has(partner.id)) {
+      mergedIntoGroup.add(agent.id);
+      mergedIntoGroup.add(partner.id);
+
+      const members = [agent, partner]
+        .sort((a, b) => a.email.localeCompare(b.email))
+        .map(toAssistHierarchyMember);
+
+      const childAgents = collectMergedChildAgents(
+        childrenByReferrer,
+        [agent.id, partner.id],
+        new Set([agent.id, partner.id]),
+      );
+
+      const children = childAgents
+        .sort((a, b) => a.email.localeCompare(b.email))
+        .map(toNode)
+        .filter((node): node is AssistHierarchyNode => node !== null);
+
+      const referrer = agent.referrerId ? byId.get(agent.referrerId) : null;
+
+      return {
+        id: getPartnerGroupId(agent.id, partner.id),
+        email: members.map((member) => member.email).join(" · "),
+        npn: members.map((member) => member.npn ?? "—").join(" · "),
+        referrerEmail: referrer?.email ?? null,
+        referrerNpn: referrer?.npn ?? null,
+        profilePhotoPath: null,
+        profileUpdatedAt: null,
+        isPartnerGroup: true,
+        memberIds: members.map((member) => member.id),
+        members,
+        children,
+      };
+    }
+
     const referrer = agent.referrerId ? byId.get(agent.referrerId) : null;
     const children = (childrenByReferrer.get(agent.id) ?? [])
       .sort((a, b) => a.email.localeCompare(b.email))
-      .map(toNode);
+      .map(toNode)
+      .filter((node): node is AssistHierarchyNode => node !== null);
 
     return {
       id: agent.id,
@@ -653,13 +835,17 @@ export function buildAssistHierarchyTree(
       npn: agent.npn,
       referrerEmail: referrer?.email ?? null,
       referrerNpn: referrer?.npn ?? null,
+      profilePhotoPath: agent.profilePhotoPath ?? null,
+      profileUpdatedAt: agent.profileUpdatedAt ?? null,
       children,
     };
   };
 
   if (rootUserId) {
     const root = byId.get(rootUserId);
-    return root ? [toNode(root)] : [];
+    if (!root) return [];
+    const node = toNode(root);
+    return node ? [node] : [];
   }
 
   const roots = agents.filter(
@@ -668,7 +854,8 @@ export function buildAssistHierarchyTree(
 
   return roots
     .sort((a, b) => a.email.localeCompare(b.email))
-    .map(toNode);
+    .map(toNode)
+    .filter((node): node is AssistHierarchyNode => node !== null);
 }
 
 export function buildHierarchyFocusOptions(agents: AgentSummary[]): HierarchyFocusOption[] {

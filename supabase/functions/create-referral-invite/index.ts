@@ -62,7 +62,7 @@ serve(async (req) => {
     );
 
     return jsonResponse({
-      invite: toReferralInviteSummary(invite),
+      invite: toReferralInviteSummary(invite, user.id),
     });
   } catch (error) {
     if (error instanceof AdminAuthError) {

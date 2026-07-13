@@ -3363,6 +3363,69 @@
   font-size: 24px;
 }
 
+.home2-page .admin-user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: rgba(240, 237, 228, .08);
+  border: 1px solid rgba(240, 237, 228, .14);
+}
+
+.home2-page .admin-user-avatar-sm {
+  width: 28px;
+  height: 28px;
+}
+
+.home2-page .admin-user-avatar-md {
+  width: 52px;
+  height: 52px;
+}
+
+.home2-page .admin-user-avatar-lg {
+  width: 72px;
+  height: 72px;
+}
+
+.home2-page .admin-user-avatar-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home2-page .admin-user-avatar-initials {
+  font-family: var(--ff-mono);
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: var(--bone);
+}
+
+.home2-page .admin-user-avatar-sm .admin-user-avatar-initials {
+  font-size: .62rem;
+}
+
+.home2-page .admin-user-avatar-md .admin-user-avatar-initials {
+  font-size: .82rem;
+}
+
+.home2-page .admin-user-avatar-lg .admin-user-avatar-initials {
+  font-size: 1.35rem;
+}
+
+.home2-page .admin-user-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.home2-page .admin-hierarchy-assist-identity {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
 .home2-page .admin-user-profile-meta {
   margin-top: 8px;
 }
@@ -3939,7 +4002,92 @@
 }
 
 .home2-page .admin-hierarchy-tile-assist {
+  justify-content: flex-start;
+  gap: 6px;
+}
+
+.home2-page .admin-hierarchy-tile-partner {
+  min-height: 100%;
+}
+
+.home2-page .admin-hierarchy-tile-avatars {
+  display: flex;
+  align-items: center;
   justify-content: center;
+  gap: 6px;
+}
+
+.home2-page .admin-tree-avatars {
+  justify-content: flex-start;
+}
+
+.home2-page .admin-hierarchy-partner-modal {
+  max-width: 560px;
+}
+
+.home2-page .admin-hierarchy-partner-members {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.home2-page .admin-hierarchy-partner-member {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.home2-page .admin-hierarchy-partner-member strong {
+  display: block;
+  color: var(--bone);
+}
+
+.home2-page .admin-hierarchy-partner-member p {
+  margin: 2px 0 6px;
+  color: var(--steel);
+  font-size: .82rem;
+}
+
+.home2-page .admin-hierarchy-partner-section {
+  margin-top: 8px;
+}
+
+.home2-page .admin-hierarchy-partner-current,
+.home2-page .admin-hierarchy-partner-link-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.home2-page .admin-hierarchy-partner-link-row select {
+  flex: 1 1 220px;
+}
+
+.home2-page .admin-danger-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(220, 72, 72, .45);
+  background: rgba(220, 72, 72, .12);
+  color: #ffb4b4;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.home2-page .admin-danger-btn:hover:not(:disabled) {
+  background: rgba(220, 72, 72, .2);
+  border-color: rgba(220, 72, 72, .65);
+}
+
+.home2-page .admin-danger-btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
 }
 
 .home2-page .admin-hierarchy-tile-email {
@@ -4007,6 +4155,49 @@
 
 .home2-page .admin-hierarchy-edit-modal {
   max-width: 520px;
+}
+
+.home2-page .admin-hierarchy-edit-field-form {
+  margin: 0 0 18px;
+  padding: 14px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(240, 237, 228, .1);
+  background: rgba(0, 0, 0, .12);
+}
+
+.home2-page .admin-hierarchy-edit-field {
+  min-width: 0;
+  width: 100%;
+}
+
+.home2-page .admin-hierarchy-edit-field-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.home2-page .admin-hierarchy-edit-field-row select,
+.home2-page .admin-hierarchy-edit-field-row .admin-role-select,
+.home2-page .admin-hierarchy-edit-field-row .admin-hierarchy-partner-current {
+  flex: 1;
+  min-width: 0;
+}
+
+.home2-page .admin-hierarchy-edit-field-row .admin-hierarchy-partner-current {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(240, 237, 228, .12);
+  background: var(--ink);
+  color: var(--bone);
+}
+
+.home2-page .admin-hierarchy-edit-save-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+  min-height: 44px;
 }
 
 .home2-page .admin-hierarchy-edit-stats {

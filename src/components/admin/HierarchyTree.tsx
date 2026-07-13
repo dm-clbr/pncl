@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { AssistHierarchyNode, HierarchyNode } from "@/lib/admin-api";
+import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
 
 function collectExpandableIds(roots: Array<{ id: string; children: HierarchyNode[] | AssistHierarchyNode[] }>): Set<string> {
   const ids = new Set<string>();
@@ -37,8 +38,12 @@ function HierarchyTreeNode({
   const expanded = expandedIds.has(node.id);
   const selected = selectedNodeId === node.id;
   const label = assistView
-    ? (node as AssistHierarchyNode).email
-    : (node as HierarchyNode).name;
+    ? node.isPartnerGroup
+      ? "Business partners"
+      : (node as AssistHierarchyNode).email
+    : node.isPartnerGroup
+      ? (node as HierarchyNode).name
+      : (node as HierarchyNode).name;
 
   return (
     <li className="admin-tree-item">
@@ -62,8 +67,40 @@ function HierarchyTreeNode({
         )}
 
         <button type="button" className="admin-tree-select" onClick={() => onSelect(node.id)}>
-          {assistView ? (
+          {node.isPartnerGroup ? (
             <>
+              <div className="admin-hierarchy-tile-avatars admin-tree-avatars">
+                {(assistView
+                  ? (node as AssistHierarchyNode).members ?? []
+                  : (node as HierarchyNode).members ?? []
+                ).map((member) => (
+                  <AdminUserAvatar
+                    key={member.id}
+                    name={"name" in member ? member.name : undefined}
+                    email={member.email}
+                    profilePhotoPath={member.profilePhotoPath}
+                    profileUpdatedAt={member.profileUpdatedAt}
+                    size="sm"
+                  />
+                ))}
+              </div>
+              <span className="admin-tree-name">{label}</span>
+              {assistView ? (
+                <span className="admin-tree-meta">
+                  NPN {(node as AssistHierarchyNode).members?.map((member) => member.npn ?? "—").join(" · ")}
+                </span>
+              ) : (
+                <span className="admin-badge assist">Partners</span>
+              )}
+            </>
+          ) : assistView ? (
+            <>
+              <AdminUserAvatar
+                email={(node as AssistHierarchyNode).email}
+                profilePhotoPath={(node as AssistHierarchyNode).profilePhotoPath}
+                profileUpdatedAt={(node as AssistHierarchyNode).profileUpdatedAt}
+                size="sm"
+              />
               <span className="admin-tree-name">{label}</span>
               <span className="admin-tree-meta">NPN {(node as AssistHierarchyNode).npn ?? "—"}</span>
             </>

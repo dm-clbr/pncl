@@ -1,13 +1,14 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, Minus, Plus, RotateCcw } from "lucide-react";
 import type { AssistHierarchyNode, HierarchyNode } from "@/lib/admin-api";
-import { getProfilePhotoUrl } from "@/lib/portal-profile";
+import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
 
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 2;
 const ZOOM_STEP = 0.1;
 
 const TILE_WIDTH = 148;
+const PARTNER_TILE_WIDTH = 220;
 const TILE_HEIGHT = 132;
 const H_GAP = 28;
 const V_GAP = 72;
@@ -20,6 +21,7 @@ type PositionedNode = {
   node: HierarchyNode | AssistHierarchyNode;
   x: number;
   y: number;
+  width: number;
 };
 
 type Connection = {
@@ -27,12 +29,8 @@ type Connection = {
   to: Point;
 };
 
-function getInitialsFromName(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return `${parts[0][0] ?? ""}${parts[parts.length - 1][0] ?? ""}`.toUpperCase();
-  }
-  return (parts[0]?.[0] ?? "?").toUpperCase();
+function getTileWidth(node: HierarchyNode | AssistHierarchyNode): number {
+  return node.isPartnerGroup ? PARTNER_TILE_WIDTH : TILE_WIDTH;
 }
 
 function layoutHierarchyTree(roots: Array<{ children: HierarchyNode[] | AssistHierarchyNode[] }>): {
@@ -47,17 +45,18 @@ function layoutHierarchyTree(roots: Array<{ children: HierarchyNode[] | AssistHi
   function assignNode(node: HierarchyNode | AssistHierarchyNode, depth: number): number {
     maxDepth = Math.max(maxDepth, depth);
     const y = CANVAS_PADDING + depth * (TILE_HEIGHT + V_GAP);
+    const tileWidth = getTileWidth(node);
 
     if (node.children.length === 0) {
-      const x = nextLeafX + TILE_WIDTH / 2;
-      nextLeafX += TILE_WIDTH + H_GAP;
-      positioned.push({ node, x, y });
+      const x = nextLeafX + tileWidth / 2;
+      nextLeafX += tileWidth + H_GAP;
+      positioned.push({ node, x, y, width: tileWidth });
       return x;
     }
 
     const childCenters = node.children.map((child) => assignNode(child, depth + 1));
     const x = (childCenters[0] + childCenters[childCenters.length - 1]) / 2;
-    positioned.push({ node, x, y });
+    positioned.push({ node, x, y, width: tileWidth });
     return x;
   }
 
@@ -121,16 +120,46 @@ function HierarchyTile({
   assistView?: boolean;
   onSelect: (nodeId: string) => void;
 }) {
+  const partnerClass = node.isPartnerGroup ? " admin-hierarchy-tile-partner" : "";
+
   if (assistView) {
     const assistNode = node as AssistHierarchyNode;
+    const members = assistNode.isPartnerGroup && assistNode.members?.length
+      ? assistNode.members
+      : [{
+          id: assistNode.id,
+          email: assistNode.email,
+          npn: assistNode.npn,
+          profilePhotoPath: assistNode.profilePhotoPath,
+          profileUpdatedAt: assistNode.profileUpdatedAt,
+        }];
+
     return (
       <button
         type="button"
-        className={`admin-hierarchy-tile admin-hierarchy-tile-assist${selected ? " admin-hierarchy-tile-selected" : ""}`}
+        className={`admin-hierarchy-tile admin-hierarchy-tile-assist${partnerClass}${selected ? " admin-hierarchy-tile-selected" : ""}`}
         onClick={() => onSelect(assistNode.id)}
       >
-        <p className="admin-hierarchy-tile-email">{assistNode.email}</p>
-        <p className="admin-hierarchy-tile-npn">NPN {assistNode.npn ?? "—"}</p>
+        <div className="admin-hierarchy-tile-avatars">
+          {members.map((member) => (
+            <AdminUserAvatar
+              key={member.id}
+              email={member.email}
+              profilePhotoPath={member.profilePhotoPath}
+              profileUpdatedAt={member.profileUpdatedAt}
+              size="md"
+              className="admin-hierarchy-tile-avatar"
+            />
+          ))}
+        </div>
+        {assistNode.isPartnerGroup ? (
+          <p className="admin-hierarchy-tile-email">Business partners</p>
+        ) : (
+          <p className="admin-hierarchy-tile-email">{assistNode.email}</p>
+        )}
+        <p className="admin-hierarchy-tile-npn">
+          NPN {members.map((member) => member.npn ?? "—").join(" · ")}
+        </p>
         <div className="admin-hierarchy-tile-foot">
           {assistNode.children.length > 0 && (
             <span className="admin-hierarchy-tile-meta">{assistNode.children.length} direct</span>
@@ -141,28 +170,44 @@ function HierarchyTile({
   }
 
   const fullNode = node as HierarchyNode;
-  const photoUrl = getProfilePhotoUrl(
-    fullNode.profilePhotoPath ?? null,
-    fullNode.profileUpdatedAt ?? null,
-  );
-  const initials = getInitialsFromName(fullNode.name);
+  const members = fullNode.isPartnerGroup && fullNode.members?.length
+    ? fullNode.members
+    : [{
+        id: fullNode.id,
+        email: fullNode.email,
+        name: fullNode.name,
+        role: fullNode.role,
+        status: fullNode.status,
+        npn: null,
+        profilePhotoPath: fullNode.profilePhotoPath,
+        profileUpdatedAt: fullNode.profileUpdatedAt,
+      }];
 
   return (
     <button
       type="button"
-      className={`admin-hierarchy-tile${selected ? " admin-hierarchy-tile-selected" : ""}`}
+      className={`admin-hierarchy-tile${partnerClass}${selected ? " admin-hierarchy-tile-selected" : ""}`}
       onClick={() => onSelect(fullNode.id)}
     >
-      <div className="admin-hierarchy-tile-avatar" aria-hidden="true">
-        {photoUrl ? (
-          <img src={photoUrl} alt="" className="admin-hierarchy-tile-photo" />
-        ) : (
-          <span className="admin-hierarchy-tile-initials">{initials}</span>
-        )}
+      <div className="admin-hierarchy-tile-avatars">
+        {members.map((member) => (
+          <AdminUserAvatar
+            key={member.id}
+            name={member.name}
+            email={member.email}
+            profilePhotoPath={member.profilePhotoPath}
+            profileUpdatedAt={member.profileUpdatedAt}
+            size="md"
+            className="admin-hierarchy-tile-avatar"
+          />
+        ))}
       </div>
-      <h3 className="admin-hierarchy-tile-name">{fullNode.name}</h3>
+      <h3 className="admin-hierarchy-tile-name">
+        {fullNode.isPartnerGroup ? members.map((member) => member.name).join(" & ") : fullNode.name}
+      </h3>
       <div className="admin-hierarchy-tile-foot">
-        {fullNode.role === "admin" && <span className="admin-badge">Admin</span>}
+        {fullNode.isPartnerGroup && <span className="admin-badge assist">Partners</span>}
+        {!fullNode.isPartnerGroup && fullNode.role === "admin" && <span className="admin-badge">Admin</span>}
         {fullNode.children.length > 0 && (
           <span className="admin-hierarchy-tile-meta">{fullNode.children.length} direct</span>
         )}
@@ -347,14 +392,14 @@ export function HierarchyCanvas({ tree, selectedNodeId, assistView = false, onSe
               ))}
             </svg>
 
-            {layout.positioned.map(({ node, x, y }) => (
+            {layout.positioned.map(({ node, x, y, width }) => (
               <div
                 key={node.id}
                 className="admin-hierarchy-node"
                 style={{
-                  left: x - TILE_WIDTH / 2,
+                  left: x - width / 2,
                   top: y,
-                  width: TILE_WIDTH,
+                  width,
                   height: TILE_HEIGHT,
                 }}
               >

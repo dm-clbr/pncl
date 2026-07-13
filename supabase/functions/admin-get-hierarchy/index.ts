@@ -11,6 +11,7 @@ import {
   buildHierarchyTree,
   loadPortalProfilePhotos,
 } from "../_shared/adminAgents.ts";
+import { loadHierarchyPartnerLinks } from "../_shared/hierarchyPartners.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
 import { isValidReferrerUserId } from "../_shared/onboarding.ts";
@@ -33,9 +34,10 @@ serve(async (req) => {
     }
 
     const agents = await buildAgentSummaries(adminClient);
+    const partnerLinks = await loadHierarchyPartnerLinks(adminClient);
 
     if (isAdminAssistUser(user)) {
-      const tree = buildAssistHierarchyTree(agents, rootUserId);
+      const tree = buildAssistHierarchyTree(agents, rootUserId, partnerLinks);
       return jsonResponse({
         tree,
         focusOptions: buildHierarchyFocusOptions(agents),
@@ -45,7 +47,7 @@ serve(async (req) => {
     }
 
     const profilesByUserId = await loadPortalProfilePhotos(adminClient);
-    const tree = buildHierarchyTree(agents, rootUserId, profilesByUserId);
+    const tree = buildHierarchyTree(agents, rootUserId, profilesByUserId, partnerLinks);
 
     return jsonResponse({ tree, totalAgents: agents.length });
   } catch (error) {
