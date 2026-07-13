@@ -145,6 +145,21 @@ export interface HierarchyNode {
   children: HierarchyNode[];
 }
 
+export interface AssistHierarchyNode {
+  id: string;
+  email: string;
+  npn: string | null;
+  referrerEmail: string | null;
+  referrerNpn: string | null;
+  children: AssistHierarchyNode[];
+}
+
+export interface HierarchyFocusOption {
+  id: string;
+  email: string;
+  npn: string | null;
+}
+
 interface PortalProfilePhotoRow {
   user_id: string;
   profile_photo_path: string | null;
@@ -610,6 +625,60 @@ export function buildHierarchyTree(
   return roots
     .sort((a, b) => a.name.localeCompare(b.name))
     .map(toNode);
+}
+
+export function buildAssistHierarchyTree(
+  agents: AgentSummary[],
+  rootUserId?: string,
+): AssistHierarchyNode[] {
+  const byId = new Map(agents.map((agent) => [agent.id, agent]));
+  const childrenByReferrer = new Map<string, AgentSummary[]>();
+
+  for (const agent of agents) {
+    if (!agent.referrerId || !byId.has(agent.referrerId)) continue;
+    const siblings = childrenByReferrer.get(agent.referrerId) ?? [];
+    siblings.push(agent);
+    childrenByReferrer.set(agent.referrerId, siblings);
+  }
+
+  const toNode = (agent: AgentSummary): AssistHierarchyNode => {
+    const referrer = agent.referrerId ? byId.get(agent.referrerId) : null;
+    const children = (childrenByReferrer.get(agent.id) ?? [])
+      .sort((a, b) => a.email.localeCompare(b.email))
+      .map(toNode);
+
+    return {
+      id: agent.id,
+      email: agent.email,
+      npn: agent.npn,
+      referrerEmail: referrer?.email ?? null,
+      referrerNpn: referrer?.npn ?? null,
+      children,
+    };
+  };
+
+  if (rootUserId) {
+    const root = byId.get(rootUserId);
+    return root ? [toNode(root)] : [];
+  }
+
+  const roots = agents.filter(
+    (agent) => !agent.referrerId || !byId.has(agent.referrerId),
+  );
+
+  return roots
+    .sort((a, b) => a.email.localeCompare(b.email))
+    .map(toNode);
+}
+
+export function buildHierarchyFocusOptions(agents: AgentSummary[]): HierarchyFocusOption[] {
+  return [...agents]
+    .sort((a, b) => a.email.localeCompare(b.email))
+    .map((agent) => ({
+      id: agent.id,
+      email: agent.email,
+      npn: agent.npn,
+    }));
 }
 
 export async function countAdmins(adminClient: SupabaseClient): Promise<number> {

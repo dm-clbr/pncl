@@ -84,6 +84,30 @@ export interface HierarchyNode {
   children: HierarchyNode[];
 }
 
+export interface AssistHierarchyNode {
+  id: string;
+  email: string;
+  npn: string | null;
+  referrerEmail: string | null;
+  referrerNpn: string | null;
+  children: AssistHierarchyNode[];
+}
+
+export interface HierarchyFocusOption {
+  id: string;
+  email: string;
+  npn: string | null;
+}
+
+export type HierarchyResponse =
+  | { tree: HierarchyNode[]; totalAgents: number; readOnly?: false }
+  | {
+      tree: AssistHierarchyNode[];
+      focusOptions: HierarchyFocusOption[];
+      totalAgents: number;
+      readOnly: true;
+    };
+
 export interface AdminClientSummary {
   id: string;
   primaryFirstName: string;
@@ -179,7 +203,7 @@ export async function listAdminClients(accessToken: string): Promise<AdminClient
 export async function getHierarchy(
   accessToken: string,
   rootUserId?: string,
-): Promise<{ tree: HierarchyNode[]; totalAgents: number }> {
+): Promise<HierarchyResponse> {
   const params = rootUserId ? `?root=${encodeURIComponent(rootUserId)}` : "";
   return adminFetch(`admin-get-hierarchy${params}`, accessToken, { method: "GET" });
 }

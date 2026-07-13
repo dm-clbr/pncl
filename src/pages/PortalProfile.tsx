@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, ArrowUpRight, Camera } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
 import ProfilePhotoCropModal from "@/components/ProfilePhotoCropModal";
 import PortalCarrierCredentials from "@/components/PortalCarrierCredentials";
 import PortalLicensingSection from "@/components/PortalLicensingSection";
 import PortalProfileDocumentsSection from "@/components/PortalProfileDocumentsSection";
+import PortalTeamDashboard from "@/components/PortalTeamDashboard";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   CLOTHING_SIZES,
@@ -38,10 +39,11 @@ import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 import "@/styles/home2.css";
 
-type ProfileTab = "details" | "licensing" | "documents" | "carriers";
+type ProfileTab = "details" | "team" | "licensing" | "documents" | "carriers";
 
 const PROFILE_TABS: { id: ProfileTab; label: string }[] = [
   { id: "details", label: "Profile details" },
+  { id: "team", label: "Team" },
   { id: "licensing", label: "Licensing" },
   { id: "documents", label: "Documents" },
   { id: "carriers", label: "Carrier logins" },
@@ -90,6 +92,11 @@ function SizeSelect({
 
 export default function PortalProfile() {
   const { user, session } = useAuth();
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab");
+  const tabFromUrl = PROFILE_TABS.some((tab) => tab.id === initialTab)
+    ? (initialTab as ProfileTab)
+    : "details";
   const { w9, submitted: w9Submitted, loading: w9Loading } = usePortalW9();
   const { directDeposit, submitted: directDepositSubmitted, loading: directDepositLoading } = usePortalDirectDeposit();
   const { ica, submitted: icaSubmitted, loading: icaLoading } = usePortalIca();
@@ -107,7 +114,7 @@ export default function PortalProfile() {
   const [directDepositPdfUrl, setDirectDepositPdfUrl] = useState<string | null>(null);
   const [w9PdfUrl, setW9PdfUrl] = useState<string | null>(null);
   const [icaPdfUrl, setIcaPdfUrl] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<ProfileTab>("details");
+  const [activeTab, setActiveTab] = useState<ProfileTab>(tabFromUrl);
 
   useEffect(() => {
     if (!directDeposit?.pdfPath) {
@@ -611,6 +618,16 @@ export default function PortalProfile() {
               </form>
             )}
           </div>
+          </div>
+
+          <div
+            role="tabpanel"
+            className="portal-profile-tabpanel"
+            id="profile-panel-team"
+            aria-labelledby="profile-tab-team"
+            hidden={activeTab !== "team"}
+          >
+            <PortalTeamDashboard />
           </div>
 
           <div

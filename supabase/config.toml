@@ -33,6 +33,9 @@ verify_jwt = true
 [functions.list-referral-invites]
 verify_jwt = true
 
+[functions.list-portal-downline]
+verify_jwt = true
+
 [functions.admin-update-comp-level]
 verify_jwt = true
 

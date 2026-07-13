@@ -20,7 +20,7 @@ import { usePortalDashboardTabs } from "@/hooks/usePortalDashboardTabs";
 import { isLinksDashboardSection, isDownloadsDashboardSection } from "@/lib/portal-dashboard-section-types";
 import type { PortalDashboardSection } from "@/lib/portal-dashboard-tabs";
 import PortalReferralPanel from "@/components/PortalReferralPanel";
-import { hasAdminConsoleAccess, isGenesisAdmin } from "@/lib/roles";
+import { hasAdminConsoleAccess, isAdminAssist, isGenesisAdmin } from "@/lib/roles";
 import {
   completePortalTodo,
   isRequiredFormTodo,
@@ -292,7 +292,16 @@ export default function PortalDashboard() {
 
   const agentEmail = portalUser?.email ?? "";
   const showAdminLink = hasAdminConsoleAccess(portalUser);
-  const adminLink = isGenesisAdmin(portalUser) ? "/portal/admin/genesis" : "/portal/admin";
+  const adminLink = isGenesisAdmin(portalUser)
+    ? "/portal/admin/genesis"
+    : isAdminAssist(portalUser)
+      ? "/portal/admin/hierarchy"
+      : "/portal/admin";
+  const adminLinkLabel = isGenesisAdmin(portalUser)
+    ? "Genesis admin"
+    : isAdminAssist(portalUser)
+      ? "Admin assist"
+      : "Admin console";
 
   return (
     <div className="home2-page">
@@ -497,7 +506,7 @@ export default function PortalDashboard() {
 
             {showAdminLink && (
               <Link to={adminLink} className="portal-sub-link portal-admin-link">
-                <span>{isGenesisAdmin(portalUser) ? "Genesis admin" : "Admin console"}</span>
+                <span>{adminLinkLabel}</span>
                 <Shield size={18} strokeWidth={2.5} aria-hidden="true" />
               </Link>
             )}

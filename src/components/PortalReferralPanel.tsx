@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { Copy, Link2 } from "lucide-react";
 import { formatCompLevel } from "@/lib/comp-level";
 import {
@@ -22,7 +23,11 @@ async function copyInviteLink(link: string): Promise<void> {
   toast.success("Referral link copied to clipboard.");
 }
 
-export default function PortalReferralPanel() {
+interface PortalReferralPanelProps {
+  embedded?: boolean;
+}
+
+export default function PortalReferralPanel({ embedded = false }: PortalReferralPanelProps) {
   const {
     compLevel,
     compOptions,
@@ -104,6 +109,100 @@ export default function PortalReferralPanel() {
     );
   };
 
+  const panelContent = (
+    <div className="portal-referral-panel">
+      {loading ? (
+        <p className="portal-panel-note">Loading referral links…</p>
+      ) : compLevel == null ? (
+        <p className="portal-panel-note">
+          Your comp level has not been set yet. Contact PNCL support before creating referral links.
+        </p>
+      ) : compOptions.length === 0 ? (
+        <p className="portal-panel-note">
+          Your comp level is {formatCompLevel(compLevel)}. You cannot assign a lower comp level, so new
+          referral links are unavailable.
+        </p>
+      ) : (
+        <>
+          <p className="portal-panel-note">
+            Create a unique link for each recruit. Each link can only be used once and assigns the comp
+            level you choose. Your comp level: {formatCompLevel(compLevel)}.
+          </p>
+
+          <form className="portal-referral-form" onSubmit={(event) => void handleCreate(event)}>
+            <label className="portal-field">
+              <span>Recruit nickname</span>
+              <input
+                type="text"
+                value={recipientLabel}
+                onChange={(event) => setRecipientLabel(event.target.value)}
+                placeholder="e.g. Joe B."
+                maxLength={120}
+                required
+                autoComplete="off"
+              />
+              <span className="portal-field-hint">
+                For your records only — not their legal name, so spelling doesn&apos;t need to be exact.
+              </span>
+            </label>
+
+            <label className="portal-field">
+              <span>Comp level</span>
+              <select
+                value={effectiveCompLevel}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setSelectedCompLevel(value ? Number.parseInt(value, 10) : "");
+                }}
+                required
+              >
+                {compOptions.map((level) => (
+                  <option key={level} value={level}>
+                    {level}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <button type="submit" className="portal-panel-btn" disabled={creating}>
+              {creating ? "Creating…" : "Create & copy link"}
+            </button>
+          </form>
+        </>
+      )}
+
+      {invites.length > 0 && (
+        <div className="portal-referral-list">
+          <h3 className="portal-referral-list-title">Recent links</h3>
+          {invites.map(renderInviteRow)}
+        </div>
+      )}
+
+      {!embedded && (
+        <p className="portal-panel-note">
+          <Link to="/portal/profile?tab=team">
+            Open team dashboard
+          </Link>{" "}
+          to manage all invite links and track recruit onboarding progress.
+        </p>
+      )}
+    </div>
+  );
+
+  if (embedded) {
+    return (
+      <section className="portal-team-section">
+        <div className="portal-team-section-head">
+          <h2>Referral links</h2>
+          {pendingCount > 0 && (
+            <span className="portal-team-section-count">{pendingCount} active</span>
+          )}
+        </div>
+        {panelContent}
+      </section>
+    );
+  }
+
   return (
     <div className={`portal-tile-group portal-referral-section${open ? " open" : ""}`}>
       <button
@@ -121,76 +220,7 @@ export default function PortalReferralPanel() {
         </span>
       </button>
 
-      {open && (
-        <div className="portal-tile-panel portal-referral-panel">
-          {loading ? (
-            <p className="portal-panel-note">Loading referral links…</p>
-          ) : compLevel == null ? (
-            <p className="portal-panel-note">
-              Your comp level has not been set yet. Contact PNCL support before creating referral links.
-            </p>
-          ) : compOptions.length === 0 ? (
-            <p className="portal-panel-note">
-              Your comp level is {formatCompLevel(compLevel)}. You cannot assign a lower comp level, so new
-              referral links are unavailable.
-            </p>
-          ) : (
-            <>
-              <p className="portal-panel-note">
-                Create a unique link for each recruit. Each link can only be used once and assigns the comp
-                level you choose. Your comp level: {formatCompLevel(compLevel)}.
-              </p>
-
-              <form className="portal-referral-form" onSubmit={(event) => void handleCreate(event)}>
-                <label className="portal-field">
-                  <span>Recruit nickname</span>
-                  <input
-                    type="text"
-                    value={recipientLabel}
-                    onChange={(event) => setRecipientLabel(event.target.value)}
-                    placeholder="e.g. Joe B."
-                    maxLength={120}
-                    required
-                    autoComplete="off"
-                  />
-                  <span className="portal-field-hint">
-                    For your records only — not their legal name, so spelling doesn&apos;t need to be exact.
-                  </span>
-                </label>
-
-                <label className="portal-field">
-                  <span>Comp level</span>
-                  <select
-                    value={effectiveCompLevel}
-                    onChange={(event) => {
-                      const value = event.target.value;
-                      setSelectedCompLevel(value ? Number.parseInt(value, 10) : "");
-                    }}
-                    required
-                  >
-                    {compOptions.map((level) => (
-                      <option key={level} value={level}>
-                        {level}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <button type="submit" className="portal-panel-btn" disabled={creating}>
-                  {creating ? "Creating…" : "Create & copy link"}
-                </button>
-              </form>
-            </>
-          )}
-
-          {invites.length > 0 && (
-            <div className="portal-referral-list">
-              <h3 className="portal-referral-list-title">Recent links</h3>
-              {invites.map(renderInviteRow)}
-            </div>
-          )}
-        </div>
-      )}
+      {open && <div className="portal-tile-panel">{panelContent}</div>}
     </div>
   );
 }

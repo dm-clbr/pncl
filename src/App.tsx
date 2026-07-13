@@ -188,14 +188,14 @@ const App = () => (
             path="/portal/admin"
             element={
               <ProtectedRoute>
-                <AdminRoute>
+                <AdminRoute allowAdminAssist>
                   <AdminLayout />
                 </AdminRoute>
               </ProtectedRoute>
             }
           >
             <Route index element={<AdminIndexRedirect />} />
-            <Route path="hierarchy" element={<AdminFullRoute><AdminHierarchy /></AdminFullRoute>} />
+            <Route path="hierarchy" element={<AdminFullRoute allowAdminAssist><AdminHierarchy /></AdminFullRoute>} />
             <Route path="users" element={<AdminFullRoute><AdminUsers /></AdminFullRoute>} />
             <Route path="gmail-verification" element={<AdminFullRoute><AdminGmailVerification /></AdminFullRoute>} />
             <Route path="users/new" element={<AdminFullRoute><AdminAddUser /></AdminFullRoute>} />

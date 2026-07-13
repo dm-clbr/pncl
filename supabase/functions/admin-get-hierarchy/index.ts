@@ -1,7 +1,13 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { AdminAuthError, requireAdmin } from "../_shared/adminAuth.ts";
+import {
+  AdminAuthError,
+  isAdminAssistUser,
+  requireAdminOrAdminAssist,
+} from "../_shared/adminAuth.ts";
 import {
   buildAgentSummaries,
+  buildAssistHierarchyTree,
+  buildHierarchyFocusOptions,
   buildHierarchyTree,
   loadPortalProfilePhotos,
 } from "../_shared/adminAgents.ts";
@@ -18,7 +24,7 @@ serve(async (req) => {
   }
 
   try {
-    const { adminClient } = await requireAdmin(req);
+    const { user, adminClient } = await requireAdminOrAdminAssist(req);
     const url = new URL(req.url);
     const rootUserId = url.searchParams.get("root") ?? undefined;
 
@@ -26,10 +32,19 @@ serve(async (req) => {
       return errorResponse("Invalid root user id", 400, "invalid_root");
     }
 
-    const [agents, profilesByUserId] = await Promise.all([
-      buildAgentSummaries(adminClient),
-      loadPortalProfilePhotos(adminClient),
-    ]);
+    const agents = await buildAgentSummaries(adminClient);
+
+    if (isAdminAssistUser(user)) {
+      const tree = buildAssistHierarchyTree(agents, rootUserId);
+      return jsonResponse({
+        tree,
+        focusOptions: buildHierarchyFocusOptions(agents),
+        totalAgents: agents.length,
+        readOnly: true,
+      });
+    }
+
+    const profilesByUserId = await loadPortalProfilePhotos(adminClient);
     const tree = buildHierarchyTree(agents, rootUserId, profilesByUserId);
 
     return jsonResponse({ tree, totalAgents: agents.length });

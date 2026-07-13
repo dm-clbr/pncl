@@ -1,26 +1,39 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, GitBranch, LayoutGrid, ListTree } from "lucide-react";
+import { HierarchyAssistDetailModal } from "@/components/admin/HierarchyAssistDetailModal";
 import { HierarchyCanvas } from "@/components/admin/HierarchyCanvas";
 import { HierarchyEditModal } from "@/components/admin/HierarchyEditModal";
 import { HierarchyTree } from "@/components/admin/HierarchyTree";
 import { useAuth } from "@/contexts/AuthContext";
-import { downloadAgentsCsv, getHierarchy } from "@/lib/admin-api";
+import {
+  downloadAgentsCsv,
+  getHierarchy,
+  type AssistHierarchyNode,
+  type HierarchyFocusOption,
+  type HierarchyNode,
+} from "@/lib/admin-api";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
+import { findAssistHierarchyNode } from "@/lib/hierarchy-utils";
+import { isAdminAssist } from "@/lib/roles";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 
 type HierarchyView = "canvas" | "tree";
 
 export default function AdminHierarchy() {
-  const { session } = useAuth();
-  const { agents, loading: agentsLoading, reload: reloadAgents } = useAdminAgents();
+  const { user, session } = useAuth();
+  const assistView = isAdminAssist(user);
+  const { agents, loading: agentsLoading, reload: reloadAgents } = useAdminAgents({ enabled: !assistView });
   const [rootUserId, setRootUserId] = useState("");
   const [view, setView] = useState<HierarchyView>("canvas");
-  const [tree, setTree] = useState<Awaited<ReturnType<typeof getHierarchy>>["tree"]>([]);
+  const [fullTree, setFullTree] = useState<HierarchyNode[]>([]);
+  const [assistTree, setAssistTree] = useState<AssistHierarchyNode[]>([]);
+  const [focusOptions, setFocusOptions] = useState<HierarchyFocusOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [editAgentId, setEditAgentId] = useState<string | null>(null);
+  const [assistDetailNodeId, setAssistDetailNodeId] = useState<string | null>(null);
   const [exportingCsv, setExportingCsv] = useState(false);
 
   const handleExportCsv = async () => {
@@ -48,6 +61,9 @@ export default function AdminHierarchy() {
   );
 
   const editAgent = editAgentId ? agentsById.get(editAgentId) ?? null : null;
+  const assistDetailNode = assistDetailNodeId
+    ? findAssistHierarchyNode(assistTree, assistDetailNodeId)
+    : null;
 
   const reloadHierarchy = useCallback(async () => {
     const token = session?.access_token;
@@ -58,7 +74,15 @@ export default function AdminHierarchy() {
 
     try {
       const data = await getHierarchy(token, rootUserId || undefined);
-      setTree(data.tree);
+      if (data.readOnly) {
+        setAssistTree(data.tree);
+        setFocusOptions(data.focusOptions);
+        setFullTree([]);
+      } else {
+        setFullTree(data.tree);
+        setAssistTree([]);
+        setFocusOptions([]);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load hierarchy");
     } finally {
@@ -67,9 +91,9 @@ export default function AdminHierarchy() {
   }, [rootUserId, session?.access_token]);
 
   useEffect(() => {
-    document.title = "Hierarchy — PNCL Admin";
+    document.title = assistView ? "Hierarchy — PNCL Admin assist" : "Hierarchy — PNCL Admin";
     trackPageView("admin_hierarchy");
-  }, []);
+  }, [assistView]);
 
   useEffect(() => {
     void reloadHierarchy();
@@ -77,11 +101,16 @@ export default function AdminHierarchy() {
 
   function handleSelectNode(nodeId: string) {
     setSelectedNodeId(nodeId);
+    if (assistView) {
+      setAssistDetailNodeId(nodeId);
+      return;
+    }
     setEditAgentId(nodeId);
   }
 
   function handleFocusAgent(agentId: string) {
     setEditAgentId(null);
+    setAssistDetailNodeId(null);
     setRootUserId(agentId);
   }
 
@@ -89,13 +118,20 @@ export default function AdminHierarchy() {
     await Promise.all([reloadAgents(), reloadHierarchy()]);
   }
 
+  const treeLoading = loading || (!assistView && agentsLoading);
+  const hasTree = assistView ? assistTree.length > 0 : fullTree.length > 0;
+
   return (
     <section className="admin-panel">
       <div className="admin-panel-head">
         <GitBranch size={22} aria-hidden="true" />
         <div>
           <h1>Referral hierarchy</h1>
-          <p>Connection lines from upline to downline, based on referral links at onboarding.</p>
+          <p>
+            {assistView
+              ? "Read-only view of referral connections. Only email, NPN, upline, and downline are shown."
+              : "Connection lines from upline to downline, based on referral links at onboarding."}
+          </p>
         </div>
       </div>
 
@@ -105,14 +141,20 @@ export default function AdminHierarchy() {
           <select
             value={rootUserId}
             onChange={(event) => setRootUserId(event.target.value)}
-            disabled={agentsLoading}
+            disabled={treeLoading}
           >
             <option value="">Full organization</option>
-            {agentOptions.map((agent) => (
-              <option key={agent.id} value={agent.id}>
-                {agent.name} ({agent.email})
-              </option>
-            ))}
+            {assistView
+              ? focusOptions.map((agent) => (
+                  <option key={agent.id} value={agent.id}>
+                    {agent.email}{agent.npn ? ` (${agent.npn})` : ""}
+                  </option>
+                ))
+              : agentOptions.map((agent) => (
+                  <option key={agent.id} value={agent.id}>
+                    {agent.name} ({agent.email})
+                  </option>
+                ))}
           </select>
         </label>
 
@@ -137,52 +179,64 @@ export default function AdminHierarchy() {
           </button>
         </div>
 
-        <button
-          type="button"
-          className="admin-secondary-btn"
-          disabled={exportingCsv}
-          onClick={() => void handleExportCsv()}
-        >
-          <Download size={14} aria-hidden="true" />
-          {exportingCsv ? "Exporting…" : "Download CSV"}
-        </button>
+        {!assistView && (
+          <button
+            type="button"
+            className="admin-secondary-btn"
+            disabled={exportingCsv}
+            onClick={() => void handleExportCsv()}
+          >
+            <Download size={14} aria-hidden="true" />
+            {exportingCsv ? "Exporting…" : "Download CSV"}
+          </button>
+        )}
       </div>
 
-      {(loading || agentsLoading) && (
+      {treeLoading && (
         <div className="onboarding-spinner admin-spinner" aria-label="Loading hierarchy" />
       )}
 
-      {!loading && error && <p className="admin-error">{error}</p>}
+      {!treeLoading && error && <p className="admin-error">{error}</p>}
 
-      {!loading && !error && tree.length === 0 && (
+      {!treeLoading && !error && !hasTree && (
         <p className="admin-empty">No referral connections found yet.</p>
       )}
 
-      {!loading && !error && tree.length > 0 && view === "canvas" && (
+      {!treeLoading && !error && hasTree && view === "canvas" && (
         <HierarchyCanvas
-          tree={tree}
+          tree={assistView ? assistTree : fullTree}
           selectedNodeId={selectedNodeId}
+          assistView={assistView}
           onSelectNode={handleSelectNode}
         />
       )}
 
-      {!loading && !error && tree.length > 0 && view === "tree" && (
+      {!treeLoading && !error && hasTree && view === "tree" && (
         <HierarchyTree
           key={rootUserId || "full"}
-          tree={tree}
+          tree={assistView ? assistTree : fullTree}
           selectedNodeId={selectedNodeId}
+          assistView={assistView}
           onSelectNode={handleSelectNode}
         />
       )}
 
-      {editAgent && (
+      {!assistView && editAgent && (
         <HierarchyEditModal
           agent={editAgent}
           agents={agents}
           agentsById={agentsById}
-          tree={tree}
+          tree={fullTree}
           onClose={() => setEditAgentId(null)}
           onSaved={() => void handleSaved()}
+          onFocusAgent={handleFocusAgent}
+        />
+      )}
+
+      {assistView && assistDetailNode && (
+        <HierarchyAssistDetailModal
+          node={assistDetailNode}
+          onClose={() => setAssistDetailNodeId(null)}
           onFocusAgent={handleFocusAgent}
         />
       )}

@@ -202,3 +202,20 @@ export function decodeCompAttachmentPdf(value: unknown): Uint8Array {
 
   return bytes;
 }
+
+/** True when an admin has assigned at least one comp attachment for this user. */
+export async function userHasCompAttachment(
+  adminClient: SupabaseClient,
+  userId: string,
+): Promise<boolean> {
+  const { count, error } = await adminClient
+    .from("portal_comp_attachments")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (count ?? 0) > 0;
+}

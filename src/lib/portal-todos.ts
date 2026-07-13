@@ -1,5 +1,8 @@
 import type { User } from "@supabase/supabase-js";
+import { fetchPortalCompAttachments } from "@/lib/portal-comp-attachments";
 import { getSupabaseClient, getSupabaseConfig, isSupabaseAuthConfigured } from "@/lib/supabase";
+
+export const COMP_AGREEMENT_TODO_ID = "comp_agreement";
 
 export type PortalTodoPhase = "on_board" | "pre_license" | "licensing" | "sales_ready";
 export type PortalTodoCompletionType = "auto" | "agent" | "admin";
@@ -190,7 +193,28 @@ export async function fetchPortalTodos(accessToken: string): Promise<PortalTodo[
   }
 
   const todos = (data.todos ?? []) as PortalTodoResponse[];
-  return todos.length > 0 ? todos.map(mapPortalTodo) : FALLBACK_PORTAL_TODOS;
+  const mapped = todos.length > 0 ? todos.map(mapPortalTodo) : FALLBACK_PORTAL_TODOS;
+  return filterCompAgreementTodo(accessToken, mapped);
+}
+
+async function filterCompAgreementTodo(
+  accessToken: string,
+  todos: PortalTodo[],
+): Promise<PortalTodo[]> {
+  if (!todos.some((todo) => todo.id === COMP_AGREEMENT_TODO_ID)) {
+    return todos;
+  }
+
+  try {
+    const attachments = await fetchPortalCompAttachments(accessToken);
+    if (attachments.length > 0) {
+      return todos;
+    }
+  } catch {
+    // If comp attachments can't be loaded, hide the step so agents aren't blocked.
+  }
+
+  return todos.filter((todo) => todo.id !== COMP_AGREEMENT_TODO_ID);
 }
 
 type CompletedPortalTodos = Record<string, boolean>;

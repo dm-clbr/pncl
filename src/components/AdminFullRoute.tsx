@@ -1,9 +1,15 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { isGenesisAdmin } from "@/lib/roles";
+import { isAdminAssist, isGenesisAdmin } from "@/lib/roles";
 import OnboardingLayout from "@/components/OnboardingLayout";
 
-export default function AdminFullRoute({ children }: { children: React.ReactNode }) {
+export default function AdminFullRoute({
+  children,
+  allowAdminAssist = false,
+}: {
+  children: React.ReactNode;
+  allowAdminAssist?: boolean;
+}) {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -16,6 +22,10 @@ export default function AdminFullRoute({ children }: { children: React.ReactNode
 
   if (isGenesisAdmin(user)) {
     return <Navigate to="/portal/admin/genesis" replace />;
+  }
+
+  if (isAdminAssist(user) && !allowAdminAssist) {
+    return <Navigate to="/portal/admin/hierarchy" replace />;
   }
 
   return children;

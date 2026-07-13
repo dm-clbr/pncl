@@ -67,6 +67,7 @@ function googleStatusClass(status: GoogleWorkspaceStatus | null | undefined): st
 function roleChangeMessage(agent: AgentSummary, nextRole: PortalRole): string {
   if (nextRole === "admin") return `Set ${agent.name}'s role to admin?`;
   if (nextRole === "genesis_admin") return `Set ${agent.name}'s role to Genesis admin?`;
+  if (nextRole === "admin_assist") return `Set ${agent.name}'s role to admin assist?`;
   return `Remove elevated access from ${agent.name}?`;
 }
 
@@ -92,7 +93,7 @@ function matchesGoogleStatusFilter(
 
 export default function AdminUsers() {
   const { user, session } = useAuth();
-  const { agents, loading, error, reload } = useAdminAgents();
+  const { agents, loading, error, reload, patchAgent } = useAdminAgents();
   const [query, setQuery] = useState("");
   const [googleFilter, setGoogleFilter] = useState<GoogleStatusFilter>("all");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
@@ -258,6 +259,7 @@ export default function AdminUsers() {
     setUpdatingId(agent.id);
     try {
       const result = await updateUserRole(token, agent.id, nextRole);
+      patchAgent(agent.id, { role: result.role });
       toast.success(result.message);
       await reload();
     } catch (err) {
@@ -350,6 +352,7 @@ export default function AdminUsers() {
   const roleBadgeClass = (role: PortalRole) => {
     if (role === "admin") return "admin-badge accent";
     if (role === "genesis_admin") return "admin-badge genesis";
+    if (role === "admin_assist") return "admin-badge assist";
     return "admin-badge";
   };
 

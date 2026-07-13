@@ -2,7 +2,7 @@ import { NavLink, Outlet, Link } from "react-router-dom";
 import { ArrowLeft, Building2, CheckSquare, ClipboardCheck, ClipboardList, DollarSign, Eye, FileSignature, FileText, GitBranch, GraduationCap, LayoutDashboard, LayoutGrid, Mail, Palette, Receipt, Trophy, UserPlus, Users } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
 import { useAuth } from "@/contexts/AuthContext";
-import { isGenesisAdmin } from "@/lib/roles";
+import { isAdminAssist, isGenesisAdmin } from "@/lib/roles";
 import "@/styles/home2.css";
 
 const FULL_ADMIN_NAV = [
@@ -32,12 +32,25 @@ const GENESIS_ADMIN_NAV = [
   { to: "/portal/admin/w9-preview", label: "W-9 preview", icon: FileText, end: false },
 ] as const;
 
+const ADMIN_ASSIST_NAV = [
+  { to: "/portal/admin/hierarchy", label: "Hierarchy", icon: GitBranch, end: false },
+] as const;
+
 export default function AdminLayout() {
   const { user } = useAuth();
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Admin";
+  const adminAssistOnly = isAdminAssist(user);
   const genesisAdminOnly = isGenesisAdmin(user);
-  const navItems = genesisAdminOnly ? GENESIS_ADMIN_NAV : FULL_ADMIN_NAV;
-  const consoleTitle = genesisAdminOnly ? "Genesis admin" : "Admin console";
+  const navItems = adminAssistOnly
+    ? ADMIN_ASSIST_NAV
+    : genesisAdminOnly
+      ? GENESIS_ADMIN_NAV
+      : FULL_ADMIN_NAV;
+  const consoleTitle = adminAssistOnly
+    ? "Admin assist"
+    : genesisAdminOnly
+      ? "Genesis admin"
+      : "Admin console";
 
   return (
     <div className="home2-page">

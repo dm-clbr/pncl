@@ -9,6 +9,10 @@ import {
   type PortalTodoRecord,
 } from "../_shared/portalTodos.ts";
 import { logOnboarding } from "../_shared/logger.ts";
+import {
+  COMP_AGREEMENT_TODO_SLUG,
+  userHasCompAttachment,
+} from "../_shared/portalCompAttachments.ts";
 
 serve(async (req) => {
   const cors = handleCors(req);
@@ -33,8 +37,14 @@ serve(async (req) => {
     }
 
     const rows = (data ?? []) as PortalTodoRecord[];
+    const hasCompAttachment = rows.some((row) => row.slug === COMP_AGREEMENT_TODO_SLUG)
+      ? await userHasCompAttachment(adminClient, user.id)
+      : false;
+    const visibleRows = hasCompAttachment
+      ? rows
+      : rows.filter((row) => row.slug !== COMP_AGREEMENT_TODO_SLUG);
     const autoKeys = new Set(
-      rows
+      visibleRows
         .filter((row) => row.completion_type === "auto" && row.auto_key)
         .map((row) => row.auto_key as string),
     );
@@ -44,7 +54,7 @@ serve(async (req) => {
       user.user_metadata as Record<string, unknown> | undefined,
     );
 
-    const todos = rows.map((row) =>
+    const todos = visibleRows.map((row) =>
       mapPortalTodoForUser(
         row,
         isTodoCompleteForUser(row, user.id, completedMetadata, autoSets),

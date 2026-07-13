@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { listAgents, type AgentSummary } from "@/lib/admin-api";
 
-export function useAdminAgents() {
+export function useAdminAgents(options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true;
   const { session } = useAuth();
   const [agents, setAgents] = useState<AgentSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -10,9 +11,14 @@ export function useAdminAgents() {
 
   const reload = useCallback(async () => {
     const token = session?.access_token;
-    if (!token) {
-      setError("Not authenticated");
-      setLoading(false);
+    if (!token || !enabled) {
+      if (!enabled) {
+        setLoading(false);
+        setError(null);
+      } else {
+        setError("Not authenticated");
+        setLoading(false);
+      }
       return;
     }
 
@@ -26,11 +32,17 @@ export function useAdminAgents() {
     } finally {
       setLoading(false);
     }
-  }, [session?.access_token]);
+  }, [enabled, session?.access_token]);
 
   useEffect(() => {
     void reload();
   }, [reload]);
 
-  return { agents, loading, error, reload };
+  const patchAgent = useCallback((agentId: string, patch: Partial<AgentSummary>) => {
+    setAgents((current) =>
+      current.map((agent) => (agent.id === agentId ? { ...agent, ...patch } : agent)),
+    );
+  }, []);
+
+  return { agents, loading, error, reload, patchAgent };
 }

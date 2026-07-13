@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, Minus, Plus, RotateCcw } from "lucide-react";
-import type { HierarchyNode } from "@/lib/admin-api";
+import type { AssistHierarchyNode, HierarchyNode } from "@/lib/admin-api";
 import { getProfilePhotoUrl } from "@/lib/portal-profile";
 
 const MIN_ZOOM = 0.2;
@@ -17,7 +17,7 @@ const CANVAS_PADDING = 40;
 type Point = { x: number; y: number };
 
 type PositionedNode = {
-  node: HierarchyNode;
+  node: HierarchyNode | AssistHierarchyNode;
   x: number;
   y: number;
 };
@@ -35,7 +35,7 @@ function getInitialsFromName(name: string): string {
   return (parts[0]?.[0] ?? "?").toUpperCase();
 }
 
-function layoutHierarchyTree(roots: HierarchyNode[]): {
+function layoutHierarchyTree(roots: Array<{ children: HierarchyNode[] | AssistHierarchyNode[] }>): {
   positioned: PositionedNode[];
   width: number;
   height: number;
@@ -44,7 +44,7 @@ function layoutHierarchyTree(roots: HierarchyNode[]): {
   let nextLeafX = CANVAS_PADDING;
   let maxDepth = 0;
 
-  function assignNode(node: HierarchyNode, depth: number): number {
+  function assignNode(node: HierarchyNode | AssistHierarchyNode, depth: number): number {
     maxDepth = Math.max(maxDepth, depth);
     const y = CANVAS_PADDING + depth * (TILE_HEIGHT + V_GAP);
 
@@ -72,10 +72,13 @@ function layoutHierarchyTree(roots: HierarchyNode[]): {
   return { positioned, width, height };
 }
 
-function collectConnections(roots: HierarchyNode[], positionedById: Map<string, PositionedNode>): Connection[] {
+function collectConnections(
+  roots: Array<{ id: string; children: HierarchyNode[] | AssistHierarchyNode[] }>,
+  positionedById: Map<string, PositionedNode>,
+): Connection[] {
   const connections: Connection[] = [];
 
-  function walk(node: HierarchyNode) {
+  function walk(node: { id: string; children: HierarchyNode[] | AssistHierarchyNode[] }) {
     const parent = positionedById.get(node.id);
     if (!parent) return;
 
@@ -110,23 +113,45 @@ function clampZoom(value: number): number {
 function HierarchyTile({
   node,
   selected,
+  assistView,
   onSelect,
 }: {
-  node: HierarchyNode;
+  node: HierarchyNode | AssistHierarchyNode;
   selected: boolean;
+  assistView?: boolean;
   onSelect: (nodeId: string) => void;
 }) {
+  if (assistView) {
+    const assistNode = node as AssistHierarchyNode;
+    return (
+      <button
+        type="button"
+        className={`admin-hierarchy-tile admin-hierarchy-tile-assist${selected ? " admin-hierarchy-tile-selected" : ""}`}
+        onClick={() => onSelect(assistNode.id)}
+      >
+        <p className="admin-hierarchy-tile-email">{assistNode.email}</p>
+        <p className="admin-hierarchy-tile-npn">NPN {assistNode.npn ?? "—"}</p>
+        <div className="admin-hierarchy-tile-foot">
+          {assistNode.children.length > 0 && (
+            <span className="admin-hierarchy-tile-meta">{assistNode.children.length} direct</span>
+          )}
+        </div>
+      </button>
+    );
+  }
+
+  const fullNode = node as HierarchyNode;
   const photoUrl = getProfilePhotoUrl(
-    node.profilePhotoPath ?? null,
-    node.profileUpdatedAt ?? null,
+    fullNode.profilePhotoPath ?? null,
+    fullNode.profileUpdatedAt ?? null,
   );
-  const initials = getInitialsFromName(node.name);
+  const initials = getInitialsFromName(fullNode.name);
 
   return (
     <button
       type="button"
       className={`admin-hierarchy-tile${selected ? " admin-hierarchy-tile-selected" : ""}`}
-      onClick={() => onSelect(node.id)}
+      onClick={() => onSelect(fullNode.id)}
     >
       <div className="admin-hierarchy-tile-avatar" aria-hidden="true">
         {photoUrl ? (
@@ -135,11 +160,11 @@ function HierarchyTile({
           <span className="admin-hierarchy-tile-initials">{initials}</span>
         )}
       </div>
-      <h3 className="admin-hierarchy-tile-name">{node.name}</h3>
+      <h3 className="admin-hierarchy-tile-name">{fullNode.name}</h3>
       <div className="admin-hierarchy-tile-foot">
-        {node.role === "admin" && <span className="admin-badge">Admin</span>}
-        {node.children.length > 0 && (
-          <span className="admin-hierarchy-tile-meta">{node.children.length} direct</span>
+        {fullNode.role === "admin" && <span className="admin-badge">Admin</span>}
+        {fullNode.children.length > 0 && (
+          <span className="admin-hierarchy-tile-meta">{fullNode.children.length} direct</span>
         )}
       </div>
     </button>
@@ -147,12 +172,13 @@ function HierarchyTile({
 }
 
 interface HierarchyCanvasProps {
-  tree: HierarchyNode[];
+  tree: HierarchyNode[] | AssistHierarchyNode[];
   selectedNodeId: string | null;
+  assistView?: boolean;
   onSelectNode: (nodeId: string) => void;
 }
 
-export function HierarchyCanvas({ tree, selectedNodeId, onSelectNode }: HierarchyCanvasProps) {
+export function HierarchyCanvas({ tree, selectedNodeId, assistView = false, onSelectNode }: HierarchyCanvasProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const layout = useMemo(() => layoutHierarchyTree(tree), [tree]);
   const [scale, setScale] = useState(1);
@@ -335,6 +361,7 @@ export function HierarchyCanvas({ tree, selectedNodeId, onSelectNode }: Hierarch
                 <HierarchyTile
                   node={node}
                   selected={selectedNodeId === node.id}
+                  assistView={assistView}
                   onSelect={onSelectNode}
                 />
               </div>

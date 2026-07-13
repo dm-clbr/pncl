@@ -684,6 +684,12 @@
   padding: 4px 8px 8px;
 }
 
+.home2-page .portal-panel-note a {
+  color: var(--accent-bright);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .home2-page .portal-todo-item {
   display: flex;
   gap: 14px;
@@ -2318,6 +2324,91 @@
   color: var(--accent-bright);
 }
 
+.home2-page .portal-team-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.home2-page .portal-team-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.home2-page .portal-team-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.home2-page .portal-team-section-head h2 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--bone);
+}
+
+.home2-page .portal-team-section-count {
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+.home2-page .portal-downline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home2-page .portal-downline-item {
+  padding: 12px 14px;
+  background: var(--ink-2);
+  border: 1px solid rgba(240, 237, 228, .1);
+  border-radius: var(--radius);
+}
+
+.home2-page .portal-downline-item-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.home2-page .portal-downline-item-copy strong {
+  font-size: .85rem;
+  color: var(--bone);
+}
+
+.home2-page .portal-downline-item-copy span {
+  font-size: .72rem;
+  line-height: 1.35;
+  color: var(--steel);
+}
+
+.home2-page .portal-downline-alias {
+  font-style: italic;
+}
+
+.home2-page .portal-downline-status {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(240, 237, 228, .08);
+  border: 1px solid rgba(240, 237, 228, .12);
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--bone);
+}
+
+.home2-page .portal-downline-item .portal-phase-badge {
+  align-self: flex-start;
+}
+
 .home2-page .portal-panel-btn {
   display: inline-flex;
   align-items: center;
@@ -3010,6 +3101,11 @@
 .home2-page .admin-badge.genesis {
   background: rgba(96, 132, 194, .18);
   color: #9ec0ff;
+}
+
+.home2-page .admin-badge.assist {
+  background: rgba(120, 168, 132, .18);
+  color: #9fd4ad;
 }
 
 .home2-page .admin-status {
@@ -3707,6 +3803,63 @@
   font-size: 8px;
   letter-spacing: .08em;
   text-transform: uppercase;
+  color: var(--steel);
+}
+
+.home2-page .admin-hierarchy-tile-assist {
+  justify-content: center;
+}
+
+.home2-page .admin-hierarchy-tile-email {
+  margin: 0;
+  font-size: .72rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--bone);
+  word-break: break-word;
+}
+
+.home2-page .admin-hierarchy-tile-npn {
+  margin: 0;
+  font-family: var(--ff-mono);
+  font-size: .68rem;
+  letter-spacing: .04em;
+  color: var(--steel);
+}
+
+.home2-page .admin-hierarchy-assist-modal {
+  max-width: 480px;
+}
+
+.home2-page .admin-hierarchy-assist-details {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.home2-page .admin-hierarchy-assist-details > div {
+  display: grid;
+  gap: 4px;
+}
+
+.home2-page .admin-hierarchy-assist-details dt {
+  font-family: var(--ff-mono);
+  font-size: var(--admin-fs-badge);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+.home2-page .admin-hierarchy-assist-details dd {
+  margin: 0;
+  color: var(--bone);
+  word-break: break-word;
+}
+
+.home2-page .admin-tree-meta {
+  font-family: var(--ff-mono);
+  font-size: .72rem;
+  letter-spacing: .04em;
   color: var(--steel);
 }
 

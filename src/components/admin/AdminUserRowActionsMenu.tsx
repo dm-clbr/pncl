@@ -121,6 +121,14 @@ export default function AdminUserRowActionsMenu({
         icon: ShieldCheck,
       });
     }
+    if (agent.role !== "admin_assist") {
+      roleItems.push({
+        key: "admin_assist",
+        label: "Make admin assist",
+        role: "admin_assist",
+        icon: ShieldCheck,
+      });
+    }
     if (agent.role !== "agent") {
       roleItems.push({
         key: "agent",

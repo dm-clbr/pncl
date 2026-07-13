@@ -10,7 +10,7 @@ interface UpdateRolePayload {
   role: PortalRole;
 }
 
-const VALID_ROLES: PortalRole[] = ["admin", "genesis_admin", "agent"];
+const VALID_ROLES: PortalRole[] = ["admin", "genesis_admin", "admin_assist", "agent"];
 
 function validateUpdateRolePayload(body: unknown): UpdateRolePayload {
   if (!body || typeof body !== "object") {
@@ -25,7 +25,7 @@ function validateUpdateRolePayload(body: unknown): UpdateRolePayload {
 
   const role = data.role;
   if (!VALID_ROLES.includes(role as PortalRole)) {
-    throw new Error("Role must be admin, genesis_admin, or agent");
+    throw new Error("Role must be admin, genesis_admin, admin_assist, or agent");
   }
 
   return { userId, role: role as PortalRole };
@@ -37,6 +37,8 @@ function roleUpdateMessage(role: PortalRole): string {
       return "User promoted to admin.";
     case "genesis_admin":
       return "User promoted to Genesis admin.";
+    case "admin_assist":
+      return "User promoted to admin assist.";
     default:
       return "Elevated access removed.";
   }
@@ -72,10 +74,12 @@ serve(async (req) => {
       return errorResponse("You cannot remove your own admin access", 409, "self_demote");
     }
 
-    const appMetadata = {
-      ...targetData.user.app_metadata,
-      role: payload.role,
-    };
+    const appMetadata = { ...targetData.user.app_metadata } as Record<string, unknown>;
+    if (payload.role === "agent") {
+      delete appMetadata.role;
+    } else {
+      appMetadata.role = payload.role;
+    }
 
     const { error: updateError } = await adminClient.auth.admin.updateUserById(payload.userId, {
       app_metadata: appMetadata,
