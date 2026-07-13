@@ -196,7 +196,7 @@ const App = () => (
           >
             <Route index element={<AdminIndexRedirect />} />
             <Route path="hierarchy" element={<AdminFullRoute allowAdminAssist><AdminHierarchy /></AdminFullRoute>} />
-            <Route path="users" element={<AdminFullRoute><AdminUsers /></AdminFullRoute>} />
+            <Route path="users" element={<AdminFullRoute allowAdminAssist><AdminUsers /></AdminFullRoute>} />
             <Route path="gmail-verification" element={<AdminFullRoute><AdminGmailVerification /></AdminFullRoute>} />
             <Route path="users/new" element={<AdminFullRoute><AdminAddUser /></AdminFullRoute>} />
             <Route path="users/:userId" element={<AdminFullRoute><AdminUserDetail /></AdminFullRoute>} />

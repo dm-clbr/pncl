@@ -22,7 +22,7 @@ import {
 import { AdminCompLevelSelect } from "@/components/admin/AdminCompLevelSelect";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
 import { trackPageView } from "@/lib/analytics";
-import { formatRoleLabel, type PortalRole } from "@/lib/roles";
+import { formatRoleLabel, isAdminAssist, type PortalRole } from "@/lib/roles";
 import { toast } from "sonner";
 
 function statusLabel(agent: AgentSummary): string {
@@ -93,6 +93,7 @@ function matchesGoogleStatusFilter(
 
 export default function AdminUsers() {
   const { user, session } = useAuth();
+  const assistView = isAdminAssist(user);
   const { agents, loading, error, reload, patchAgent } = useAdminAgents();
   const [query, setQuery] = useState("");
   const [googleFilter, setGoogleFilter] = useState<GoogleStatusFilter>("all");
@@ -363,13 +364,19 @@ export default function AdminUsers() {
           <Users size={22} aria-hidden="true" />
           <div>
             <h1>User management</h1>
-            <p>Review agents, manage admin access, sync portal emails, and remove accounts.</p>
+            <p>
+              {assistView
+                ? "Read-only view of agents. Comp information is hidden."
+                : "Review agents, manage admin access, sync portal emails, and remove accounts."}
+            </p>
           </div>
         </div>
-        <Link to="/portal/admin/users/new" className="admin-primary-btn">
-          <UserPlus size={16} aria-hidden="true" />
-          Add user
-        </Link>
+        {!assistView && (
+          <Link to="/portal/admin/users/new" className="admin-primary-btn">
+            <UserPlus size={16} aria-hidden="true" />
+            Add user
+          </Link>
+        )}
       </div>
 
       <div className="admin-toolbar">
@@ -398,33 +405,37 @@ export default function AdminUsers() {
           </select>
         </label>
 
-        <button
-          type="button"
-          className="admin-icon-btn"
-          disabled={previewingRecoverySync || syncingAllRecovery}
-          onClick={() => void handlePreviewRecoverySync()}
-        >
-          {previewingRecoverySync ? "Checking…" : "Preview recovery sync"}
-        </button>
+        {!assistView && (
+          <>
+            <button
+              type="button"
+              className="admin-icon-btn"
+              disabled={previewingRecoverySync || syncingAllRecovery}
+              onClick={() => void handlePreviewRecoverySync()}
+            >
+              {previewingRecoverySync ? "Checking…" : "Preview recovery sync"}
+            </button>
 
-        <button
-          type="button"
-          className="admin-secondary-btn"
-          disabled={syncingAllRecovery || previewingRecoverySync}
-          onClick={() => void handleSyncAllRecovery()}
-        >
-          {syncingAllRecovery ? "Syncing…" : "Sync all Google recovery"}
-        </button>
+            <button
+              type="button"
+              className="admin-secondary-btn"
+              disabled={syncingAllRecovery || previewingRecoverySync}
+              onClick={() => void handleSyncAllRecovery()}
+            >
+              {syncingAllRecovery ? "Syncing…" : "Sync all Google recovery"}
+            </button>
 
-        <button
-          type="button"
-          className="admin-secondary-btn"
-          disabled={exportingCsv}
-          onClick={() => void handleExportCsv()}
-        >
-          <Download size={14} aria-hidden="true" />
-          {exportingCsv ? "Exporting…" : "Download CSV"}
-        </button>
+            <button
+              type="button"
+              className="admin-secondary-btn"
+              disabled={exportingCsv}
+              onClick={() => void handleExportCsv()}
+            >
+              <Download size={14} aria-hidden="true" />
+              {exportingCsv ? "Exporting…" : "Download CSV"}
+            </button>
+          </>
+        )}
       </div>
 
       {loading && <div className="onboarding-spinner admin-spinner" aria-label="Loading users" />}
@@ -441,11 +452,11 @@ export default function AdminUsers() {
                 <th>Upline</th>
                 <th>NPN</th>
                 <th>Phase</th>
-                <th>Comp</th>
+                {!assistView && <th>Comp</th>}
                 <th>Status</th>
                 <th>Google</th>
                 <th>Role</th>
-                <th aria-label="Actions" />
+                {!assistView && <th aria-label="Actions" />}
               </tr>
             </thead>
             <tbody>
@@ -461,9 +472,13 @@ export default function AdminUsers() {
                 return (
                   <tr key={agent.id}>
                     <td>
-                      <Link to={`/portal/admin/users/${agent.id}`} className="admin-user-link">
-                        {agent.name}
-                      </Link>
+                      {assistView ? (
+                        <span>{agent.name}</span>
+                      ) : (
+                        <Link to={`/portal/admin/users/${agent.id}`} className="admin-user-link">
+                          {agent.name}
+                        </Link>
+                      )}
                       {agent.agentNumber !== null && (
                         <span className="admin-user-subtext">{formatAgentNumber(agent.agentNumber)}</span>
                       )}
@@ -472,15 +487,17 @@ export default function AdminUsers() {
                     <td>{agent.referrerName ?? agent.uplineNetwork ?? "—"}</td>
                     <td>{agent.npn ?? "—"}</td>
                     <td>{phaseBadge(agent.phase)}</td>
-                    <td>
-                      <AdminCompLevelSelect
-                        agent={agent}
-                        agentsById={agentsById}
-                        disabled={isDeleting}
-                        saving={isUpdatingComp}
-                        onChange={(compLevel) => void handleCompLevelChange(agent, compLevel)}
-                      />
-                    </td>
+                    {!assistView && (
+                      <td>
+                        <AdminCompLevelSelect
+                          agent={agent}
+                          agentsById={agentsById}
+                          disabled={isDeleting}
+                          saving={isUpdatingComp}
+                          onChange={(compLevel) => void handleCompLevelChange(agent, compLevel)}
+                        />
+                      </td>
+                    )}
                     <td>
                       <span className={`admin-status${agent.emailConfirmed ? " active" : ""}`}>
                         {statusLabel(agent)}
@@ -499,24 +516,26 @@ export default function AdminUsers() {
                         {formatRoleLabel(agent.role)}
                       </span>
                     </td>
-                    <td>
-                      <AdminUserRowActionsMenu
-                        agent={agent}
-                        isSelf={isSelf}
-                        savingEmail={savingEmail}
-                        isResending={isResending}
-                        isSendingGmailVerification={isSendingGmailVerification}
-                        isSyncingRecovery={isSyncingRecovery}
-                        isUpdating={isUpdating}
-                        isDeleting={isDeleting}
-                        onEditEmail={openEmailEditor}
-                        onResendActivation={handleResendActivation}
-                        onSendGmailVerification={handleSendGmailVerification}
-                        onSyncGoogleRecovery={handleSyncGoogleRecovery}
-                        onRoleChange={handleRoleSelect}
-                        onDelete={handleDeleteUser}
-                      />
-                    </td>
+                    {!assistView && (
+                      <td>
+                        <AdminUserRowActionsMenu
+                          agent={agent}
+                          isSelf={isSelf}
+                          savingEmail={savingEmail}
+                          isResending={isResending}
+                          isSendingGmailVerification={isSendingGmailVerification}
+                          isSyncingRecovery={isSyncingRecovery}
+                          isUpdating={isUpdating}
+                          isDeleting={isDeleting}
+                          onEditEmail={openEmailEditor}
+                          onResendActivation={handleResendActivation}
+                          onSendGmailVerification={handleSendGmailVerification}
+                          onSyncGoogleRecovery={handleSyncGoogleRecovery}
+                          onRoleChange={handleRoleSelect}
+                          onDelete={handleDeleteUser}
+                        />
+                      </td>
+                    )}
                   </tr>
                 );
               })}
@@ -529,7 +548,7 @@ export default function AdminUsers() {
         </div>
       )}
 
-      {emailEditAgent && (
+      {!assistView && emailEditAgent && (
         <div
           className="admin-modal-overlay"
           role="presentation"

@@ -1,8 +1,15 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { AdminAuthError, requireGenesisAdminOrAdmin } from "../_shared/adminAuth.ts";
-import { buildAgentSummaries, attachGoogleWorkspaceStatusToAgents } from "../_shared/adminAgents.ts";
+import { AdminAuthError, isAdminAssistUser, requireGenesisAdminOrAdmin } from "../_shared/adminAuth.ts";
+import { buildAgentSummaries, attachGoogleWorkspaceStatusToAgents, type AgentSummary } from "../_shared/adminAgents.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
+
+function sanitizeAgentsForAdminAssist(agents: AgentSummary[]): AgentSummary[] {
+  return agents.map((agent) => ({
+    ...agent,
+    compLevel: null,
+  }));
+}
 
 serve(async (req) => {
   const cors = handleCors(req);
@@ -13,10 +20,13 @@ serve(async (req) => {
   }
 
   try {
-    const { adminClient } = await requireGenesisAdminOrAdmin(req);
+    const { user, adminClient } = await requireGenesisAdminOrAdmin(req);
     const agents = await buildAgentSummaries(adminClient, { includeSensitive: true });
     const agentsWithGoogleStatus = await attachGoogleWorkspaceStatusToAgents(agents);
-    return jsonResponse({ agents: agentsWithGoogleStatus });
+    const responseAgents = isAdminAssistUser(user)
+      ? sanitizeAgentsForAdminAssist(agentsWithGoogleStatus)
+      : agentsWithGoogleStatus;
+    return jsonResponse({ agents: responseAgents });
   } catch (error) {
     if (error instanceof AdminAuthError) {
       return errorResponse(error.message, error.status, error.code);

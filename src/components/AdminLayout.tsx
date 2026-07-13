@@ -34,6 +34,7 @@ const GENESIS_ADMIN_NAV = [
 
 const ADMIN_ASSIST_NAV = [
   { to: "/portal/admin/hierarchy", label: "Hierarchy", icon: GitBranch, end: false },
+  { to: "/portal/admin/users", label: "Users", icon: Users, end: false },
 ] as const;
 
 export default function AdminLayout() {
