@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import OnboardingLayout from "@/components/OnboardingLayout";
 import OnboardingContractStep from "@/components/OnboardingContractStep";
 import { submitOnboarding, isSupabaseConfigured } from "@/lib/onboarding-api";
+import { lookupCountyFromZip } from "@/lib/us-zip-county";
 import {
   clearStoredContractSession,
   readStoredContractLegalName,
@@ -43,7 +44,6 @@ interface OnboardingData {
   addressLine1: string;
   addressCity: string;
   addressZip: string;
-  county: string;
   driversLicense: string;
   profilePhoto: string;
   uplineNetwork: string;
@@ -123,14 +123,6 @@ const STEPS: Step[] = [
     subtitle: "Your 5-digit ZIP code.",
     type: "tel",
     placeholder: "12345",
-    required: true,
-  },
-  {
-    key: "county",
-    question: "County",
-    subtitle: "The county you live in — we need this to initiate contracting.",
-    type: "text",
-    placeholder: "County name",
     required: true,
   },
   {
@@ -310,7 +302,6 @@ const EMPTY_DATA: OnboardingData = {
   addressLine1: "",
   addressCity: "",
   addressZip: "",
-  county: "",
   driversLicense: "",
   profilePhoto: "",
   uplineNetwork: "",
@@ -368,6 +359,7 @@ export default function AgentOnboarding({
   );
   const [previewSubmittedName, setPreviewSubmittedName] = useState("");
   const [processingFile, setProcessingFile] = useState(false);
+  const [reviewCounty, setReviewCounty] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const totalSteps = STEPS.length + 1;
@@ -379,6 +371,22 @@ export default function AgentOnboarding({
       ? 8 + ((currentStep + 1) / totalSteps) * 92
       : undefined;
   const currentValue = step ? data[step.key] : "";
+
+  useEffect(() => {
+    if (!isReviewStep) {
+      setReviewCounty(null);
+      return;
+    }
+
+    let cancelled = false;
+    void lookupCountyFromZip(data.addressZip).then((county) => {
+      if (!cancelled) setReviewCounty(county);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isReviewStep, data.addressZip]);
 
   const validationError = useMemo(() => {
     if (!step || step.type === "yesno" || step.type === "select") return null;
@@ -706,6 +714,15 @@ export default function AgentOnboarding({
                 )}
               </li>
             ))}
+            <li className="onboarding-review-row">
+              <div className="onboarding-review-content">
+                <span className="onboarding-review-label">County</span>
+                <span className="onboarding-review-value">
+                  {reviewCounty ?? "—"}
+                </span>
+              </div>
+              <span className="onboarding-review-note">From your ZIP code</span>
+            </li>
           </ul>
 
           <div className="onboarding-actions">

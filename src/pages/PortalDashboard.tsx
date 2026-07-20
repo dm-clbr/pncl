@@ -268,7 +268,7 @@ export default function PortalDashboard() {
   const handleCompleteTodo = async (todoId: string) => {
     setCompletingTodoId(todoId);
     try {
-      await completePortalTodo(todoId);
+      await completePortalTodo(todoId, resolvedTodos);
       toast.success("To-do marked complete.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Unable to update to-do.");

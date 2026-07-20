@@ -51,6 +51,15 @@ verify_jwt = true
 [functions.admin-list-lead-charges]
 verify_jwt = true
 
+[functions.admin-list-setter-closer-policies]
+verify_jwt = true
+
+[functions.admin-upsert-setter-closer-policy]
+verify_jwt = true
+
+[functions.admin-delete-setter-closer-policy]
+verify_jwt = true
+
 [functions.admin-set-carrier-status]
 verify_jwt = true
 
@@ -233,6 +242,9 @@ verify_jwt = true
 [functions.admin-reset-portal-document]
 verify_jwt = true
 
+[functions.admin-upload-profile-document]
+verify_jwt = true
+
 [functions.admin-upload-dashboard-file]
 verify_jwt = true
 
@@ -246,6 +258,9 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.notify-licensing-complete]
+verify_jwt = true
+
+[functions.notify-new-producer]
 verify_jwt = true
 
 [functions.admin-assign-comp-attachment]

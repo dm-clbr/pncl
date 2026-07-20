@@ -17,6 +17,8 @@ export interface PortalTodo {
   showEmailHint?: boolean;
   phase: PortalTodoPhase;
   completionType: PortalTodoCompletionType;
+  /** Gated steps stay visible but locked until every earlier step in the same stage is complete. */
+  gated?: boolean;
   /** Server-resolved completion (auto rules + manual check-offs). */
   completed?: boolean;
 }
@@ -28,7 +30,7 @@ export const PORTAL_TODO_PHASES: { id: PortalTodoPhase; label: string }[] = [
   { id: "sales_ready", label: "Sales Ready" },
 ];
 
-/** An agent's current phase: first phase with an incomplete step, or complete. */
+/** An agent's current stage: first stage with an incomplete step, or complete. */
 export type PortalPhaseId = PortalTodoPhase | "complete";
 
 export const PORTAL_PHASE_LABELS: Record<PortalPhaseId, string> = {
@@ -39,7 +41,7 @@ export const PORTAL_PHASE_LABELS: Record<PortalPhaseId, string> = {
   complete: "Sales Ready ✓",
 };
 
-/** Derives the current phase from todos whose `completed` is already resolved. */
+/** Derives the current stage from todos whose `completed` is already resolved. */
 export function derivePortalPhase(todos: PortalTodo[]): PortalPhaseId {
   if (todos.length === 0) return "on_board";
   for (const { id } of PORTAL_TODO_PHASES) {
@@ -47,6 +49,47 @@ export function derivePortalPhase(todos: PortalTodo[]): PortalPhaseId {
     if (items.some((todo) => !todo.completed)) return id;
   }
   return "complete";
+}
+
+/** Index of the first stage with an incomplete todo, or null when all are done. */
+export function getCurrentStageIndex(todos: PortalTodo[]): number | null {
+  for (let index = 0; index < PORTAL_TODO_PHASES.length; index += 1) {
+    const { id } = PORTAL_TODO_PHASES[index];
+    const items = todos.filter((todo) => todo.phase === id);
+    if (items.length === 0) continue;
+    if (items.some((todo) => !todo.completed)) return index;
+  }
+  return null;
+}
+
+export function isStageLocked(todos: PortalTodo[], stageIndex: number): boolean {
+  const currentIndex = getCurrentStageIndex(todos);
+  if (currentIndex === null) return false;
+  return stageIndex > currentIndex;
+}
+
+/**
+ * A gated todo is locked until every earlier step (by list order) in the same
+ * stage is complete. Todos arrive sorted by sort_order from the server.
+ */
+export function isTodoGateLocked(todos: PortalTodo[], todoId: string): boolean {
+  const index = todos.findIndex((entry) => entry.id === todoId);
+  if (index < 0) return false;
+  const todo = todos[index];
+  if (!todo.gated || todo.completed) return false;
+  return todos.some(
+    (entry, entryIndex) =>
+      entryIndex < index && entry.phase === todo.phase && !entry.completed,
+  );
+}
+
+export function canCompleteTodo(todos: PortalTodo[], todoId: string): boolean {
+  const todo = todos.find((entry) => entry.id === todoId);
+  if (!todo) return false;
+  if (isTodoGateLocked(todos, todoId)) return false;
+  const stageIndex = PORTAL_TODO_PHASES.findIndex((stage) => stage.id === todo.phase);
+  if (stageIndex < 0) return true;
+  return !isStageLocked(todos, stageIndex);
 }
 
 /** Fallback when the API is unavailable (local dev without migration). */
@@ -155,6 +198,7 @@ interface PortalTodoResponse {
   showEmailHint: boolean;
   phase?: PortalTodoPhase;
   completionType?: PortalTodoCompletionType;
+  gated?: boolean;
   completed?: boolean;
 }
 
@@ -169,6 +213,7 @@ function mapPortalTodo(row: PortalTodoResponse): PortalTodo {
     showEmailHint: row.showEmailHint,
     phase: row.phase ?? "on_board",
     completionType: row.completionType ?? "agent",
+    gated: row.gated ?? false,
     completed: row.completed,
   };
 }
@@ -280,7 +325,42 @@ export function groupTodosByPhase(todos: PortalTodo[]): Map<PortalTodoPhase, Por
   return groups;
 }
 
-export async function completePortalTodo(todoId: string): Promise<void> {
+export const SUBMIT_NEW_PRODUCER_TODO_ID = "submit_new_producer";
+
+/**
+ * Best-effort ping so admins get a "New Producer submission" email when the
+ * agent checks off the gated Submit for New Producer step. Server dedupes.
+ */
+async function notifyNewProducerSubmission(): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    const { data } = await supabase.auth.getSession();
+    const accessToken = data.session?.access_token;
+    if (!accessToken) return;
+
+    const { url, anonKey } = getSupabaseConfig();
+    await fetch(`${url.replace(/\/$/, "")}/functions/v1/notify-new-producer`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        apikey: anonKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({}),
+    });
+  } catch {
+    // Notification is best-effort; the check-off itself already succeeded.
+  }
+}
+
+export async function completePortalTodo(todoId: string, todos: PortalTodo[]): Promise<void> {
+  if (isTodoGateLocked(todos, todoId)) {
+    throw new Error("Complete the steps above before submitting this one.");
+  }
+  if (!canCompleteTodo(todos, todoId)) {
+    throw new Error("Complete the current stage before working on later steps.");
+  }
+
   const supabase = getSupabaseClient();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) {
@@ -297,4 +377,8 @@ export async function completePortalTodo(todoId: string): Promise<void> {
   });
 
   if (error) throw error;
+
+  if (todoId === SUBMIT_NEW_PRODUCER_TODO_ID) {
+    await notifyNewProducerSubmission();
+  }
 }

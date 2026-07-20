@@ -4,6 +4,7 @@ import { logOnboarding } from "./logger.ts";
 import {
   sendIcaSignedNotificationEmail,
   sendLicensingCompleteNotificationEmail,
+  sendNewProducerNotificationEmail,
 } from "./resend.ts";
 
 export function getContractingAdminUrl(): string {
@@ -81,6 +82,80 @@ export async function notifyAdminsOfLicensingComplete(
   }
 
   logOnboarding("licensing_notification_sent", {
+    userId: input.userId,
+    recipientCount: recipients.length - errors.length,
+    failedCount: errors.length,
+  });
+
+  return true;
+}
+
+/**
+ * Emails every admin when an agent submits for New Producer (last gated step of
+ * the licensing stage) so their PLG back-end profile can be built. Sends at
+ * most once per agent — guarded by
+ * portal_profiles.new_producer_notification_sent_at.
+ */
+export async function notifyAdminsOfNewProducerSubmission(
+  adminClient: SupabaseClient,
+  input: {
+    userId: string;
+    agentName: string;
+    agentEmail: string;
+    npn: string;
+  },
+): Promise<boolean> {
+  const { data: claimed, error: claimError } = await adminClient
+    .from("portal_profiles")
+    .update({ new_producer_notification_sent_at: new Date().toISOString() })
+    .eq("user_id", input.userId)
+    .is("new_producer_notification_sent_at", null)
+    .select("user_id");
+
+  if (claimError) {
+    throw new Error(claimError.message);
+  }
+  if (!claimed || claimed.length === 0) {
+    return false;
+  }
+
+  const recipients = await listGenesisAdminEmails(adminClient);
+  if (!recipients.length) {
+    logOnboarding("new_producer_notification_skipped", {
+      userId: input.userId,
+      reason: "no_admins",
+    }, "warn");
+    return false;
+  }
+
+  const contractingUrl = getContractingAdminUrl();
+  const errors: string[] = [];
+
+  for (const to of recipients) {
+    try {
+      await sendNewProducerNotificationEmail({
+        to,
+        agentName: input.agentName,
+        agentEmail: input.agentEmail,
+        npn: input.npn,
+        contractingUrl,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to send email";
+      errors.push(`${to}: ${message}`);
+    }
+  }
+
+  if (errors.length === recipients.length) {
+    // Nothing went out — release the claim so a retry can send later.
+    await adminClient
+      .from("portal_profiles")
+      .update({ new_producer_notification_sent_at: null })
+      .eq("user_id", input.userId);
+    throw new Error(errors.join("; "));
+  }
+
+  logOnboarding("new_producer_notification_sent", {
     userId: input.userId,
     recipientCount: recipients.length - errors.length,
     failedCount: errors.length,

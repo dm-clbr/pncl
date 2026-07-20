@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { requireCountyFromZip } from "./usZipCounty.ts";
 
 export function getServiceClient(): SupabaseClient {
   const url = Deno.env.get("SUPABASE_URL");
@@ -81,17 +82,16 @@ export interface SubmitOnboardingPayload {
   dateOfBirth: string;
   ssn: string;
   stateOfResidence: string;
-  addressLine1?: string;
-  addressCity?: string;
-  addressZip?: string;
-  county?: string;
+  addressLine1: string;
+  addressCity: string;
+  addressZip: string;
   uplineNetwork: string;
   hasLicense: string;
   npn?: string;
   hasEoInsurance: string;
   referralInviteId?: string;
   contractSignatureId: string;
-  driversLicenseImage?: OnboardingImagePayload;
+  driversLicenseImage: OnboardingImagePayload;
   profilePhotoImage?: OnboardingImagePayload;
 }
 
@@ -208,9 +208,9 @@ const IMAGE_MIME_EXTENSIONS: Record<string, string> = {
 // ~5 MB decoded (base64 inflates by ~4/3).
 const MAX_IMAGE_BASE64_LENGTH = 7_200_000;
 
-function normalizeOptionalImage(value: unknown, field: string): OnboardingImagePayload | undefined {
+function parseImagePayload(value: unknown, field: string): OnboardingImagePayload {
   if (value == null || value === "") {
-    return undefined;
+    throw new Error(`${field} is required`);
   }
   if (typeof value !== "string") {
     throw new Error(`${field} must be an image`);
@@ -231,6 +231,13 @@ function normalizeOptionalImage(value: unknown, field: string): OnboardingImageP
     contentType,
     extension: IMAGE_MIME_EXTENSIONS[contentType] ?? "jpg",
   };
+}
+
+function normalizeOptionalImage(value: unknown, field: string): OnboardingImagePayload | undefined {
+  if (value == null || value === "") {
+    return undefined;
+  }
+  return parseImagePayload(value, field);
 }
 
 export function decodeImageBytes(payload: OnboardingImagePayload): Uint8Array {
@@ -286,15 +293,13 @@ export function validateSubmitPayload(body: unknown): SubmitOnboardingPayload {
     throw new Error("Invalid state of residence");
   }
 
-  // Optional server-side so older cached clients can still submit; the live
-  // onboarding form requires all four.
-  const addressLine1 = typeof data.addressLine1 === "string" ? data.addressLine1.trim() : "";
-  const addressCity = typeof data.addressCity === "string" ? data.addressCity.trim() : "";
-  const addressZipRaw = typeof data.addressZip === "string" ? data.addressZip.replace(/\D/g, "") : "";
-  if (addressZipRaw && addressZipRaw.length !== 5) {
+  const addressLine1 = normalizeRequiredString(data.addressLine1, "addressLine1");
+  const addressCity = normalizeRequiredString(data.addressCity, "addressCity");
+  const addressZipRaw = normalizeRequiredString(data.addressZip, "addressZip").replace(/\D/g, "");
+  if (addressZipRaw.length !== 5) {
     throw new Error("ZIP code must be 5 digits");
   }
-  const county = typeof data.county === "string" ? data.county.trim() : "";
+  const county = requireCountyFromZip(addressZipRaw);
 
   const uplineNetwork = normalizeRequiredString(data.uplineNetwork, "uplineNetwork");
   const hasLicense = normalizeYesNo(data.hasLicense, "hasLicense");
@@ -311,7 +316,7 @@ export function validateSubmitPayload(body: unknown): SubmitOnboardingPayload {
     throw new Error("A signed Independent Contractor Agreement is required before submitting");
   }
 
-  const driversLicenseImage = normalizeOptionalImage(
+  const driversLicenseImage = parseImagePayload(
     data.driversLicenseImageBase64,
     "Driver's license image",
   );
@@ -328,10 +333,10 @@ export function validateSubmitPayload(body: unknown): SubmitOnboardingPayload {
     dateOfBirth,
     ssn,
     stateOfResidence,
-    addressLine1: addressLine1 || undefined,
-    addressCity: addressCity || undefined,
-    addressZip: addressZipRaw || undefined,
-    county: county || undefined,
+    addressLine1,
+    addressCity,
+    addressZip: addressZipRaw,
+    county,
     uplineNetwork,
     hasLicense,
     npn: npn || undefined,

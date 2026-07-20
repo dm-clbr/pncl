@@ -3,7 +3,9 @@ import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, Circle, ExternalLink, Pencil, UserRound } from "lucide-react";
 import AdminOnboardingDetailsPanel from "@/components/admin/AdminOnboardingDetailsPanel";
 import AdminEditProfileModal from "@/components/admin/AdminEditProfileModal";
+import AdminCompAttachmentPanel from "@/components/admin/AdminCompAttachmentPanel";
 import AdminUserDocumentsList from "@/components/admin/AdminUserDocumentsList";
+import AdminUserDocumentUploadPanel from "@/components/admin/AdminUserDocumentUploadPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   backfillGoogleRecovery,
@@ -724,14 +726,14 @@ export default function AdminUserDetail() {
               <p className="admin-empty">No published checklist items.</p>
             ) : (
               <div className="admin-user-todo-phases">
-                {CHECKLIST_PHASES.map((phase) => {
+                {CHECKLIST_PHASES.map((phase, stageIndex) => {
                   const items = profile.todos.filter((todo) => todo.phase === phase.value);
                   if (items.length === 0) return null;
                   const doneCount = items.filter((todo) => todo.completed).length;
                   return (
                     <div key={phase.value} className="admin-user-todo-phase">
                       <div className="admin-user-todo-phase-head">
-                        <h3>{phase.label}</h3>
+                        <h3>Stage {stageIndex + 1}: {phase.label}</h3>
                         <span>{doneCount}/{items.length}</span>
                       </div>
                       <ul className="admin-user-todo-list">
@@ -776,6 +778,24 @@ export default function AdminUserDetail() {
           <div className="admin-user-profile-section">
             <div className="admin-panel-head admin-panel-head-row">
               <div>
+                <h2>Compensation attachment</h2>
+                <p>Upload the Kam-signed PDF. The agent signs in the portal and gets an email notification.</p>
+              </div>
+            </div>
+
+            {session?.access_token && (
+              <AdminCompAttachmentPanel
+                userId={agent.id}
+                userName={agent.name}
+                accessToken={session.access_token}
+                onChanged={() => void handleRefreshDocuments()}
+              />
+            )}
+          </div>
+
+          <div className="admin-user-profile-section">
+            <div className="admin-panel-head admin-panel-head-row">
+              <div>
                 <h2>Saved documents</h2>
                 <p>W-9, direct deposit, and other PDFs stored on this user&apos;s profile.</p>
               </div>
@@ -802,6 +822,14 @@ export default function AdminUserDetail() {
                   </div>
                 )}
               </dl>
+            )}
+
+            {session?.access_token && (
+              <AdminUserDocumentUploadPanel
+                userId={agent.id}
+                accessToken={session.access_token}
+                onUploaded={() => void handleRefreshDocuments()}
+              />
             )}
 
             <AdminUserDocumentsList

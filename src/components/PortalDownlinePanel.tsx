@@ -139,7 +139,7 @@ export default function PortalDownlinePanel({ embedded = false }: PortalDownline
     <>
       <p className="portal-panel-note">
         Track onboarding progress for agents you&apos;ve referred — from portal activation through
-        each checklist phase.
+        each checklist stage.
       </p>
 
       {loading ? (

@@ -16,6 +16,7 @@ import {
   getProfileInitials,
   getProfilePhotoUrl,
   profileToFormValues,
+  resolveCountyForZip,
   savePortalProfile,
   SHOE_SIZES,
   US_STATES,
@@ -26,6 +27,10 @@ import {
 import { getDirectDepositPdfUrl } from "@/lib/portal-direct-deposit";
 import { fetchPortalW9Document, getW9PdfUrl } from "@/lib/portal-w9";
 import { fetchPortalIcaDocument } from "@/lib/portal-ica";
+import {
+  fetchPortalCompAttachments,
+  type PortalCompAttachment,
+} from "@/lib/portal-comp-attachments";
 import { usePortalDirectDeposit } from "@/hooks/usePortalDirectDeposit";
 import { usePortalW9 } from "@/hooks/usePortalW9";
 import { usePortalIca } from "@/hooks/usePortalIca";
@@ -61,7 +66,6 @@ const EMPTY_FORM: PortalProfileFormValues = {
   addressCity: "",
   addressState: "",
   addressZip: "",
-  county: "",
 };
 
 function SizeSelect({
@@ -114,6 +118,8 @@ export default function PortalProfile() {
   const [directDepositPdfUrl, setDirectDepositPdfUrl] = useState<string | null>(null);
   const [w9PdfUrl, setW9PdfUrl] = useState<string | null>(null);
   const [icaPdfUrl, setIcaPdfUrl] = useState<string | null>(null);
+  const [compAttachments, setCompAttachments] = useState<PortalCompAttachment[]>([]);
+  const [compLoading, setCompLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ProfileTab>(tabFromUrl);
 
   useEffect(() => {
@@ -193,6 +199,33 @@ export default function PortalProfile() {
     };
   }, [session?.access_token, icaSubmitted]);
 
+  useEffect(() => {
+    const token = session?.access_token;
+    if (!token) {
+      setCompAttachments([]);
+      setCompLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setCompLoading(true);
+
+    void fetchPortalCompAttachments(token)
+      .then((rows) => {
+        if (!cancelled) setCompAttachments(rows);
+      })
+      .catch(() => {
+        if (!cancelled) setCompAttachments([]);
+      })
+      .finally(() => {
+        if (!cancelled) setCompLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.access_token]);
+
   const w9SignedDate = useMemo(() => {
     if (!w9?.signedAt) return null;
     return new Date(w9.signedAt).toLocaleDateString(undefined, {
@@ -219,6 +252,31 @@ export default function PortalProfile() {
       year: "numeric",
     });
   }, [ica?.signedAt]);
+
+  const pendingCompAttachment = useMemo(
+    () => compAttachments.find((attachment) => attachment.status === "pending") ?? null,
+    [compAttachments],
+  );
+
+  const signedCompAttachment = useMemo(
+    () => compAttachments.find((attachment) => attachment.status === "signed") ?? null,
+    [compAttachments],
+  );
+
+  const compSignedDate = useMemo(() => {
+    if (!signedCompAttachment?.signedAt) return null;
+    return new Date(signedCompAttachment.signedAt).toLocaleDateString(undefined, {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  }, [signedCompAttachment?.signedAt]);
+
+  const hasSavedDocuments =
+    w9Submitted || directDepositSubmitted || icaSubmitted || compAttachments.length > 0;
+
+  const documentsLoading =
+    (w9Loading || directDepositLoading || icaLoading || compLoading) && !hasSavedDocuments;
 
   useEffect(() => {
     document.title = "My Profile — PNCL Portal";
@@ -334,6 +392,17 @@ export default function PortalProfile() {
   const todoDone = resolvedTodos.filter((todo) => todo.completed).length;
   const todoPercent = todoTotal === 0 ? 0 : Math.round((todoDone / todoTotal) * 100);
   const currentPhase = derivePortalPhase(resolvedTodos);
+  const [resolvedCounty, setResolvedCounty] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void resolveCountyForZip(form.addressZip, profileRow?.county).then((county) => {
+      if (!cancelled) setResolvedCounty(county);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [form.addressZip, profileRow?.county]);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -434,8 +503,8 @@ export default function PortalProfile() {
               <div>
                 <h1>Profile details</h1>
                 <p>
-                  Keep your name, apparel sizes, and profile photo up to date for PNCL swag
-                  and internal records.
+                  Keep your name, home address, apparel sizes, and profile photo up to date.
+                  Your county is determined automatically from your ZIP code.
                 </p>
               </div>
             </div>
@@ -515,6 +584,7 @@ export default function PortalProfile() {
                       onChange={(event) => updateField("addressLine1", event.target.value)}
                       placeholder="123 Main St, Apt 4"
                       autoComplete="address-line1"
+                      required
                     />
                   </label>
 
@@ -526,6 +596,7 @@ export default function PortalProfile() {
                       onChange={(event) => updateField("addressCity", event.target.value)}
                       placeholder="City"
                       autoComplete="address-level2"
+                      required
                     />
                   </label>
                 </div>
@@ -537,6 +608,7 @@ export default function PortalProfile() {
                       value={form.addressState}
                       onChange={(event) => updateField("addressState", event.target.value)}
                       autoComplete="address-level1"
+                      required
                     >
                       <option value="">Select state</option>
                       {US_STATES.map((state) => (
@@ -558,20 +630,22 @@ export default function PortalProfile() {
                       }
                       placeholder="12345"
                       autoComplete="postal-code"
+                      required
+                      pattern="\d{5}"
+                      title="Enter a 5-digit ZIP code"
                     />
                   </label>
                 </div>
 
-                <label className="admin-field">
+                <div className="admin-field">
                   <span>County</span>
-                  <input
-                    type="text"
-                    value={form.county}
-                    onChange={(event) => updateField("county", event.target.value)}
-                    placeholder="County name"
-                    autoComplete="off"
-                  />
-                </label>
+                  <p className="portal-profile-derived-value">
+                    {resolvedCounty ??
+                      (form.addressZip.length === 5
+                        ? "County not found for this ZIP code"
+                        : "Enter your ZIP code to see county")}
+                  </p>
+                </div>
 
                 <div className="portal-profile-form-grid">
                   <SizeSelect
@@ -661,12 +735,12 @@ export default function PortalProfile() {
               </div>
             </div>
 
-            {(w9Loading || directDepositLoading || icaLoading) && !w9Submitted && !directDepositSubmitted && !icaSubmitted ? (
+            {documentsLoading ? (
               <div className="portal-incentives-loading">
                 <span className="onboarding-spinner" aria-hidden="true" />
                 <span>Loading documents...</span>
               </div>
-            ) : w9Submitted || directDepositSubmitted || icaSubmitted ? (
+            ) : hasSavedDocuments ? (
               <div className="portal-profile-documents">
                 {!icaSubmitted && (
                   <div className="portal-profile-document-item">
@@ -760,13 +834,64 @@ export default function PortalProfile() {
                     )}
                   </div>
                 )}
+                {pendingCompAttachment && (
+                  <div className="portal-profile-document-item">
+                    <div>
+                      <strong>{pendingCompAttachment.title}</strong>
+                      <p className="portal-panel-note">
+                        Ready to sign — assigned{" "}
+                        {new Date(pendingCompAttachment.assignedAt).toLocaleDateString(undefined, {
+                          month: "long",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                        .
+                      </p>
+                    </div>
+                    <Link to="/portal/comp-agreement" className="portal-w9-aside-pdf">
+                      Sign comp attachment
+                      <ArrowUpRight size={14} aria-hidden="true" />
+                    </Link>
+                  </div>
+                )}
+                {signedCompAttachment && (
+                  <div className="portal-profile-document-item">
+                    <div>
+                      <strong>{signedCompAttachment.title}</strong>
+                      <p className="portal-panel-note">
+                        Signed{compSignedDate ? ` on ${compSignedDate}` : ""}
+                        {signedCompAttachment.signatureName
+                          ? ` by ${signedCompAttachment.signatureName}`
+                          : ""}
+                        .
+                      </p>
+                    </div>
+                    {signedCompAttachment.documentUrl ? (
+                      <a
+                        href={signedCompAttachment.documentUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="portal-w9-aside-pdf"
+                      >
+                        Download PDF
+                        <ArrowUpRight size={14} aria-hidden="true" />
+                      </a>
+                    ) : (
+                      <Link to="/portal/comp-agreement" className="portal-w9-aside-pdf">
+                        View agreement
+                        <ArrowUpRight size={14} aria-hidden="true" />
+                      </Link>
+                    )}
+                  </div>
+                )}
               </div>
             ) : (
               <p className="portal-panel-note">
                 No documents yet. Sign your{" "}
                 <Link to="/portal/ica">Independent Contractor Agreement</Link>, submit your{" "}
                 <Link to="/portal/w9">W-9</Link>, or{" "}
-                <Link to="/portal/direct-deposit">direct deposit form</Link> from the portal.
+                <Link to="/portal/direct-deposit">direct deposit form</Link> from the portal. Your
+                compensation attachment will appear here once PNCL assigns it.
               </p>
             )}
           </div>

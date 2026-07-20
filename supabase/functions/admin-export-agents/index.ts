@@ -83,7 +83,7 @@ serve(async (req) => {
       "Email",
       "Agent #",
       "NPN",
-      "Phase",
+      "Stage",
       "Upline",
       "Downline count",
       "Comp level",

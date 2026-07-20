@@ -452,7 +452,7 @@ export default function AdminUsers() {
                 <th>Email</th>
                 <th>Upline</th>
                 <th>NPN</th>
-                <th>Phase</th>
+                <th>Stage</th>
                 {!assistView && <th>Comp</th>}
                 <th>Status</th>
                 <th>Google</th>

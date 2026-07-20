@@ -926,6 +926,7 @@ export interface AdminPortalTodoSummary {
   phase: AdminPortalTodoPhase;
   completionType: AdminPortalTodoCompletionType;
   autoKey: string | null;
+  gated: boolean;
   completedCount: number;
   totalUsers: number;
   completionPercent: number;
@@ -947,6 +948,7 @@ export interface UpsertPortalTodoPayload {
   phase: AdminPortalTodoPhase;
   completionType: AdminPortalTodoCompletionType;
   autoKey: string | null;
+  gated?: boolean;
 }
 
 export async function listPortalTodos(
@@ -1113,7 +1115,6 @@ export interface AdminEditableProfileFields {
   addressCity?: string | null;
   addressState?: string | null;
   addressZip?: string | null;
-  county?: string | null;
   npn?: string | null;
   eoPolicyNumber?: string | null;
   stateLicenses?: string[];
@@ -1400,5 +1401,76 @@ export async function deleteCompAttachment(
   return adminFetch("admin-delete-comp-attachment", accessToken, {
     method: "POST",
     body: JSON.stringify({ attachmentId }),
+  });
+}
+
+export type LeadPurchaser = "setter" | "closer";
+export type SplitType = "50_50" | "70_30";
+
+export interface AdminSetterCloserPolicy {
+  id: string;
+  policyNumber: string;
+  carrier: string | null;
+  clientName: string | null;
+  leadPurchaser: LeadPurchaser;
+  splitType: SplitType;
+  splitLabel: string;
+  setterUserId: string | null;
+  setterNpn: string | null;
+  setterName: string | null;
+  closerUserId: string | null;
+  closerNpn: string;
+  closerName: string | null;
+  policyDate: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function listSetterCloserPolicies(
+  accessToken: string,
+  options?: { search?: string; npn?: string },
+): Promise<AdminSetterCloserPolicy[]> {
+  const params = new URLSearchParams();
+  if (options?.search) params.set("search", options.search);
+  if (options?.npn) params.set("npn", options.npn);
+  const query = params.toString();
+  const data = await adminFetch<{ policies: AdminSetterCloserPolicy[] }>(
+    `admin-list-setter-closer-policies${query ? `?${query}` : ""}`,
+    accessToken,
+    { method: "GET" },
+  );
+  return data.policies;
+}
+
+export async function upsertSetterCloserPolicy(
+  accessToken: string,
+  input: {
+    id?: string;
+    policyNumber: string;
+    carrier?: string;
+    clientName?: string;
+    leadPurchaser: LeadPurchaser;
+    setterNpn?: string;
+    setterName?: string;
+    closerNpn: string;
+    closerName?: string;
+    policyDate?: string;
+    notes?: string;
+  },
+): Promise<{ message: string; policy: AdminSetterCloserPolicy }> {
+  return adminFetch("admin-upsert-setter-closer-policy", accessToken, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteSetterCloserPolicy(
+  accessToken: string,
+  id: string,
+): Promise<{ message: string }> {
+  return adminFetch("admin-delete-setter-closer-policy", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ id }),
   });
 }

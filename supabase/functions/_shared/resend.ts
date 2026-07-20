@@ -382,6 +382,53 @@ export async function sendLicensingCompleteNotificationEmail(input: {
   });
 }
 
+export function buildNewProducerNotificationEmailHtml(input: {
+  agentName: string;
+  agentEmail: string;
+  npn: string;
+  contractingUrl: string;
+}): string {
+  return `
+    <div style="font-family:sans-serif;max-width:560px;margin:0 auto;">
+      <h2 style="background:#0f0f0f;color:#fff;margin:0;padding:20px 24px;font-size:16px;">
+        New Producer submission
+      </h2>
+      <div style="padding:24px;font-size:14px;color:#111;line-height:1.6;">
+        <p>
+          <strong>${input.agentName}</strong> has completed their SureLC accounts and
+          carrier applications, and submitted for New Producer. Their profile can now
+          be built in PLG's back-end system.
+        </p>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;margin:20px 0;">
+          <tr><td style="padding:6px 0;color:#555;">Agent</td><td style="padding:6px 0;"><strong>${input.agentName}</strong></td></tr>
+          <tr><td style="padding:6px 0;color:#555;">PNCL email</td><td style="padding:6px 0;">${input.agentEmail}</td></tr>
+          <tr><td style="padding:6px 0;color:#555;">NPN</td><td style="padding:6px 0;">${input.npn || "Not recorded"}</td></tr>
+        </table>
+        <p style="margin:28px 0;">
+          <a href="${input.contractingUrl}"
+             style="display:inline-block;background:#c8ff00;color:#0f0f0f;padding:12px 20px;
+                    text-decoration:none;font-weight:600;border-radius:4px;">
+            Open contracting queue
+          </a>
+        </p>
+      </div>
+    </div>`;
+}
+
+export async function sendNewProducerNotificationEmail(input: {
+  to: string;
+  agentName: string;
+  agentEmail: string;
+  npn: string;
+  contractingUrl: string;
+}): Promise<void> {
+  await sendEmail({
+    to: input.to,
+    subject: `New Producer submission: ${input.agentName}`,
+    html: buildNewProducerNotificationEmailHtml(input),
+  });
+}
+
 export function buildIcaSignedNotificationEmailHtml(input: {
   agentName: string;
   agentEmail: string;

@@ -36,6 +36,7 @@ serve(async (req) => {
           phase: payload.phase,
           completion_type: payload.completionType,
           auto_key: payload.autoKey,
+          gated: payload.gated ?? false,
           ...(payload.sortOrder !== undefined ? { sort_order: payload.sortOrder } : {}),
           updated_at: now,
         })
@@ -82,6 +83,7 @@ serve(async (req) => {
         phase: payload.phase,
         completion_type: payload.completionType,
         auto_key: payload.autoKey,
+        gated: payload.gated ?? false,
         sort_order: sortOrder,
         updated_at: now,
       })

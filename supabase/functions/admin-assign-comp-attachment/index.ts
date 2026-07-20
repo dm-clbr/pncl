@@ -39,6 +39,24 @@ serve(async (req) => {
 
     const pdfBytes = decodeCompAttachmentPdf(body.pdfBase64);
 
+    const { data: existingRows, error: existingError } = await adminClient
+      .from("portal_comp_attachments")
+      .select("id")
+      .eq("user_id", userId)
+      .limit(1);
+
+    if (existingError) {
+      throw new Error(existingError.message);
+    }
+
+    if ((existingRows ?? []).length > 0) {
+      return errorResponse(
+        "This agent already has a comp attachment. Remove the pending assignment before uploading a new PDF.",
+        409,
+        "comp_attachment_exists",
+      );
+    }
+
     const { data: targetUser, error: userError } = await adminClient.auth.admin.getUserById(userId);
     if (userError || !targetUser.user) {
       return errorResponse("User not found", 404, "not_found");

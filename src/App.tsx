@@ -44,6 +44,7 @@ import AdminCarriers from "./pages/admin/AdminCarriers.tsx";
 import AdminGenesis from "./pages/admin/AdminGenesis.tsx";
 import AdminContracting from "./pages/admin/AdminContracting.tsx";
 import AdminLeadCharges from "./pages/admin/AdminLeadCharges.tsx";
+import AdminSetterCloser from "./pages/admin/AdminSetterCloser.tsx";
 import AdminTickets from "./pages/admin/AdminTickets.tsx";
 import AdminPayPolicy from "./pages/admin/AdminPayPolicy.tsx";
 import AdminGmailVerification from "./pages/admin/AdminGmailVerification.tsx";
@@ -209,6 +210,7 @@ const App = () => (
             <Route path="genesis" element={<AdminGenesis />} />
             <Route path="contracting" element={<AdminFullRoute><AdminContracting /></AdminFullRoute>} />
             <Route path="lead-charges" element={<AdminFullRoute><AdminLeadCharges /></AdminFullRoute>} />
+            <Route path="setter-closer" element={<AdminFullRoute><AdminSetterCloser /></AdminFullRoute>} />
             <Route path="tickets" element={<AdminFullRoute><AdminTickets /></AdminFullRoute>} />
             <Route path="pay-policy" element={<AdminFullRoute><AdminPayPolicy /></AdminFullRoute>} />
           </Route>

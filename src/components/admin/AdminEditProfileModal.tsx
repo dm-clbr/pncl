@@ -1,10 +1,10 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { X } from "lucide-react";
 import {
   updateUserProfileFields,
   type AdminUserPortalProfile,
 } from "@/lib/admin-api";
-import { US_STATES } from "@/lib/portal-profile";
+import { resolveCountyForZip, US_STATES } from "@/lib/portal-profile";
 import { toast } from "sonner";
 
 interface FormState {
@@ -14,7 +14,6 @@ interface FormState {
   addressCity: string;
   addressState: string;
   addressZip: string;
-  county: string;
   npn: string;
   eoPolicyNumber: string;
   stateLicenses: string;
@@ -28,7 +27,6 @@ function toFormState(profile: AdminUserPortalProfile | null): FormState {
     addressCity: profile?.addressCity ?? "",
     addressState: profile?.addressState ?? "",
     addressZip: profile?.addressZip ?? "",
-    county: profile?.county ?? "",
     npn: profile?.npn ?? "",
     eoPolicyNumber: profile?.eoPolicyNumber ?? "",
     stateLicenses: (profile?.stateLicenses ?? []).join(", "),
@@ -52,6 +50,17 @@ export default function AdminEditProfileModal({
 }) {
   const [form, setForm] = useState<FormState>(() => toFormState(profile));
   const [saving, setSaving] = useState(false);
+  const [resolvedCounty, setResolvedCounty] = useState<string | null>(profile?.county ?? null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void resolveCountyForZip(form.addressZip, profile?.county).then((county) => {
+      if (!cancelled) setResolvedCounty(county);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [form.addressZip, profile?.county]);
 
   const updateField = (key: keyof FormState, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -89,7 +98,6 @@ export default function AdminEditProfileModal({
           addressCity: form.addressCity || null,
           addressState: form.addressState || null,
           addressZip: form.addressZip || null,
-          county: form.county || null,
           npn: form.npn || null,
           eoPolicyNumber: form.eoPolicyNumber || null,
           stateLicenses,
@@ -190,14 +198,15 @@ export default function AdminEditProfileModal({
               onChange={(event) => updateField("addressZip", event.target.value)}
             />
           </label>
-          <label className="admin-field">
+          <div className="admin-field">
             <span>County</span>
-            <input
-              type="text"
-              value={form.county}
-              onChange={(event) => updateField("county", event.target.value)}
-            />
-          </label>
+            <p className="portal-profile-derived-value">
+              {resolvedCounty ??
+                (form.addressZip.trim().length === 5
+                  ? "County not found for this ZIP code"
+                  : "Set a ZIP code to see county")}
+            </p>
+          </div>
           <label className="admin-field">
             <span>NPN</span>
             <input

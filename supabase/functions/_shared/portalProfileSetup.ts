@@ -9,6 +9,10 @@ export function getPortalDriversLicensePath(userId: string, extension: string): 
   return `${userId}/drivers-license.${extension}`;
 }
 
+export function getPortalEoCertificatePath(userId: string, extension: string): string {
+  return `${userId}/eo-certificate.${extension}`;
+}
+
 export interface SyncOnboardingProfileAssetsInput {
   userId: string;
   onboardingId: string;

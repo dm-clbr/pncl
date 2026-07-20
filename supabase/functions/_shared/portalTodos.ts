@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { lookupCountyFromZip } from "./usZipCounty.ts";
 import { listIcaSignedUserIds } from "./portalIca.ts";
 
 export const PORTAL_TODO_PHASES = ["on_board", "pre_license", "licensing", "sales_ready"] as const;
@@ -37,6 +38,7 @@ export interface PortalTodoRecord {
   phase: PortalTodoPhase;
   completion_type: PortalTodoCompletionType;
   auto_key: string | null;
+  gated: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -55,6 +57,7 @@ export interface UpsertPortalTodoPayload {
   phase: PortalTodoPhase;
   completionType: PortalTodoCompletionType;
   autoKey: string | null;
+  gated?: boolean;
 }
 
 function slugify(value: string): string {
@@ -113,6 +116,7 @@ export function validateUpsertPortalTodoPayload(body: unknown): UpsertPortalTodo
     throw new Error("A valid auto-completion rule is required for auto-completed to-dos");
   }
   const autoKey = completionType === "auto" ? autoKeyInput : null;
+  const gated = typeof data.gated === "boolean" ? data.gated : false;
 
   return {
     id,
@@ -128,6 +132,7 @@ export function validateUpsertPortalTodoPayload(body: unknown): UpsertPortalTodo
     phase,
     completionType,
     autoKey,
+    gated,
   };
 }
 
@@ -146,6 +151,7 @@ export function mapPortalTodoRecord(row: PortalTodoRecord) {
     phase: row.phase ?? "on_board",
     completionType: row.completion_type ?? "agent",
     autoKey: row.auto_key ?? null,
+    gated: row.gated ?? false,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -163,6 +169,7 @@ export function mapPortalTodoForUser(row: PortalTodoRecord, completed: boolean) 
     showEmailHint: row.show_email_hint,
     phase: row.phase ?? "on_board",
     completionType: row.completion_type ?? "agent",
+    gated: row.gated ?? false,
     completed,
   };
 }
@@ -187,10 +194,33 @@ function collectUserIds(rows: { user_id?: string | null }[] | null | undefined):
 
 interface LicensingProfileRow {
   user_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  address_line1: string | null;
+  address_city: string | null;
+  address_state: string | null;
+  address_zip: string | null;
+  county: string | null;
   npn: string | null;
   eo_policy_number: string | null;
   state_licenses: string[] | null;
   drivers_license_path: string | null;
+}
+
+function resolveProfileCounty(row: LicensingProfileRow): string | null {
+  return lookupCountyFromZip(row.address_zip ?? "") ?? row.county?.trim() ?? null;
+}
+
+function isProfileContractComplete(row: LicensingProfileRow): boolean {
+  return Boolean(
+    row.first_name?.trim() &&
+      row.last_name?.trim() &&
+      row.address_line1?.trim() &&
+      row.address_city?.trim() &&
+      row.address_state?.trim() &&
+      /^\d{5}$/.test(row.address_zip?.trim() ?? "") &&
+      resolveProfileCounty(row),
+  );
 }
 
 interface CarrierCredentialRow {
@@ -258,12 +288,17 @@ export async function computeAutoCompletionSets(
     tasks.push(
       adminClient
         .from("portal_profiles")
-        .select("user_id, npn, eo_policy_number, state_licenses, drivers_license_path")
+        .select(
+          "user_id, first_name, last_name, address_line1, address_city, address_state, address_zip, county, npn, eo_policy_number, state_licenses, drivers_license_path",
+        )
         .in("user_id", userIds)
         .then(({ data, error }) => {
           if (error) throw new Error(error.message);
           const rows = (data ?? []) as LicensingProfileRow[];
-          sets.set("profile", new Set(rows.map((row) => row.user_id)));
+          sets.set(
+            "profile",
+            new Set(rows.filter(isProfileContractComplete).map((row) => row.user_id)),
+          );
           sets.set(
             "drivers_license",
             new Set(rows.filter((row) => row.drivers_license_path?.trim()).map((row) => row.user_id)),

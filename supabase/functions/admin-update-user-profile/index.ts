@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requireAdmin } from "../_shared/adminAuth.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
+import { lookupCountyFromZip } from "../_shared/usZipCounty.ts";
 
 /** Editable portal_profiles columns, keyed by the camelCase payload field. */
 const EDITABLE_FIELDS: Record<string, string> = {
@@ -16,7 +17,6 @@ const EDITABLE_FIELDS: Record<string, string> = {
   addressCity: "address_city",
   addressState: "address_state",
   addressZip: "address_zip",
-  county: "county",
   npn: "npn",
   eoPolicyNumber: "eo_policy_number",
 };
@@ -90,9 +90,27 @@ serve(async (req) => {
       );
     }
 
+    const current = (existing ?? {}) as Record<string, unknown>;
+    const zipForCounty = typeof updates.address_zip === "string"
+      ? updates.address_zip
+      : typeof current.address_zip === "string"
+        ? current.address_zip
+        : null;
+
+    if (zipForCounty && /^\d{5}$/.test(zipForCounty.trim())) {
+      const county = lookupCountyFromZip(zipForCounty.trim());
+      if (!county) {
+        return errorResponse(
+          "Unable to determine county from that ZIP code",
+          400,
+          "invalid_payload",
+        );
+      }
+      updates.county = county;
+    }
+
     // Diff against current values so the audit trail records real changes only.
     const changes: Record<string, { from: unknown; to: unknown }> = {};
-    const current = (existing ?? {}) as Record<string, unknown>;
     for (const [column, next] of Object.entries(updates)) {
       const previous = current[column] ?? null;
       const same = Array.isArray(next) && Array.isArray(previous)

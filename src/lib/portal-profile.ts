@@ -1,5 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseClient, getSupabaseConfig } from "@/lib/supabase";
+import { lookupCountyFromZip, requireCountyFromZip } from "@/lib/us-zip-county";
 
 export const PROFILE_PHOTO_BUCKET = "portal-profile-photos";
 export const PROFILE_DOCUMENTS_BUCKET = "portal-profile-documents";
@@ -64,7 +65,6 @@ export interface PortalProfileFormValues {
   addressCity: string;
   addressState: string;
   addressZip: string;
-  county: string;
 }
 
 function readMetadataString(user: User | null, key: string): string {
@@ -98,7 +98,6 @@ export function getDefaultProfileValues(user: User | null): PortalProfileFormVal
     addressCity: "",
     addressState: "",
     addressZip: "",
-    county: "",
   };
 }
 
@@ -115,8 +114,45 @@ export function profileToFormValues(profile: PortalProfile): PortalProfileFormVa
     addressCity: profile.address_city ?? "",
     addressState: profile.address_state ?? "",
     addressZip: profile.address_zip ?? "",
-    county: profile.county ?? "",
   };
+}
+
+export async function resolveCountyForZip(
+  zip: string | null | undefined,
+  storedCounty: string | null | undefined,
+): Promise<string | null> {
+  const lookedUp = await lookupCountyFromZip(zip ?? "");
+  return lookedUp ?? (storedCounty?.trim() || null);
+}
+
+/** Address fields required for contracting and the profile onboarding step. */
+export function validatePortalProfileContractFields(values: PortalProfileFormValues): void {
+  if (!values.addressLine1.trim()) {
+    throw new Error("Street address is required.");
+  }
+  if (!values.addressCity.trim()) {
+    throw new Error("City is required.");
+  }
+  if (!values.addressState.trim()) {
+    throw new Error("State is required.");
+  }
+  const zip = values.addressZip.trim();
+  if (!/^\d{5}$/.test(zip)) {
+    throw new Error("ZIP code must be 5 digits.");
+  }
+}
+
+export function isPortalProfileContractComplete(profile: Pick<
+  PortalProfile,
+  "first_name" | "last_name" | "address_line1" | "address_city" | "address_state" | "address_zip" | "county"
+>): boolean {
+  if (!profile.first_name?.trim() || !profile.last_name?.trim()) return false;
+  if (!profile.address_line1?.trim() || !profile.address_city?.trim() || !profile.address_state?.trim()) {
+    return false;
+  }
+  const zip = profile.address_zip?.trim() ?? "";
+  if (!/^\d{5}$/.test(zip)) return false;
+  return Boolean(profile.county?.trim());
 }
 
 export function getProfilePhotoUrl(
@@ -185,6 +221,9 @@ export async function savePortalProfile(
     throw new Error("First name and last name are required.");
   }
 
+  validatePortalProfileContractFields(values);
+  const county = await requireCountyFromZip(values.addressZip.trim());
+
   let profilePhotoPath = existingPhotoPath;
   if (photoFile) {
     profilePhotoPath = await uploadProfilePhoto(user.id, photoFile);
@@ -203,7 +242,7 @@ export async function savePortalProfile(
     address_city: values.addressCity.trim() || null,
     address_state: values.addressState || null,
     address_zip: values.addressZip.trim() || null,
-    county: values.county.trim() || null,
+    county,
     profile_photo_path: profilePhotoPath,
   };
 

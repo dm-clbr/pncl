@@ -1,9 +1,12 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowUpRight, CheckCircle2, ChevronDown, Circle, Trophy } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, ChevronDown, Circle, Lock, Trophy } from "lucide-react";
 import {
+  getCurrentStageIndex,
   groupTodosByPhase,
   isRequiredFormTodo,
+  isStageLocked,
+  isTodoGateLocked,
   PORTAL_TODO_PHASES,
   type PortalTodo,
 } from "@/lib/portal-todos";
@@ -29,11 +32,16 @@ function PortalTodoItem({
   todo,
   agentEmail,
   completing,
+  locked,
+  gateLocked,
   onComplete,
 }: {
   todo: PortalTodo;
   agentEmail: string;
   completing: boolean;
+  locked?: boolean;
+  /** Gated step: visible but disabled until every earlier step in the stage is done. */
+  gateLocked?: boolean;
   onComplete: (todoId: string) => void;
 }) {
   const isRequiredForm = isRequiredFormTodo(todo.id);
@@ -60,14 +68,16 @@ function PortalTodoItem({
     </>
   );
 
+  const disabled = locked || gateLocked;
+
   return (
-    <div className="portal-todo-item urgent">
+    <div className={`portal-todo-item urgent${disabled ? " portal-todo-item-locked" : ""}`}>
       {isAgentCheckable && (
         <button
           type="button"
           className="portal-todo-check"
           onClick={() => onComplete(todo.id)}
-          disabled={completing}
+          disabled={completing || disabled}
           aria-label={`Mark "${todo.title}" as complete`}
         >
           {completing ? (
@@ -80,22 +90,29 @@ function PortalTodoItem({
 
       <div className={`portal-todo-copy${isAgentCheckable ? "" : " portal-todo-copy-required"}`}>
         <div className="portal-todo-title-row">
-          {isRequiredForm && <PortalUrgentIcon size={16} />}
+          {isRequiredForm && !disabled && <PortalUrgentIcon size={16} />}
+          {disabled && <Lock size={14} aria-hidden="true" />}
           <strong>{todo.title}</strong>
-          {isRequiredForm && (
+          {isRequiredForm && !disabled && (
             <span className="portal-todo-urgent-tag">Required — top priority</span>
           )}
           {isAdminManaged && (
             <span className="portal-todo-urgent-tag">PNCL admin completes this</span>
           )}
         </div>
-        <p>{todo.description}</p>
-        {agentEmail && todo.showEmailHint !== false && (
+        <p className="portal-todo-desc">
+          {locked
+            ? "Complete the previous stage to unlock this step."
+            : gateLocked
+              ? `${todo.description} Complete the steps above to unlock this step.`
+              : todo.description}
+        </p>
+        {!disabled && agentEmail && todo.showEmailHint !== false && (
           <p className="portal-todo-email">
             Use <span>{agentEmail}</span> when you sign up.
           </p>
         )}
-        {todo.href && (
+        {!disabled && todo.href && (
           todo.external ? (
             <a
               href={todo.href}
@@ -138,19 +155,21 @@ export default function PortalOnboardingChecklist({
   );
   const allDone = total > 0 && completedCount === total;
   const percent = total === 0 ? 0 : Math.round((completedCount / total) * 100);
+  const currentStageIndex = useMemo(() => getCurrentStageIndex(todos), [todos]);
 
   const currentPhaseId = useMemo(() => {
-    for (const phase of PORTAL_TODO_PHASES) {
-      const items = todosByPhase.get(phase.id) ?? [];
-      if (items.some((todo) => !todo.completed)) return phase.id;
-    }
-    return null;
-  }, [todosByPhase]);
+    if (currentStageIndex === null) return null;
+    return PORTAL_TODO_PHASES[currentStageIndex]?.id ?? null;
+  }, [currentStageIndex]);
 
   const [openPhases, setOpenPhases] = useState<Record<string, boolean>>({});
-  const isPhaseOpen = (phaseId: string) => openPhases[phaseId] ?? phaseId === currentPhaseId;
-  const togglePhase = (phaseId: string) => {
-    setOpenPhases((prev) => ({ ...prev, [phaseId]: !isPhaseOpen(phaseId) }));
+  const isPhaseOpen = (phaseId: string, stageIndex: number) => {
+    if (isStageLocked(todos, stageIndex)) return false;
+    return openPhases[phaseId] ?? phaseId === currentPhaseId;
+  };
+  const togglePhase = (phaseId: string, stageIndex: number) => {
+    if (isStageLocked(todos, stageIndex)) return;
+    setOpenPhases((prev) => ({ ...prev, [phaseId]: !isPhaseOpen(phaseId, stageIndex) }));
   };
 
   return (
@@ -184,8 +203,8 @@ export default function PortalOnboardingChecklist({
         </div>
       ) : (
         <p className="portal-checklist-note">
-          Work through each phase in order. Some steps complete automatically as you
-          submit forms and update your profile.
+          Work through each stage in order. The next stage unlocks once every step in the
+          current stage is complete.
         </p>
       )}
 
@@ -194,32 +213,40 @@ export default function PortalOnboardingChecklist({
         if (items.length === 0) return null;
         const doneCount = items.filter((todo) => todo.completed).length;
         const phaseComplete = doneCount === items.length;
-        const open = isPhaseOpen(phase.id);
+        const locked = isStageLocked(todos, phaseIndex);
+        const open = isPhaseOpen(phase.id, phaseIndex);
+        const isCurrent = phaseIndex === currentStageIndex;
 
         return (
           <div
             key={phase.id}
-            className={`portal-checklist-phase${open ? " open" : ""}${phaseComplete ? " complete" : ""}`}
+            className={`portal-checklist-phase${open ? " open" : ""}${phaseComplete ? " complete" : ""}${locked ? " locked" : ""}${isCurrent ? " current" : ""}`}
           >
             <button
               type="button"
               className="portal-checklist-phase-head"
-              onClick={() => togglePhase(phase.id)}
+              onClick={() => togglePhase(phase.id, phaseIndex)}
               aria-expanded={open}
+              disabled={locked}
+              aria-disabled={locked}
             >
               <span className="portal-checklist-phase-title">
                 {phaseComplete ? (
                   <CheckCircle2 size={17} strokeWidth={2.25} aria-hidden="true" />
+                ) : locked ? (
+                  <Lock size={15} aria-hidden="true" />
                 ) : (
                   <span className="portal-checklist-phase-num" aria-hidden="true">
-                    {phaseIndex + 1}
+                    Stage {phaseIndex + 1}
                   </span>
                 )}
                 {phase.label}
               </span>
               <span className="portal-checklist-phase-meta">
-                {doneCount}/{items.length}
-                <ChevronDown size={16} className="portal-checklist-phase-chevron" aria-hidden="true" />
+                {locked ? "Locked" : `${doneCount}/${items.length}`}
+                {!locked && (
+                  <ChevronDown size={16} className="portal-checklist-phase-chevron" aria-hidden="true" />
+                )}
               </span>
             </button>
             {open && (
@@ -230,6 +257,8 @@ export default function PortalOnboardingChecklist({
                     todo={todo}
                     agentEmail={agentEmail}
                     completing={completingTodoId === todo.id}
+                    locked={locked}
+                    gateLocked={isTodoGateLocked(todos, todo.id)}
                     onComplete={onComplete}
                   />
                 ))}

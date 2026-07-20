@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ArrowUpRight, CheckCircle2, FileSignature } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, FileSignature } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -64,62 +64,80 @@ function PendingAttachmentCard({
   };
 
   return (
-    <div className="carrier-sheet-panel portal-profile-panel">
+    <div className="carrier-sheet-panel portal-profile-panel portal-comp-signing-panel">
       <div className="carrier-sheet-panel-head">
         <div>
+          <p className="portal-welcome">Compensation attachment</p>
           <h2>{attachment.title}</h2>
-          <p>Assigned {formatDate(attachment.assignedAt)}. Review the document, then sign below.</p>
+          <p className="portal-panel-note">
+            Assigned {formatDate(attachment.assignedAt)}. Review the full document, then sign in
+            the panel on the right.
+          </p>
         </div>
       </div>
 
-      {attachment.documentUrl ? (
-        <p className="portal-panel-note">
-          <a
-            href={attachment.documentUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="portal-w9-aside-pdf"
-          >
-            Open document (PDF)
-            <ArrowUpRight size={14} aria-hidden="true" />
-          </a>
-        </p>
-      ) : (
-        <p className="admin-error">The document could not be loaded. Contact PNCL support.</p>
-      )}
-
-      <form className="admin-form" onSubmit={(event) => void handleSubmit(event)}>
-        <label className="admin-field">
-          <span>Type your legal name to sign</span>
-          <input
-            type="text"
-            value={signatureName}
-            onChange={(event) => setSignatureName(event.target.value)}
-            placeholder="Your legal first and last name"
-            autoComplete="name"
-            required
-          />
-        </label>
-
-        <label className="admin-field admin-field-checkbox">
-          <input
-            type="checkbox"
-            checked={agreed}
-            onChange={(event) => setAgreed(event.target.checked)}
-          />
-          <span>
-            I have reviewed the compensation attachment and agree to its terms. Typing my name
-            above constitutes my electronic signature.
-          </span>
-        </label>
-
-        <div className="admin-form-actions">
-          <button type="submit" className="admin-primary-btn" disabled={submitting}>
-            <FileSignature size={16} aria-hidden="true" />
-            {submitting ? "Signing…" : "Sign comp attachment"}
-          </button>
+      <div className="portal-comp-signing-layout">
+        <div className="portal-comp-signing-doc">
+          {attachment.documentUrl ? (
+            <iframe
+              title={`${attachment.title} preview`}
+              src={attachment.documentUrl}
+              className="portal-comp-signing-pdf"
+            />
+          ) : (
+            <p className="admin-error">The document could not be loaded. Contact PNCL support.</p>
+          )}
         </div>
-      </form>
+
+        <aside className="portal-comp-signing-side" aria-label="Comp attachment signing">
+          <form className="admin-form" onSubmit={(event) => void handleSubmit(event)}>
+            <label className="admin-field">
+              <span>Type your legal name to sign</span>
+              <input
+                type="text"
+                value={signatureName}
+                onChange={(event) => setSignatureName(event.target.value)}
+                placeholder="Your legal first and last name"
+                autoComplete="name"
+                required
+              />
+            </label>
+
+            <label className="admin-field admin-field-checkbox">
+              <input
+                type="checkbox"
+                checked={agreed}
+                onChange={(event) => setAgreed(event.target.checked)}
+              />
+              <span>
+                I have reviewed the compensation attachment and agree to its terms. Typing my name
+                above constitutes my electronic signature.
+              </span>
+            </label>
+
+            {attachment.documentUrl && (
+              <p className="portal-panel-note">
+                <a
+                  href={attachment.documentUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="portal-w9-aside-pdf"
+                >
+                  Open PDF in new tab
+                  <ArrowUpRight size={14} aria-hidden="true" />
+                </a>
+              </p>
+            )}
+
+            <div className="admin-form-actions">
+              <button type="submit" className="admin-primary-btn" disabled={submitting}>
+                <FileSignature size={16} aria-hidden="true" />
+                {submitting ? "Signing…" : "Sign comp attachment"}
+              </button>
+            </div>
+          </form>
+        </aside>
+      </div>
     </div>
   );
 }
@@ -172,6 +190,9 @@ export default function PortalCompAgreement() {
     setAttachments((prev) => prev.map((row) => (row.id === updated.id ? updated : row)));
   };
 
+  const pendingAttachment = attachments.find((attachment) => attachment.status === "pending") ?? null;
+  const signedAttachment = attachments.find((attachment) => attachment.status === "signed") ?? null;
+
   return (
     <div className="home2-page">
       <div className="grain" aria-hidden="true" />
@@ -188,9 +209,9 @@ export default function PortalCompAgreement() {
                 Review and sign your compensation attachment so PNCL knows how to pay you.
               </p>
             </div>
-            <Link to="/portal" className="admin-back-link">
+            <Link to="/portal/profile?tab=documents" className="admin-back-link">
               <ArrowLeft size={16} aria-hidden="true" />
-              Back to portal
+              Back to profile
             </Link>
           </header>
 
@@ -220,58 +241,44 @@ export default function PortalCompAgreement() {
             </div>
           ) : (
             <>
-              {attachments
-                .filter((attachment) => attachment.status === "pending")
-                .map((attachment) => (
-                  <PendingAttachmentCard
-                    key={attachment.id}
-                    attachment={attachment}
-                    accessToken={session?.access_token ?? ""}
-                    defaultName={defaultName}
-                    onSigned={handleSigned}
-                  />
-                ))}
+              {pendingAttachment && (
+                <PendingAttachmentCard
+                  attachment={pendingAttachment}
+                  accessToken={session?.access_token ?? ""}
+                  defaultName={defaultName}
+                  onSigned={handleSigned}
+                />
+              )}
 
-              {attachments.some((attachment) => attachment.status === "signed") && (
+              {signedAttachment && !pendingAttachment && (
                 <div className="carrier-sheet-panel portal-profile-panel">
-                  <div className="carrier-sheet-panel-head">
-                    <div>
-                      <h2>Signed comp attachments</h2>
-                      <p>Signed copies are stored here for your records.</p>
-                    </div>
-                  </div>
-                  <div className="portal-profile-documents">
-                    {attachments
-                      .filter((attachment) => attachment.status === "signed")
-                      .map((attachment) => (
-                        <div key={attachment.id} className="portal-profile-document-item">
-                          <div>
-                            <strong>
-                              <CheckCircle2
-                                size={14}
-                                aria-hidden="true"
-                                style={{ marginRight: 6, verticalAlign: "-2px" }}
-                              />
-                              {attachment.title}
-                            </strong>
-                            <p className="portal-panel-note">
-                              Signed {formatDate(attachment.signedAt)}
-                              {attachment.signatureName ? ` by ${attachment.signatureName}` : ""}.
-                            </p>
-                          </div>
-                          {attachment.documentUrl && (
-                            <a
-                              href={attachment.documentUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="portal-w9-aside-pdf"
-                            >
-                              Download PDF
-                              <ArrowUpRight size={14} aria-hidden="true" />
-                            </a>
-                          )}
-                        </div>
-                      ))}
+                  <div className="portal-w9-submitted">
+                    <h1 className="h3">Comp attachment on file</h1>
+                    <p className="portal-panel-note">
+                      Your {signedAttachment.title} was signed
+                      {signedAttachment.signedAt ? ` on ${formatDate(signedAttachment.signedAt)}` : ""}
+                      {signedAttachment.signatureName ? ` by ${signedAttachment.signatureName}` : ""}.
+                    </p>
+                    {signedAttachment.documentUrl ? (
+                      <>
+                        <iframe
+                          title={`${signedAttachment.title} signed copy`}
+                          src={signedAttachment.documentUrl}
+                          className="portal-comp-signing-pdf portal-comp-signing-pdf--signed"
+                        />
+                        <a
+                          href={signedAttachment.documentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="portal-w9-aside-pdf"
+                        >
+                          Download signed PDF
+                          <ArrowUpRight size={14} aria-hidden="true" />
+                        </a>
+                      </>
+                    ) : (
+                      <p className="portal-panel-note">Contact PNCL support if you need a copy.</p>
+                    )}
                   </div>
                 </div>
               )}

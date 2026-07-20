@@ -68,6 +68,7 @@ type TodoFormState = {
   phase: AdminPortalTodoPhase;
   completionType: AdminPortalTodoCompletionType;
   autoKey: string;
+  gated: boolean;
 };
 
 const EMPTY_FORM: TodoFormState = {
@@ -82,6 +83,7 @@ const EMPTY_FORM: TodoFormState = {
   phase: "on_board",
   completionType: "agent",
   autoKey: "",
+  gated: false,
 };
 
 function slugify(value: string): string {
@@ -107,6 +109,7 @@ function toFormState(todo: AdminPortalTodoSummary): TodoFormState {
     phase: todo.phase,
     completionType: todo.completionType,
     autoKey: todo.autoKey ?? "",
+    gated: todo.gated ?? false,
   };
 }
 
@@ -124,6 +127,7 @@ function toPayload(form: TodoFormState): UpsertPortalTodoPayload {
     phase: form.phase,
     completionType: form.completionType,
     autoKey: form.completionType === "auto" ? form.autoKey.trim() || null : null,
+    gated: form.gated,
   };
 }
 
@@ -338,7 +342,7 @@ export default function AdminTodos() {
           </label>
 
           <label className="admin-field">
-            <span>Phase</span>
+            <span>Stage</span>
             <select
               value={form.phase}
               onChange={(event) =>
@@ -426,6 +430,15 @@ export default function AdminTodos() {
           <label className="admin-field admin-field-checkbox">
             <input
               type="checkbox"
+              checked={form.gated}
+              onChange={(event) => setForm((prev) => ({ ...prev, gated: event.target.checked }))}
+            />
+            <span>Gated — locked until every earlier step in its stage is complete</span>
+          </label>
+
+          <label className="admin-field admin-field-checkbox">
+            <input
+              type="checkbox"
               checked={form.showEmailHint}
               onChange={(event) => setForm((prev) => ({ ...prev, showEmailHint: event.target.checked }))}
             />
@@ -462,7 +475,7 @@ export default function AdminTodos() {
             <thead>
               <tr>
                 <th>To-do</th>
-                <th>Phase</th>
+                <th>Stage</th>
                 <th>Completion</th>
                 <th>Status</th>
                 <th aria-label="Actions" />
