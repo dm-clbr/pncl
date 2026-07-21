@@ -1,5 +1,5 @@
 export const COMP_LEVEL_MIN = 70;
-export const COMP_LEVEL_MAX = 140;
+export const COMP_LEVEL_MAX = 145;
 export const COMP_LEVEL_STEP = 5;
 
 export const REFERRAL_INVITE_EXPIRY_DAYS = 90;
