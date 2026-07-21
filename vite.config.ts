@@ -53,6 +53,8 @@ export default defineConfig(({ mode }) => ({
         navigateFallbackDenylist: [/^\/api\//],
         // Main bundle includes pdf.js and admin UI; default 2 MiB precache limit is too small.
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        // The zipcodes-us dataset (~6 MB, lazy-loaded) is fetched on demand, not precached.
+        globIgnores: ["**/zip-county-data-*.js"],
         globPatterns: [
           "**/*.{js,css,html,ico,svg,woff2}",
           "pwa-*.png",
@@ -71,5 +73,16 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: ["pdfjs-dist", "pdfjs-dist/web/pdf_viewer.mjs"],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes("zipcodes-us")) {
+            return "zip-county-data";
+          }
+        },
+      },
+    },
   },
 }));
