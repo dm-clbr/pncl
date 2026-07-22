@@ -17,7 +17,7 @@ import {
   REFERRAL_PARAM,
 } from "@/lib/referral";
 import { toast } from "sonner";
-import { trackPageView } from "@/lib/analytics";
+import { trackPageView, trackApplicationSubmitted } from "@/lib/analytics";
 
 const US_STATES = [
   "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
@@ -485,6 +485,7 @@ export default function AgentOnboarding({
         referralInviteId: referralInviteId ?? undefined,
         contractSignatureId,
       });
+      trackApplicationSubmitted("agent-onboarding");
       clearStoredContractSession(false);
       navigate(
         `/onboarding/success/${result.onboardingId}?token=${encodeURIComponent(result.handoffToken)}`,
