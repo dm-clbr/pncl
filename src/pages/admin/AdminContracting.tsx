@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Check, ExternalLink, FileSignature, RotateCcw, X } from "lucide-react";
+import { Check, FileSignature, FileUp, RotateCcw, X } from "lucide-react";
 import AdminCompAttachmentPanel from "@/components/admin/AdminCompAttachmentPanel";
 import { useAuth } from "@/contexts/AuthContext";
 import {
