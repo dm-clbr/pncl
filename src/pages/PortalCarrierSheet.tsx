@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { Fragment, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
@@ -12,6 +12,27 @@ const COLUMNS = [
   { key: "companyNumber", label: "Company #" },
   { key: "eAppLabel", label: "E-App Link" },
 ] as const;
+
+interface CarrierSection {
+  title: string;
+  carriers: ReturnType<typeof usePortalCarriers>["carriers"];
+}
+
+function groupCarriersBySection(
+  carriers: ReturnType<typeof usePortalCarriers>["carriers"],
+): CarrierSection[] {
+  const sections: CarrierSection[] = [];
+  for (const carrier of carriers) {
+    const title = carrier.section || "Other";
+    const last = sections[sections.length - 1];
+    if (last && last.title === title) {
+      last.carriers.push(carrier);
+    } else {
+      sections.push({ title, carriers: [carrier] });
+    }
+  }
+  return sections;
+}
 
 export default function PortalCarrierSheet() {
   const { user } = useAuth();
@@ -73,26 +94,35 @@ export default function PortalCarrierSheet() {
                     </tr>
                   </thead>
                   <tbody>
-                    {carriers.map((row) => (
-                      <tr key={row.id}>
-                        <td>{row.carrier || "\u00a0"}</td>
-                        <td>{row.companyNumber || "\u00a0"}</td>
-                        <td>
-                          {row.eAppUrl ? (
-                            <a
-                              href={row.eAppUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="carrier-sheet-link"
-                            >
-                              <span>{row.eAppLabel || row.eAppUrl}</span>
-                              <ArrowUpRight size={14} aria-hidden="true" />
-                            </a>
-                          ) : (
-                            row.eAppLabel || "\u00a0"
-                          )}
-                        </td>
-                      </tr>
+                    {groupCarriersBySection(carriers).map((section) => (
+                      <Fragment key={section.title}>
+                        <tr className="carrier-sheet-section-row">
+                          <th colSpan={COLUMNS.length} scope="colgroup">
+                            {section.title}
+                          </th>
+                        </tr>
+                        {section.carriers.map((row) => (
+                          <tr key={row.id}>
+                            <td>{row.carrier || "\u00a0"}</td>
+                            <td>{row.companyNumber || "\u00a0"}</td>
+                            <td>
+                              {row.eAppUrl ? (
+                                <a
+                                  href={row.eAppUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="carrier-sheet-link"
+                                >
+                                  <span>{row.eAppLabel || row.eAppUrl}</span>
+                                  <ArrowUpRight size={14} aria-hidden="true" />
+                                </a>
+                              ) : (
+                                row.eAppLabel || "\u00a0"
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>

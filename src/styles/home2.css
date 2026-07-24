@@ -3238,6 +3238,12 @@
   font-weight: 600;
 }
 
+.home2-page .admin-table-section-row th {
+  padding: 12px 10px;
+  background: rgba(240, 237, 228, .05);
+  color: var(--bone);
+}
+
 .home2-page .admin-sheet-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -5032,6 +5038,17 @@
 
 .home2-page .carrier-sheet-table input {
   display: none;
+}
+
+.home2-page .carrier-sheet-section-row th {
+  padding: 12px;
+  background: rgba(240, 237, 228, .06);
+  color: var(--bone);
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  text-align: left;
 }
 
 .home2-page .carrier-sheet-actions {

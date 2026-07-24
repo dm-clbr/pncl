@@ -36,6 +36,7 @@ serve(async (req) => {
         companyNumber: item.companyNumber,
         eAppLabel: item.eAppLabel,
         eAppUrl: item.eAppUrl,
+        section: item.section,
       };
     });
 

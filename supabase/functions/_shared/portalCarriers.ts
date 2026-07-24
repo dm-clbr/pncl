@@ -4,6 +4,7 @@ export interface PortalCarrierRecord {
   company_number: string;
   e_app_label: string;
   e_app_url: string | null;
+  section: string;
   sort_order: number;
   published: boolean;
   created_at: string;
@@ -16,6 +17,7 @@ export interface UpsertCarrierPayload {
   companyNumber: string;
   eAppLabel: string;
   eAppUrl: string | null;
+  section: string;
   published?: boolean;
   sortOrder?: number;
 }
@@ -40,6 +42,7 @@ export function validateUpsertCarrierPayload(body: unknown): UpsertCarrierPayloa
   const companyNumber = optionalText(data.companyNumber);
   const eAppLabel = optionalText(data.eAppLabel);
   const eAppUrl = optionalUrl(data.eAppUrl);
+  const section = optionalText(data.section);
 
   if (!carrier && !eAppLabel) {
     throw new Error("Carrier name or e-app label is required");
@@ -57,6 +60,7 @@ export function validateUpsertCarrierPayload(body: unknown): UpsertCarrierPayloa
     companyNumber,
     eAppLabel,
     eAppUrl,
+    section,
     published,
     sortOrder,
   };
@@ -69,6 +73,7 @@ export function mapCarrierRecord(row: PortalCarrierRecord) {
     companyNumber: row.company_number,
     eAppLabel: row.e_app_label,
     eAppUrl: row.e_app_url,
+    section: row.section,
     sortOrder: row.sort_order,
     published: row.published,
     createdAt: row.created_at,

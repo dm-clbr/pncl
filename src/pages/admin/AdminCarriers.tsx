@@ -1,4 +1,4 @@
-import { useEffect, useState, type ClipboardEvent } from "react";
+import { Fragment, useEffect, useState, type ClipboardEvent } from "react";
 import {
   ArrowDown,
   ArrowUp,
@@ -22,6 +22,7 @@ type CarrierFormState = {
   companyNumber: string;
   eAppLabel: string;
   eAppUrl: string;
+  section: string;
   published: boolean;
 };
 
@@ -30,6 +31,7 @@ const EMPTY_FORM: CarrierFormState = {
   companyNumber: "",
   eAppLabel: "",
   eAppUrl: "",
+  section: "",
   published: true,
 };
 
@@ -48,6 +50,7 @@ function toFormState(carrier: AdminCarrierSummary): CarrierFormState {
     companyNumber: carrier.companyNumber,
     eAppLabel: carrier.eAppLabel.trim() || carrierName,
     eAppUrl: carrier.eAppUrl ?? "",
+    section: carrier.section,
     published: carrier.published,
   };
 }
@@ -59,6 +62,7 @@ function toPayload(form: CarrierFormState, sortOrder?: number): UpsertCarrierPay
     companyNumber: form.companyNumber.trim(),
     eAppLabel: form.eAppLabel.trim() || form.carrier.trim(),
     eAppUrl: form.eAppUrl.trim() || null,
+    section: form.section.trim(),
     published: form.published,
     ...(sortOrder !== undefined ? { sortOrder } : {}),
   };
@@ -105,11 +109,12 @@ function withCarrierName(row: CarrierFormState, carrier: string): CarrierFormSta
   };
 }
 
-function createDraftRowFromCarrierName(carrier: string): CarrierFormState {
+function createDraftRowFromCarrierName(carrier: string, section: string): CarrierFormState {
   return {
     ...createEmptyDraftRow(),
     carrier,
     eAppLabel: carrier,
+    section,
   };
 }
 
@@ -142,7 +147,7 @@ function expandDraftRowsFromPaste(
       continue;
     }
     existingNames.add(key);
-    rowsToInsert.push(createDraftRowFromCarrierName(name));
+    rowsToInsert.push(createDraftRowFromCarrierName(name, rows[index].section));
   }
 
   next.splice(index + 1, 0, ...rowsToInsert);
@@ -363,6 +368,7 @@ export default function AdminCarriers() {
             <table className={`admin-table${sheetEditing ? " admin-table-editing" : ""}`}>
               <thead>
                 <tr>
+                  {sheetEditing && <th>Section</th>}
                   <th>Carrier</th>
                   <th>Company #</th>
                   {sheetEditing ? (
@@ -386,9 +392,36 @@ export default function AdminCarriers() {
                     : carrier!.id;
                   const isDeleting = carrier ? deletingId === carrier.id : false;
                   const isReordering = carrier ? reorderingId === carrier.id : false;
+                  const sectionTitle = carrier ? carrier.section || "Other" : "";
+                  const previousSection = carrier && index > 0
+                    ? carriers[index - 1].section || "Other"
+                    : null;
+                  const showSectionDivider =
+                    carrier !== null && (index === 0 || previousSection !== sectionTitle);
 
                   return (
-                    <tr key={rowId}>
+                    <Fragment key={rowId}>
+                      {showSectionDivider && (
+                        <tr className="admin-table-section-row">
+                          <th colSpan={5} scope="colgroup">
+                            {sectionTitle}
+                          </th>
+                        </tr>
+                      )}
+                      <tr>
+                      {sheetEditing && draft && (
+                        <td>
+                          <input
+                            type="text"
+                            className="admin-table-input"
+                            value={draft.section}
+                            onChange={(event) =>
+                              updateDraftRow(index, { section: event.target.value })
+                            }
+                            placeholder="Section"
+                          />
+                        </td>
+                      )}
                       <td>
                         {sheetEditing && draft ? (
                           <input
@@ -522,7 +555,8 @@ export default function AdminCarriers() {
                           </div>
                         ) : null}
                       </td>
-                    </tr>
+                      </tr>
+                    </Fragment>
                   );
                 })}
               </tbody>

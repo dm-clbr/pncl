@@ -6,6 +6,7 @@ export interface PortalCarrier {
   companyNumber: string;
   eAppLabel: string;
   eAppUrl: string | null;
+  section: string;
 }
 
 export async function fetchPortalCarriers(accessToken: string): Promise<PortalCarrier[]> {

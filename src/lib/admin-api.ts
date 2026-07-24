@@ -597,6 +597,7 @@ export interface AdminCarrierSummary {
   companyNumber: string;
   eAppLabel: string;
   eAppUrl: string | null;
+  section: string;
   sortOrder: number;
   published: boolean;
   createdAt: string;
@@ -609,6 +610,7 @@ export interface UpsertCarrierPayload {
   companyNumber: string;
   eAppLabel: string;
   eAppUrl?: string | null;
+  section?: string;
   published?: boolean;
   sortOrder?: number;
 }
