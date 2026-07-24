@@ -28,6 +28,52 @@ export function PortalUrgentIcon({ size = 22 }: { size?: number }) {
   );
 }
 
+type DescriptionBlock =
+  | { type: "text"; text: string }
+  | { type: "list"; items: string[] };
+
+/** Split a description into paragraphs and bulleted lists ("•"-prefixed lines). */
+function parseDescriptionBlocks(description: string): DescriptionBlock[] {
+  const blocks: DescriptionBlock[] = [];
+  for (const rawLine of description.split("\n")) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    if (line.startsWith("•")) {
+      const item = line.replace(/^•\s*/, "");
+      const last = blocks[blocks.length - 1];
+      if (last?.type === "list") {
+        last.items.push(item);
+      } else {
+        blocks.push({ type: "list", items: [item] });
+      }
+    } else {
+      blocks.push({ type: "text", text: line });
+    }
+  }
+  return blocks;
+}
+
+function TodoDescription({ description }: { description: string }) {
+  const blocks = parseDescriptionBlocks(description);
+  return (
+    <>
+      {blocks.map((block, index) =>
+        block.type === "list" ? (
+          <ul key={index} className="portal-todo-desc-list">
+            {block.items.map((item, itemIndex) => (
+              <li key={itemIndex}>{item}</li>
+            ))}
+          </ul>
+        ) : (
+          <p key={index} className="portal-todo-desc">
+            {block.text}
+          </p>
+        ),
+      )}
+    </>
+  );
+}
+
 function PortalTodoItem({
   todo,
   agentEmail,
@@ -100,13 +146,16 @@ function PortalTodoItem({
             <span className="portal-todo-urgent-tag">PNCL admin completes this</span>
           )}
         </div>
-        <p className="portal-todo-desc">
-          {locked
-            ? "Complete the previous stage to unlock this step."
-            : gateLocked
-              ? `${todo.description} Complete the steps above to unlock this step.`
-              : todo.description}
-        </p>
+        {locked ? (
+          <p className="portal-todo-desc">Complete the previous stage to unlock this step.</p>
+        ) : (
+          <>
+            <TodoDescription description={todo.description} />
+            {gateLocked && (
+              <p className="portal-todo-desc">Complete the steps above to unlock this step.</p>
+            )}
+          </>
+        )}
         {!disabled && agentEmail && todo.showEmailHint !== false && (
           <p className="portal-todo-email">
             Use <span>{agentEmail}</span> when you sign up.

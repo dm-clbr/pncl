@@ -1319,9 +1319,20 @@
   color: var(--steel);
 }
 
-/* Preserve bullet lines in multi-line step descriptions (e.g. carrier applications). */
-.home2-page .portal-todo-copy .portal-todo-desc {
-  white-space: pre-line;
+/* Bulleted lists in multi-line step descriptions (e.g. carrier applications). */
+.home2-page .portal-todo-copy .portal-todo-desc-list {
+  margin: 0;
+  padding-left: 18px;
+  list-style: disc;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.home2-page .portal-todo-copy .portal-todo-desc-list li {
+  font-size: .84rem;
+  line-height: 1.5;
+  color: var(--steel);
 }
 
 .home2-page .portal-checklist-phase-head {
