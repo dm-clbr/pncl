@@ -1691,6 +1691,50 @@
   border-color: rgba(194, 78, 28, .45);
 }
 
+/* Pop-up video player for tutorial steps (Bunny.net embeds). */
+button.portal-todo-link {
+  cursor: pointer;
+}
+
+.home2-page .portal-video-modal {
+  width: min(960px, 100%);
+  background: var(--ink-2);
+  border: 1px solid rgba(240, 237, 228, .12);
+  border-radius: calc(var(--radius) + 2px);
+  padding: 14px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .45);
+}
+
+.home2-page .portal-video-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.home2-page .portal-video-modal-head strong {
+  font-size: .95rem;
+  font-weight: 700;
+  color: var(--bone);
+}
+
+.home2-page .portal-video-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #000;
+}
+
+.home2-page .portal-video-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
 .home2-page .portal-todo-copy-required {
   padding-left: 0;
 }

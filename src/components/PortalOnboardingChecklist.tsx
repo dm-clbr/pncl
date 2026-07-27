@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { Link } from "react-router-dom";
-import { ArrowUpRight, CheckCircle2, ChevronDown, Circle, Lock, Trophy } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, ChevronDown, Circle, Lock, Play, Trophy, X } from "lucide-react";
 import {
   getCurrentStageIndex,
   groupTodosByPhase,
@@ -25,6 +25,77 @@ export function PortalUrgentIcon({ size = 22 }: { size?: number }) {
         <circle cx="12" cy="16.5" r="1.25" className="portal-urgent-icon-dot" />
       </svg>
     </span>
+  );
+}
+
+/**
+ * Bunny.net video links play in a pop-up modal instead of punching out.
+ * Accepts both the share URL (player.mediadelivery.net/play/{library}/{video})
+ * and the embed URL (iframe.mediadelivery.net/embed/{library}/{video}).
+ */
+function getVideoEmbedUrl(href: string): string | null {
+  const match = href.match(
+    /^https:\/\/(?:player\.mediadelivery\.net\/play|iframe\.mediadelivery\.net\/embed)\/(\d+)\/([\w-]+)/,
+  );
+  if (!match) return null;
+  return `https://iframe.mediadelivery.net/embed/${match[1]}/${match[2]}?autoplay=true`;
+}
+
+function PortalVideoModal({
+  title,
+  embedUrl,
+  onClose,
+}: {
+  title: string;
+  embedUrl: string;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
+
+  const handleBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) onClose();
+  };
+
+  return (
+    <div className="admin-modal-overlay" onClick={handleBackdropClick} role="presentation">
+      <div
+        className="portal-video-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+      >
+        <div className="portal-video-modal-head">
+          <strong>{title}</strong>
+          <button
+            type="button"
+            className="admin-modal-close"
+            onClick={onClose}
+            aria-label="Close video"
+          >
+            <X size={18} aria-hidden="true" />
+          </button>
+        </div>
+        <div className="portal-video-frame">
+          <iframe
+            src={embedUrl}
+            title={title}
+            loading="lazy"
+            allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -93,6 +164,8 @@ function PortalTodoItem({
   const isRequiredForm = isRequiredFormTodo(todo.id);
   const isAdminManaged = todo.completionType === "admin";
   const isAgentCheckable = todo.completionType === "agent";
+  const videoEmbedUrl = getVideoEmbedUrl(todo.href);
+  const [videoOpen, setVideoOpen] = useState(false);
 
   if (todo.completed) {
     return (
@@ -162,7 +235,16 @@ function PortalTodoItem({
           </p>
         )}
         {!disabled && todo.href && (
-          todo.external ? (
+          videoEmbedUrl ? (
+            <button
+              type="button"
+              className="portal-todo-link"
+              onClick={() => setVideoOpen(true)}
+            >
+              <Play size={16} strokeWidth={2.5} aria-hidden="true" />
+              {todo.actionLabel || "Watch video"}
+            </button>
+          ) : todo.external ? (
             <a
               href={todo.href}
               target="_blank"
@@ -176,6 +258,13 @@ function PortalTodoItem({
               {actionContent}
             </Link>
           )
+        )}
+        {videoOpen && videoEmbedUrl && (
+          <PortalVideoModal
+            title={todo.title}
+            embedUrl={videoEmbedUrl}
+            onClose={() => setVideoOpen(false)}
+          />
         )}
       </div>
     </div>
