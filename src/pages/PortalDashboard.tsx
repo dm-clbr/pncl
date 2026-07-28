@@ -547,6 +547,7 @@ export default function PortalDashboard() {
                   agentEmail={agentEmail}
                   completingTodoId={completingTodoId}
                   onComplete={(id) => void handleCompleteTodo(id)}
+                  previewUnlocked={showAdminLink}
                 />
               </aside>
             )}
@@ -583,6 +584,7 @@ export default function PortalDashboard() {
                 agentEmail={agentEmail}
                 completingTodoId={completingTodoId}
                 onComplete={(id) => void handleCompleteTodo(id)}
+                previewUnlocked={showAdminLink}
               />
             </div>
 

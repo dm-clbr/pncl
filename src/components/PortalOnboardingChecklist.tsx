@@ -277,6 +277,11 @@ interface PortalOnboardingChecklistProps {
   agentEmail: string;
   completingTodoId: string | null;
   onComplete: (todoId: string) => void;
+  /**
+   * Admin preview: renders every stage/step unlocked so admins can review
+   * locked steps. Visual only — completion guards still apply.
+   */
+  previewUnlocked?: boolean;
 }
 
 export default function PortalOnboardingChecklist({
@@ -284,6 +289,7 @@ export default function PortalOnboardingChecklist({
   agentEmail,
   completingTodoId,
   onComplete,
+  previewUnlocked = false,
 }: PortalOnboardingChecklistProps) {
   const todosByPhase = useMemo(() => groupTodosByPhase(todos), [todos]);
   const total = todos.length;
@@ -302,11 +308,11 @@ export default function PortalOnboardingChecklist({
 
   const [openPhases, setOpenPhases] = useState<Record<string, boolean>>({});
   const isPhaseOpen = (phaseId: string, stageIndex: number) => {
-    if (isStageLocked(todos, stageIndex)) return false;
+    if (!previewUnlocked && isStageLocked(todos, stageIndex)) return false;
     return openPhases[phaseId] ?? phaseId === currentPhaseId;
   };
   const togglePhase = (phaseId: string, stageIndex: number) => {
-    if (isStageLocked(todos, stageIndex)) return;
+    if (!previewUnlocked && isStageLocked(todos, stageIndex)) return;
     setOpenPhases((prev) => ({ ...prev, [phaseId]: !isPhaseOpen(phaseId, stageIndex) }));
   };
 
@@ -331,6 +337,13 @@ export default function PortalOnboardingChecklist({
         </div>
       </div>
 
+      {previewUnlocked && (
+        <p className="portal-checklist-note portal-checklist-preview-note">
+          Admin preview: every stage is unlocked for you. Agents still see stages locked
+          until they complete the previous one.
+        </p>
+      )}
+
       {allDone ? (
         <div className="portal-checklist-done">
           <Trophy size={22} aria-hidden="true" />
@@ -351,7 +364,7 @@ export default function PortalOnboardingChecklist({
         if (items.length === 0) return null;
         const doneCount = items.filter((todo) => todo.completed).length;
         const phaseComplete = doneCount === items.length;
-        const locked = isStageLocked(todos, phaseIndex);
+        const locked = !previewUnlocked && isStageLocked(todos, phaseIndex);
         const open = isPhaseOpen(phase.id, phaseIndex);
         const isCurrent = phaseIndex === currentStageIndex;
 
@@ -396,7 +409,7 @@ export default function PortalOnboardingChecklist({
                     agentEmail={agentEmail}
                     completing={completingTodoId === todo.id}
                     locked={locked}
-                    gateLocked={isTodoGateLocked(todos, todo.id)}
+                    gateLocked={!previewUnlocked && isTodoGateLocked(todos, todo.id)}
                     onComplete={onComplete}
                   />
                 ))}
