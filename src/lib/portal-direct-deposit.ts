@@ -11,6 +11,7 @@ export interface PortalDirectDepositFormValues {
   state: string;
   zip: string;
   accountType: DirectDepositAccountType;
+  bankName: string;
   accountNumber: string;
   routingNumber: string;
   signatureName: string;
@@ -25,6 +26,7 @@ export interface PortalDirectDepositSummary {
   state: string;
   zip: string;
   accountType: DirectDepositAccountType;
+  bankName: string | null;
   signatureName: string;
   signedAt: string;
   pdfPath: string;
@@ -37,6 +39,7 @@ export const EMPTY_DIRECT_DEPOSIT_FORM: PortalDirectDepositFormValues = {
   state: "",
   zip: "",
   accountType: "checking",
+  bankName: "",
   accountNumber: "",
   routingNumber: "",
   signatureName: "",
@@ -52,6 +55,9 @@ const US_STATES = [
 ] as const;
 
 export { US_STATES };
+
+/** Keeps the value on one line in the generated PDF. */
+export const BANK_NAME_MAX_LENGTH = 60;
 
 function normalizeDigits(value: string, maxLength: number): string {
   return value.replace(/\D/g, "").slice(0, maxLength);
@@ -88,6 +94,11 @@ export function validatePortalDirectDepositForm(values: PortalDirectDepositFormV
   if (!values.city.trim()) return "City is required.";
   if (!/^[A-Z]{2}$/.test(values.state.trim().toUpperCase())) return "State must be a two-letter code.";
   if (!/^\d{5}(-\d{4})?$/.test(values.zip.trim())) return "Enter a valid ZIP code.";
+  const bankName = values.bankName.trim();
+  if (!bankName) return "Bank name is required.";
+  if (bankName.length > BANK_NAME_MAX_LENGTH) {
+    return `Bank name must be ${BANK_NAME_MAX_LENGTH} characters or less.`;
+  }
   const accountNumber = formatAccountNumberInput(values.accountNumber);
   if (accountNumber.length < 4 || accountNumber.length > 17) {
     return "Enter a valid account number (4–17 digits).";
@@ -107,6 +118,7 @@ interface DirectDepositRow {
   state: string;
   zip: string;
   account_type: DirectDepositAccountType;
+  bank_name: string | null;
   signature_name: string;
   signed_at: string;
   pdf_path: string;
@@ -121,6 +133,7 @@ function mapDirectDepositSummary(row: DirectDepositRow): PortalDirectDepositSumm
     state: row.state,
     zip: row.zip,
     accountType: row.account_type,
+    bankName: row.bank_name,
     signatureName: row.signature_name,
     signedAt: row.signed_at,
     pdfPath: row.pdf_path,
@@ -131,7 +144,9 @@ export async function fetchPortalDirectDeposit(userId: string): Promise<PortalDi
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
     .from("portal_direct_deposit_forms")
-    .select("user_id, legal_name, address_line1, city, state, zip, account_type, signature_name, signed_at, pdf_path")
+    .select(
+      "user_id, legal_name, address_line1, city, state, zip, account_type, bank_name, signature_name, signed_at, pdf_path",
+    )
     .eq("user_id", userId)
     .maybeSingle();
 
@@ -167,6 +182,7 @@ export async function submitPortalDirectDeposit(
       state: values.state.trim().toUpperCase(),
       zip: values.zip.trim(),
       accountType: values.accountType,
+      bankName: values.bankName.trim(),
       accountNumber: formatAccountNumberInput(values.accountNumber),
       routingNumber: formatRoutingNumberInput(values.routingNumber),
       signatureName: values.signatureName.trim(),

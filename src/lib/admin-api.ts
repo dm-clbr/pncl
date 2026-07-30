@@ -1121,6 +1121,7 @@ export interface AdminUserDirectDepositSummary {
   state: string;
   zip: string;
   accountType: "checking" | "savings";
+  bankName: string | null;
   signatureName: string;
   signedAt: string;
   pdfPath: string;

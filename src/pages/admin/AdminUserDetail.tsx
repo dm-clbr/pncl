@@ -870,6 +870,7 @@ export default function AdminUserDetail() {
                     <dd>
                       Signed {formatDate(profile.directDeposit.signedAt)} —{" "}
                       {profile.directDeposit.accountType === "checking" ? "Checking" : "Savings"} account
+                      {profile.directDeposit.bankName ? ` at ${profile.directDeposit.bankName}` : ""}
                     </dd>
                   </div>
                 )}

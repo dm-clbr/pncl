@@ -9,6 +9,7 @@ export interface SubmitDirectDepositPayload {
   state: string;
   zip: string;
   accountType: DirectDepositAccountType;
+  bankName: string;
   accountNumber: string;
   routingNumber: string;
   signatureName: string;
@@ -23,6 +24,7 @@ export interface DirectDepositSummary {
   state: string;
   zip: string;
   accountType: DirectDepositAccountType;
+  bankName: string | null;
   signatureName: string;
   signedAt: string;
   pdfPath: string;
@@ -36,6 +38,7 @@ export interface DirectDepositRecord {
   state: string;
   zip: string;
   account_type: DirectDepositAccountType;
+  bank_name: string | null;
   account_number_encrypted: string;
   routing_number_encrypted: string;
   signature_name: string;
@@ -47,6 +50,9 @@ export interface DirectDepositRecord {
 
 export const DIRECT_DEPOSIT_TODO_SLUG = "direct_deposit_setup";
 export const DIRECT_DEPOSIT_PDF_BUCKET = "portal-profile-documents";
+
+/** Keeps the value on one line in the generated PDF. */
+export const BANK_NAME_MAX_LENGTH = 60;
 
 export const DIRECT_DEPOSIT_AUTHORIZATION =
   "I authorize The PNCL and my bank to automatically deposit my check into my account listed above (this includes my authorization to correct entries made in error). This authorization will remain in effect until I give written notice to cancel it.";
@@ -105,6 +111,14 @@ export function validateSubmitDirectDepositPayload(body: unknown): SubmitDirectD
     throw new Error("Select checking or savings");
   }
 
+  const bankName = optionalText(data.bankName);
+  if (!bankName) {
+    throw new Error("Bank name is required");
+  }
+  if (bankName.length > BANK_NAME_MAX_LENGTH) {
+    throw new Error(`Bank name must be ${BANK_NAME_MAX_LENGTH} characters or less`);
+  }
+
   const accountNumber = normalizeDigits(optionalText(data.accountNumber), 17);
   if (!isValidAccountNumber(accountNumber)) {
     throw new Error("Enter a valid account number (4–17 digits)");
@@ -131,6 +145,7 @@ export function validateSubmitDirectDepositPayload(body: unknown): SubmitDirectD
     state,
     zip,
     accountType,
+    bankName,
     accountNumber,
     routingNumber,
     signatureName,
@@ -147,6 +162,7 @@ export function mapDirectDepositSummary(row: DirectDepositRecord): DirectDeposit
     state: row.state,
     zip: row.zip,
     accountType: row.account_type,
+    bankName: row.bank_name,
     signatureName: row.signature_name,
     signedAt: row.signed_at,
     pdfPath: row.pdf_path,
@@ -271,6 +287,7 @@ export async function generateDirectDepositPdf(payload: SubmitDirectDepositPaylo
 
   const savingsLabel = payload.accountType === "savings" ? payload.accountNumber : "";
   y = drawLabelValue(page, font, boldFont, "Savings/MIA/Money market account number:", savingsLabel, margin, y, width);
+  y = drawLabelValue(page, font, boldFont, "Your bank's name", payload.bankName, margin, y, width);
   y = drawLabelValue(page, font, boldFont, "Your bank's routing number", payload.routingNumber, margin, y, width);
 
   y -= 4;

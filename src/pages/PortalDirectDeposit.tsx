@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { fetchPortalProfile } from "@/lib/portal-profile";
 import { DIRECT_DEPOSIT_AUTHORIZATION } from "@/lib/direct-deposit-content";
 import {
+  BANK_NAME_MAX_LENGTH,
   EMPTY_DIRECT_DEPOSIT_FORM,
   formatAccountNumberInput,
   formatRoutingNumberInput,
@@ -292,6 +293,17 @@ export default function PortalDirectDeposit() {
                         inputMode="numeric"
                         value={form.accountNumber}
                         onChange={(event) => updateField("accountNumber", formatAccountNumberInput(event.target.value))}
+                        autoComplete="off"
+                        required
+                      />
+                    </label>
+                    <label className="admin-field">
+                      <span>Your bank&apos;s name</span>
+                      <input
+                        type="text"
+                        value={form.bankName}
+                        onChange={(event) => updateField("bankName", event.target.value.slice(0, BANK_NAME_MAX_LENGTH))}
+                        placeholder="e.g. Wells Fargo"
                         autoComplete="off"
                         required
                       />

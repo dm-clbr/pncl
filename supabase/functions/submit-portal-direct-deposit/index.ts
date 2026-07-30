@@ -61,6 +61,7 @@ serve(async (req) => {
         state: payload.state,
         zip: payload.zip,
         account_type: payload.accountType,
+        bank_name: payload.bankName,
         account_number_encrypted: accountNumberEncrypted,
         routing_number_encrypted: routingNumberEncrypted,
         signature_name: payload.signatureName,

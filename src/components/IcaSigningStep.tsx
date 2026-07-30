@@ -120,6 +120,12 @@ export default function IcaSigningStep({
         </div>
 
         <aside className="ica-signing-side-panel" aria-label="Agreement signing">
+          <p className="ica-signing-email-note">
+            <strong>Email is required.</strong> The address you enter on the signature page becomes
+            your account recovery email and is where PNCL delivers your electronic 1099. Use a
+            personal address you will keep access to — not your @thepncl.com address.
+          </p>
+
           <div className="ica-signing-acknowledgments">
             <label className="admin-field admin-field-checkbox">
               <input

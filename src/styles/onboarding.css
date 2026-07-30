@@ -507,6 +507,21 @@ body:has(.onboarding-panel-signing) {
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
 }
 
+.ica-signing-email-note {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid rgba(245, 176, 65, 0.45);
+  border-radius: var(--radius);
+  background: rgba(245, 176, 65, 0.1);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: rgba(240, 237, 228, 0.88);
+}
+
+.ica-signing-email-note strong {
+  color: rgba(245, 176, 65, 0.95);
+}
+
 .ica-signing-side-panel .ica-signing-acknowledgments {
   margin: 0;
   padding: 0;
