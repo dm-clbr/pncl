@@ -79,7 +79,7 @@ export default function AdminHierarchy() {
 
     try {
       const data = await getHierarchy(token, rootUserId || undefined);
-      if (data.readOnly) {
+      if (data.readOnly === true) {
         setAssistTree(data.tree);
         setFocusOptions(data.focusOptions);
         setFullTree([]);

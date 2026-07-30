@@ -3,7 +3,6 @@ import { W9_PDF_URL, W9_PDF_PAGES, W9_TOTAL_PAGES } from "@/lib/w9-form";
 import { prefillW9Fields, refreshW9SignatureDate } from "@/lib/w9-prefill";
 import "@/lib/pdfjs-setup";
 import { getDocument, type PDFDocumentProxy } from "pdfjs-dist";
-import type { DocumentInitParameters } from "pdfjs-dist/types/src/display/api";
 import {
   EventBus,
   PDFLinkService,
@@ -48,10 +47,9 @@ async function fetchW9PdfBytes(): Promise<Uint8Array> {
 
 function loadWithTimeout(
   bytes: Uint8Array,
-  options: DocumentInitParameters,
   timeoutMs = PARSE_TIMEOUT_MS,
 ): Promise<PDFDocumentProxy> {
-  const task = getDocument({ data: bytes, verbosity: 0, ...options });
+  const task = getDocument({ data: bytes, verbosity: 0 });
 
   return new Promise((resolve, reject) => {
     const timer = window.setTimeout(() => {
@@ -74,9 +72,11 @@ function loadWithTimeout(
 async function loadW9PdfDocument(): Promise<PDFDocumentProxy> {
   const bytes = await fetchW9PdfBytes();
   try {
-    return await loadWithTimeout(bytes, {});
+    return await loadWithTimeout(bytes);
   } catch {
-    return loadWithTimeout(bytes, { disableWorker: true });
+    // pdf.js falls back to a main-thread worker on its own, so the retry only
+    // needs to cover a transient fetch/parse failure.
+    return loadWithTimeout(bytes);
   }
 }
 

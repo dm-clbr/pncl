@@ -1,5 +1,6 @@
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { ICA_FORM_FIELDS } from "@/lib/ica-form-fields";
+import { getPdfFieldObjects } from "@/lib/pdf-field-objects";
 import { formatIcaEffectiveDate } from "@/lib/ica-date-format";
 
 function setFieldValue(
@@ -28,7 +29,7 @@ export async function prefillIcaServerFields(
   container: HTMLElement,
   options: IcaPrefillOptions = {},
 ): Promise<void> {
-  const fieldObjects = await pdfDocument.getFieldObjects();
+  const fieldObjects = await getPdfFieldObjects(pdfDocument);
   if (!fieldObjects) return;
 
   const legalName = options.legalName?.trim() ?? "";
@@ -59,7 +60,7 @@ export async function syncIcaMirroredNameFields(
   container: HTMLElement,
   legalName: string,
 ): Promise<void> {
-  const fieldObjects = await pdfDocument.getFieldObjects();
+  const fieldObjects = await getPdfFieldObjects(pdfDocument);
   if (!fieldObjects) return;
 
   for (const fieldName of [ICA_FORM_FIELDS.introName, ICA_FORM_FIELDS.agentName]) {

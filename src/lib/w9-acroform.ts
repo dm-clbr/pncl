@@ -13,6 +13,7 @@ import {
   type W9LlcClassification,
   type W9TaxClassOptionId,
 } from "@/lib/w9-content";
+import { getPdfFieldObjects } from "@/lib/pdf-field-objects";
 import { formatTinInput, type W9TinType } from "@/lib/portal-w9";
 
 export interface ExtractedW9FormValues {
@@ -60,7 +61,7 @@ export async function syncW9FormFieldsFromDom(
   container: HTMLElement,
   pdfDocument: PDFDocumentProxy,
 ): Promise<void> {
-  const fieldObjects = await pdfDocument.getFieldObjects();
+  const fieldObjects = await getPdfFieldObjects(pdfDocument);
   if (!fieldObjects) return;
 
   const storage = pdfDocument.annotationStorage;
@@ -180,7 +181,7 @@ export async function extractW9FormValues(
 ): Promise<ExtractedW9FormValues> {
   await syncW9FormFieldsFromDom(container, pdfDocument);
 
-  const fieldObjects = (await pdfDocument.getFieldObjects()) as W9ResolvedFieldObjects | null;
+  const fieldObjects = await getPdfFieldObjects(pdfDocument);
   if (!fieldObjects) {
     throw new Error("This W-9 PDF has no fillable fields.");
   }

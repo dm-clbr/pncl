@@ -1,9 +1,9 @@
 import { ICA_PDF_URL, ICA_PDF_PAGES, ICA_TOTAL_PAGES } from "@/lib/onboarding-contract";
 import { prefillIcaServerFields, syncIcaMirroredNameFields } from "@/lib/ica-prefill";
 import { ICA_FORM_FIELDS, ICA_DEBIT_CHECK_INITIAL_FIELD_NAMES, ICA_DEBIT_CHECK_INITIAL_MAX_LENGTH } from "@/lib/ica-form-fields";
+import { getPdfFieldObjects } from "@/lib/pdf-field-objects";
 import "@/lib/pdfjs-setup";
 import { getDocument, type PDFDocumentProxy } from "pdfjs-dist";
-import type { DocumentInitParameters } from "pdfjs-dist/types/src/display/api";
 import {
   EventBus,
   PDFLinkService,
@@ -78,10 +78,9 @@ async function fetchIcaPdfBytes(): Promise<Uint8Array> {
 
 function loadWithTimeout(
   bytes: Uint8Array,
-  options: DocumentInitParameters,
   timeoutMs = PARSE_TIMEOUT_MS,
 ): Promise<PDFDocumentProxy> {
-  const task = getDocument({ data: bytes, verbosity: 0, ...options });
+  const task = getDocument({ data: bytes, verbosity: 0 });
 
   return new Promise((resolve, reject) => {
     const timer = window.setTimeout(() => {
@@ -105,9 +104,11 @@ async function loadIcaPdfDocument(): Promise<PDFDocumentProxy> {
   const bytes = await fetchIcaPdfBytes();
 
   try {
-    return await loadWithTimeout(bytes, {});
+    return await loadWithTimeout(bytes);
   } catch {
-    return loadWithTimeout(bytes, { disableWorker: true });
+    // pdf.js falls back to a main-thread worker on its own, so the retry only
+    // needs to cover a transient fetch/parse failure.
+    return loadWithTimeout(bytes);
   }
 }
 
@@ -209,7 +210,7 @@ const IcaFillablePdfViewer = forwardRef<IcaFillablePdfViewerHandle, IcaFillableP
         throw new Error("The agreement is still loading.");
       }
 
-      const fieldObjects = await pdfDocumentLocal.getFieldObjects();
+      const fieldObjects = await getPdfFieldObjects(pdfDocumentLocal);
       if (!fieldObjects) {
         throw new Error("This agreement PDF has no fillable fields.");
       }
@@ -408,7 +409,7 @@ const IcaFillablePdfViewer = forwardRef<IcaFillablePdfViewerHandle, IcaFillableP
           email: prefillEmail,
         });
 
-        const fieldObjects = await pdfDocumentLocal.getFieldObjects();
+        const fieldObjects = await getPdfFieldObjects(pdfDocumentLocal);
         const fullNameEntry = fieldObjects?.[ICA_FORM_FIELDS.fullName]?.[0];
         if (fullNameEntry?.id) {
           fullNameFieldIdRef.current = fullNameEntry.id;
@@ -426,7 +427,7 @@ const IcaFillablePdfViewer = forwardRef<IcaFillablePdfViewerHandle, IcaFillableP
       const bindInitialFieldInputs = () => {
         if (currentPage !== ICA_PDF_PAGES.debitCheck) return;
 
-        void pdfDocumentLocal.getFieldObjects().then((fieldObjects) => {
+        void getPdfFieldObjects(pdfDocumentLocal).then((fieldObjects) => {
           if (!fieldObjects) return;
 
           for (const fieldName of ICA_DEBIT_CHECK_INITIAL_FIELD_NAMES) {
@@ -516,7 +517,7 @@ const IcaFillablePdfViewer = forwardRef<IcaFillablePdfViewerHandle, IcaFillableP
       const pdfDocumentLocal = pdfDocRef.current;
       if (!viewerReady || !container || !pdfDocumentLocal) return;
 
-      void pdfDocumentLocal.getFieldObjects().then((fieldObjects) => {
+      void getPdfFieldObjects(pdfDocumentLocal).then((fieldObjects) => {
         const map = new Map<string, string>();
         for (const fieldName of Object.values(SIGNATURE_FIELD_BY_PAGE)) {
           const entry = fieldObjects?.[fieldName]?.[0];

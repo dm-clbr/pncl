@@ -1,5 +1,6 @@
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { ICA_FORM_FIELDS, isValidDebitCheckInitial, normalizeDebitCheckInitial } from "@/lib/ica-form-fields";
+import { getPdfFieldObjects, type PdfFieldObjects } from "@/lib/pdf-field-objects";
 import type { DebitCheckInitials } from "@/lib/onboarding-contract";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -34,7 +35,7 @@ export async function syncIcaFormFieldsFromDom(
   container: HTMLElement,
   pdfDocument: PDFDocumentProxy,
 ): Promise<void> {
-  const fieldObjects = await pdfDocument.getFieldObjects();
+  const fieldObjects = await getPdfFieldObjects(pdfDocument);
   if (!fieldObjects) return;
 
   const storage = pdfDocument.annotationStorage;
@@ -56,7 +57,7 @@ export async function syncIcaFormFieldsFromDom(
 
 function readNamedField(
   fieldName: string,
-  fieldObjects: NonNullable<Awaited<ReturnType<PDFDocumentProxy["getFieldObjects"]>>>,
+  fieldObjects: PdfFieldObjects,
   storageAll: Record<string, { value?: unknown }>,
   container: HTMLElement,
 ): string {
@@ -79,7 +80,7 @@ export async function extractIcaFormValues(
 ): Promise<ExtractedIcaFormValues> {
   await syncIcaFormFieldsFromDom(container, pdfDocument);
 
-  const fieldObjects = await pdfDocument.getFieldObjects();
+  const fieldObjects = await getPdfFieldObjects(pdfDocument);
   if (!fieldObjects) {
     throw new Error("This agreement PDF has no fillable fields.");
   }

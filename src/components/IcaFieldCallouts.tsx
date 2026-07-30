@@ -1,5 +1,6 @@
 import { ICA_FIELD_CALLOUTS } from "@/lib/ica-field-callouts";
 import { ICA_FORM_FIELDS } from "@/lib/ica-form-fields";
+import { getPdfFieldObjects } from "@/lib/pdf-field-objects";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 
@@ -129,7 +130,7 @@ export default function IcaFieldCallouts({
 
     let cancelled = false;
 
-    void pdfDocument.getFieldObjects().then((fieldObjects) => {
+    void getPdfFieldObjects(pdfDocument).then((fieldObjects) => {
       if (cancelled || !fieldObjects) return;
 
       const map = new Map<string, string>();

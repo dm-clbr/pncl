@@ -65,7 +65,7 @@ export const W9_INSTRUCTION_SECTIONS = [
 ] as const;
 
 export function taxClassToStoredLabel(
-  taxClass: W9TaxClassOptionId,
+  taxClass: W9TaxClassOptionId | "",
   llcClassification: W9LlcClassification | "",
 ): string {
   const option = W9_TAX_CLASS_OPTIONS.find((item) => item.id === taxClass);

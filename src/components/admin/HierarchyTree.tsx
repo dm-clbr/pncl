@@ -76,7 +76,7 @@ function HierarchyTreeNode({
                 ).map((member) => (
                   <AdminUserAvatar
                     key={member.id}
-                    name={"name" in member ? member.name : undefined}
+                    name={"name" in member && typeof member.name === "string" ? member.name : undefined}
                     email={member.email}
                     profilePhotoPath={member.profilePhotoPath}
                     profileUpdatedAt={member.profileUpdatedAt}

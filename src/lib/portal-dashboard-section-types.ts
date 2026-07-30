@@ -43,7 +43,7 @@ export function mergeSystemDashboardSections<T extends {
   sections: T[],
   createMissing: (def: (typeof DEFAULT_SYSTEM_DASHBOARD_SECTIONS)[number], sortOrder: number) => T,
 ): T[] {
-  const merged = sections.map((section) => ({
+  const merged: T[] = sections.map((section) => ({
     ...section,
     sectionType: normalizeDashboardSectionType(section),
   }));

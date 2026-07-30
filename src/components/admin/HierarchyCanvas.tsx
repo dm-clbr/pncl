@@ -33,7 +33,7 @@ function getTileWidth(node: HierarchyNode | AssistHierarchyNode): number {
   return node.isPartnerGroup ? PARTNER_TILE_WIDTH : TILE_WIDTH;
 }
 
-function layoutHierarchyTree(roots: Array<{ children: HierarchyNode[] | AssistHierarchyNode[] }>): {
+function layoutHierarchyTree(roots: ReadonlyArray<HierarchyNode | AssistHierarchyNode>): {
   positioned: PositionedNode[];
   width: number;
   height: number;
@@ -72,12 +72,12 @@ function layoutHierarchyTree(roots: Array<{ children: HierarchyNode[] | AssistHi
 }
 
 function collectConnections(
-  roots: Array<{ id: string; children: HierarchyNode[] | AssistHierarchyNode[] }>,
+  roots: ReadonlyArray<HierarchyNode | AssistHierarchyNode>,
   positionedById: Map<string, PositionedNode>,
 ): Connection[] {
   const connections: Connection[] = [];
 
-  function walk(node: { id: string; children: HierarchyNode[] | AssistHierarchyNode[] }) {
+  function walk(node: HierarchyNode | AssistHierarchyNode) {
     const parent = positionedById.get(node.id);
     if (!parent) return;
 

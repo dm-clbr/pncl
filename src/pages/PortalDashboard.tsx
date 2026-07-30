@@ -203,18 +203,21 @@ export default function PortalDashboard() {
           href: link.href,
           external: link.external,
         })),
+        files: [],
       })),
       {
         id: "incentives",
         title: "Incentives",
         sectionType: "incentives" as const,
         links: [],
+        files: [],
       },
       {
         id: "brand-assets",
         title: "Brand assets",
         sectionType: "brand_assets" as const,
         links: [],
+        files: [],
       },
     ];
   }, [dashboardSections]);

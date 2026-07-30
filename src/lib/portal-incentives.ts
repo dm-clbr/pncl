@@ -19,13 +19,13 @@ export interface PortalIncentiveVideo {
 
 export type PortalIncentive = PortalIncentiveImage | PortalIncentiveVideo;
 
-export interface AdminIncentive extends PortalIncentive {
+export type AdminIncentive = PortalIncentive & {
   slug: string;
   sortOrder: number;
   published: boolean;
   createdAt: string;
   updatedAt: string;
-}
+};
 
 export interface UpsertIncentiveInput {
   id?: string;

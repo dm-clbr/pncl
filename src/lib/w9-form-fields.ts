@@ -1,3 +1,5 @@
+import type { PdfFieldObjects } from "@/lib/pdf-field-objects";
+
 /** IRS AcroForm field suffixes in pncl-w9-standard.pdf (from official fw9.pdf + PNCL additions). */
 export const W9_FORM_FIELD_SUFFIXES = {
   legalName: "f1_01[0]",
@@ -49,10 +51,7 @@ export const W9_TAX_CLASS_KEY_TO_OPTION_ID = {
   taxClassOther: "other",
 } as const;
 
-export type W9ResolvedFieldObjects = Record<
-  string,
-  Array<{ id: string; value?: unknown }> | undefined
->;
+export type W9ResolvedFieldObjects = PdfFieldObjects;
 
 export function resolveW9FieldName(
   fieldObjects: W9ResolvedFieldObjects,
