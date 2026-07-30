@@ -27,6 +27,7 @@ const PHASE_OPTIONS: { value: AdminPortalTodoPhase; label: string }[] = [
   { value: "on_board", label: "On-Board" },
   { value: "pre_license", label: "Pre-License" },
   { value: "licensing", label: "Licensing" },
+  { value: "new_producer", label: "New Producer" },
   { value: "sales_ready", label: "Sales Ready" },
 ];
 

@@ -68,6 +68,28 @@ export async function upsertPortalCarrierCredential(
   }
 }
 
+/** Agent-reported carrier contracts, recorded when submitting for New Producer. */
+export async function confirmPortalCarrierContracts(
+  accessToken: string,
+  carrierIds: string[],
+): Promise<void> {
+  const { anonKey } = getSupabaseConfig();
+  const response = await fetch(getFunctionUrl("confirm-portal-carrier-contracts"), {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      apikey: anonKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ carrierIds }),
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message ?? "Unable to confirm carrier contracts");
+  }
+}
+
 export async function copyCredentialValue(value: string, label: string): Promise<void> {
   await navigator.clipboard.writeText(value);
 }

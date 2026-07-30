@@ -2,7 +2,13 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1
 import { lookupCountyFromZip } from "./usZipCounty.ts";
 import { listIcaSignedUserIds } from "./portalIca.ts";
 
-export const PORTAL_TODO_PHASES = ["on_board", "pre_license", "licensing", "sales_ready"] as const;
+export const PORTAL_TODO_PHASES = [
+  "on_board",
+  "pre_license",
+  "licensing",
+  "new_producer",
+  "sales_ready",
+] as const;
 export type PortalTodoPhase = (typeof PORTAL_TODO_PHASES)[number];
 
 export const PORTAL_TODO_COMPLETION_TYPES = ["auto", "agent", "admin"] as const;
@@ -409,6 +415,7 @@ export const PORTAL_TODO_PHASE_LABELS: Record<PortalTodoPhase, string> = {
   on_board: "On-Board",
   pre_license: "Pre-License",
   licensing: "Licensing",
+  new_producer: "New Producer",
   sales_ready: "Sales Ready",
 };
 

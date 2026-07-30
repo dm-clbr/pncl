@@ -14,8 +14,12 @@ import {
   reactivateGoogleUser,
   resetUserDocument,
   sendGmailVerificationEmail,
+  setAgentFlags,
   setCarrierApplicationStatus,
   setUserTodoCompletion,
+  AGENT_FLAG_KEYS,
+  AGENT_FLAG_LABELS,
+  type AgentFlags,
   type AdminPortalTodoPhase,
   type AdminResetDocumentType,
   type AdminUserCarrierStatus,
@@ -31,6 +35,7 @@ const CHECKLIST_PHASES: { value: AdminPortalTodoPhase; label: string }[] = [
   { value: "on_board", label: "On-Board" },
   { value: "pre_license", label: "Pre-License" },
   { value: "licensing", label: "Licensing" },
+  { value: "new_producer", label: "New Producer" },
   { value: "sales_ready", label: "Sales Ready" },
 ];
 
@@ -149,6 +154,7 @@ export default function AdminUserDetail() {
   const [reactivatingGoogle, setReactivatingGoogle] = useState(false);
   const [togglingTodoSlug, setTogglingTodoSlug] = useState<string | null>(null);
   const [togglingCarrierId, setTogglingCarrierId] = useState<string | null>(null);
+  const [togglingFlag, setTogglingFlag] = useState<keyof AgentFlags | null>(null);
   const [resettingDocumentType, setResettingDocumentType] =
     useState<AdminResetDocumentType | null>(null);
   const [editingProfile, setEditingProfile] = useState(false);
@@ -312,6 +318,27 @@ export default function AdminUserDetail() {
       toast.error(err instanceof Error ? err.message : "Unable to update carrier status");
     } finally {
       setTogglingCarrierId(null);
+    }
+  };
+
+  const handleToggleFlag = async (key: keyof AgentFlags) => {
+    const token = session?.access_token;
+    if (!token || !agent) return;
+
+    const next = !(agent.flags?.[key] ?? false);
+    setTogglingFlag(key);
+    try {
+      const result = await setAgentFlags(token, {
+        userId: agent.id,
+        flags: { [key]: next },
+      });
+      setProfile((prev) =>
+        prev ? { ...prev, agent: { ...prev.agent, flags: result.flags } } : prev,
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to update agent flags");
+    } finally {
+      setTogglingFlag(null);
     }
   };
 
@@ -666,6 +693,28 @@ export default function AdminUserDetail() {
           <div className="admin-user-profile-section">
             <div className="admin-panel-head">
               <div>
+                <h2>Internal designations</h2>
+                <p>Admin-only. These are never shown to the agent.</p>
+              </div>
+            </div>
+            <div className="admin-agent-flags">
+              {AGENT_FLAG_KEYS.map((key) => (
+                <label key={key} className="admin-agent-flag">
+                  <input
+                    type="checkbox"
+                    checked={agent.flags?.[key] ?? false}
+                    disabled={togglingFlag !== null}
+                    onChange={() => void handleToggleFlag(key)}
+                  />
+                  <span>{AGENT_FLAG_LABELS[key]}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="admin-user-profile-section">
+            <div className="admin-panel-head">
+              <div>
                 <h2>Carrier applications</h2>
                 <p>
                   Mark each carrier application as submitted once PNCL sends it. The agent sees a
@@ -702,6 +751,9 @@ export default function AdminUserDetail() {
                         {status.applicationSubmittedAt
                           ? `Application submitted ${formatDate(status.applicationSubmittedAt)}`
                           : "Application not submitted"}
+                        {status.contractConfirmedAt
+                          ? ` · Agent reported a contract ${formatDate(status.contractConfirmedAt)}`
+                          : ""}
                         {status.writingNumber ? ` · Writing # ${status.writingNumber}` : ""}
                         {status.hasCredentials ? " · Agent saved login" : ""}
                       </span>

@@ -66,6 +66,9 @@ verify_jwt = true
 [functions.admin-update-user-profile]
 verify_jwt = true
 
+[functions.admin-set-agent-flags]
+verify_jwt = true
+
 [functions.submit-portal-ticket]
 verify_jwt = true
 
@@ -175,6 +178,9 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.upsert-portal-carrier-credential]
+verify_jwt = true
+
+[functions.confirm-portal-carrier-contracts]
 verify_jwt = true
 
 [functions.admin-list-brand-assets]

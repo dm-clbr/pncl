@@ -146,7 +146,7 @@ serve(async (req) => {
         .order("created_at", { ascending: true }),
       adminClient
         .from("portal_carrier_statuses")
-        .select("carrier_id, application_submitted_at")
+        .select("carrier_id, application_submitted_at, contract_confirmed_at")
         .eq("user_id", userId),
       adminClient
         .from("portal_carrier_credentials")
@@ -155,8 +155,11 @@ serve(async (req) => {
     ]);
 
     const statusByCarrierId = new Map(
-      ((carrierStatusRows ?? []) as { carrier_id: string; application_submitted_at: string | null }[])
-        .map((row) => [row.carrier_id, row.application_submitted_at]),
+      ((carrierStatusRows ?? []) as {
+        carrier_id: string;
+        application_submitted_at: string | null;
+        contract_confirmed_at: string | null;
+      }[]).map((row) => [row.carrier_id, row]),
     );
     const credentialByCarrierId = new Map(
       ((carrierCredentialRows ?? []) as { carrier_id: string; username: string | null; writing_number: string | null }[])
@@ -165,10 +168,12 @@ serve(async (req) => {
 
     const carrierStatuses = ((carrierRows ?? []) as { id: string; carrier: string }[]).map((row) => {
       const credential = credentialByCarrierId.get(row.id);
+      const status = statusByCarrierId.get(row.id);
       return {
         carrierId: row.id,
         carrier: row.carrier,
-        applicationSubmittedAt: statusByCarrierId.get(row.id) ?? null,
+        applicationSubmittedAt: status?.application_submitted_at ?? null,
+        contractConfirmedAt: status?.contract_confirmed_at ?? null,
         hasCredentials: Boolean(credential?.username?.trim()),
         writingNumber: credential?.writing_number?.trim() || null,
       };

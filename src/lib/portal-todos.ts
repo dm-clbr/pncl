@@ -4,7 +4,12 @@ import { getSupabaseClient, getSupabaseConfig, isSupabaseAuthConfigured } from "
 
 export const COMP_AGREEMENT_TODO_ID = "comp_agreement";
 
-export type PortalTodoPhase = "on_board" | "pre_license" | "licensing" | "sales_ready";
+export type PortalTodoPhase =
+  | "on_board"
+  | "pre_license"
+  | "licensing"
+  | "new_producer"
+  | "sales_ready";
 export type PortalTodoCompletionType = "auto" | "agent" | "admin";
 
 export interface PortalTodo {
@@ -27,6 +32,7 @@ export const PORTAL_TODO_PHASES: { id: PortalTodoPhase; label: string }[] = [
   { id: "on_board", label: "On-Board" },
   { id: "pre_license", label: "Pre-License" },
   { id: "licensing", label: "Licensing" },
+  { id: "new_producer", label: "New Producer" },
   { id: "sales_ready", label: "Sales Ready" },
 ];
 
@@ -37,6 +43,7 @@ export const PORTAL_PHASE_LABELS: Record<PortalPhaseId, string> = {
   on_board: "On-Board",
   pre_license: "Pre-License",
   licensing: "Licensing",
+  new_producer: "New Producer",
   sales_ready: "Sales Ready",
   complete: "Sales Ready ✓",
 };

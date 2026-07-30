@@ -4,6 +4,8 @@ import { Download, UserPlus, Users, X } from "lucide-react";
 import AdminUserRowActionsMenu from "@/components/admin/AdminUserRowActionsMenu";
 import { useAuth } from "@/contexts/AuthContext";
 import {
+  AGENT_FLAG_KEYS,
+  AGENT_FLAG_LABELS,
   AGENT_PHASE_LABELS,
   backfillGoogleRecovery,
   backfillGoogleRecoveryAll,
@@ -15,6 +17,7 @@ import {
   updateUserCompLevel,
   updateUserEmail,
   updateUserRole,
+  type AgentFlags,
   type AgentPhase,
   type AgentSummary,
   type GoogleWorkspaceStatus,
@@ -83,6 +86,9 @@ function phaseBadge(phase: AgentPhase | null) {
 
 type GoogleStatusFilter = "all" | GoogleWorkspaceStatus | "unknown";
 
+/** "all" shows everyone; otherwise only agents with that designation checked. */
+type FlagFilter = "all" | keyof AgentFlags;
+
 function matchesGoogleStatusFilter(
   agent: AgentSummary,
   filter: GoogleStatusFilter,
@@ -98,6 +104,7 @@ export default function AdminUsers() {
   const { agents, loading, error, reload, patchAgent } = useAdminAgents();
   const [query, setQuery] = useState("");
   const [googleFilter, setGoogleFilter] = useState<GoogleStatusFilter>("all");
+  const [flagFilter, setFlagFilter] = useState<FlagFilter>("all");
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [sendingGmailVerificationId, setSendingGmailVerificationId] = useState<string | null>(null);
@@ -117,7 +124,8 @@ export default function AdminUsers() {
 
     setExportingCsv(true);
     try {
-      await downloadAgentsCsv(token);
+      // Export mirrors the list: only the rows left after search and filters.
+      await downloadAgentsCsv(token, filteredAgents.map((agent) => agent.id));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Unable to export agents");
     } finally {
@@ -134,13 +142,22 @@ export default function AdminUsers() {
     const normalized = query.trim().toLowerCase();
     return agents.filter((agent) => {
       if (!matchesGoogleStatusFilter(agent, googleFilter)) return false;
+      if (flagFilter !== "all" && !agent.flags?.[flagFilter]) return false;
       if (!normalized) return true;
       return agent.name.toLowerCase().includes(normalized)
         || agent.email.toLowerCase().includes(normalized)
         || (agent.npn?.toLowerCase().includes(normalized) ?? false)
         || (agent.referrerName?.toLowerCase().includes(normalized) ?? false);
     });
-  }, [agents, query, googleFilter]);
+  }, [agents, query, googleFilter, flagFilter]);
+
+  const flagCounts = useMemo(() => {
+    const counts = {} as Record<keyof AgentFlags, number>;
+    for (const key of AGENT_FLAG_KEYS) {
+      counts[key] = agents.filter((agent) => agent.flags?.[key]).length;
+    }
+    return counts;
+  }, [agents]);
 
   const googleFilterCounts = useMemo(() => ({
     all: agents.length,
@@ -406,6 +423,21 @@ export default function AdminUsers() {
           </select>
         </label>
 
+        <label className="admin-field">
+          <span>Designation</span>
+          <select
+            value={flagFilter}
+            onChange={(event) => setFlagFilter(event.target.value as FlagFilter)}
+          >
+            <option value="all">All ({agents.length})</option>
+            {AGENT_FLAG_KEYS.map((key) => (
+              <option key={key} value={key}>
+                {AGENT_FLAG_LABELS[key]} ({flagCounts[key]})
+              </option>
+            ))}
+          </select>
+        </label>
+
         {!assistView && (
           <>
             <button
@@ -433,7 +465,9 @@ export default function AdminUsers() {
               onClick={() => void handleExportCsv()}
             >
               <Download size={14} aria-hidden="true" />
-              {exportingCsv ? "Exporting…" : "Download CSV"}
+              {exportingCsv
+                ? "Exporting…"
+                : `Download CSV (${filteredAgents.length})`}
             </button>
           </>
         )}

@@ -20,12 +20,19 @@ export interface AgentOnboardingDetails {
   workspaceEmail: string | null;
 }
 
-export type AgentPhase = "on_board" | "pre_license" | "licensing" | "sales_ready" | "complete";
+export type AgentPhase =
+  | "on_board"
+  | "pre_license"
+  | "licensing"
+  | "new_producer"
+  | "sales_ready"
+  | "complete";
 
 export const AGENT_PHASE_LABELS: Record<AgentPhase, string> = {
   on_board: "On-Board",
   pre_license: "Pre-License",
   licensing: "Licensing",
+  new_producer: "New Producer",
   sales_ready: "Sales Ready",
   complete: "Complete",
 };
@@ -34,6 +41,7 @@ export const AGENT_PHASE_ORDER: AgentPhase[] = [
   "on_board",
   "pre_license",
   "licensing",
+  "new_producer",
   "sales_ready",
   "complete",
 ];
@@ -74,6 +82,38 @@ export interface AgentSummary {
   profilePhotoPath: string | null;
   profileUpdatedAt: string | null;
   partnerUserId: string | null;
+  flags?: AgentFlags;
+}
+
+/** Internal admin-only designations. Never shown to agents. */
+export interface AgentFlags {
+  leadAssist: boolean;
+  companyFunded: boolean;
+  jeremyFunded: boolean;
+}
+
+export const AGENT_FLAG_LABELS: Record<keyof AgentFlags, string> = {
+  leadAssist: "Lead Assist",
+  companyFunded: "Company Funded",
+  jeremyFunded: "Jeremy Funded",
+};
+
+export const AGENT_FLAG_KEYS = Object.keys(AGENT_FLAG_LABELS) as (keyof AgentFlags)[];
+
+export const EMPTY_AGENT_FLAGS: AgentFlags = {
+  leadAssist: false,
+  companyFunded: false,
+  jeremyFunded: false,
+};
+
+export async function setAgentFlags(
+  accessToken: string,
+  input: { userId: string; flags: Partial<AgentFlags> },
+): Promise<{ flags: AgentFlags; message: string }> {
+  return adminFetch("admin-set-agent-flags", accessToken, {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 
 export interface HierarchyMember {
@@ -184,14 +224,20 @@ async function adminFetch<T>(
 }
 
 /** Downloads the agent roster CSV and triggers a browser save. */
-export async function downloadAgentsCsv(accessToken: string): Promise<void> {
+/** Pass `userIds` to export only the rows currently visible in the admin list. */
+export async function downloadAgentsCsv(
+  accessToken: string,
+  userIds?: string[],
+): Promise<void> {
   const { url, anonKey } = getSupabaseConfig();
   const response = await fetch(`${url.replace(/\/$/, "")}/functions/v1/admin-export-agents`, {
-    method: "GET",
+    method: userIds ? "POST" : "GET",
     headers: {
       Authorization: `Bearer ${accessToken}`,
       apikey: anonKey,
+      ...(userIds ? { "Content-Type": "application/json" } : {}),
     },
+    ...(userIds ? { body: JSON.stringify({ userIds }) } : {}),
   });
 
   if (!response.ok) {
@@ -911,7 +957,12 @@ export async function reorderDashboardFiles(
   });
 }
 
-export type AdminPortalTodoPhase = "on_board" | "pre_license" | "licensing" | "sales_ready";
+export type AdminPortalTodoPhase =
+  | "on_board"
+  | "pre_license"
+  | "licensing"
+  | "new_producer"
+  | "sales_ready";
 export type AdminPortalTodoCompletionType = "auto" | "agent" | "admin";
 
 export interface AdminPortalTodoSummary {
@@ -1089,6 +1140,8 @@ export interface AdminUserCarrierStatus {
   carrierId: string;
   carrier: string;
   applicationSubmittedAt: string | null;
+  /** Agent-reported contract, marked when they submit for New Producer. */
+  contractConfirmedAt?: string | null;
   hasCredentials: boolean;
   writingNumber: string | null;
 }

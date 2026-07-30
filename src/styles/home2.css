@@ -725,6 +725,14 @@
   opacity: .7;
 }
 
+.home2-page .portal-todo-check-static {
+  cursor: default;
+}
+
+.home2-page .portal-todo-check-static:hover {
+  background: transparent;
+}
+
 .home2-page .portal-todo-check-spinner {
   width: 18px;
   height: 18px;
@@ -1239,6 +1247,12 @@
   background: rgba(126, 166, 224, .12);
 }
 
+.home2-page .portal-phase-badge.phase-new_producer {
+  border-color: rgba(110, 200, 190, .45);
+  color: #7fd4c6;
+  background: rgba(110, 200, 190, .12);
+}
+
 .home2-page .portal-phase-badge.phase-sales_ready {
   border-color: rgba(176, 148, 255, .45);
   color: #c0acf5;
@@ -1741,6 +1755,130 @@ button.portal-todo-link {
   width: 100%;
   height: 100%;
   border: 0;
+}
+
+/* Submit for New Producer confirmation */
+.home2-page .portal-new-producer-modal {
+  width: min(560px, 100%);
+  max-height: min(86vh, 760px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: var(--ink-2);
+  border: 1px solid rgba(240, 237, 228, .12);
+  border-radius: calc(var(--radius) + 2px);
+  padding: clamp(18px, 4vw, 24px);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .45);
+}
+
+.home2-page .portal-new-producer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.home2-page .portal-new-producer-head h2 {
+  font-size: 1.05rem;
+  font-weight: 800;
+  font-style: italic;
+  letter-spacing: -.02em;
+  text-transform: uppercase;
+  color: var(--bone);
+}
+
+.home2-page .portal-new-producer-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border-radius: var(--radius);
+  background: rgba(194, 78, 28, .12);
+  border: 1px solid rgba(194, 78, 28, .3);
+  color: var(--accent-bright);
+}
+
+.home2-page .portal-new-producer-warning p {
+  font-size: .86rem;
+  line-height: 1.5;
+}
+
+.home2-page .portal-new-producer-warning svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.home2-page .portal-new-producer-prompt {
+  font-size: .88rem;
+  font-weight: 600;
+  color: var(--bone);
+}
+
+.home2-page .portal-new-producer-carriers {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.home2-page .portal-new-producer-carriers h3 {
+  margin-bottom: 6px;
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+.home2-page .portal-new-producer-carrier {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(240, 237, 228, .1);
+  background: rgba(240, 237, 228, .03);
+  font-size: .86rem;
+  color: var(--bone);
+  cursor: pointer;
+}
+
+.home2-page .portal-new-producer-carrier + .portal-new-producer-carrier {
+  margin-top: 6px;
+}
+
+.home2-page .portal-new-producer-carrier:hover {
+  border-color: rgba(194, 78, 28, .3);
+}
+
+.home2-page .portal-new-producer-carrier input {
+  accent-color: var(--accent-bright);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.home2-page .portal-new-producer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 4px;
+}
+
+.home2-page .portal-new-producer-count {
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--steel);
+}
+
+.home2-page .portal-new-producer-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .home2-page .portal-todo-copy-required {
@@ -2584,6 +2722,10 @@ button.portal-todo-link {
   background: linear-gradient(90deg, rgba(157, 189, 234, .9), rgba(120, 156, 210, .95));
 }
 
+.home2-page .portal-downline-segment.current.phase-new_producer .portal-downline-segment-fill {
+  background: linear-gradient(90deg, rgba(127, 212, 198, .9), rgba(96, 178, 166, .95));
+}
+
 .home2-page .portal-downline-segment.current.phase-sales_ready .portal-downline-segment-fill {
   background: linear-gradient(90deg, rgba(157, 201, 138, .9), rgba(120, 168, 132, .95));
 }
@@ -2637,6 +2779,10 @@ button.portal-todo-link {
 
 .home2-page .portal-downline-segment-label.current.phase-licensing .portal-downline-segment-label-text {
   color: #9dbdea;
+}
+
+.home2-page .portal-downline-segment-label.current.phase-new_producer .portal-downline-segment-label-text {
+  color: #7fd4c6;
 }
 
 .home2-page .portal-downline-segment-label.current.phase-sales_ready .portal-downline-segment-label-text {
@@ -2991,6 +3137,7 @@ button.portal-todo-link {
 .home2-page .admin-phase-stat.phase-on_board strong { color: #d9a877; }
 .home2-page .admin-phase-stat.phase-pre_license strong { color: #d9c26a; }
 .home2-page .admin-phase-stat.phase-licensing strong { color: #9dbdea; }
+.home2-page .admin-phase-stat.phase-new_producer strong { color: #7fd4c6; }
 .home2-page .admin-phase-stat.phase-sales_ready strong { color: #c0acf5; }
 .home2-page .admin-phase-stat.phase-complete strong { color: #9dc98a; }
 
@@ -3023,6 +3170,12 @@ button.portal-todo-link {
   border-color: rgba(126, 166, 224, .4);
   background: rgba(126, 166, 224, .12);
   color: #9dbdea;
+}
+
+.home2-page .admin-phase-badge.phase-new_producer {
+  border-color: rgba(110, 200, 190, .4);
+  background: rgba(110, 200, 190, .12);
+  color: #7fd4c6;
 }
 
 .home2-page .admin-phase-badge.phase-sales_ready {
@@ -3299,6 +3452,37 @@ button.portal-todo-link {
 .home2-page .admin-table td:first-child {
   color: var(--bone);
   font-weight: 600;
+}
+
+/* Admin-only agent designations */
+.home2-page .admin-agent-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.home2-page .admin-agent-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  border: 1px solid rgba(240, 237, 228, .12);
+  background: rgba(240, 237, 228, .04);
+  font-size: .85rem;
+  color: var(--bone);
+  cursor: pointer;
+}
+
+.home2-page .admin-agent-flag:hover {
+  border-color: rgba(194, 78, 28, .35);
+}
+
+.home2-page .admin-agent-flag input {
+  accent-color: var(--accent-bright);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
 }
 
 .home2-page .admin-table-section-row th {

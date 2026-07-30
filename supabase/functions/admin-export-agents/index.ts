@@ -8,6 +8,7 @@ const PHASE_LABELS: Record<string, string> = {
   on_board: "On-Board",
   pre_license: "Pre-License",
   licensing: "Licensing",
+  new_producer: "New Producer",
   sales_ready: "Sales Ready",
   complete: "Complete",
 };
@@ -60,13 +61,30 @@ serve(async (req) => {
   const cors = handleCors(req);
   if (cors) return cors;
 
-  if (req.method !== "GET") {
+  if (req.method !== "GET" && req.method !== "POST") {
     return errorResponse("Method not allowed", 405);
   }
 
   try {
     const { adminClient } = await requireGenesisAdminOrAdmin(req);
-    const agents = await buildAgentSummaries(adminClient);
+
+    // POST carries the user IDs currently visible in the admin list, so the
+    // export matches whatever search/filters the admin has applied.
+    let userIdFilter: Set<string> | null = null;
+    if (req.method === "POST") {
+      const body = await req.json().catch(() => null);
+      const ids = Array.isArray(body?.userIds)
+        ? (body.userIds as unknown[]).filter((id): id is string => typeof id === "string")
+        : null;
+      if (ids) {
+        userIdFilter = new Set(ids);
+      }
+    }
+
+    const allAgents = await buildAgentSummaries(adminClient);
+    const agents = userIdFilter
+      ? allAgents.filter((agent) => userIdFilter!.has(agent.id))
+      : allAgents;
 
     const { data: profileRows } = await adminClient
       .from("portal_profiles")
@@ -88,6 +106,9 @@ serve(async (req) => {
       "Downline count",
       "Comp level",
       "State licenses",
+      "Lead Assist",
+      "Company Funded",
+      "Jeremy Funded",
       "Status",
       "Joined",
     ];
@@ -102,6 +123,9 @@ serve(async (req) => {
       csvEscape(downlineCounts.get(agent.id) ?? 0),
       csvEscape(agent.compLevel !== null ? `${agent.compLevel}%` : ""),
       csvEscape((stateLicensesByUserId.get(agent.id) ?? []).join(" ")),
+      csvEscape(agent.flags?.leadAssist ? "Yes" : "No"),
+      csvEscape(agent.flags?.companyFunded ? "Yes" : "No"),
+      csvEscape(agent.flags?.jeremyFunded ? "Yes" : "No"),
       csvEscape(agent.emailConfirmed ? "Active" : "Pending activation"),
       csvEscape(agent.createdAt.slice(0, 10)),
     ].join(","));

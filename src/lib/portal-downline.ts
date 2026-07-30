@@ -84,6 +84,7 @@ const PORTAL_JOURNEY_PHASES = [
   { id: "on_board", label: "On-Board" },
   { id: "pre_license", label: "Pre-License" },
   { id: "licensing", label: "Licensing" },
+  { id: "new_producer", label: "New Producer" },
   { id: "sales_ready", label: "Sales Ready" },
 ] as const;
 

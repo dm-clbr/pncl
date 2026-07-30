@@ -17,6 +17,12 @@ import {
 } from "./portalTodos.ts";
 import { logOnboarding } from "./logger.ts";
 import {
+  EMPTY_AGENT_FLAGS,
+  loadAgentFlagsByUserId,
+  loadAgentFlagsForUser,
+  type AgentFlags,
+} from "./agentFlags.ts";
+import {
   buildPartnerLookup,
   getPartnerGroupId,
   loadHierarchyPartnerLinks,
@@ -26,7 +32,13 @@ import {
 export type GenesisAccountStatus = "pending" | "created" | "skipped";
 
 /** Current onboarding phase: first phase with an incomplete checklist item. */
-export type AgentPhase = "on_board" | "pre_license" | "licensing" | "sales_ready" | "complete";
+export type AgentPhase =
+  | "on_board"
+  | "pre_license"
+  | "licensing"
+  | "new_producer"
+  | "sales_ready"
+  | "complete";
 
 /**
  * Derives each agent's current checklist phase from the published to-dos,
@@ -141,6 +153,8 @@ export interface AgentSummary {
   profilePhotoPath: string | null;
   profileUpdatedAt: string | null;
   partnerUserId: string | null;
+  /** Admin-only designations; never exposed to agent-facing endpoints. */
+  flags: AgentFlags;
 }
 
 export interface HierarchyMember {
@@ -425,14 +439,22 @@ export async function buildAgentSummaries(
   options?: { includeSensitive?: boolean },
 ): Promise<AgentSummary[]> {
   const includeSensitive = options?.includeSensitive ?? false;
-  const [users, onboardingMaps, compLevelsByUserId, profileFields, profilesByUserId, partnerLinks] =
-    await Promise.all([
+  const [
+    users,
+    onboardingMaps,
+    compLevelsByUserId,
+    profileFields,
+    profilesByUserId,
+    partnerLinks,
+    flagsByUserId,
+  ] = await Promise.all([
     listPortalUsers(adminClient),
     loadOnboardingMaps(adminClient),
     loadCompLevelsByUserId(adminClient),
     loadAgentProfileFields(adminClient),
     loadPortalProfilePhotos(adminClient),
     loadHierarchyPartnerLinks(adminClient),
+    loadAgentFlagsByUserId(adminClient),
   ]);
   const partnerByUserId = buildPartnerLookup(partnerLinks);
 
@@ -496,6 +518,7 @@ export async function buildAgentSummaries(
       profilePhotoPath: profilePhoto?.profilePhotoPath ?? null,
       profileUpdatedAt: profilePhoto?.profileUpdatedAt ?? null,
       partnerUserId: partnerByUserId.get(user.id) ?? null,
+      flags: flagsByUserId.get(user.id) ?? { ...EMPTY_AGENT_FLAGS },
     };
   }));
 
@@ -583,6 +606,7 @@ export async function buildAgentSummaryForUser(
     profilePhotoPath: profileRow?.profile_photo_path ?? null,
     profileUpdatedAt: profileRow?.updated_at ?? null,
     partnerUserId: null,
+    flags: await loadAgentFlagsForUser(adminClient, user.id),
   };
 }
 

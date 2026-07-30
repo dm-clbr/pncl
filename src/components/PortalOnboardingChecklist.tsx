@@ -1,6 +1,16 @@
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { Link } from "react-router-dom";
-import { ArrowUpRight, CheckCircle2, ChevronDown, Circle, Lock, Play, Trophy, X } from "lucide-react";
+import {
+  ArrowUpRight,
+  CheckCircle2,
+  ChevronDown,
+  Circle,
+  Lock,
+  Play,
+  Send,
+  Trophy,
+  X,
+} from "lucide-react";
 import {
   getCurrentStageIndex,
   groupTodosByPhase,
@@ -8,8 +18,10 @@ import {
   isStageLocked,
   isTodoGateLocked,
   PORTAL_TODO_PHASES,
+  SUBMIT_NEW_PRODUCER_TODO_ID,
   type PortalTodo,
 } from "@/lib/portal-todos";
+import PortalNewProducerModal from "@/components/PortalNewProducerModal";
 
 export function PortalUrgentIcon({ size = 22 }: { size?: number }) {
   return (
@@ -166,6 +178,8 @@ function PortalTodoItem({
   const isAgentCheckable = todo.completionType === "agent";
   const videoEmbedUrl = getVideoEmbedUrl(todo.href);
   const [videoOpen, setVideoOpen] = useState(false);
+  const needsNewProducerConfirmation = todo.id === SUBMIT_NEW_PRODUCER_TODO_ID;
+  const [confirmingNewProducer, setConfirmingNewProducer] = useState(false);
 
   if (todo.completed) {
     return (
@@ -192,19 +206,31 @@ function PortalTodoItem({
   return (
     <div className={`portal-todo-item urgent${disabled ? " portal-todo-item-locked" : ""}`}>
       {isAgentCheckable && (
-        <button
-          type="button"
-          className="portal-todo-check"
-          onClick={() => onComplete(todo.id)}
-          disabled={completing || disabled}
-          aria-label={`Mark "${todo.title}" as complete`}
-        >
-          {completing ? (
-            <span className="onboarding-spinner portal-todo-check-spinner" aria-hidden="true" />
-          ) : (
-            <Circle size={20} strokeWidth={2} aria-hidden="true" />
-          )}
-        </button>
+        needsNewProducerConfirmation ? (
+          // Checks itself off once the submission goes through, so the circle
+          // is only an indicator here.
+          <span className="portal-todo-check portal-todo-check-static" aria-hidden="true">
+            {completing ? (
+              <span className="onboarding-spinner portal-todo-check-spinner" />
+            ) : (
+              <Circle size={20} strokeWidth={2} />
+            )}
+          </span>
+        ) : (
+          <button
+            type="button"
+            className="portal-todo-check"
+            onClick={() => onComplete(todo.id)}
+            disabled={completing || disabled}
+            aria-label={`Mark "${todo.title}" as complete`}
+          >
+            {completing ? (
+              <span className="onboarding-spinner portal-todo-check-spinner" aria-hidden="true" />
+            ) : (
+              <Circle size={20} strokeWidth={2} aria-hidden="true" />
+            )}
+          </button>
+        )
       )}
 
       <div className={`portal-todo-copy${isAgentCheckable ? "" : " portal-todo-copy-required"}`}>
@@ -233,6 +259,17 @@ function PortalTodoItem({
           <p className="portal-todo-email">
             Use <span>{agentEmail}</span> when you sign up.
           </p>
+        )}
+        {!disabled && needsNewProducerConfirmation && (
+          <button
+            type="button"
+            className="portal-todo-link"
+            onClick={() => setConfirmingNewProducer(true)}
+            disabled={completing}
+          >
+            <Send size={15} strokeWidth={2.5} aria-hidden="true" />
+            {todo.actionLabel || "Submit for New Producer"}
+          </button>
         )}
         {!disabled && todo.href && (
           videoEmbedUrl ? (
@@ -264,6 +301,15 @@ function PortalTodoItem({
             title={todo.title}
             embedUrl={videoEmbedUrl}
             onClose={() => setVideoOpen(false)}
+          />
+        )}
+        {confirmingNewProducer && (
+          <PortalNewProducerModal
+            onClose={() => setConfirmingNewProducer(false)}
+            onConfirmed={() => {
+              setConfirmingNewProducer(false);
+              onComplete(todo.id);
+            }}
           />
         )}
       </div>
