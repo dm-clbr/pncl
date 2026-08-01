@@ -572,6 +572,52 @@ export async function sendGmailVerificationEmail(
   });
 }
 
+/**
+ * An onboarding record reserves the applicant's phone number and SSN so a
+ * duplicate application cannot burn the same mobile number for Google account
+ * verification. A hold left behind by a retired account blocks the applicant
+ * from ever re-onboarding, so admins need to see and clear them.
+ */
+export interface OnboardingHold {
+  onboardingId: string;
+  legalName: string;
+  phoneNumber: string;
+  workspaceEmail: string | null;
+  personalEmail: string | null;
+  uplineNetwork: string | null;
+  status: string;
+  supabaseUserId: string | null;
+  hasPortalAccount: boolean;
+  blocksNewApplication: boolean;
+  holdsSsn: boolean;
+  googleCreationError: string | null;
+  releasedAt: string | null;
+  createdAt: string;
+}
+
+export async function listOnboardingHolds(
+  accessToken: string,
+  search?: string,
+): Promise<OnboardingHold[]> {
+  const params = search?.trim() ? `?search=${encodeURIComponent(search.trim())}` : "";
+  const data = await adminFetch<{ holds: OnboardingHold[] }>(
+    `admin-list-onboarding-holds${params}`,
+    accessToken,
+    { method: "GET" },
+  );
+  return data.holds;
+}
+
+export async function releaseOnboardingHold(
+  accessToken: string,
+  payload: { onboardingId: string; released: boolean },
+): Promise<{ hold: OnboardingHold; message: string }> {
+  return adminFetch("admin-release-onboarding-hold", accessToken, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
 export interface AdminIncentiveSummary {
   id: string;
   slug: string;

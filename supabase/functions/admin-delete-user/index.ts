@@ -84,11 +84,15 @@ serve(async (req) => {
       targetUser.app_metadata?.onboarding_id,
     );
     if (onboarding) {
+      // released_at frees the phone number and SSN. Without it the retired
+      // record still reads as a live account to the submit-time dedup, so the
+      // applicant could never re-onboard.
       const { error: onboardingError } = await adminClient
         .from("onboarding_records")
         .update({
           status: "failed",
           supabase_user_id: null,
+          released_at: new Date().toISOString(),
         })
         .eq("id", onboarding.id);
 

@@ -289,3 +289,9 @@ verify_jwt = true
 
 [functions.admin-mark-contracting-initiated]
 verify_jwt = true
+
+[functions.admin-list-onboarding-holds]
+verify_jwt = true
+
+[functions.admin-release-onboarding-hold]
+verify_jwt = true

@@ -310,13 +310,35 @@ export async function attachOnboardingToReferralInvite(
   }
 }
 
+interface DedupCandidateRow {
+  status: string;
+  workspace_email: string | null;
+  released_at: string | null;
+}
+
+/**
+ * A record holds its phone/SSN while the application is live, and also after a
+ * Google provisioning failure that still left a workspace account behind. An
+ * explicit released_at always wins: admins set it when they delete an account
+ * or clear a stale hold, which is what lets the applicant re-apply.
+ */
+export function holdsDedupReservation(row: DedupCandidateRow): boolean {
+  if (row.released_at) return false;
+  if ((ACTIVE_ONBOARDING_STATUSES_FOR_DEDUP as readonly string[]).includes(row.status)) {
+    return true;
+  }
+  return row.status === "failed" && Boolean(row.workspace_email);
+}
+
+const DEDUP_CANDIDATE_COLUMNS = "id, status, workspace_email, released_at";
+
 export async function findActiveOnboardingBySsnHash(
   supabase: SupabaseClient,
   ssnHash: string,
 ): Promise<boolean> {
   const { data, error } = await supabase
     .from("onboarding_records")
-    .select("id, status, workspace_email")
+    .select(DEDUP_CANDIDATE_COLUMNS)
     .eq("ssn_hash", ssnHash)
     .not("status", "eq", "expired");
 
@@ -324,13 +346,7 @@ export async function findActiveOnboardingBySsnHash(
     throw new Error("Unable to verify applicant identity");
   }
 
-  return (data ?? []).some((row) => {
-    const status = row.status as string;
-    if ((ACTIVE_ONBOARDING_STATUSES_FOR_DEDUP as readonly string[]).includes(status)) {
-      return true;
-    }
-    return status === "failed" && Boolean(row.workspace_email);
-  });
+  return (data ?? []).some((row) => holdsDedupReservation(row as DedupCandidateRow));
 }
 
 /**
@@ -344,7 +360,7 @@ export async function findActiveOnboardingByPhoneNumber(
 ): Promise<boolean> {
   const { data, error } = await supabase
     .from("onboarding_records")
-    .select("id, status, workspace_email")
+    .select(DEDUP_CANDIDATE_COLUMNS)
     .eq("phone_number", phoneNumber)
     .not("status", "eq", "expired");
 
@@ -352,13 +368,7 @@ export async function findActiveOnboardingByPhoneNumber(
     throw new Error("Unable to verify applicant phone number");
   }
 
-  return (data ?? []).some((row) => {
-    const status = row.status as string;
-    if ((ACTIVE_ONBOARDING_STATUSES_FOR_DEDUP as readonly string[]).includes(status)) {
-      return true;
-    }
-    return status === "failed" && Boolean(row.workspace_email);
-  });
+  return (data ?? []).some((row) => holdsDedupReservation(row as DedupCandidateRow));
 }
 
 export async function upsertPortalProfileCompLevel(
