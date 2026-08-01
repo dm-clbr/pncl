@@ -35,6 +35,19 @@ function buildStatusResponse(record: OnboardingRecord) {
     && Boolean(record.google_user_id)
     && Boolean(record.supabase_user_id);
 
+  if (record.enrollment_status === "awaiting_google_sign_in") {
+    return {
+      status: "email_created",
+      enrollmentStatus: "awaiting_google_sign_in",
+      email,
+      credentialsViewed,
+      gmailUrl,
+      portalInviteSent: Boolean(record.supabase_user_id),
+      message: "Your PNCL email is ready. Sign in to Gmail, create your password, then return here to enter the portal.",
+      steps,
+    };
+  }
+
   if (
     record.enrollment_status === "google_verification_required"
     || record.google_account_status === "verification_required"

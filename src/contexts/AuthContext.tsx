@@ -55,8 +55,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (
-      nextSession.user.app_metadata?.enrollment_version === 2
+      nextSession.user.app_metadata?.enrollment_version === 3
       && nextSession.user.app_metadata?.enrollment_ready !== true
+      && window.location.pathname !== PORTAL_LOGIN_PATH
+      && window.location.pathname !== "/onboarding/activate"
     ) {
       const supabase = getSupabaseClient();
       await supabase.auth.signOut();

@@ -35,6 +35,12 @@ export default function PortalLogin() {
     }
   };
 
+  if (!loading && user && isEmailConfirmed(user)
+    && user.app_metadata?.enrollment_version === 3
+    && user.app_metadata?.enrollment_ready !== true) {
+    return <Navigate to="/onboarding/activate" replace />;
+  }
+
   if (!loading && user && isEmailConfirmed(user)) {
     return <Navigate to={redirectTarget} replace />;
   }

@@ -24,6 +24,8 @@ export interface DownlineMember {
   inviteLabel: string | null;
   invitedCompLevel: number | null;
   onboardingStatus: string;
+  enrollmentStatus: string;
+  googleFirstSignInAt: string | null;
   portalPhase: AgentPhase | null;
   hasPortalAccount: boolean;
   onboardingCompletedAt: string | null;
@@ -72,6 +74,12 @@ const ONBOARDING_STATUS_LABELS: Record<string, string> = {
   expired: "Expired",
 };
 
+const ENROLLMENT_STATUS_LABELS: Record<string, string> = {
+  awaiting_google_sign_in: "Awaiting Gmail sign-in",
+  google_verification_required: "Google verification needed",
+  needs_attention: "Onboarding needs support",
+};
+
 const PRE_PORTAL_STATUS_ORDER = [
   "pending",
   "creating_email",
@@ -89,7 +97,7 @@ const PORTAL_JOURNEY_PHASES = [
 ] as const;
 
 export function formatDownlineOnboardingStatus(status: string): string {
-  return ONBOARDING_STATUS_LABELS[status] ?? status.replace(/_/g, " ");
+  return ENROLLMENT_STATUS_LABELS[status] ?? ONBOARDING_STATUS_LABELS[status] ?? status.replace(/_/g, " ");
 }
 
 export function getDownlineDisplayLabel(member: DownlineMember): string {
@@ -188,7 +196,7 @@ export function getDownlineProgress(member: DownlineMember): DownlineProgress {
       label: "Portal activation",
       state: "current",
       fillPercent: getPrePortalFillPercent(member.onboardingStatus),
-      detail: formatDownlineOnboardingStatus(member.onboardingStatus),
+      detail: formatDownlineOnboardingStatus(member.enrollmentStatus),
     });
   } else {
     segments.push({
@@ -257,12 +265,12 @@ export function getDownlineProgress(member: DownlineMember): DownlineProgress {
 
   if (currentSegment) {
     currentLabel = currentSegment.id === "activation"
-      ? formatDownlineOnboardingStatus(member.onboardingStatus)
+      ? formatDownlineOnboardingStatus(member.enrollmentStatus)
       : AGENT_PHASE_LABELS[currentSegment.id as AgentPhase] ?? currentSegment.label;
   } else if (portalPhase === "complete") {
     currentLabel = AGENT_PHASE_LABELS.complete;
   } else {
-    currentLabel = formatDownlineOnboardingStatus(member.onboardingStatus);
+    currentLabel = formatDownlineOnboardingStatus(member.enrollmentStatus);
   }
 
   return {

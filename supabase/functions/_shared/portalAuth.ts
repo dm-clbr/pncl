@@ -49,7 +49,7 @@ function buildPortalMetadata(input: ProvisionPortalAccountInput) {
       onboarding_id: input.onboardingId,
       source: "agent_onboarding",
       role: "agent",
-      enrollment_version: 2,
+      enrollment_version: 3,
       enrollment_ready: input.enrollmentReady === true,
     },
   };
@@ -208,7 +208,7 @@ export async function markPortalEnrollmentReady(
       onboarding_id: onboardingId,
       source: "agent_onboarding",
       role: "agent",
-      enrollment_version: 2,
+      enrollment_version: 3,
       enrollment_ready: true,
     },
   });

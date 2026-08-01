@@ -160,7 +160,7 @@ export async function provisionEnrollment(
   if (error || !data) throw new Error(error?.message ?? "Enrollment not found");
 
   const row = data as EnrollmentRow;
-  if (isEnrollmentReady(row) && row.google_user_id && row.supabase_user_id) {
+  if (row.enrollment_status !== "awaiting_google_sign_in" && isEnrollmentReady(row) && row.google_user_id && row.supabase_user_id) {
     try {
       await markPortalEnrollmentReady(supabase, row.supabase_user_id, onboardingId);
       return {
@@ -370,9 +370,12 @@ export async function provisionEnrollment(
       throw new Error("Enrollment prerequisites are incomplete");
     }
     await updateRecord(supabase, onboardingId, finalStepState);
+    // The account is provisioned, but the recruit must still sign in to
+    // Google and change the temporary password before Google OAuth can safely
+    // unlock the PNCL portal.
     await updateRecord(supabase, onboardingId, {
-      enrollment_status: "ready",
-      status: "ready",
+      enrollment_status: "awaiting_google_sign_in",
+      status: "email_created",
       failed_step: null,
       failure_code: null,
       failure_detail: null,
@@ -382,12 +385,10 @@ export async function provisionEnrollment(
       provisioning_lock_token: null,
       provisioning_lock_expires_at: null,
     });
-    await markPortalEnrollmentReady(supabase, supabaseUserId, onboardingId);
-
     return {
       onboardingId,
-      status: "ready",
-      enrollmentStatus: "ready",
+      status: "creating_email",
+      enrollmentStatus: "awaiting_google_sign_in",
       workspaceEmail: row.workspace_email,
       googleUserId,
       supabaseUserId,

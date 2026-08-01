@@ -16,6 +16,8 @@ interface DownlineOnboardingRow {
   first_name: string;
   last_name: string;
   status: string;
+  enrollment_status: string;
+  google_first_sign_in_at: string | null;
   workspace_email: string | null;
   referral_invite_id: string | null;
   invited_comp_level: number | null;
@@ -41,6 +43,8 @@ export interface DownlineMemberSummary {
   inviteLabel: string | null;
   invitedCompLevel: number | null;
   onboardingStatus: string;
+  enrollmentStatus: string;
+  googleFirstSignInAt: string | null;
   portalPhase: AgentPhase | null;
   hasPortalAccount: boolean;
   onboardingCompletedAt: string | null;
@@ -109,6 +113,8 @@ serve(async (req) => {
         first_name,
         last_name,
         status,
+        enrollment_status,
+        google_first_sign_in_at,
         workspace_email,
         referral_invite_id,
         invited_comp_level,
@@ -116,7 +122,6 @@ serve(async (req) => {
         created_at
       `)
       .eq("referrer_user_id", user.id)
-      .not("status", "eq", "failed")
       .order("created_at", { ascending: false });
 
     if (onboardingError) {
@@ -201,6 +206,8 @@ serve(async (req) => {
         inviteLabel,
         invitedCompLevel: row.invited_comp_level,
         onboardingStatus: row.status,
+        enrollmentStatus: row.enrollment_status,
+        googleFirstSignInAt: row.google_first_sign_in_at,
         portalPhase,
         hasPortalAccount,
         onboardingCompletedAt: row.onboarding_completed_at,
