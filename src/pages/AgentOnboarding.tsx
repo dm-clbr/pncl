@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import OnboardingLayout from "@/components/OnboardingLayout";
 import OnboardingContractStep from "@/components/OnboardingContractStep";
-import { submitOnboarding, isSupabaseConfigured } from "@/lib/onboarding-api";
+import { submitOnboarding, isSupabaseConfigured, readStoredEnrollmentHandoff } from "@/lib/onboarding-api";
 import { lookupCountyFromZip } from "@/lib/us-zip-county";
 import {
   clearStoredContractSession,
@@ -354,6 +354,7 @@ export default function AgentOnboarding({
   const [returnToReview, setReturnToReview] = useState(false);
   const [referralInviteId, setReferralInviteId] = useState<string | null>(null);
   const [referralLocked, setReferralLocked] = useState(false);
+  const [referralError, setReferralError] = useState<string | null>(null);
   const [contractSignatureId, setContractSignatureId] = useState<string | null>(() =>
     readStoredContractSignatureId(preview),
   );
@@ -361,6 +362,7 @@ export default function AgentOnboarding({
   const [processingFile, setProcessingFile] = useState(false);
   const [reviewCounty, setReviewCounty] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const storedHandoff = preview ? null : readStoredEnrollmentHandoff();
 
   const totalSteps = STEPS.length + 1;
   const isReviewStep = phase === "form" && currentStep === STEPS.length;
@@ -592,6 +594,7 @@ export default function AgentOnboarding({
     getReferralInviteInfo(refId)
       .then((referral) => {
         if (cancelled) return;
+        setReferralError(null);
         persistReferralInviteId(referral.inviteId);
         setReferralInviteId(referral.inviteId);
         setReferralLocked(true);
@@ -601,9 +604,7 @@ export default function AgentOnboarding({
         if (cancelled) return;
         clearStoredReferralInviteId();
         if (refFromUrl) {
-          toast.error(
-            err instanceof Error ? err.message : "This referral link is invalid or expired.",
-          );
+          setReferralError(err instanceof Error ? err.message : "This referral link is invalid or expired.");
         }
       });
 
@@ -614,6 +615,31 @@ export default function AgentOnboarding({
 
   if (phase === "form" && !isReviewStep && !step) {
     return null;
+  }
+
+  if (referralError) {
+    return (
+      <OnboardingLayout>
+        <div className="onboarding-step">
+          <span className="eyebrow">Referral needs attention</span>
+          <h2 className="h3">This referral link can’t be used.</h2>
+          <p className="lead">{referralError}</p>
+          <p className="onboarding-help-text">
+            Ask your PNCL upline for a new personal referral link so attribution and compensation are recorded correctly.
+          </p>
+          <button
+            type="button"
+            className="btn btn-ghost"
+            onClick={() => {
+              setReferralError(null);
+              navigate("/onboarding", { replace: true });
+            }}
+          >
+            Continue without a referral
+          </button>
+        </div>
+      </OnboardingLayout>
+    );
   }
 
   const previewWorkspaceEmail = previewSubmittedName
@@ -661,6 +687,18 @@ export default function AgentOnboarding({
             You&apos;ll start by signing the PNCL Independent Contractor Agreement, then complete
             your application with accurate licensing information.
           </p>
+          {storedHandoff && (
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => navigate(
+                `/onboarding/success/${storedHandoff.onboardingId}?token=${encodeURIComponent(storedHandoff.handoffToken)}`,
+              )}
+              style={{ marginBottom: "0.75rem" }}
+            >
+              Resume saved enrollment
+            </button>
+          )}
           <button type="button" className="btn btn-accent btn-lg" onClick={() => setPhase("contract")}>
             Get Started <span className="arr">→</span>
           </button>

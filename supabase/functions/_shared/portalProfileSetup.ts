@@ -32,8 +32,8 @@ export interface SyncOnboardingProfileAssetsInput {
 
 /**
  * Copies assets collected during public onboarding onto the agent's portal
- * profile so the phased checklist auto-completes. Best effort: failures are
- * logged and never block account provisioning.
+ * profile so the phased checklist auto-completes. Optional image copies remain
+ * best effort; persistence of required profile metadata fails finalization.
  */
 export async function syncOnboardingProfileAssets(
   supabase: SupabaseClient,
@@ -117,5 +117,6 @@ export async function syncOnboardingProfileAssets(
       userId: input.userId,
       error: error.message,
     }, "error");
+    throw new Error(`Unable to save portal profile: ${error.message}`);
   }
 }

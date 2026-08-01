@@ -54,6 +54,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(`Only @${ALLOWED_EMAIL_DOMAIN} accounts can access the employee portal.`);
     }
 
+    if (
+      nextSession.user.app_metadata?.enrollment_version === 2
+      && nextSession.user.app_metadata?.enrollment_ready !== true
+    ) {
+      const supabase = getSupabaseClient();
+      await supabase.auth.signOut();
+      setSession(null);
+      setUser(null);
+      throw new Error("Your PNCL enrollment is not ready yet. Resume onboarding or contact support.");
+    }
+
     setSession(nextSession);
     setUser(nextSession.user);
   }, []);

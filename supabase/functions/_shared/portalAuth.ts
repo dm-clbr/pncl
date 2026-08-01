@@ -9,6 +9,7 @@ export interface ProvisionPortalAccountInput {
   lastName: string;
   onboardingId: string;
   existingSupabaseUserId?: string | null;
+  enrollmentReady?: boolean;
 }
 
 export function getPortalLoginUrl(): string {
@@ -48,6 +49,8 @@ function buildPortalMetadata(input: ProvisionPortalAccountInput) {
       onboarding_id: input.onboardingId,
       source: "agent_onboarding",
       role: "agent",
+      enrollment_version: 2,
+      enrollment_ready: input.enrollmentReady === true,
     },
   };
 }
@@ -193,6 +196,23 @@ export async function provisionPortalAccount(
   }
 
   return provisionPortalUser(supabase, input, { sendWelcomeEmail: true, delivery: "provision" });
+}
+
+export async function markPortalEnrollmentReady(
+  supabase: SupabaseClient,
+  userId: string,
+  onboardingId: string,
+): Promise<void> {
+  const { error } = await supabase.auth.admin.updateUserById(userId, {
+    app_metadata: {
+      onboarding_id: onboardingId,
+      source: "agent_onboarding",
+      role: "agent",
+      enrollment_version: 2,
+      enrollment_ready: true,
+    },
+  });
+  if (error) throw new Error(`Unable to activate portal enrollment: ${error.message}`);
 }
 
 export async function resendPortalInvite(

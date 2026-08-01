@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
-import { getServiceClient } from "../_shared/onboarding.ts";
+import { getServiceClient, isTokenExpired } from "../_shared/onboarding.ts";
 import { resendPortalInvite } from "../_shared/portalAuth.ts";
 import { validateHandoffToken } from "../_shared/security.ts";
 
@@ -38,8 +38,21 @@ serve(async (req) => {
       return errorResponse("Invalid sign-in handoff token.", 403, "invalid_token");
     }
 
-    if (!record.workspace_email) {
-      return errorResponse("PNCL email is not ready yet.", 409, "email_not_ready");
+    if (isTokenExpired(record.handoff_token_expires_at)) {
+      return errorResponse("This sign-in link has expired.", 410, "handoff_token_expired");
+    }
+
+    if (
+      record.enrollment_status !== "ready"
+      || record.portal_account_status !== "ready"
+      || !record.supabase_user_id
+      || !record.workspace_email
+    ) {
+      return errorResponse(
+        "Portal setup is not complete yet. Resume the saved enrollment before resending the welcome email.",
+        409,
+        "enrollment_not_ready",
+      );
     }
 
     const supabaseUserId = await resendPortalInvite(supabase, {
@@ -49,6 +62,7 @@ serve(async (req) => {
       lastName: record.last_name,
       onboardingId: record.id,
       existingSupabaseUserId: record.supabase_user_id,
+      enrollmentReady: true,
     });
 
     await supabase

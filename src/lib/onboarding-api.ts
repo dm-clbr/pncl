@@ -56,6 +56,38 @@ export interface OnboardingStatusResponse {
   portalInviteSent?: boolean;
   pendingGmailVerification?: boolean;
   error?: string;
+  enrollmentStatus?: string;
+  failedStep?: string;
+  retryable?: boolean;
+  steps?: Record<string, string>;
+}
+
+export const ENROLLMENT_HANDOFF_STORAGE_KEY = "pncl_enrollment_handoff";
+
+export interface StoredEnrollmentHandoff {
+  onboardingId: string;
+  handoffToken: string;
+  savedAt: number;
+}
+
+export function readStoredEnrollmentHandoff(): StoredEnrollmentHandoff | null {
+  try {
+    const raw = localStorage.getItem(ENROLLMENT_HANDOFF_STORAGE_KEY);
+    if (!raw) return null;
+    const value = JSON.parse(raw) as Partial<StoredEnrollmentHandoff>;
+    if (
+      typeof value.onboardingId !== "string"
+      || typeof value.handoffToken !== "string"
+      || typeof value.savedAt !== "number"
+      || Date.now() - value.savedAt > 24 * 60 * 60 * 1000
+    ) {
+      localStorage.removeItem(ENROLLMENT_HANDOFF_STORAGE_KEY);
+      return null;
+    }
+    return value as StoredEnrollmentHandoff;
+  } catch {
+    return null;
+  }
 }
 
 export interface RevealCredentialsResponse {
@@ -125,6 +157,29 @@ export async function submitOnboarding(
     workspaceEmail: data.workspaceEmail ?? "",
     error: data.error ?? "",
   });
+  try {
+    localStorage.setItem(ENROLLMENT_HANDOFF_STORAGE_KEY, JSON.stringify({
+      onboardingId: data.onboardingId,
+      handoffToken: data.handoffToken,
+      savedAt: Date.now(),
+    }));
+  } catch {
+    // The URL still carries the handoff when storage is unavailable.
+  }
+  return data;
+}
+
+export async function retryOnboardingEnrollment(
+  id: string,
+  token: string,
+): Promise<{ status: string; enrollmentStatus: string; failedStep?: string }> {
+  const response = await fetch(getFunctionUrl("retry-onboarding-enrollment"), {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify({ id, token }),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message ?? "Unable to retry account setup");
   return data;
 }
 

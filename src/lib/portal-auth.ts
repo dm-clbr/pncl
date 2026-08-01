@@ -4,16 +4,19 @@ export const PORTAL_OAUTH_RETURN_KEY = "pncl_portal_oauth_return";
 
 export function storePortalOAuthReturn(path: string): void {
   const normalized = path.startsWith("/") ? path : `/${path}`;
+  localStorage.setItem(PORTAL_OAUTH_RETURN_KEY, normalized);
   sessionStorage.setItem(PORTAL_OAUTH_RETURN_KEY, normalized);
 }
 
 export function readPortalOAuthReturn(): string | null {
-  const path = sessionStorage.getItem(PORTAL_OAUTH_RETURN_KEY);
+  const path = localStorage.getItem(PORTAL_OAUTH_RETURN_KEY)
+    ?? sessionStorage.getItem(PORTAL_OAUTH_RETURN_KEY);
   return path?.startsWith("/") ? path : null;
 }
 
 export function consumePortalOAuthReturn(): string | null {
   const path = readPortalOAuthReturn();
+  localStorage.removeItem(PORTAL_OAUTH_RETURN_KEY);
   sessionStorage.removeItem(PORTAL_OAUTH_RETURN_KEY);
   return path;
 }

@@ -1,6 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import {
-  ACTIVE_ONBOARDING_STATUSES_FOR_DEDUP,
   assertAdminCompAllowed,
   assertReferralCompAllowed,
   getReferralInviteExpiresAt,
@@ -8,6 +7,7 @@ import {
 } from "./compLevel.ts";
 import { findPartnerLinkForUser, type PartnerLinkRow } from "./hierarchyPartners.ts";
 import { isValidReferrerUserId, resolveReferrer } from "./onboarding.ts";
+import { holdsEnrollmentReservation, type EnrollmentReservationRow } from "./enrollmentState.ts";
 
 export type ReferralInviteStatus = "pending" | "consumed" | "expired" | "revoked";
 
@@ -310,7 +310,8 @@ export async function attachOnboardingToReferralInvite(
   }
 }
 
-interface DedupCandidateRow {
+interface DedupCandidateRow extends EnrollmentReservationRow {
+  id: string;
   status: string;
   workspace_email: string | null;
   released_at: string | null;
@@ -323,14 +324,32 @@ interface DedupCandidateRow {
  * or clear a stale hold, which is what lets the applicant re-apply.
  */
 export function holdsDedupReservation(row: DedupCandidateRow): boolean {
-  if (row.released_at) return false;
-  if ((ACTIVE_ONBOARDING_STATUSES_FOR_DEDUP as readonly string[]).includes(row.status)) {
-    return true;
-  }
-  return row.status === "failed" && Boolean(row.workspace_email);
+  return holdsEnrollmentReservation(row);
 }
 
-const DEDUP_CANDIDATE_COLUMNS = "id, status, workspace_email, released_at";
+const DEDUP_CANDIDATE_COLUMNS = `
+  id, status, enrollment_status, google_account_status, portal_account_status,
+  google_user_id, supabase_user_id, workspace_email, released_at,
+  last_provisioning_attempt_at, updated_at
+`;
+
+async function releaseStaleDedupCandidates(
+  supabase: SupabaseClient,
+  rows: DedupCandidateRow[],
+): Promise<void> {
+  const staleIds = rows
+    .filter((row) => !row.released_at && !holdsDedupReservation(row))
+    .filter((row) => !row.google_user_id && !row.supabase_user_id)
+    .map((row) => row.id);
+  if (!staleIds.length) return;
+
+  const { error } = await supabase
+    .from("onboarding_records")
+    .update({ released_at: new Date().toISOString() })
+    .in("id", staleIds)
+    .is("released_at", null);
+  if (error) throw new Error("Unable to release a stale applicant reservation");
+}
 
 export async function findActiveOnboardingBySsnHash(
   supabase: SupabaseClient,
@@ -340,13 +359,15 @@ export async function findActiveOnboardingBySsnHash(
     .from("onboarding_records")
     .select(DEDUP_CANDIDATE_COLUMNS)
     .eq("ssn_hash", ssnHash)
-    .not("status", "eq", "expired");
+    .limit(50);
 
   if (error) {
     throw new Error("Unable to verify applicant identity");
   }
 
-  return (data ?? []).some((row) => holdsDedupReservation(row as DedupCandidateRow));
+  const rows = (data ?? []) as DedupCandidateRow[];
+  await releaseStaleDedupCandidates(supabase, rows);
+  return rows.some((row) => holdsDedupReservation(row));
 }
 
 /**
@@ -362,13 +383,15 @@ export async function findActiveOnboardingByPhoneNumber(
     .from("onboarding_records")
     .select(DEDUP_CANDIDATE_COLUMNS)
     .eq("phone_number", phoneNumber)
-    .not("status", "eq", "expired");
+    .limit(50);
 
   if (error) {
     throw new Error("Unable to verify applicant phone number");
   }
 
-  return (data ?? []).some((row) => holdsDedupReservation(row as DedupCandidateRow));
+  const rows = (data ?? []) as DedupCandidateRow[];
+  await releaseStaleDedupCandidates(supabase, rows);
+  return rows.some((row) => holdsDedupReservation(row));
 }
 
 export async function upsertPortalProfileCompLevel(

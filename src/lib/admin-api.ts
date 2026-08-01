@@ -587,12 +587,36 @@ export interface OnboardingHold {
   uplineNetwork: string | null;
   status: string;
   supabaseUserId: string | null;
+  googleUserId: string | null;
+  referralInviteId: string | null;
+  contractSignatureId: string | null;
   hasPortalAccount: boolean;
+  hasGoogleAccount: boolean;
   blocksNewApplication: boolean;
   holdsSsn: boolean;
   googleCreationError: string | null;
   releasedAt: string | null;
   createdAt: string;
+  updatedAt: string;
+  enrollmentStatus: string;
+  referralStatus: string;
+  contractStatus: string;
+  applicationStatus: string;
+  googleAccountStatus: string;
+  portalAccountStatus: string;
+  finalizationStatus: string;
+  failedStep: string | null;
+  failureCode: string | null;
+  failureDetail: string | null;
+  needsAttention: boolean;
+  provisioningAttempts: number;
+  lastProvisioningAttemptAt: string | null;
+  referralValidatedAt: string | null;
+  contractSignedAt: string | null;
+  applicationSavedAt: string | null;
+  googleProvisionedAt: string | null;
+  portalLinkedAt: string | null;
+  finalizedAt: string | null;
 }
 
 export async function listOnboardingHolds(
@@ -615,6 +639,26 @@ export async function releaseOnboardingHold(
   return adminFetch("admin-release-onboarding-hold", accessToken, {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+}
+
+export async function retryOnboardingEnrollment(
+  accessToken: string,
+  onboardingId: string,
+): Promise<{ result: { status: string; failedStep?: string }; message: string }> {
+  return adminFetch("admin-retry-onboarding", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ onboardingId }),
+  });
+}
+
+export async function createEnrollmentResumeLink(
+  accessToken: string,
+  onboardingId: string,
+): Promise<{ resumeUrl: string; expiresAt: string; message: string }> {
+  return adminFetch("admin-create-enrollment-resume", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ onboardingId }),
   });
 }
 

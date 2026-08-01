@@ -3,7 +3,6 @@ import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import {
   buildGmailUrl,
   getServiceClient,
-  isAutoSuspendedOnboardingFailure,
   isTokenExpired,
   type OnboardingRecord,
 } from "../_shared/onboarding.ts";
@@ -49,11 +48,6 @@ serve(async (req) => {
     }
 
     if (isTokenExpired(onboarding.handoff_token_expires_at)) {
-      await supabase
-        .from("onboarding_records")
-        .update({ status: "expired", temporary_password_encrypted: null })
-        .eq("id", onboarding.id);
-
       return errorResponse("This sign-in link has expired.", 403, "handoff_token_expired");
     }
 
@@ -65,9 +59,9 @@ serve(async (req) => {
       );
     }
 
-    const credentialsReady = onboarding.status === "ready"
-      || onboarding.status === "email_created"
-      || isAutoSuspendedOnboardingFailure(onboarding);
+    const credentialsReady = onboarding.enrollment_status === "ready"
+      && Boolean(onboarding.google_user_id)
+      && Boolean(onboarding.supabase_user_id);
 
     if (!credentialsReady) {
       logOnboarding("reveal_not_ready", { onboardingId: id, status: onboarding.status }, "warn");

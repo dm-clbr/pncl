@@ -126,7 +126,8 @@ function contractSessionKeys(preview: boolean) {
 
 export function readStoredContractSignatureId(preview = false): string | null {
   try {
-    return sessionStorage.getItem(contractSessionKeys(preview).id);
+    const key = contractSessionKeys(preview).id;
+    return localStorage.getItem(key) ?? sessionStorage.getItem(key);
   } catch {
     return null;
   }
@@ -140,6 +141,9 @@ export function persistContractSession(
 ): void {
   try {
     const keys = contractSessionKeys(preview);
+    localStorage.setItem(keys.id, contractSignatureId);
+    localStorage.setItem(keys.name, legalName);
+    localStorage.setItem(keys.email, personalEmail);
     sessionStorage.setItem(keys.id, contractSignatureId);
     sessionStorage.setItem(keys.name, legalName);
     sessionStorage.setItem(keys.email, personalEmail);
@@ -151,6 +155,9 @@ export function persistContractSession(
 export function clearStoredContractSession(preview = false): void {
   try {
     const keys = contractSessionKeys(preview);
+    localStorage.removeItem(keys.id);
+    localStorage.removeItem(keys.name);
+    localStorage.removeItem(keys.email);
     sessionStorage.removeItem(keys.id);
     sessionStorage.removeItem(keys.name);
     sessionStorage.removeItem(keys.email);
@@ -161,7 +168,8 @@ export function clearStoredContractSession(preview = false): void {
 
 export function readStoredContractLegalName(preview = false): string | null {
   try {
-    return sessionStorage.getItem(contractSessionKeys(preview).name);
+    const key = contractSessionKeys(preview).name;
+    return localStorage.getItem(key) ?? sessionStorage.getItem(key);
   } catch {
     return null;
   }

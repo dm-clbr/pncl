@@ -9,6 +9,7 @@ import {
 } from "../_shared/onboarding.ts";
 import { validateHandoffToken } from "../_shared/security.ts";
 import { logOnboarding } from "../_shared/logger.ts";
+import { isEnrollmentReady } from "../_shared/enrollmentState.ts";
 
 const TERMINAL_STATUSES = new Set([
   "ready",
@@ -22,31 +23,54 @@ function buildStatusResponse(record: OnboardingRecord) {
   const email = record.workspace_email ?? undefined;
   const gmailUrl = email ? buildGmailUrl(email) : undefined;
 
-  if (record.status === "failed") {
-    if (isAutoSuspendedOnboardingFailure(record)) {
+  const steps = {
+    referral: record.referral_status,
+    contract: record.contract_status,
+    application: record.application_status,
+    google: record.google_account_status,
+    portal: record.portal_account_status,
+    finalization: record.finalization_status,
+  };
+  const enrollmentReady = isEnrollmentReady(record)
+    && Boolean(record.google_user_id)
+    && Boolean(record.supabase_user_id);
+
+  if (
+    record.enrollment_status === "google_verification_required"
+    || record.google_account_status === "verification_required"
+    || isAutoSuspendedOnboardingFailure(record)
+  ) {
       return {
-        status: "ready",
+        status: "failed",
+        enrollmentStatus: "google_verification_required",
         email,
         credentialsViewed: false,
         gmailUrl,
         portalInviteSent: false,
         message: "Your PNCL email was created. Google needs a quick verification before you can sign in.",
         pendingGmailVerification: true,
+        retryable: true,
+        failedStep: "google",
+        steps,
       };
-    }
-
-    return {
-      status: "failed",
-      message: "We couldn’t finish creating your PNCL email.",
-      email,
-      error: record.google_creation_error ?? undefined,
-    };
   }
 
-  if (record.status === "expired") {
+  if (
+    record.enrollment_status === "needs_attention"
+    || record.status === "failed"
+    || (record.enrollment_status === "ready" && !enrollmentReady)
+  ) {
+    const identityConflict = record.failure_code === "identity_reserved_by_another_enrollment";
     return {
-      status: "expired",
-      message: "This sign-in link has expired.",
+      status: "failed",
+      enrollmentStatus: record.enrollment_status,
+      message: identityConflict
+        ? "Another active enrollment already protects this applicant. Contact PNCL support."
+        : "We couldn’t finish account setup. Your progress is saved and it is safe to retry.",
+      email,
+      failedStep: record.failed_step ?? undefined,
+      retryable: !identityConflict,
+      steps,
     };
   }
 
@@ -61,20 +85,24 @@ function buildStatusResponse(record: OnboardingRecord) {
     };
   }
 
-  if (record.status === "ready" || record.status === "email_created") {
+  if (enrollmentReady) {
     return {
       status: "ready",
+      enrollmentStatus: "ready",
       email,
       credentialsViewed: false,
       gmailUrl,
       portalInviteSent: Boolean(record.supabase_user_id),
       message: "Your PNCL email is ready.",
+      steps,
     };
   }
 
   return {
-    status: record.status,
-    message: "Your PNCL email is being created.",
+    status: "creating_email",
+    enrollmentStatus: record.enrollment_status,
+    message: "Your PNCL email and portal account are being created.",
+    steps,
   };
 }
 
@@ -116,13 +144,6 @@ serve(async (req) => {
 
     if (isTokenExpired(record.handoff_token_expires_at)) {
       logOnboarding("status_token_expired", { onboardingId: id, status: record.status }, "warn");
-      if (record.status !== "credentials_viewed" && record.status !== "expired") {
-        await supabase
-          .from("onboarding_records")
-          .update({ status: "expired", temporary_password_encrypted: null })
-          .eq("id", record.id);
-      }
-
       return jsonResponse({
         status: "expired",
         message: "This sign-in link has expired.",

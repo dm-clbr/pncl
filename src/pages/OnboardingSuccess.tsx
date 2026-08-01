@@ -6,6 +6,7 @@ import {
   getOnboardingStatus,
   revealOnboardingCredentials,
   resendPortalInvite,
+  retryOnboardingEnrollment,
   type OnboardingStatus,
   type OnboardingStatusResponse,
   type RevealCredentialsResponse,
@@ -55,6 +56,7 @@ export default function OnboardingSuccess() {
   const [revealed, setRevealed] = useState<RevealCredentialsResponse | null>(null);
   const [revealing, setRevealing] = useState(false);
   const [resendingInvite, setResendingInvite] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const [pollError, setPollError] = useState<string | null>(null);
   const pollingRef = useRef<number | null>(null);
 
@@ -166,6 +168,21 @@ export default function OnboardingSuccess() {
       toast.error(error instanceof Error ? error.message : "Unable to resend portal welcome email.");
     } finally {
       setResendingInvite(false);
+    }
+  };
+
+  const handleRetry = async () => {
+    if (!onboardingId || !token) return;
+    setRetrying(true);
+    try {
+      await retryOnboardingEnrollment(onboardingId, token);
+      toast.success("Your saved enrollment is being resumed.");
+      setStatusData(null);
+      await fetchStatus();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to retry account setup.");
+    } finally {
+      setRetrying(false);
     }
   };
 
@@ -343,8 +360,24 @@ export default function OnboardingSuccess() {
           <StatusBadge tone="error">Setup Failed</StatusBadge>
           <h2 className="h3" style={{ margin: "1rem 0" }}>We couldn&apos;t finish creating your PNCL email.</h2>
           <p className="lead">
-            Please contact PNCL support or an admin for help.
+            {statusData?.message ?? "Your progress is saved. Retry the failed step or contact PNCL support."}
           </p>
+          {statusData?.failedStep && (
+            <p className="onboarding-help-text">
+              Step needing attention: <strong>{statusData.failedStep.replace(/_/g, " ")}</strong>
+            </p>
+          )}
+          {statusData?.retryable && (
+            <button
+              type="button"
+              className="btn btn-accent"
+              disabled={retrying}
+              onClick={() => void handleRetry()}
+              style={{ marginTop: "1rem" }}
+            >
+              {retrying ? "Retrying…" : <>Retry saved enrollment <span className="arr">→</span></>}
+            </button>
+          )}
           {import.meta.env.DEV && (statusData?.error || statusData?.email || onboardingId) && (
             <p
               className="onboarding-error"
@@ -355,7 +388,7 @@ export default function OnboardingSuccess() {
               {statusData?.error && <>Error: {statusData.error}</>}
             </p>
           )}
-          <Link to="/contact" className="btn btn-accent" style={{ marginTop: "1rem" }}>
+          <Link to="/contact" className="btn btn-ghost" style={{ marginTop: "1rem" }}>
             Contact Support <span className="arr">→</span>
           </Link>
         </>

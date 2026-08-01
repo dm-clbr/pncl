@@ -18,6 +18,7 @@ export function buildReferralLink(inviteId: string): string {
 
 export function persistReferralInviteId(inviteId: string): void {
   try {
+    localStorage.setItem(REFERRAL_STORAGE_KEY, inviteId);
     sessionStorage.setItem(REFERRAL_STORAGE_KEY, inviteId);
   } catch {
     // Ignore storage failures in private browsing.
@@ -26,7 +27,7 @@ export function persistReferralInviteId(inviteId: string): void {
 
 export function readStoredReferralInviteId(): string | null {
   try {
-    return sessionStorage.getItem(REFERRAL_STORAGE_KEY);
+    return localStorage.getItem(REFERRAL_STORAGE_KEY) ?? sessionStorage.getItem(REFERRAL_STORAGE_KEY);
   } catch {
     return null;
   }
@@ -34,6 +35,7 @@ export function readStoredReferralInviteId(): string | null {
 
 export function clearStoredReferralInviteId(): void {
   try {
+    localStorage.removeItem(REFERRAL_STORAGE_KEY);
     sessionStorage.removeItem(REFERRAL_STORAGE_KEY);
   } catch {
     // Ignore storage failures in private browsing.

@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { generateAvailableWorkspaceEmail } from "../_shared/email.ts";
-import { createWorkspaceUser, GoogleWorkspaceAutoSuspendedError, waitForWorkspaceMailboxReady } from "../_shared/googleWorkspace.ts";
 import { notifySuspendedGmailForOnboarding } from "../_shared/gmailVerificationNotifications.ts";
 import { logOnboarding } from "../_shared/logger.ts";
 import {
@@ -13,12 +12,12 @@ import {
   decodeImageBytes,
   getEmailDomain,
   getServiceClient,
+  type SubmitOnboardingPayload,
   validateSubmitPayload,
 } from "../_shared/onboarding.ts";
-import { provisionPortalAccount } from "../_shared/portalAuth.ts";
-import { syncOnboardingProfileAssets } from "../_shared/portalProfileSetup.ts";
 import { notifyGenesisAdminsOfNewOnboarding } from "../_shared/genesisNotifications.ts";
 import { notifyGoogleWorkspaceAdminOfFirstSignIn } from "../_shared/googleFirstSignInNotifications.ts";
+import { provisionEnrollment } from "../_shared/enrollmentProvisioning.ts";
 import {
   attachOnboardingToReferralInvite,
   claimReferralInvite,
@@ -26,7 +25,6 @@ import {
   findActiveOnboardingBySsnHash,
   releaseReferralInvite,
   resolveReferralInviteForOnboarding,
-  upsertPortalProfileCompLevel,
 } from "../_shared/portalReferralInvites.ts";
 import {
   encryptTemporaryPassword,
@@ -35,6 +33,58 @@ import {
   hashHandoffToken,
   hashSsn,
 } from "../_shared/security.ts";
+
+async function persistApplicationAssets(
+  supabase: ReturnType<typeof getServiceClient>,
+  onboardingId: string,
+  payload: SubmitOnboardingPayload,
+  requestId: string,
+): Promise<void> {
+  const driversLicensePath =
+    `licenses/${onboardingId}/drivers-license.${payload.driversLicenseImage.extension}`;
+  const { error: licenseUploadError } = await supabase.storage
+    .from(ONBOARDING_CONTRACT_BUCKET)
+    .upload(driversLicensePath, decodeImageBytes(payload.driversLicenseImage), {
+      upsert: true,
+      contentType: payload.driversLicenseImage.contentType,
+    });
+
+  if (licenseUploadError) {
+    const { data: identity } = await supabase
+      .from("onboarding_records")
+      .select("google_user_id, supabase_user_id")
+      .eq("id", onboardingId)
+      .maybeSingle();
+    await supabase.from("onboarding_records").update({
+      status: "failed",
+      enrollment_status: "needs_attention",
+      application_status: "failed",
+      failed_step: "application",
+      failure_code: "application_document_save_failed",
+      failure_detail: licenseUploadError.message.slice(0, 1000),
+      released_at: identity?.google_user_id || identity?.supabase_user_id
+        ? null
+        : new Date().toISOString(),
+    }).eq("id", onboardingId);
+    logOnboarding("submit_drivers_license_upload_failed", {
+      requestId,
+      onboardingId,
+      error: licenseUploadError.message,
+    }, "error");
+    throw new Error("Unable to save your application document. Please try submitting again.");
+  }
+
+  const { error: savedError } = await supabase.from("onboarding_records").update({
+    drivers_license_path: driversLicensePath,
+    application_status: "saved",
+    enrollment_status: "application_saved",
+    application_saved_at: new Date().toISOString(),
+    failed_step: null,
+    failure_code: null,
+    failure_detail: null,
+  }).eq("id", onboardingId);
+  if (savedError) throw new Error(savedError.message);
+}
 
 serve(async (req) => {
   const cors = handleCors(req);
@@ -46,6 +96,7 @@ serve(async (req) => {
 
   const requestId = crypto.randomUUID();
   let claimedInviteId: string | null = null;
+  let createdOnboardingId: string | null = null;
 
   try {
     logOnboarding("submit_request_received", { requestId });
@@ -82,12 +133,43 @@ serve(async (req) => {
       );
     }
 
+    const ssnHash = await hashSsn(payload.ssn);
+
     if (contract.onboarding_id) {
-      return errorResponse(
-        "This signed contract has already been used. Please sign the agreement again.",
-        409,
-        "contract_already_used",
-      );
+      const { data: existing, error: existingError } = await supabase
+        .from("onboarding_records")
+        .select("id, ssn_hash, workspace_email")
+        .eq("id", contract.onboarding_id)
+        .maybeSingle();
+      if (existingError || !existing || existing.ssn_hash !== ssnHash) {
+        return errorResponse(
+          "This signed contract is already linked to another enrollment. Contact PNCL support.",
+          409,
+          "contract_already_used",
+        );
+      }
+
+      const resumedToken = generateHandoffToken();
+      const { error: tokenError } = await supabase
+        .from("onboarding_records")
+        .update({
+          handoff_token_hash: await hashHandoffToken(resumedToken),
+          handoff_token_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        })
+        .eq("id", existing.id);
+      if (tokenError) throw new Error(tokenError.message);
+
+      await persistApplicationAssets(supabase, existing.id, payload, requestId);
+      const resumed = await provisionEnrollment(supabase, existing.id, { requestId });
+      return jsonResponse({
+        onboardingId: existing.id,
+        handoffToken: resumedToken,
+        status: resumed.status,
+        enrollmentStatus: resumed.enrollmentStatus,
+        workspaceEmail: existing.workspace_email,
+        ...(resumed.userMessage ? { error: resumed.userMessage } : {}),
+        ...(resumed.failedStep ? { failedStep: resumed.failedStep } : {}),
+      });
     }
 
     if (isContractSignatureExpired(contract.signed_at)) {
@@ -122,8 +204,6 @@ serve(async (req) => {
         "invalid_personal_email",
       );
     }
-
-    const ssnHash = await hashSsn(payload.ssn);
 
     if (await findActiveOnboardingBySsnHash(supabase, ssnHash)) {
       return errorResponse(
@@ -171,7 +251,7 @@ serve(async (req) => {
 
     const handoffToken = generateHandoffToken();
     const handoffTokenHash = await hashHandoffToken(handoffToken);
-    const handoffTokenExpiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+    const handoffTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
     const temporaryPassword = generateTemporaryPassword();
     const temporaryPasswordEncrypted = await encryptTemporaryPassword(temporaryPassword);
     const ssnEncrypted = await encryptTemporaryPassword(payload.ssn);
@@ -203,11 +283,22 @@ serve(async (req) => {
         npn: payload.npn ?? null,
         has_eo_insurance: payload.hasEoInsurance,
         personal_email: contract.personal_email,
+        contract_signature_id: payload.contractSignatureId,
         referrer_user_id: referrerUserId,
         referral_invite_id: referralInviteId,
         invited_comp_level: invitedCompLevel,
         workspace_email: workspaceEmail,
-        status: "creating_email",
+        status: "pending",
+        enrollment_status: "saving_application",
+        referral_status: referralInviteId ? "claimed" : "none",
+        contract_status: "signed",
+        application_status: "saving",
+        google_account_status: "pending",
+        portal_account_status: "pending",
+        finalization_status: "pending",
+        referral_validated_at: referralInviteId ? new Date().toISOString() : null,
+        contract_signed_at: contract.signed_at,
+        application_saved_at: null,
         handoff_token_hash: handoffTokenHash,
         handoff_token_expires_at: handoffTokenExpiresAt,
         temporary_password_encrypted: temporaryPasswordEncrypted,
@@ -237,6 +328,7 @@ serve(async (req) => {
     }
 
     const onboardingId = record.id;
+    createdOnboardingId = onboardingId;
 
     const { error: contractLinkError } = await supabase
       .from("onboarding_contract_signatures")
@@ -256,251 +348,78 @@ serve(async (req) => {
       await attachOnboardingToReferralInvite(supabase, claimedInviteId, onboardingId);
     }
 
-    if (payload.driversLicenseImage) {
-      const driversLicensePath =
-        `licenses/${onboardingId}/drivers-license.${payload.driversLicenseImage.extension}`;
-      const { error: licenseUploadError } = await supabase.storage
-        .from(ONBOARDING_CONTRACT_BUCKET)
-        .upload(driversLicensePath, decodeImageBytes(payload.driversLicenseImage), {
-          upsert: true,
-          contentType: payload.driversLicenseImage.contentType,
-        });
-
-      if (licenseUploadError) {
-        logOnboarding(
-          "submit_drivers_license_upload_failed",
-          { requestId, onboardingId, error: licenseUploadError.message },
-          "error",
-        );
-      } else {
-        const { error: licensePathError } = await supabase
-          .from("onboarding_records")
-          .update({ drivers_license_path: driversLicensePath })
-          .eq("id", onboardingId);
-
-        if (licensePathError) {
-          logOnboarding(
-            "submit_drivers_license_path_update_failed",
-            { requestId, onboardingId, error: licensePathError.message },
-            "error",
-          );
-        }
-      }
-    }
+    await persistApplicationAssets(supabase, onboardingId, payload, requestId);
 
     logOnboarding("submit_db_record_created", { requestId, onboardingId, workspaceEmail });
+    const result = await provisionEnrollment(supabase, onboardingId, {
+      requestId,
+      driversLicense: payload.driversLicenseImage,
+      profilePhoto: payload.profilePhotoImage,
+    });
 
-    let finalStatus = "creating_email";
-    let failureError: string | undefined;
-
-    try {
-      const googleUserId = await createWorkspaceUser({
-        firstName: payload.firstName,
-        lastName: payload.lastName,
-        email: workspaceEmail,
-        temporaryPassword,
-        recoveryEmail: personalEmail,
-      });
-
-      await waitForWorkspaceMailboxReady(workspaceEmail);
-
-      finalStatus = "ready";
-      let supabaseUserId: string | null = null;
-      let portalProvisionError: string | undefined;
+    if (result.status === "ready") {
       const completedAt = new Date().toISOString();
-
       try {
-        supabaseUserId = await provisionPortalAccount(supabase, {
-          email: workspaceEmail,
-          legalName: payload.legalName,
-          firstName: payload.firstName,
-          lastName: payload.lastName,
-          onboardingId,
-        });
-
-        if (supabaseUserId && invitedCompLevel != null) {
-          await upsertPortalProfileCompLevel(
-            supabase,
-            supabaseUserId,
-            invitedCompLevel,
-            payload.firstName,
-            payload.lastName,
-          );
-        }
-
-        if (supabaseUserId) {
-          await syncOnboardingProfileAssets(supabase, {
-            userId: supabaseUserId,
-            onboardingId,
-            firstName: payload.firstName,
-            lastName: payload.lastName,
-            npn: payload.npn ?? null,
-            driversLicense: payload.driversLicenseImage,
-            profilePhoto: payload.profilePhotoImage,
-            address: {
-              line1: payload.addressLine1 ?? null,
-              city: payload.addressCity ?? null,
-              state: payload.stateOfResidence,
-              zip: payload.addressZip ?? null,
-              county: payload.county ?? null,
-            },
-          });
-        }
-      } catch (portalError) {
-        portalProvisionError = portalError instanceof Error
-          ? portalError.message
-          : "Portal account provisioning failed";
-        logOnboarding(
-          "submit_portal_provision_failed",
-          { requestId, onboardingId, workspaceEmail, error: portalProvisionError },
-          "error",
-        );
-      }
-
-      const { error: updateError } = await supabase
-        .from("onboarding_records")
-        .update({
-          status: "ready",
-          google_user_id: googleUserId,
-          supabase_user_id: supabaseUserId,
-          onboarding_completed_at: completedAt,
-        })
-        .eq("id", onboardingId);
-
-      if (updateError) {
-        logOnboarding(
-          "submit_db_ready_update_failed",
-          { requestId, onboardingId, googleUserId, error: updateError.message },
-          "error",
-        );
-      } else {
-        logOnboarding("submit_completed", {
+        await notifyGoogleWorkspaceAdminOfFirstSignIn({ legalName: payload.legalName, workspaceEmail });
+      } catch (notificationError) {
+        logOnboarding("submit_google_first_signin_notification_failed", {
           requestId,
           onboardingId,
+          error: notificationError instanceof Error ? notificationError.message : "notification failed",
+        }, "error");
+      }
+      try {
+        await notifyGenesisAdminsOfNewOnboarding(supabase, onboardingId, {
+          legalName: payload.legalName,
           workspaceEmail,
-          googleUserId,
-          supabaseUserId,
-          status: finalStatus,
-          portalProvisionError: portalProvisionError ?? null,
-          invitedCompLevel,
+          phoneNumber: payload.phoneNumber,
+          dateOfBirth: payload.dateOfBirth,
+          stateOfResidence: payload.stateOfResidence,
+          uplineNetwork,
+          hasLicense: payload.hasLicense,
+          npn: payload.npn ?? null,
+          hasEoInsurance: payload.hasEoInsurance,
+          completedAt,
         });
-
-        try {
-          await notifyGoogleWorkspaceAdminOfFirstSignIn({
-            legalName: payload.legalName,
-            workspaceEmail,
-          });
-        } catch (notificationError) {
-          const message = notificationError instanceof Error
-            ? notificationError.message
-            : "Google first sign-in admin notification failed";
-          logOnboarding(
-            "submit_google_first_signin_notification_failed",
-            { requestId, onboardingId, error: message },
-            "error",
-          );
-        }
-
-        try {
-          await notifyGenesisAdminsOfNewOnboarding(supabase, onboardingId, {
-            legalName: payload.legalName,
-            workspaceEmail,
-            phoneNumber: payload.phoneNumber,
-            dateOfBirth: payload.dateOfBirth,
-            stateOfResidence: payload.stateOfResidence,
-            uplineNetwork,
-            hasLicense: payload.hasLicense,
-            npn: payload.npn ?? null,
-            hasEoInsurance: payload.hasEoInsurance,
-            completedAt,
-          });
-        } catch (notificationError) {
-          const message = notificationError instanceof Error
-            ? notificationError.message
-            : "Genesis admin notification failed";
-          logOnboarding(
-            "submit_genesis_notification_failed",
-            { requestId, onboardingId, error: message },
-            "error",
-          );
-        }
+      } catch (notificationError) {
+        logOnboarding("submit_genesis_notification_failed", {
+          requestId,
+          onboardingId,
+          error: notificationError instanceof Error ? notificationError.message : "notification failed",
+        }, "error");
       }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Google Workspace user creation failed";
-      const isAutoSuspended = error instanceof GoogleWorkspaceAutoSuspendedError
-        || errorMessage.includes("automatically suspended");
-      const autoSuspendedGoogleUserId = error instanceof GoogleWorkspaceAutoSuspendedError
-        ? error.googleUserId
-        : null;
-      logOnboarding(
-        "submit_google_provisioning_failed",
-        { requestId, onboardingId, workspaceEmail, error: errorMessage, isAutoSuspended },
-        "error",
-      );
-      failureError = isAutoSuspended
-        ? "Your PNCL email was created but Google requires verification before you can sign in. Check your personal email for next steps."
-        : errorMessage;
-      finalStatus = "failed";
-      await supabase
-        .from("onboarding_records")
-        .update({
-          status: "failed",
-          google_creation_error: errorMessage,
-          google_user_id: autoSuspendedGoogleUserId,
-          temporary_password_encrypted: isAutoSuspended ? temporaryPasswordEncrypted : null,
-        })
-        .eq("id", onboardingId);
-
-      if (isAutoSuspended) {
-        try {
-          await notifyGoogleWorkspaceAdminOfFirstSignIn({
-            legalName: payload.legalName,
-            workspaceEmail,
-            autoSuspended: true,
-          });
-        } catch (notificationError) {
-          const message = notificationError instanceof Error
-            ? notificationError.message
-            : "Google first sign-in admin notification failed";
-          logOnboarding(
-            "submit_google_first_signin_notification_failed",
-            { requestId, onboardingId, error: message },
-            "error",
-          );
-        }
-
-        try {
-          await notifySuspendedGmailForOnboarding(supabase, {
-            onboardingId,
-            handoffToken,
-            forceResend: true,
-          });
-        } catch (notificationError) {
-          const message = notificationError instanceof Error
-            ? notificationError.message
-            : "Gmail verification notification failed";
-          logOnboarding(
-            "submit_gmail_verification_notification_failed",
-            { requestId, onboardingId, workspaceEmail, error: message },
-            "error",
-          );
-        }
-      }
-
-      if (claimedInviteId && !isAutoSuspended) {
-        await releaseReferralInvite(supabase, claimedInviteId);
+    } else if (result.failureCode === "google_verification_required") {
+      try {
+        await notifyGoogleWorkspaceAdminOfFirstSignIn({
+          legalName: payload.legalName,
+          workspaceEmail,
+          autoSuspended: true,
+        });
+        await notifySuspendedGmailForOnboarding(supabase, {
+          onboardingId,
+          handoffToken,
+          forceResend: true,
+        });
+      } catch (notificationError) {
+        logOnboarding("submit_gmail_verification_notification_failed", {
+          requestId,
+          onboardingId,
+          error: notificationError instanceof Error ? notificationError.message : "notification failed",
+        }, "error");
       }
     }
 
     return jsonResponse({
       onboardingId,
       handoffToken,
-      status: finalStatus,
+      status: result.status,
+      enrollmentStatus: result.enrollmentStatus,
       workspaceEmail,
-      ...(failureError ? { error: failureError } : {}),
+      ...(result.userMessage ? { error: result.userMessage } : {}),
+      ...(result.failedStep ? { failedStep: result.failedStep } : {}),
     });
   } catch (error) {
-    if (claimedInviteId) {
+    if (claimedInviteId && !createdOnboardingId) {
       try {
         const supabase = getServiceClient();
         await releaseReferralInvite(supabase, claimedInviteId);

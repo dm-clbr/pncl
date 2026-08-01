@@ -66,6 +66,21 @@ export interface OnboardingRecord {
   gmail_verification_email_sent_at: string | null;
   created_at: string;
   updated_at: string;
+  enrollment_status: string;
+  referral_status: string;
+  contract_status: string;
+  application_status: string;
+  google_account_status: string;
+  portal_account_status: string;
+  finalization_status: string;
+  failed_step: string | null;
+  failure_code: string | null;
+  referral_validated_at: string | null;
+  contract_signed_at: string | null;
+  application_saved_at: string | null;
+  google_provisioned_at: string | null;
+  portal_linked_at: string | null;
+  finalized_at: string | null;
 }
 
 export interface OnboardingImagePayload {
