@@ -3,6 +3,13 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import type { AssistHierarchyNode, HierarchyNode } from "@/lib/admin-api";
 import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
 
+function formatEffectiveDate(value: string | null): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
 function collectExpandableIds(roots: Array<{ id: string; children: HierarchyNode[] | AssistHierarchyNode[] }>): Set<string> {
   const ids = new Set<string>();
 
@@ -107,6 +114,12 @@ function HierarchyTreeNode({
           ) : (
             <>
               <span className="admin-tree-name">{label}</span>
+              <span className="admin-tree-meta">
+                Tier {(node as HierarchyNode).compLevel ?? "—"}{(node as HierarchyNode).compLevel != null ? "%" : ""}
+                {formatEffectiveDate((node as HierarchyNode).compLevelEffectiveAt)
+                  ? ` · effective ${formatEffectiveDate((node as HierarchyNode).compLevelEffectiveAt)}`
+                  : ""}
+              </span>
               {(node as HierarchyNode).role === "admin" && <span className="admin-badge">Admin</span>}
             </>
           )}

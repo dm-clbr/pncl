@@ -23,8 +23,10 @@ import PortalReferralPanel from "@/components/PortalReferralPanel";
 import { hasAdminConsoleAccess, isAdminAssist, isGenesisAdmin } from "@/lib/roles";
 import {
   completePortalTodo,
+  derivePortalPhase,
   isRequiredFormTodo,
   isTodoCompleted,
+  PORTAL_PHASE_LABELS,
 } from "@/lib/portal-todos";
 import { usePortalTodos } from "@/hooks/usePortalTodos";
 import { usePortalW9 } from "@/hooks/usePortalW9";
@@ -154,7 +156,7 @@ export default function PortalDashboard() {
   const { submitted: icaSubmitted } = usePortalIca();
   const { submitted: w9Submitted } = usePortalW9();
   const { submitted: directDepositSubmitted } = usePortalDirectDeposit();
-  const { photoUrl, initials, displayName } = usePortalProfile(portalUser);
+  const { profile, photoUrl, initials, displayName } = usePortalProfile(portalUser);
 
   const resolvedTodos = useMemo(
     () =>
@@ -173,6 +175,10 @@ export default function PortalDashboard() {
     [resolvedTodos],
   );
   const completedTodoCount = resolvedTodos.length - pendingTodos.length;
+  const currentPhase = derivePortalPhase(resolvedTodos);
+  const progressPercent = resolvedTodos.length === 0
+    ? 0
+    : Math.round((completedTodoCount / resolvedTodos.length) * 100);
   const pendingRequiredForms = pendingTodos.some((todo) => isRequiredFormTodo(todo.id));
   const showGenesisNotice = shouldShowGenesisNotice(portalUser);
   const showIcaResignNotice = shouldShowIcaResignNotice(portalUser) && !icaSubmitted;
@@ -330,6 +336,38 @@ export default function PortalDashboard() {
               </span>
             </Link>
           </header>
+
+          {resolvedTodos.length > 0 && (
+            <Link
+              to="/portal/profile"
+              className="portal-readiness-summary"
+              aria-label={`View your onboarding progress: ${PORTAL_PHASE_LABELS[currentPhase]}, ${completedTodoCount} of ${resolvedTodos.length} steps complete`}
+            >
+              <div className="portal-readiness-summary-copy">
+                <span className="portal-readiness-summary-label">Your progress</span>
+                <span className={`portal-phase-badge phase-${currentPhase}`}>
+                  {PORTAL_PHASE_LABELS[currentPhase]}
+                </span>
+                <span className="portal-readiness-summary-count">
+                  {completedTodoCount} of {resolvedTodos.length} steps complete
+                </span>
+                {profile?.comp_level != null && (
+                  <span className="portal-readiness-summary-tier">
+                    Compensation tier {profile.comp_level}
+                  </span>
+                )}
+              </div>
+              <div
+                className="portal-readiness-summary-bar"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={progressPercent}
+              >
+                <span style={{ width: `${progressPercent}%` }} />
+              </div>
+            </Link>
+          )}
 
           {showIcaResignNotice && (
             <div className="portal-notice-banner" role="alert">

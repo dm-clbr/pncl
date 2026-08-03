@@ -3,7 +3,6 @@ import type { SupabaseClient, User } from "https://esm.sh/@supabase/supabase-js@
 import { AdminAuthError, requirePortalUser } from "../_shared/adminAuth.ts";
 import {
   computeAgentPhases,
-  resolveDisplayName,
   type AgentPhase,
 } from "../_shared/adminAgents.ts";
 import { computePortalTodoProgressByUserId, type PortalTodoProgressSummary } from "../_shared/portalTodos.ts";
@@ -17,11 +16,8 @@ interface DownlineOnboardingRow {
   last_name: string;
   status: string;
   enrollment_status: string;
-  google_first_sign_in_at: string | null;
-  workspace_email: string | null;
   referral_invite_id: string | null;
   invited_comp_level: number | null;
-  onboarding_completed_at: string | null;
   created_at: string;
 }
 
@@ -37,19 +33,25 @@ interface PortalProfileNameRow {
 }
 
 export interface DownlineMemberSummary {
-  onboardingId: string;
-  userId: string | null;
   name: string;
   inviteLabel: string | null;
   invitedCompLevel: number | null;
   onboardingStatus: string;
-  enrollmentStatus: string;
-  googleFirstSignInAt: string | null;
+  activationStatus: "not_started" | "in_progress" | "ready" | "needs_support" | "expired";
   portalPhase: AgentPhase | null;
   hasPortalAccount: boolean;
-  onboardingCompletedAt: string | null;
   joinedAt: string;
   todoProgress: PortalTodoProgressSummary | null;
+}
+
+function resolveActivationStatus(row: DownlineOnboardingRow): DownlineMemberSummary["activationStatus"] {
+  if (row.status === "expired") return "expired";
+  if (row.enrollment_status === "needs_attention") return "needs_support";
+  if (row.supabase_user_id) return "ready";
+  if (["creating_email", "email_created", "ready", "credentials_viewed"].includes(row.status)) {
+    return "in_progress";
+  }
+  return "not_started";
 }
 
 function resolveOnboardingName(row: DownlineOnboardingRow): string {
@@ -114,11 +116,8 @@ serve(async (req) => {
         last_name,
         status,
         enrollment_status,
-        google_first_sign_in_at,
-        workspace_email,
         referral_invite_id,
         invited_comp_level,
-        onboarding_completed_at,
         created_at
       `)
       .eq("referrer_user_id", user.id)
@@ -192,25 +191,22 @@ serve(async (req) => {
       const portalPhase = userId ? phasesByUserId.get(userId) ?? null : null;
       const todoProgress = userId ? todoProgressByUserId.get(userId) ?? null : null;
 
-      const name = profileName
-        ?? (portalUser ? resolveDisplayName(portalUser, resolveOnboardingName(row)) : resolveOnboardingName(row));
+      // A referrer only needs a recruit name, never a Workspace identity. Avoid
+      // falling back to the Auth email local-part when a profile is incomplete.
+      const name = profileName ?? resolveOnboardingName(row);
 
       const inviteLabel = row.referral_invite_id
         ? inviteLabelById.get(row.referral_invite_id) ?? null
         : null;
 
       return {
-        onboardingId: row.id,
-        userId,
         name,
         inviteLabel,
         invitedCompLevel: row.invited_comp_level,
         onboardingStatus: row.status,
-        enrollmentStatus: row.enrollment_status,
-        googleFirstSignInAt: row.google_first_sign_in_at,
+        activationStatus: resolveActivationStatus(row),
         portalPhase,
         hasPortalAccount,
-        onboardingCompletedAt: row.onboarding_completed_at,
         joinedAt: row.created_at,
         todoProgress,
       };

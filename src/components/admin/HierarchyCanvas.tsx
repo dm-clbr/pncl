@@ -29,6 +29,13 @@ type Connection = {
   to: Point;
 };
 
+function formatEffectiveDate(value: string | null): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
 function getTileWidth(node: HierarchyNode | AssistHierarchyNode): number {
   return node.isPartnerGroup ? PARTNER_TILE_WIDTH : TILE_WIDTH;
 }
@@ -205,6 +212,14 @@ function HierarchyTile({
       <h3 className="admin-hierarchy-tile-name">
         {fullNode.isPartnerGroup ? members.map((member) => member.name).join(" & ") : fullNode.name}
       </h3>
+      {!fullNode.isPartnerGroup && (
+        <>
+          <p className="admin-hierarchy-tile-npn">Tier {fullNode.compLevel ?? "—"}{fullNode.compLevel != null ? "%" : ""}</p>
+          {formatEffectiveDate(fullNode.compLevelEffectiveAt) && (
+            <p className="admin-hierarchy-tile-effective">Effective {formatEffectiveDate(fullNode.compLevelEffectiveAt)}</p>
+          )}
+        </>
+      )}
       <div className="admin-hierarchy-tile-foot">
         {fullNode.isPartnerGroup && <span className="admin-badge assist">Partners</span>}
         {!fullNode.isPartnerGroup && fullNode.role === "admin" && <span className="admin-badge">Admin</span>}

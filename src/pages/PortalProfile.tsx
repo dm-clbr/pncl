@@ -498,7 +498,7 @@ export default function PortalProfile() {
             aria-labelledby="profile-tab-details"
             hidden={activeTab !== "details"}
           >
-          <div className="carrier-sheet-panel portal-profile-panel">
+            <div className="carrier-sheet-panel portal-profile-panel">
             <div className="carrier-sheet-panel-head">
               <div>
                 <h1>Profile details</h1>
@@ -507,6 +507,23 @@ export default function PortalProfile() {
                   Your county is determined automatically from your ZIP code.
                 </p>
               </div>
+            </div>
+
+            <div className="portal-profile-readiness" aria-label="Agent profile summary">
+              <div>
+                <span>Agent ID</span>
+                <strong>{agentNumber ?? "Pending assignment"}</strong>
+              </div>
+              <div>
+                <span>Compensation tier</span>
+                <strong>{profileRow?.comp_level != null ? `Tier ${profileRow.comp_level}` : "Not assigned"}</strong>
+              </div>
+              {todoTotal > 0 && (
+                <div>
+                  <span>Current progress</span>
+                  <strong>{PORTAL_PHASE_LABELS[currentPhase]}</strong>
+                </div>
+              )}
             </div>
 
             {loading ? (

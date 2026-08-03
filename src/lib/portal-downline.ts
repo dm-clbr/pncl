@@ -18,17 +18,13 @@ export interface DownlineTodoProgress {
 }
 
 export interface DownlineMember {
-  onboardingId: string;
-  userId: string | null;
   name: string;
   inviteLabel: string | null;
   invitedCompLevel: number | null;
   onboardingStatus: string;
-  enrollmentStatus: string;
-  googleFirstSignInAt: string | null;
+  activationStatus?: "not_started" | "in_progress" | "ready" | "needs_support" | "expired";
   portalPhase: AgentPhase | null;
   hasPortalAccount: boolean;
-  onboardingCompletedAt: string | null;
   joinedAt: string;
   todoProgress: DownlineTodoProgress | null;
 }
@@ -74,10 +70,12 @@ const ONBOARDING_STATUS_LABELS: Record<string, string> = {
   expired: "Expired",
 };
 
-const ENROLLMENT_STATUS_LABELS: Record<string, string> = {
-  awaiting_google_sign_in: "Awaiting Gmail sign-in",
-  google_verification_required: "Google verification needed",
-  needs_attention: "Onboarding needs support",
+const ACTIVATION_STATUS_LABELS: Record<DownlineMember["activationStatus"], string> = {
+  not_started: "Invitation sent",
+  in_progress: "Activating portal",
+  ready: "Portal account ready",
+  needs_support: "Onboarding needs support",
+  expired: "Expired",
 };
 
 const PRE_PORTAL_STATUS_ORDER = [
@@ -97,7 +95,20 @@ const PORTAL_JOURNEY_PHASES = [
 ] as const;
 
 export function formatDownlineOnboardingStatus(status: string): string {
-  return ENROLLMENT_STATUS_LABELS[status] ?? ONBOARDING_STATUS_LABELS[status] ?? status.replace(/_/g, " ");
+  return ONBOARDING_STATUS_LABELS[status] ?? status.replace(/_/g, " ");
+}
+
+export function formatDownlineActivationStatus(status: NonNullable<DownlineMember["activationStatus"]>): string {
+  return ACTIVATION_STATUS_LABELS[status];
+}
+
+function resolveActivationStatus(member: DownlineMember): NonNullable<DownlineMember["activationStatus"]> {
+  if (member.activationStatus) return member.activationStatus;
+  if (member.onboardingStatus === "expired") return "expired";
+  if (member.hasPortalAccount) return "ready";
+  return PRE_PORTAL_STATUS_ORDER.includes(member.onboardingStatus as typeof PRE_PORTAL_STATUS_ORDER[number])
+    ? "in_progress"
+    : "not_started";
 }
 
 export function getDownlineDisplayLabel(member: DownlineMember): string {
@@ -174,7 +185,8 @@ function buildExpiredProgress(): DownlineProgress {
 }
 
 export function getDownlineProgress(member: DownlineMember): DownlineProgress {
-  if (member.onboardingStatus === "expired") {
+  const activationStatus = resolveActivationStatus(member);
+  if (activationStatus === "expired") {
     return buildExpiredProgress();
   }
 
@@ -196,7 +208,7 @@ export function getDownlineProgress(member: DownlineMember): DownlineProgress {
       label: "Portal activation",
       state: "current",
       fillPercent: getPrePortalFillPercent(member.onboardingStatus),
-      detail: formatDownlineOnboardingStatus(member.enrollmentStatus),
+      detail: formatDownlineActivationStatus(activationStatus),
     });
   } else {
     segments.push({
@@ -265,12 +277,12 @@ export function getDownlineProgress(member: DownlineMember): DownlineProgress {
 
   if (currentSegment) {
     currentLabel = currentSegment.id === "activation"
-      ? formatDownlineOnboardingStatus(member.enrollmentStatus)
+      ? formatDownlineActivationStatus(activationStatus)
       : AGENT_PHASE_LABELS[currentSegment.id as AgentPhase] ?? currentSegment.label;
   } else if (portalPhase === "complete") {
     currentLabel = AGENT_PHASE_LABELS.complete;
   } else {
-    currentLabel = formatDownlineOnboardingStatus(member.enrollmentStatus);
+    currentLabel = formatDownlineActivationStatus(activationStatus);
   }
 
   return {

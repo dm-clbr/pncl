@@ -129,6 +129,7 @@ export interface AgentSummary {
   name: string;
   role: PortalRole;
   compLevel: number | null;
+  compLevelEffectiveAt: string | null;
   npn: string | null;
   agentNumber: number | null;
   phase: AgentPhase | null;
@@ -164,6 +165,8 @@ export interface HierarchyMember {
   role: PortalRole;
   status: string | null;
   npn: string | null;
+  compLevel: number | null;
+  compLevelEffectiveAt: string | null;
   profilePhotoPath: string | null;
   profileUpdatedAt: string | null;
 }
@@ -174,6 +177,8 @@ export interface HierarchyNode {
   name: string;
   role: PortalRole;
   status: string | null;
+  compLevel: number | null;
+  compLevelEffectiveAt: string | null;
   profilePhotoPath: string | null;
   profileUpdatedAt: string | null;
   children: HierarchyNode[];
@@ -418,6 +423,30 @@ interface AgentProfileFieldsRow {
   agent_number: number | null;
 }
 
+interface CompLevelHistoryRow {
+  user_id: string;
+  effective_at: string;
+}
+
+async function loadCurrentCompLevelEffectiveDates(
+  adminClient: SupabaseClient,
+): Promise<Map<string, string>> {
+  const { data, error } = await adminClient
+    .from("portal_profile_comp_level_history")
+    .select("user_id, effective_at")
+    .order("effective_at", { ascending: false });
+  if (error) {
+    // The history migration may not have reached an older environment yet.
+    logOnboarding("comp_level_history_load_failed", { error: error.message }, "warn");
+    return new Map();
+  }
+  const result = new Map<string, string>();
+  for (const row of (data ?? []) as CompLevelHistoryRow[]) {
+    if (!result.has(row.user_id)) result.set(row.user_id, row.effective_at);
+  }
+  return result;
+}
+
 async function loadAgentProfileFields(
   adminClient: SupabaseClient,
 ): Promise<Map<string, AgentProfileFieldsRow>> {
@@ -443,6 +472,7 @@ export async function buildAgentSummaries(
     users,
     onboardingMaps,
     compLevelsByUserId,
+    compLevelEffectiveDates,
     profileFields,
     profilesByUserId,
     partnerLinks,
@@ -451,6 +481,7 @@ export async function buildAgentSummaries(
     listPortalUsers(adminClient),
     loadOnboardingMaps(adminClient),
     loadCompLevelsByUserId(adminClient),
+    loadCurrentCompLevelEffectiveDates(adminClient),
     loadAgentProfileFields(adminClient),
     loadPortalProfilePhotos(adminClient),
     loadHierarchyPartnerLinks(adminClient),
@@ -494,6 +525,7 @@ export async function buildAgentSummaries(
       name: resolveDisplayName(user, onboarding?.legal_name),
       role: getUserRole(user),
       compLevel: compLevelsByUserId.get(user.id) ?? null,
+      compLevelEffectiveAt: compLevelEffectiveDates.get(user.id) ?? null,
       npn: profile?.npn?.trim() || onboarding?.npn?.trim() || null,
       agentNumber: profile?.agent_number ?? null,
       phase: phasesByUserId.get(user.id) ?? null,
@@ -538,9 +570,10 @@ export async function buildAgentSummaryForUser(
   const emailDomain = getEmailDomain();
   if (!user.email?.toLowerCase().endsWith(`@${emailDomain}`)) return null;
 
-  const [onboardingMaps, compLevelsByUserId, users] = await Promise.all([
+  const [onboardingMaps, compLevelsByUserId, compLevelEffectiveDates, users] = await Promise.all([
     loadOnboardingMaps(adminClient),
     loadCompLevelsByUserId(adminClient),
+    loadCurrentCompLevelEffectiveDates(adminClient),
     listPortalUsers(adminClient),
   ]);
 
@@ -582,6 +615,7 @@ export async function buildAgentSummaryForUser(
     name: resolveDisplayName(user, onboarding?.legal_name),
     role: getUserRole(user),
     compLevel: compLevelsByUserId.get(user.id) ?? null,
+    compLevelEffectiveAt: compLevelEffectiveDates.get(user.id) ?? null,
     npn: profileRow?.npn?.trim() || onboarding?.npn?.trim() || null,
     agentNumber: profileRow?.agent_number ?? null,
     phase,
@@ -680,6 +714,8 @@ function toHierarchyMember(
     role: agent.role,
     status: agent.status,
     npn: agent.npn,
+    compLevel: agent.compLevel,
+    compLevelEffectiveAt: agent.compLevelEffectiveAt,
     profilePhotoPath: profile?.profilePhotoPath ?? agent.profilePhotoPath ?? null,
     profileUpdatedAt: profile?.profileUpdatedAt ?? agent.profileUpdatedAt ?? null,
   };
@@ -744,6 +780,8 @@ export function buildHierarchyTree(
         name: members.map((member) => member.name).join(" & "),
         role: "agent",
         status: null,
+        compLevel: null,
+        compLevelEffectiveAt: null,
         profilePhotoPath: null,
         profileUpdatedAt: null,
         isPartnerGroup: true,
@@ -765,6 +803,8 @@ export function buildHierarchyTree(
       name: agent.name,
       role: agent.role,
       status: agent.status,
+      compLevel: agent.compLevel,
+      compLevelEffectiveAt: agent.compLevelEffectiveAt,
       profilePhotoPath: profile?.profilePhotoPath ?? agent.profilePhotoPath ?? null,
       profileUpdatedAt: profile?.profileUpdatedAt ?? agent.profileUpdatedAt ?? null,
       children,

@@ -123,6 +123,8 @@ export interface HierarchyMember {
   role: PortalRole;
   status: string | null;
   npn: string | null;
+  compLevel: number | null;
+  compLevelEffectiveAt: string | null;
   profilePhotoPath: string | null;
   profileUpdatedAt: string | null;
 }
@@ -133,6 +135,8 @@ export interface HierarchyNode {
   name: string;
   role: PortalRole;
   status: string | null;
+  compLevel: number | null;
+  compLevelEffectiveAt: string | null;
   profilePhotoPath: string | null;
   profileUpdatedAt: string | null;
   children: HierarchyNode[];

@@ -8,6 +8,7 @@ function sanitizeAgentsForAdminAssist(agents: AgentSummary[]): AgentSummary[] {
   return agents.map((agent) => ({
     ...agent,
     compLevel: null,
+    compLevelEffectiveAt: null,
   }));
 }
 

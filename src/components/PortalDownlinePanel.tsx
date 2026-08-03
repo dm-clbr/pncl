@@ -9,7 +9,9 @@ import {
 import { usePortalDownline } from "@/hooks/usePortalDownline";
 
 function formatJoinedDate(value: string): string {
-  return new Date(value).toLocaleDateString(undefined, {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Invite created";
+  return date.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -119,7 +121,7 @@ interface PortalDownlinePanelProps {
 }
 
 export default function PortalDownlinePanel({ embedded = false }: PortalDownlinePanelProps) {
-  const { members, loading } = usePortalDownline();
+  const { members, loading, error, reload } = usePortalDownline();
 
   const activeCount = useMemo(
     () =>
@@ -147,14 +149,21 @@ export default function PortalDownlinePanel({ embedded = false }: PortalDownline
           <span className="onboarding-spinner" aria-hidden="true" />
           <span>Loading team…</span>
         </div>
+      ) : error ? (
+        <div className="portal-panel-note" role="alert">
+          <p>We couldn&apos;t load team progress right now.</p>
+          <button type="button" className="portal-inline-action" onClick={() => void reload()}>
+            Try again
+          </button>
+        </div>
       ) : members.length === 0 ? (
         <p className="portal-panel-note">
           No recruits yet. Create a referral link above to invite your first team member.
         </p>
       ) : (
         <div className="portal-downline-list">
-          {members.map((member) => (
-            <DownlineMemberRow key={member.onboardingId} member={member} />
+          {members.map((member, index) => (
+            <DownlineMemberRow key={`${member.name}-${member.inviteLabel ?? ""}-${index}`} member={member} />
           ))}
         </div>
       )}

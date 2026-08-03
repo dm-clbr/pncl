@@ -1214,6 +1214,101 @@
   transition: width .4s var(--ease);
 }
 
+.home2-page .portal-readiness-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 15px 16px;
+  border: 1px solid rgba(245, 176, 65, .36);
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, rgba(245, 176, 65, .12), rgba(240, 237, 228, .04));
+  color: inherit;
+  text-decoration: none;
+}
+
+.home2-page .portal-readiness-summary:hover {
+  border-color: rgba(245, 176, 65, .7);
+}
+
+.home2-page .portal-readiness-summary-copy {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+
+.home2-page .portal-readiness-summary-label,
+.home2-page .portal-readiness-summary-count,
+.home2-page .portal-readiness-summary-tier {
+  font-family: var(--ff-mono);
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.home2-page .portal-readiness-summary-label {
+  color: var(--bone);
+  font-weight: 700;
+}
+
+.home2-page .portal-readiness-summary-count,
+.home2-page .portal-readiness-summary-tier {
+  color: var(--steel);
+}
+
+.home2-page .portal-readiness-summary-bar {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(240, 237, 228, .12);
+}
+
+.home2-page .portal-readiness-summary-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent-deep), var(--accent-bright));
+  transition: width .4s var(--ease);
+}
+
+.home2-page .portal-profile-readiness {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0 0 20px;
+  border: 1px solid rgba(240, 237, 228, .12);
+  background: rgba(240, 237, 228, .12);
+}
+
+.home2-page .portal-profile-readiness > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px 14px;
+  background: var(--ink-2);
+}
+
+.home2-page .portal-profile-readiness span {
+  color: var(--steel);
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.home2-page .portal-profile-readiness strong {
+  color: var(--bone);
+  font-size: .86rem;
+}
+
+@media (max-width: 640px) {
+  .home2-page .portal-profile-readiness {
+    grid-template-columns: 1fr;
+  }
+}
+
 .home2-page .portal-phase-badge {
   display: inline-flex;
   align-items: center;
@@ -4438,6 +4533,13 @@ button.portal-todo-link {
   font-family: var(--ff-mono);
   font-size: .68rem;
   letter-spacing: .04em;
+  color: var(--steel);
+}
+
+.home2-page .admin-hierarchy-tile-effective {
+  margin: 0;
+  font-size: .62rem;
+  line-height: 1.25;
   color: var(--steel);
 }
 
