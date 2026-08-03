@@ -16,7 +16,7 @@ interface FormState {
   addressZip: string;
   npn: string;
   eoPolicyNumber: string;
-  stateLicenses: string;
+  stateLicenseNumbers: string;
 }
 
 function toFormState(profile: AdminUserPortalProfile | null): FormState {
@@ -29,7 +29,9 @@ function toFormState(profile: AdminUserPortalProfile | null): FormState {
     addressZip: profile?.addressZip ?? "",
     npn: profile?.npn ?? "",
     eoPolicyNumber: profile?.eoPolicyNumber ?? "",
-    stateLicenses: (profile?.stateLicenses ?? []).join(", "),
+    stateLicenseNumbers: Object.entries(profile?.stateLicenseNumbers ?? {})
+      .map(([state, number]) => `${state}: ${number}`)
+      .join("\n"),
   };
 }
 
@@ -74,17 +76,16 @@ export default function AdminEditProfileModal({
       return;
     }
 
-    const stateLicenses = form.stateLicenses
-      .split(/[,\s]+/)
-      .map((state) => state.trim().toUpperCase())
-      .filter(Boolean);
-
-    const invalidState = stateLicenses.find(
-      (state) => !(US_STATES as readonly string[]).includes(state),
-    );
-    if (invalidState) {
-      toast.error(`"${invalidState}" is not a valid state code.`);
-      return;
+    const stateLicenseNumbers: Record<string, string> = {};
+    for (const line of form.stateLicenseNumbers.split("\n").map((value) => value.trim()).filter(Boolean)) {
+      const [rawState, ...numberParts] = line.split(":");
+      const state = rawState?.trim().toUpperCase() ?? "";
+      const number = numberParts.join(":").trim();
+      if (!(US_STATES as readonly string[]).includes(state) || !number) {
+        toast.error("Enter state licenses as one per line, for example UT: 123456.");
+        return;
+      }
+      stateLicenseNumbers[state] = number;
     }
 
     setSaving(true);
@@ -100,7 +101,7 @@ export default function AdminEditProfileModal({
           addressZip: form.addressZip || null,
           npn: form.npn || null,
           eoPolicyNumber: form.eoPolicyNumber || null,
-          stateLicenses,
+          stateLicenseNumbers,
         },
       });
       toast.success(result.message);
@@ -224,12 +225,11 @@ export default function AdminEditProfileModal({
             />
           </label>
           <label className="admin-field">
-            <span>State licenses (comma-separated)</span>
-            <input
-              type="text"
-              value={form.stateLicenses}
-              placeholder="e.g. UT, TX, FL"
-              onChange={(event) => updateField("stateLicenses", event.target.value)}
+            <span>State license numbers (one per line)</span>
+            <textarea
+              value={form.stateLicenseNumbers}
+              placeholder={"e.g. UT: 123456\nTX: 789012"}
+              onChange={(event) => updateField("stateLicenseNumbers", event.target.value)}
             />
           </label>
         </div>

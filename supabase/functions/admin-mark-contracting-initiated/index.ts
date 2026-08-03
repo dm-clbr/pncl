@@ -23,12 +23,20 @@ serve(async (req) => {
 
     const { data: existing, error: existingError } = await adminClient
       .from("portal_profiles")
-      .select("user_id")
+      .select("user_id, npn, eo_certificate_path")
       .eq("user_id", userId)
       .maybeSingle();
 
     if (existingError) {
       throw new Error(existingError.message);
+    }
+
+    if (initiated && (!existing?.npn?.trim() || !existing.eo_certificate_path?.trim())) {
+      return errorResponse(
+        "An NPN and uploaded E&O certificate are required before carrier contracting can be initiated.",
+        400,
+        "licensing_incomplete",
+      );
     }
 
     const columns = initiated
@@ -48,6 +56,13 @@ serve(async (req) => {
         .eq("user_id", userId);
       if (error) throw new Error(error.message);
     } else {
+      if (initiated) {
+        return errorResponse(
+          "An NPN and uploaded E&O certificate are required before carrier contracting can be initiated.",
+          400,
+          "licensing_incomplete",
+        );
+      }
       const { data: targetUser, error: userError } = await adminClient.auth.admin.getUserById(userId);
       if (userError || !targetUser.user) {
         return errorResponse("User not found", 404, "not_found");

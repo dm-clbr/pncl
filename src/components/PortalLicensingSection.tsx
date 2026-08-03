@@ -11,6 +11,7 @@ import {
   type PortalLicensingFormValues,
   type PortalProfile,
 } from "@/lib/portal-profile";
+import { isReadyForContracting } from "@/lib/licensing-contracting";
 import { toast } from "sonner";
 
 export default function PortalLicensingSection({
@@ -30,9 +31,10 @@ export default function PortalLicensingSection({
   const [form, setForm] = useState<PortalLicensingFormValues>({
     npn: "",
     eoPolicyNumber: "",
-    stateLicenses: [],
+    stateLicenseNumbers: {},
   });
   const [stateToAdd, setStateToAdd] = useState("");
+  const [licenseNumberToAdd, setLicenseNumberToAdd] = useState("");
   const eoFileInputRef = useRef<HTMLInputElement>(null);
   const [licensePath, setLicensePath] = useState<string | null>(null);
   const [licenseUrl, setLicenseUrl] = useState<string | null>(null);
@@ -128,19 +130,24 @@ export default function PortalLicensingSection({
   };
 
   const addStateLicense = () => {
-    if (!stateToAdd) return;
+    const licenseNumber = licenseNumberToAdd.trim();
+    if (!stateToAdd || !licenseNumber) {
+      toast.error("Enter the license number for the selected state.");
+      return;
+    }
     setForm((prev) =>
-      prev.stateLicenses.includes(stateToAdd)
-        ? prev
-        : { ...prev, stateLicenses: [...prev.stateLicenses, stateToAdd].sort() },
+      ({ ...prev, stateLicenseNumbers: { ...prev.stateLicenseNumbers, [stateToAdd]: licenseNumber } }),
     );
     setStateToAdd("");
+    setLicenseNumberToAdd("");
   };
 
   const removeStateLicense = (state: string) => {
     setForm((prev) => ({
       ...prev,
-      stateLicenses: prev.stateLicenses.filter((item) => item !== state),
+      stateLicenseNumbers: Object.fromEntries(
+        Object.entries(prev.stateLicenseNumbers).filter(([item]) => item !== state),
+      ),
     }));
   };
 
@@ -169,7 +176,10 @@ export default function PortalLicensingSection({
       setLicensePreviewUrl(null);
       onSaved?.(saved);
       toast.success("Licensing details saved.");
-      if (saved.npn?.trim() && saved.eo_policy_number?.trim()) {
+      if (isReadyForContracting({
+        npn: saved.npn,
+        eoCertificatePath: saved.eo_certificate_path,
+      })) {
         void notifyLicensingComplete();
       }
     } catch (err) {
@@ -266,7 +276,7 @@ export default function PortalLicensingSection({
           </div>
 
           <div className="admin-field">
-            <span>State licenses</span>
+            <span>State license numbers</span>
             <div className="portal-licensing-state-row">
               <select
                 value={stateToAdd}
@@ -274,26 +284,34 @@ export default function PortalLicensingSection({
                 aria-label="Choose a state to add"
               >
                 <option value="">Choose a state</option>
-                {US_STATES.filter((state) => !form.stateLicenses.includes(state)).map((state) => (
+                {US_STATES.filter((state) => !form.stateLicenseNumbers[state]).map((state) => (
                   <option key={state} value={state}>
                     {state}
                   </option>
                 ))}
               </select>
+              <input
+                type="text"
+                value={licenseNumberToAdd}
+                onChange={(event) => setLicenseNumberToAdd(event.target.value)}
+                placeholder="License number"
+                aria-label="License number"
+                autoComplete="off"
+              />
               <button
                 type="button"
                 className="portal-panel-btn"
                 onClick={addStateLicense}
-                disabled={!stateToAdd}
+                disabled={!stateToAdd || !licenseNumberToAdd.trim()}
               >
-                Add state
+                Add license
               </button>
             </div>
-            {form.stateLicenses.length > 0 ? (
+            {Object.keys(form.stateLicenseNumbers).length > 0 ? (
               <div className="portal-licensing-state-chips">
-                {form.stateLicenses.map((state) => (
+                {Object.entries(form.stateLicenseNumbers).sort(([a], [b]) => a.localeCompare(b)).map(([state, licenseNumber]) => (
                   <span key={state} className="portal-licensing-state-chip">
-                    {state}
+                    {state}: {licenseNumber}
                     <button
                       type="button"
                       onClick={() => removeStateLicense(state)}
@@ -306,7 +324,7 @@ export default function PortalLicensingSection({
               </div>
             ) : (
               <span className="admin-field-hint">
-                Add each state where you hold an insurance license, including your resident state.
+                Add each state and its active insurance license number, including your resident state.
               </span>
             )}
           </div>

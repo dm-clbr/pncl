@@ -9,6 +9,7 @@ const FULL_ADMIN_NAV = [
   { to: "/portal/admin", label: "Overview", icon: LayoutDashboard, end: true },
   { to: "/portal/admin/hierarchy", label: "Hierarchy", icon: GitBranch, end: false },
   { to: "/portal/admin/users", label: "Users", icon: Users, end: false },
+  { to: "/portal/admin/profile-review", label: "Profile review", icon: ClipboardCheck, end: false },
   { to: "/portal/admin/gmail-verification", label: "Gmail verification", icon: Mail, end: false },
   { to: "/portal/admin/onboarding-holds", label: "Agent enrollments", icon: Workflow, end: false },
   { to: "/portal/admin/contracting", label: "Contracting", icon: FileSignature, end: false },

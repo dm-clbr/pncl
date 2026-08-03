@@ -210,6 +210,7 @@ interface LicensingProfileRow {
   npn: string | null;
   eo_policy_number: string | null;
   state_licenses: string[] | null;
+  state_license_numbers: Record<string, string> | null;
   drivers_license_path: string | null;
 }
 
@@ -295,7 +296,7 @@ export async function computeAutoCompletionSets(
       adminClient
         .from("portal_profiles")
         .select(
-          "user_id, first_name, last_name, address_line1, address_city, address_state, address_zip, county, npn, eo_policy_number, state_licenses, drivers_license_path",
+          "user_id, first_name, last_name, address_line1, address_city, address_state, address_zip, county, npn, eo_policy_number, state_licenses, state_license_numbers, drivers_license_path",
         )
         .in("user_id", userIds)
         .then(({ data, error }) => {
@@ -321,7 +322,7 @@ export async function computeAutoCompletionSets(
             "state_licenses",
             new Set(
               rows
-                .filter((row) => Array.isArray(row.state_licenses) && row.state_licenses.length > 0)
+                .filter((row) => row.state_license_numbers && Object.values(row.state_license_numbers).some((number) => typeof number === "string" && number.trim()))
                 .map((row) => row.user_id),
             ),
           );

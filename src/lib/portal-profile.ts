@@ -37,6 +37,7 @@ export interface PortalProfile {
   eo_policy_number: string | null;
   eo_certificate_path: string | null;
   state_licenses: string[] | null;
+  state_license_numbers: Record<string, string> | null;
   drivers_license_path: string | null;
   address_line1: string | null;
   address_city: string | null;
@@ -50,7 +51,25 @@ export interface PortalProfile {
 export interface PortalLicensingFormValues {
   npn: string;
   eoPolicyNumber: string;
-  stateLicenses: string[];
+  stateLicenseNumbers: Record<string, string>;
+}
+
+/** A state is licensed only when a non-empty license number is on file. */
+export function normalizeStateLicenseNumbers(value: unknown): Record<string, string> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+
+  return Object.entries(value as Record<string, unknown>).reduce<Record<string, string>>((result, [state, number]) => {
+    const normalizedState = state.trim().toUpperCase();
+    const normalizedNumber = typeof number === "string" ? number.trim() : "";
+    if ((US_STATES as readonly string[]).includes(normalizedState) && normalizedNumber) {
+      result[normalizedState] = normalizedNumber;
+    }
+    return result;
+  }, {});
+}
+
+export function licensedStatesFromNumbers(value: unknown): string[] {
+  return Object.keys(normalizeStateLicenseNumbers(value)).sort();
 }
 
 export interface PortalProfileFormValues {
@@ -311,7 +330,7 @@ export function profileToLicensingValues(profile: PortalProfile | null): PortalL
   return {
     npn: profile?.npn ?? "",
     eoPolicyNumber: profile?.eo_policy_number ?? "",
-    stateLicenses: profile?.state_licenses ?? [],
+    stateLicenseNumbers: normalizeStateLicenseNumbers(profile?.state_license_numbers),
   };
 }
 
@@ -407,7 +426,10 @@ export async function saveLicensingProfile(
   const licensingColumns = {
     npn: values.npn.trim() || null,
     eo_policy_number: values.eoPolicyNumber.trim() || null,
-    state_licenses: values.stateLicenses,
+    // Keep the legacy array in sync for existing exports, but never let an
+    // unchecked/state-only value qualify as a license.
+    state_licenses: licensedStatesFromNumbers(values.stateLicenseNumbers),
+    state_license_numbers: normalizeStateLicenseNumbers(values.stateLicenseNumbers),
     drivers_license_path: driversLicensePath,
     eo_certificate_path: eoCertificatePath,
   };

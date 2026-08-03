@@ -1172,6 +1172,7 @@ export interface AdminUserPortalProfile {
   eoPolicyNumber: string | null;
   eoCertificateUrl: string | null;
   stateLicenses: string[];
+  stateLicenseNumbers: Record<string, string>;
   driversLicenseUrl: string | null;
   addressLine1: string | null;
   addressCity: string | null;
@@ -1268,6 +1269,7 @@ export interface AdminEditableProfileFields {
   npn?: string | null;
   eoPolicyNumber?: string | null;
   stateLicenses?: string[];
+  stateLicenseNumbers?: Record<string, string>;
 }
 
 /** Admin correction of an agent's portal profile; changes are audit-logged server-side. */

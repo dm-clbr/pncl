@@ -36,6 +36,7 @@ interface PortalProfileRow {
   eo_policy_number: string | null;
   eo_certificate_path: string | null;
   state_licenses: string[] | null;
+  state_license_numbers: Record<string, string> | null;
   drivers_license_path: string | null;
   address_line1: string | null;
   address_city: string | null;
@@ -277,6 +278,7 @@ serve(async (req) => {
             eoPolicyNumber: profile.eo_policy_number,
             eoCertificateUrl,
             stateLicenses: profile.state_licenses ?? [],
+            stateLicenseNumbers: profile.state_license_numbers ?? {},
             driversLicenseUrl,
             addressLine1: profile.address_line1,
             addressCity: profile.address_city,

@@ -51,6 +51,7 @@ import AdminTickets from "./pages/admin/AdminTickets.tsx";
 import AdminPayPolicy from "./pages/admin/AdminPayPolicy.tsx";
 import AdminGmailVerification from "./pages/admin/AdminGmailVerification.tsx";
 import AdminOnboardingHolds from "./pages/admin/AdminOnboardingHolds.tsx";
+import AdminProfileCompleteness from "./pages/admin/AdminProfileCompleteness.tsx";
 import AdminClients from "./pages/admin/AdminClients.tsx";
 import AdminDashboardTabs from "./pages/admin/AdminDashboardTabs.tsx";
 import AdminTodos from "./pages/admin/AdminTodos.tsx";
@@ -213,6 +214,7 @@ const App = () => (
             <Route path="users" element={<AdminFullRoute allowAdminAssist><AdminUsers /></AdminFullRoute>} />
             <Route path="gmail-verification" element={<AdminFullRoute><AdminGmailVerification /></AdminFullRoute>} />
             <Route path="onboarding-holds" element={<AdminFullRoute><AdminOnboardingHolds /></AdminFullRoute>} />
+            <Route path="profile-review" element={<AdminFullRoute><AdminProfileCompleteness /></AdminFullRoute>} />
             <Route path="users/new" element={<AdminFullRoute><AdminAddUser /></AdminFullRoute>} />
             <Route path="users/:userId" element={<AdminFullRoute><AdminUserDetail /></AdminFullRoute>} />
             <Route path="incentives" element={<AdminFullRoute><AdminIncentives /></AdminFullRoute>} />

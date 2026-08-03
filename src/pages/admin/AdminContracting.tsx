@@ -176,7 +176,7 @@ export default function AdminContracting() {
         <div>
           <h1>Contracting</h1>
           <p>
-            Agents ready for carrier contracting (NPN + E&amp;O on file), signed ICAs awaiting comp
+            Agents ready for carrier contracting (NPN + E&amp;O certificate), signed ICAs awaiting comp
             attachments, and comp signature status.
           </p>
         </div>
@@ -238,16 +238,10 @@ export default function AdminContracting() {
                     </td>
                     <td>{row.npn ?? "—"}</td>
                     <td>
-                      {row.eoPolicyNumber ? (
-                        <>
-                          {row.eoPolicyNumber}
-                          <div className="admin-inline-note muted">
-                            {row.hasEoCertificate ? "Certificate uploaded" : "No certificate"}
-                          </div>
-                        </>
-                      ) : (
-                        "—"
-                      )}
+                      {row.eoPolicyNumber ?? "—"}
+                      <div className="admin-inline-note muted">
+                        {row.hasEoCertificate ? "Certificate uploaded" : "No certificate"}
+                      </div>
                     </td>
                     <td>
                       {row.icaSigned ? (
@@ -292,7 +286,7 @@ export default function AdminContracting() {
                             title={
                               row.licensingReady
                                 ? "Mark carrier contracting as initiated"
-                                : "Needs NPN and E&O policy number first"
+                                : "Needs NPN and an uploaded E&O certificate first"
                             }
                             onClick={() => void handleMarkInitiated(row, true)}
                           >

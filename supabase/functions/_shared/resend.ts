@@ -334,7 +334,7 @@ export function buildLicensingCompleteNotificationEmailHtml(input: {
   agentName: string;
   agentEmail: string;
   npn: string;
-  eoPolicyNumber: string;
+  eoPolicyNumber: string | null;
   hasEoCertificate: boolean;
   contractingUrl: string;
 }): string {
@@ -345,15 +345,15 @@ export function buildLicensingCompleteNotificationEmailHtml(input: {
       </h2>
       <div style="padding:24px;font-size:14px;color:#111;line-height:1.6;">
         <p>
-          <strong>${input.agentName}</strong> has entered both their NPN and E&amp;O policy
-          number in PNCL Hub. Contracting can be initiated.
+          <strong>${input.agentName}</strong> has entered their NPN and uploaded their E&amp;O
+          certificate in PNCL Hub. Contracting can be initiated.
         </p>
         <table style="width:100%;border-collapse:collapse;font-size:14px;margin:20px 0;">
           <tr><td style="padding:6px 0;color:#555;">Agent</td><td style="padding:6px 0;"><strong>${input.agentName}</strong></td></tr>
           <tr><td style="padding:6px 0;color:#555;">PNCL email</td><td style="padding:6px 0;">${input.agentEmail}</td></tr>
           <tr><td style="padding:6px 0;color:#555;">NPN</td><td style="padding:6px 0;">${input.npn}</td></tr>
-          <tr><td style="padding:6px 0;color:#555;">E&amp;O policy number</td><td style="padding:6px 0;">${input.eoPolicyNumber}</td></tr>
-          <tr><td style="padding:6px 0;color:#555;">E&amp;O certificate</td><td style="padding:6px 0;">${input.hasEoCertificate ? "Uploaded" : "Not uploaded yet"}</td></tr>
+          <tr><td style="padding:6px 0;color:#555;">E&amp;O policy number</td><td style="padding:6px 0;">${input.eoPolicyNumber || "Not provided"}</td></tr>
+          <tr><td style="padding:6px 0;color:#555;">E&amp;O certificate</td><td style="padding:6px 0;color:#188038;font-weight:600;">${input.hasEoCertificate ? "Uploaded — ready for review" : "Not uploaded"}</td></tr>
         </table>
         <p style="margin:28px 0;">
           <a href="${input.contractingUrl}"
@@ -371,7 +371,7 @@ export async function sendLicensingCompleteNotificationEmail(input: {
   agentName: string;
   agentEmail: string;
   npn: string;
-  eoPolicyNumber: string;
+  eoPolicyNumber: string | null;
   hasEoCertificate: boolean;
   contractingUrl: string;
 }): Promise<void> {

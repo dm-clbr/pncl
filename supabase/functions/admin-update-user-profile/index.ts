@@ -4,6 +4,10 @@ import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
 import { lookupCountyFromZip } from "../_shared/usZipCounty.ts";
 
+const US_STATE_CODES = new Set([
+  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+]);
+
 /** Editable portal_profiles columns, keyed by the camelCase payload field. */
 const EDITABLE_FIELDS: Record<string, string> = {
   firstName: "first_name",
@@ -62,6 +66,24 @@ serve(async (req) => {
         return errorResponse("stateLicenses must be an array of strings", 400, "invalid_payload");
       }
       updates.state_licenses = [...new Set(stateLicenses.map((state) => state.trim().toUpperCase()).filter(Boolean))].sort();
+    }
+
+    if ("stateLicenseNumbers" in (fields as Record<string, unknown>)) {
+      const value = (fields as Record<string, unknown>).stateLicenseNumbers;
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        return errorResponse("stateLicenseNumbers must be an object", 400, "invalid_payload");
+      }
+      const normalized: Record<string, string> = {};
+      for (const [rawState, rawNumber] of Object.entries(value as Record<string, unknown>)) {
+        const state = rawState.trim().toUpperCase();
+        const number = typeof rawNumber === "string" ? rawNumber.trim() : "";
+        if (!US_STATE_CODES.has(state) || !number) {
+          return errorResponse("Each state license must include a state code and license number", 400, "invalid_payload");
+        }
+        normalized[state] = number;
+      }
+      updates.state_license_numbers = normalized;
+      updates.state_licenses = Object.keys(normalized).sort();
     }
 
     if (Object.keys(updates).length === 0) {

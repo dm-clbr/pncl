@@ -13,8 +13,8 @@ export function getContractingAdminUrl(): string {
 }
 
 /**
- * Emails every admin when an agent has recorded both an NPN and an E&O policy
- * number so contracting can be initiated. Sends at most once per agent —
+ * Emails every admin when an agent has recorded an NPN and uploaded their E&O
+ * certificate so contracting can be initiated. Sends at most once per agent —
  * guarded by portal_profiles.licensing_notification_sent_at.
  */
 export async function notifyAdminsOfLicensingComplete(
@@ -24,7 +24,7 @@ export async function notifyAdminsOfLicensingComplete(
     agentName: string;
     agentEmail: string;
     npn: string;
-    eoPolicyNumber: string;
+    eoPolicyNumber: string | null;
     hasEoCertificate: boolean;
   },
 ): Promise<boolean> {
@@ -45,6 +45,12 @@ export async function notifyAdminsOfLicensingComplete(
 
   const recipients = await listGenesisAdminEmails(adminClient);
   if (!recipients.length) {
+    // Do not permanently consume the one-time notification marker when there
+    // is nobody to notify. A later profile save can safely retry it.
+    await adminClient
+      .from("portal_profiles")
+      .update({ licensing_notification_sent_at: null })
+      .eq("user_id", input.userId);
     logOnboarding("licensing_notification_skipped", {
       userId: input.userId,
       reason: "no_admins",

@@ -25,10 +25,11 @@
   --radius: 0px;
 
   /* Admin console type scale — bump these to resize the whole console. */
-  --admin-fs-body: .95rem;
-  --admin-fs-note: .88rem;
-  --admin-fs-label: 11px;
-  --admin-fs-badge: 10.5px;
+  /* Keep operational screens comfortable to read during long admin sessions. */
+  --admin-fs-body: 1rem;
+  --admin-fs-note: .9375rem;
+  --admin-fs-label: 12px;
+  --admin-fs-badge: 11.5px;
 
   font-family: var(--ff-sans);
   background: var(--bone);
@@ -3071,6 +3072,8 @@ button.portal-todo-link {
   max-width: none;
   width: 100%;
   padding-bottom: 48px;
+  font-size: var(--admin-fs-body);
+  line-height: 1.6;
 }
 
 .home2-page .admin-header {
@@ -3360,7 +3363,7 @@ button.portal-todo-link {
 .home2-page .admin-field select,
 .home2-page .admin-field textarea {
   width: 100%;
-  height: 44px;
+  height: 46px;
   padding: 0 14px;
   border-radius: var(--radius);
   border: 1px solid rgba(240, 237, 228, .12);
@@ -3368,6 +3371,22 @@ button.portal-todo-link {
   color: var(--bone);
   font: inherit;
   box-sizing: border-box;
+}
+
+.home2-page .admin-field input:focus-visible,
+.home2-page .admin-field select:focus-visible,
+.home2-page .admin-field textarea:focus-visible,
+.home2-page .admin-table-input:focus-visible,
+.home2-page .admin-primary-btn:focus-visible,
+.home2-page .admin-secondary-btn:focus-visible,
+.home2-page .admin-icon-btn:focus-visible,
+.home2-page .admin-nav-link:focus-visible,
+.home2-page .admin-back-link:focus-visible,
+.home2-page .admin-actions-menu-item:focus-visible,
+.home2-page .admin-hierarchy-view-btn:focus-visible,
+.home2-page .admin-hierarchy-zoom-btn:focus-visible {
+  outline: 3px solid rgba(220, 106, 45, .85);
+  outline-offset: 3px;
 }
 
 .home2-page .admin-field textarea {
@@ -3447,7 +3466,7 @@ button.portal-todo-link {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 44px;
+  height: 46px;
   padding: 0 18px;
   border: none;
   border-radius: var(--radius);
@@ -3476,7 +3495,7 @@ button.portal-todo-link {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 44px;
+  height: 46px;
   padding: 0 18px;
   border: 1px solid rgba(240, 237, 228, .16);
   border-radius: var(--radius);
@@ -3522,11 +3541,12 @@ button.portal-todo-link {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--admin-fs-body);
+  line-height: 1.55;
 }
 
 .home2-page .admin-table th,
 .home2-page .admin-table td {
-  padding: 12px 10px;
+  padding: 14px 12px;
   text-align: left;
   border-bottom: 1px solid rgba(240, 237, 228, .08);
   vertical-align: middle;
@@ -4223,7 +4243,7 @@ button.portal-todo-link {
   background: transparent;
   color: var(--steel);
   font-family: var(--ff-mono);
-  font-size: 10px;
+  font-size: var(--admin-fs-badge);
   letter-spacing: .08em;
   text-transform: uppercase;
   cursor: pointer;
@@ -4270,7 +4290,7 @@ button.portal-todo-link {
   background: rgba(12, 12, 14, .72);
   color: var(--steel);
   font-family: var(--ff-mono);
-  font-size: 9px;
+  font-size: var(--admin-fs-badge);
   letter-spacing: .08em;
   text-transform: uppercase;
   cursor: pointer;
@@ -4290,7 +4310,7 @@ button.portal-todo-link {
   min-width: 44px;
   text-align: center;
   font-family: var(--ff-mono);
-  font-size: 10px;
+  font-size: var(--admin-fs-badge);
   letter-spacing: .08em;
   color: var(--steel);
 }

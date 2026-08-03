@@ -6,7 +6,7 @@ import { logOnboarding } from "../_shared/logger.ts";
 
 /**
  * Called by the portal after an agent saves licensing details. If both NPN and
- * E&O policy number are on file, notifies admins (once) that contracting can
+ * E&O certificate are on file, notifies admins (once) that contracting can
  * be initiated.
  */
 serve(async (req) => {
@@ -31,9 +31,10 @@ serve(async (req) => {
     }
 
     const npn = profile?.npn?.trim() ?? "";
-    const eoPolicyNumber = profile?.eo_policy_number?.trim() ?? "";
+    const eoPolicyNumber = profile?.eo_policy_number?.trim() ?? null;
+    const hasEoCertificate = Boolean(profile?.eo_certificate_path?.trim());
 
-    if (!profile || !npn || !eoPolicyNumber) {
+    if (!profile || !npn || !hasEoCertificate) {
       return jsonResponse({ notified: false, reason: "incomplete" });
     }
 
@@ -51,7 +52,7 @@ serve(async (req) => {
       agentEmail: user.email ?? "",
       npn,
       eoPolicyNumber,
-      hasEoCertificate: Boolean(profile.eo_certificate_path),
+      hasEoCertificate,
     });
 
     return jsonResponse({ notified });

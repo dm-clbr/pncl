@@ -94,7 +94,7 @@ serve(async (req) => {
         npn: npn || null,
         eoPolicyNumber: eoPolicyNumber || null,
         hasEoCertificate: Boolean(profile?.eo_certificate_path),
-        licensingReady: Boolean(npn && eoPolicyNumber),
+        licensingReady: Boolean(npn && profile?.eo_certificate_path?.trim()),
         licensingCompletedAt: profile?.licensing_notification_sent_at ?? null,
         contractingInitiatedAt: profile?.contracting_initiated_at ?? null,
         icaSigned: icaSignedUserIds.has(user.id),
