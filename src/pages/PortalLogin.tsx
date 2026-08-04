@@ -3,7 +3,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import OnboardingLayout from "@/components/OnboardingLayout";
 import { useAuth, isEmailConfirmed } from "@/contexts/AuthContext";
 import { isSupabaseAuthConfigured } from "@/lib/supabase";
-import { consumePortalOAuthReturn } from "@/lib/portal-auth";
+import { consumePortalOAuthReturn, isPendingPortalEnrollment } from "@/lib/portal-auth";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 
@@ -35,9 +35,7 @@ export default function PortalLogin() {
     }
   };
 
-  if (!loading && user && isEmailConfirmed(user)
-    && user.app_metadata?.enrollment_version === 3
-    && user.app_metadata?.enrollment_ready !== true) {
+  if (!loading && user && isEmailConfirmed(user) && isPendingPortalEnrollment(user.app_metadata)) {
     return <Navigate to="/onboarding/activate" replace />;
   }
 

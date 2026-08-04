@@ -10,7 +10,9 @@ import {
 import type { Session, User } from "@supabase/supabase-js";
 import { getSupabaseClient, isSupabaseAuthConfigured } from "@/lib/supabase";
 import {
+  canPendingPortalEnrollmentUsePath,
   completePortalOAuthRedirect,
+  isPendingPortalEnrollment,
   PORTAL_HOME_PATH,
   PORTAL_LOGIN_PATH,
   shouldCompletePortalOAuthRedirect,
@@ -54,12 +56,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(`Only @${ALLOWED_EMAIL_DOMAIN} accounts can access the employee portal.`);
     }
 
-    if (
-      nextSession.user.app_metadata?.enrollment_version === 3
-      && nextSession.user.app_metadata?.enrollment_ready !== true
-      && window.location.pathname !== PORTAL_LOGIN_PATH
-      && window.location.pathname !== "/onboarding/activate"
-    ) {
+    if (isPendingPortalEnrollment(nextSession.user.app_metadata)
+      && !canPendingPortalEnrollmentUsePath(window.location.pathname)) {
       const supabase = getSupabaseClient();
       await supabase.auth.signOut();
       setSession(null);
@@ -74,7 +72,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const maybeRedirectAfterPortalSignIn = useCallback(() => {
     if (!user || !isEmailConfirmed(user)) return;
     if (!shouldCompletePortalOAuthRedirect(window.location.pathname)) return;
-    completePortalOAuthRedirect();
+    completePortalOAuthRedirect({
+      pendingEnrollment: isPendingPortalEnrollment(user.app_metadata),
+    });
   }, [user]);
 
   useEffect(() => {
