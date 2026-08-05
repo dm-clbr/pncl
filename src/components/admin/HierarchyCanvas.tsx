@@ -9,7 +9,8 @@ const ZOOM_STEP = 0.1;
 
 const TILE_WIDTH = 148;
 const PARTNER_TILE_WIDTH = 220;
-const TILE_HEIGHT = 132;
+const TILE_HEIGHT = 172;
+const ASSIST_TILE_HEIGHT = 132;
 const H_GAP = 28;
 const V_GAP = 72;
 const ROOT_GAP = 48;
@@ -40,7 +41,10 @@ function getTileWidth(node: HierarchyNode | AssistHierarchyNode): number {
   return node.isPartnerGroup ? PARTNER_TILE_WIDTH : TILE_WIDTH;
 }
 
-function layoutHierarchyTree(roots: ReadonlyArray<HierarchyNode | AssistHierarchyNode>): {
+function layoutHierarchyTree(
+  roots: ReadonlyArray<HierarchyNode | AssistHierarchyNode>,
+  tileHeight: number,
+): {
   positioned: PositionedNode[];
   width: number;
   height: number;
@@ -51,7 +55,7 @@ function layoutHierarchyTree(roots: ReadonlyArray<HierarchyNode | AssistHierarch
 
   function assignNode(node: HierarchyNode | AssistHierarchyNode, depth: number): number {
     maxDepth = Math.max(maxDepth, depth);
-    const y = CANVAS_PADDING + depth * (TILE_HEIGHT + V_GAP);
+    const y = CANVAS_PADDING + depth * (tileHeight + V_GAP);
     const tileWidth = getTileWidth(node);
 
     if (node.children.length === 0) {
@@ -73,7 +77,7 @@ function layoutHierarchyTree(roots: ReadonlyArray<HierarchyNode | AssistHierarch
   }
 
   const width = Math.max(nextLeafX + CANVAS_PADDING - ROOT_GAP, TILE_WIDTH + CANVAS_PADDING * 2);
-  const height = CANVAS_PADDING * 2 + (maxDepth + 1) * TILE_HEIGHT + maxDepth * V_GAP;
+  const height = CANVAS_PADDING * 2 + (maxDepth + 1) * tileHeight + maxDepth * V_GAP;
 
   return { positioned, width, height };
 }
@@ -81,6 +85,7 @@ function layoutHierarchyTree(roots: ReadonlyArray<HierarchyNode | AssistHierarch
 function collectConnections(
   roots: ReadonlyArray<HierarchyNode | AssistHierarchyNode>,
   positionedById: Map<string, PositionedNode>,
+  tileHeight: number,
 ): Connection[] {
   const connections: Connection[] = [];
 
@@ -92,7 +97,7 @@ function collectConnections(
       const childPos = positionedById.get(child.id);
       if (childPos) {
         connections.push({
-          from: { x: parent.x, y: parent.y + TILE_HEIGHT },
+          from: { x: parent.x, y: parent.y + tileHeight },
           to: { x: childPos.x, y: childPos.y },
         });
       }
@@ -240,7 +245,8 @@ interface HierarchyCanvasProps {
 
 export function HierarchyCanvas({ tree, selectedNodeId, assistView = false, onSelectNode }: HierarchyCanvasProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
-  const layout = useMemo(() => layoutHierarchyTree(tree), [tree]);
+  const tileHeight = assistView ? ASSIST_TILE_HEIGHT : TILE_HEIGHT;
+  const layout = useMemo(() => layoutHierarchyTree(tree, tileHeight), [tree, tileHeight]);
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
@@ -252,8 +258,8 @@ export function HierarchyCanvas({ tree, selectedNodeId, assistView = false, onSe
   );
 
   const connections = useMemo(
-    () => collectConnections(tree, positionedById),
-    [tree, positionedById],
+    () => collectConnections(tree, positionedById, tileHeight),
+    [tree, positionedById, tileHeight],
   );
 
   const fitToView = useCallback(() => {
@@ -415,7 +421,7 @@ export function HierarchyCanvas({ tree, selectedNodeId, assistView = false, onSe
                   left: x - width / 2,
                   top: y,
                   width,
-                  height: TILE_HEIGHT,
+                  height: tileHeight,
                 }}
               >
                 <HierarchyTile

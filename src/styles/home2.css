@@ -4423,6 +4423,8 @@ button.portal-todo-link {
 
 .home2-page .admin-hierarchy-tile-name {
   margin: 0;
+  width: 100%;
+  flex-shrink: 0;
   font-size: .78rem;
   font-weight: 700;
   line-height: 1.35;
