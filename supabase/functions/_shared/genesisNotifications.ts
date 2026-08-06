@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { hasAdminConsoleAccess } from "./adminAuth.ts";
+import { isAdminUser, isGenesisAdminUser } from "./adminAuth.ts";
 import { listPortalUsers } from "./adminAgents.ts";
 import { logOnboarding } from "./logger.ts";
 import { sendGenesisOnboardingNotificationEmail } from "./resend.ts";
@@ -14,6 +14,7 @@ export interface GenesisOnboardingNotificationInput {
   hasLicense: string;
   npn: string | null;
   hasEoInsurance: string;
+  hasOtherImo: string;
   completedAt: string;
 }
 
@@ -21,7 +22,7 @@ export interface GenesisOnboardingNotificationInput {
 export async function listGenesisAdminEmails(adminClient: SupabaseClient): Promise<string[]> {
   const users = await listPortalUsers(adminClient);
   return users
-    .filter((user) => hasAdminConsoleAccess(user) && user.email?.trim())
+    .filter((user) => (isAdminUser(user) || isGenesisAdminUser(user)) && user.email?.trim())
     .map((user) => user.email!.trim());
 }
 
@@ -95,6 +96,7 @@ const TEST_GENESIS_NOTIFICATION: GenesisOnboardingNotificationInput = {
   hasLicense: "Yes",
   npn: "12345678",
   hasEoInsurance: "Yes",
+  hasOtherImo: "No",
   completedAt: new Date().toISOString(),
 };
 

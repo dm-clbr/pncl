@@ -4457,6 +4457,16 @@ button.portal-todo-link {
   gap: 6px;
 }
 
+.home2-page .admin-hierarchy-tile-readonly {
+  cursor: default;
+}
+
+.home2-page .admin-hierarchy-tile-readonly:hover {
+  border-color: rgba(240, 237, 228, .12);
+  transform: none;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .28);
+}
+
 .home2-page .admin-hierarchy-tile-partner {
   min-height: 100%;
 }
@@ -4772,6 +4782,14 @@ button.portal-todo-link {
 
 .home2-page .admin-tree-select:hover .admin-tree-name {
   color: #e8a07a;
+}
+
+.home2-page .admin-tree-select-readonly {
+  cursor: default;
+}
+
+.home2-page .admin-tree-select-readonly:hover .admin-tree-name {
+  color: var(--bone);
 }
 
 .home2-page .admin-tree-name {

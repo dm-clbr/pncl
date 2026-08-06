@@ -57,15 +57,3 @@ export function findHierarchyNode(roots: HierarchyNode[], nodeId: string): Hiera
   }
   return null;
 }
-
-export function findAssistHierarchyNode(
-  roots: AssistHierarchyNode[],
-  nodeId: string,
-): AssistHierarchyNode | null {
-  for (const root of roots) {
-    if (nodeMatchesUserId(root, nodeId)) return root;
-    const match = findAssistHierarchyNode(root.children, nodeId);
-    if (match) return match;
-  }
-  return null;
-}

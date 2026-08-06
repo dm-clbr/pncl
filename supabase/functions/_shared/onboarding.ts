@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { requireCountyFromZip } from "./usZipCounty.ts";
+import { normalizeRequiredYesNo } from "./requiredYesNo.ts";
 
 export function getServiceClient(): SupabaseClient {
   const url = Deno.env.get("SUPABASE_URL");
@@ -49,6 +50,7 @@ export interface OnboardingRecord {
   has_license: string;
   npn: string | null;
   has_eo_insurance: string;
+  has_other_imo: string | null;
   workspace_email: string | null;
   status: OnboardingStatus;
   handoff_token_hash: string;
@@ -104,6 +106,7 @@ export interface SubmitOnboardingPayload {
   hasLicense: string;
   npn?: string;
   hasEoInsurance: string;
+  hasOtherImo: string;
   referralInviteId?: string;
   contractSignatureId: string;
   driversLicenseImage: OnboardingImagePayload;
@@ -317,8 +320,9 @@ export function validateSubmitPayload(body: unknown): SubmitOnboardingPayload {
   const county = requireCountyFromZip(addressZipRaw);
 
   const uplineNetwork = normalizeRequiredString(data.uplineNetwork, "uplineNetwork");
-  const hasLicense = normalizeYesNo(data.hasLicense, "hasLicense");
-  const hasEoInsurance = normalizeYesNo(data.hasEoInsurance, "hasEoInsurance");
+  const hasLicense = normalizeRequiredYesNo(data.hasLicense, "hasLicense");
+  const hasEoInsurance = normalizeRequiredYesNo(data.hasEoInsurance, "hasEoInsurance");
+  const hasOtherImo = normalizeRequiredYesNo(data.hasOtherImo, "hasOtherImo");
   const npn = typeof data.npn === "string" ? data.npn.trim() : "";
   const referralInviteId = typeof data.referralInviteId === "string" && isValidReferrerUserId(data.referralInviteId)
     ? data.referralInviteId
@@ -356,6 +360,7 @@ export function validateSubmitPayload(body: unknown): SubmitOnboardingPayload {
     hasLicense,
     npn: npn || undefined,
     hasEoInsurance,
+    hasOtherImo,
     referralInviteId,
     contractSignatureId,
     driversLicenseImage,
@@ -368,13 +373,6 @@ function normalizeRequiredString(value: unknown, field: string): string {
     throw new Error(`${field} is required`);
   }
   return value.trim();
-}
-
-function normalizeYesNo(value: unknown, field: string): string {
-  if (value !== "Yes" && value !== "No") {
-    throw new Error(`${field} must be Yes or No`);
-  }
-  return value;
 }
 
 export function isTokenExpired(expiresAt: string): boolean {

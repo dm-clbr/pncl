@@ -211,7 +211,7 @@ const App = () => (
           >
             <Route index element={<AdminIndexRedirect />} />
             <Route path="hierarchy" element={<AdminFullRoute allowAdminAssist><AdminHierarchy /></AdminFullRoute>} />
-            <Route path="users" element={<AdminFullRoute allowAdminAssist><AdminUsers /></AdminFullRoute>} />
+            <Route path="users" element={<AdminFullRoute><AdminUsers /></AdminFullRoute>} />
             <Route path="gmail-verification" element={<AdminFullRoute><AdminGmailVerification /></AdminFullRoute>} />
             <Route path="onboarding-holds" element={<AdminFullRoute><AdminOnboardingHolds /></AdminFullRoute>} />
             <Route path="profile-review" element={<AdminFullRoute><AdminProfileCompleteness /></AdminFullRoute>} />
@@ -223,7 +223,7 @@ const App = () => (
             <Route path="clients" element={<AdminFullRoute><AdminClients /></AdminFullRoute>} />
             <Route path="dashboard-tabs" element={<AdminFullRoute><AdminDashboardTabs /></AdminFullRoute>} />
             <Route path="todos" element={<AdminFullRoute><AdminTodos /></AdminFullRoute>} />
-            <Route path="genesis" element={<AdminGenesis />} />
+            <Route path="genesis" element={<AdminRoute><AdminGenesis /></AdminRoute>} />
             <Route path="contracting" element={<AdminFullRoute><AdminContracting /></AdminFullRoute>} />
             <Route path="lead-charges" element={<AdminFullRoute><AdminLeadCharges /></AdminFullRoute>} />
             <Route path="setter-closer" element={<AdminFullRoute><AdminSetterCloser /></AdminFullRoute>} />

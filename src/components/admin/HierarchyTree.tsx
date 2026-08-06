@@ -46,8 +46,8 @@ function HierarchyTreeNode({
   const selected = selectedNodeId === node.id;
   const label = assistView
     ? node.isPartnerGroup
-      ? "Business partners"
-      : (node as AssistHierarchyNode).email
+      ? (node as AssistHierarchyNode).members?.map((member) => member.name).join(" & ") ?? "Business partners"
+      : (node as AssistHierarchyNode).name
     : node.isPartnerGroup
       ? (node as HierarchyNode).name
       : (node as HierarchyNode).name;
@@ -73,17 +73,40 @@ function HierarchyTreeNode({
           <span className="admin-tree-toggle-spacer" aria-hidden="true" />
         )}
 
-        <button type="button" className="admin-tree-select" onClick={() => onSelect(node.id)}>
+        {assistView ? (
+          <div className="admin-tree-select admin-tree-select-readonly">
+            {node.isPartnerGroup ? (
+              <>
+                <div className="admin-hierarchy-tile-avatars admin-tree-avatars">
+                  {((node as AssistHierarchyNode).members ?? []).map((member) => (
+                    <AdminUserAvatar key={member.id} name={member.name} size="sm" />
+                  ))}
+                </div>
+                <span className="admin-tree-name">{label}</span>
+                <span className="admin-tree-meta">
+                  NPN {(node as AssistHierarchyNode).members?.map((member) => member.npn ?? "—").join(" · ")}
+                </span>
+              </>
+            ) : (
+              <>
+                <AdminUserAvatar name={(node as AssistHierarchyNode).name} size="sm" />
+                <span className="admin-tree-name">{label}</span>
+                <span className="admin-tree-meta">NPN {(node as AssistHierarchyNode).npn ?? "—"}</span>
+              </>
+            )}
+            {hasChildren && (
+              <span className="admin-tree-count">{node.children.length} direct</span>
+            )}
+          </div>
+        ) : (
+          <button type="button" className="admin-tree-select" onClick={() => onSelect(node.id)}>
           {node.isPartnerGroup ? (
             <>
               <div className="admin-hierarchy-tile-avatars admin-tree-avatars">
-                {(assistView
-                  ? (node as AssistHierarchyNode).members ?? []
-                  : (node as HierarchyNode).members ?? []
-                ).map((member) => (
+                {((node as HierarchyNode).members ?? []).map((member) => (
                   <AdminUserAvatar
                     key={member.id}
-                    name={"name" in member && typeof member.name === "string" ? member.name : undefined}
+                    name={member.name}
                     email={member.email}
                     profilePhotoPath={member.profilePhotoPath}
                     profileUpdatedAt={member.profileUpdatedAt}
@@ -92,24 +115,7 @@ function HierarchyTreeNode({
                 ))}
               </div>
               <span className="admin-tree-name">{label}</span>
-              {assistView ? (
-                <span className="admin-tree-meta">
-                  NPN {(node as AssistHierarchyNode).members?.map((member) => member.npn ?? "—").join(" · ")}
-                </span>
-              ) : (
-                <span className="admin-badge assist">Partners</span>
-              )}
-            </>
-          ) : assistView ? (
-            <>
-              <AdminUserAvatar
-                email={(node as AssistHierarchyNode).email}
-                profilePhotoPath={(node as AssistHierarchyNode).profilePhotoPath}
-                profileUpdatedAt={(node as AssistHierarchyNode).profileUpdatedAt}
-                size="sm"
-              />
-              <span className="admin-tree-name">{label}</span>
-              <span className="admin-tree-meta">NPN {(node as AssistHierarchyNode).npn ?? "—"}</span>
+              <span className="admin-badge assist">Partners</span>
             </>
           ) : (
             <>
@@ -128,7 +134,8 @@ function HierarchyTreeNode({
               {node.children.length} direct
             </span>
           )}
-        </button>
+          </button>
+        )}
       </div>
 
       {hasChildren && expanded && (

@@ -140,35 +140,27 @@ function HierarchyTile({
       ? assistNode.members
       : [{
           id: assistNode.id,
-          email: assistNode.email,
+          name: assistNode.name,
           npn: assistNode.npn,
-          profilePhotoPath: assistNode.profilePhotoPath,
-          profileUpdatedAt: assistNode.profileUpdatedAt,
         }];
 
     return (
-      <button
-        type="button"
-        className={`admin-hierarchy-tile admin-hierarchy-tile-assist${partnerClass}${selected ? " admin-hierarchy-tile-selected" : ""}`}
-        onClick={() => onSelect(assistNode.id)}
+      <div
+        className={`admin-hierarchy-tile admin-hierarchy-tile-assist admin-hierarchy-tile-readonly${partnerClass}`}
       >
         <div className="admin-hierarchy-tile-avatars">
           {members.map((member) => (
             <AdminUserAvatar
               key={member.id}
-              email={member.email}
-              profilePhotoPath={member.profilePhotoPath}
-              profileUpdatedAt={member.profileUpdatedAt}
+              name={member.name}
               size="md"
               className="admin-hierarchy-tile-avatar"
             />
           ))}
         </div>
-        {assistNode.isPartnerGroup ? (
-          <p className="admin-hierarchy-tile-email">Business partners</p>
-        ) : (
-          <p className="admin-hierarchy-tile-email">{assistNode.email}</p>
-        )}
+        <h3 className="admin-hierarchy-tile-name">
+          {assistNode.isPartnerGroup ? members.map((member) => member.name).join(" & ") : assistNode.name}
+        </h3>
         <p className="admin-hierarchy-tile-npn">
           NPN {members.map((member) => member.npn ?? "—").join(" · ")}
         </p>
@@ -177,7 +169,7 @@ function HierarchyTile({
             <span className="admin-hierarchy-tile-meta">{assistNode.children.length} direct</span>
           )}
         </div>
-      </button>
+      </div>
     );
   }
 

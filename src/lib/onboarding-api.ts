@@ -26,6 +26,7 @@ export interface SubmitOnboardingInput {
   hasLicense: string;
   npn: string;
   hasEoInsurance: string;
+  hasOtherImo: string;
   referralInviteId?: string;
   contractSignatureId: string;
 }
@@ -46,6 +47,28 @@ export type OnboardingStatus =
   | "credentials_viewed"
   | "failed"
   | "expired";
+
+export function buildSubmitOnboardingRequest(input: SubmitOnboardingInput) {
+  return {
+    legalName: input.legalName,
+    phoneNumber: input.phoneNumber,
+    dateOfBirth: input.dateOfBirth,
+    ssn: input.ssn,
+    stateOfResidence: input.stateOfResidence,
+    addressLine1: input.addressLine1,
+    addressCity: input.addressCity,
+    addressZip: input.addressZip,
+    uplineNetwork: input.uplineNetwork,
+    hasLicense: input.hasLicense,
+    npn: input.npn || undefined,
+    hasEoInsurance: input.hasEoInsurance,
+    hasOtherImo: input.hasOtherImo,
+    referralInviteId: input.referralInviteId,
+    contractSignatureId: input.contractSignatureId,
+    driversLicenseImageBase64: input.driversLicense || undefined,
+    profilePhotoImageBase64: input.profilePhoto || undefined,
+  };
+}
 
 export interface OnboardingStatusResponse {
   status: OnboardingStatus;
@@ -126,24 +149,7 @@ export async function submitOnboarding(
   const response = await fetch(getFunctionUrl("submit-onboarding"), {
     method: "POST",
     headers: getHeaders(),
-    body: JSON.stringify({
-      legalName: input.legalName,
-      phoneNumber: input.phoneNumber,
-      dateOfBirth: input.dateOfBirth,
-      ssn: input.ssn,
-      stateOfResidence: input.stateOfResidence,
-      addressLine1: input.addressLine1,
-      addressCity: input.addressCity,
-      addressZip: input.addressZip,
-      uplineNetwork: input.uplineNetwork,
-      hasLicense: input.hasLicense,
-      npn: input.npn || undefined,
-      hasEoInsurance: input.hasEoInsurance,
-      referralInviteId: input.referralInviteId,
-      contractSignatureId: input.contractSignatureId,
-      driversLicenseImageBase64: input.driversLicense || undefined,
-      profilePhotoImageBase64: input.profilePhoto || undefined,
-    }),
+    body: JSON.stringify(buildSubmitOnboardingRequest(input)),
   });
 
   const data = await response.json();

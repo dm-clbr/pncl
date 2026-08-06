@@ -17,6 +17,7 @@ export interface AgentOnboardingDetails {
   hasLicense: string;
   npn: string | null;
   hasEoInsurance: string;
+  hasOtherImo: string | null;
   workspaceEmail: string | null;
 }
 
@@ -147,20 +148,14 @@ export interface HierarchyNode {
 
 export interface AssistHierarchyMember {
   id: string;
-  email: string;
+  name: string;
   npn: string | null;
-  profilePhotoPath: string | null;
-  profileUpdatedAt: string | null;
 }
 
 export interface AssistHierarchyNode {
   id: string;
-  email: string;
+  name: string;
   npn: string | null;
-  referrerEmail: string | null;
-  referrerNpn: string | null;
-  profilePhotoPath: string | null;
-  profileUpdatedAt: string | null;
   children: AssistHierarchyNode[];
   isPartnerGroup?: boolean;
   memberIds?: string[];
@@ -169,7 +164,7 @@ export interface AssistHierarchyNode {
 
 export interface HierarchyFocusOption {
   id: string;
-  email: string;
+  name: string;
   npn: string | null;
 }
 

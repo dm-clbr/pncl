@@ -26,6 +26,7 @@ export default function AdminOnboardingDetailsPanel({
     { label: "Has license", value: formatOnboardingValue(onboarding.hasLicense) },
     { label: "NPN", value: formatOnboardingValue(onboarding.npn, "Not provided") },
     { label: "E&O insurance", value: formatOnboardingValue(onboarding.hasEoInsurance) },
+    { label: "Contracted with another IMO", value: formatOnboardingValue(onboarding.hasOtherImo, "Not recorded") },
   ];
 
   return (

@@ -19,7 +19,7 @@ describe("profile completeness", () => {
     const gaps = getProfileCompletenessGaps(agent({
       emailConfirmed: false, agentNumber: null, compLevel: null, profilePhotoPath: null,
       hasOnboardingRecord: true, googleWorkspaceStatus: "not_found", npn: null,
-      onboarding: { legalName: "Private Name", firstName: "Private", lastName: "Name", phoneNumber: "5555555555", dateOfBirth: "2000-01-01", ssn: "123-45-6789", stateOfResidence: "CO", uplineNetwork: "", hasLicense: "Yes", npn: null, hasEoInsurance: "No", workspaceEmail: "agent@thepncl.com" },
+      onboarding: { legalName: "Private Name", firstName: "Private", lastName: "Name", phoneNumber: "5555555555", dateOfBirth: "2000-01-01", ssn: "123-45-6789", stateOfResidence: "CO", uplineNetwork: "", hasLicense: "Yes", npn: null, hasEoInsurance: "No", hasOtherImo: "No", workspaceEmail: "agent@thepncl.com" },
     }));
     expect(gaps.map((entry) => entry.key)).toEqual([
       "email_confirmation", "agent_id", "compensation_tier", "license_npn", "workspace_account", "profile_photo",
@@ -30,7 +30,7 @@ describe("profile completeness", () => {
   it("prioritizes the records with the most gaps and omits complete records", () => {
     const enrolled = {
       legalName: "Agent", firstName: "Agent", lastName: "One", phoneNumber: "", dateOfBirth: "", ssn: null,
-      stateOfResidence: "", uplineNetwork: "", hasLicense: "No", npn: null, hasEoInsurance: "", workspaceEmail: null,
+      stateOfResidence: "", uplineNetwork: "", hasLicense: "No", npn: null, hasEoInsurance: "", hasOtherImo: null, workspaceEmail: null,
     };
     const queue = getProfileCompletenessQueue([
       agent({ id: "complete", name: "Complete", profilePhotoPath: "/photo.jpg", hasOnboardingRecord: true, onboarding: enrolled, googleWorkspaceStatus: "active" }),

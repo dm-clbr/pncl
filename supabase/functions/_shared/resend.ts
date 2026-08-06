@@ -262,6 +262,7 @@ export function buildGenesisOnboardingNotificationEmailHtml(input: {
   hasLicense: string;
   npn: string | null;
   hasEoInsurance: string;
+  hasOtherImo: string;
   completedAt: string;
   genesisUrl: string;
   isTest?: boolean;
@@ -291,6 +292,7 @@ export function buildGenesisOnboardingNotificationEmailHtml(input: {
           <tr><td style="padding:6px 0;color:#555;">Has license</td><td style="padding:6px 0;">${input.hasLicense}</td></tr>
           <tr><td style="padding:6px 0;color:#555;">NPN</td><td style="padding:6px 0;">${npn}</td></tr>
           <tr><td style="padding:6px 0;color:#555;">E&amp;O insurance</td><td style="padding:6px 0;">${input.hasEoInsurance}</td></tr>
+          <tr><td style="padding:6px 0;color:#555;">Contracted with another IMO</td><td style="padding:6px 0;">${input.hasOtherImo}</td></tr>
           <tr><td style="padding:6px 0;color:#555;">Completed</td><td style="padding:6px 0;">${formatGenesisNotificationDate(input.completedAt)}</td></tr>
         </table>
         <p style="margin:28px 0;">
@@ -318,6 +320,7 @@ export async function sendGenesisOnboardingNotificationEmail(input: {
   hasLicense: string;
   npn: string | null;
   hasEoInsurance: string;
+  hasOtherImo: string;
   completedAt: string;
   genesisUrl: string;
   isTest?: boolean;

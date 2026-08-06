@@ -108,6 +108,7 @@ serve(async (req) => {
       stateOfResidence: payload.stateOfResidence,
       hasLicense: payload.hasLicense,
       hasEoInsurance: payload.hasEoInsurance,
+      hasOtherImo: payload.hasOtherImo,
       hasNpn: Boolean(payload.npn),
       hasReferralInvite: Boolean(payload.referralInviteId),
     });
@@ -155,6 +156,7 @@ serve(async (req) => {
         .update({
           handoff_token_hash: await hashHandoffToken(resumedToken),
           handoff_token_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+          has_other_imo: payload.hasOtherImo,
         })
         .eq("id", existing.id);
       if (tokenError) throw new Error(tokenError.message);
@@ -282,6 +284,7 @@ serve(async (req) => {
         has_license: payload.hasLicense,
         npn: payload.npn ?? null,
         has_eo_insurance: payload.hasEoInsurance,
+        has_other_imo: payload.hasOtherImo,
         personal_email: contract.personal_email,
         contract_signature_id: payload.contractSignatureId,
         referrer_user_id: referrerUserId,
@@ -379,6 +382,7 @@ serve(async (req) => {
           hasLicense: payload.hasLicense,
           npn: payload.npn ?? null,
           hasEoInsurance: payload.hasEoInsurance,
+          hasOtherImo: payload.hasOtherImo,
           completedAt,
         });
       } catch (notificationError) {

@@ -118,6 +118,7 @@ export interface AgentOnboardingDetails {
   hasLicense: string;
   npn: string | null;
   hasEoInsurance: string;
+  hasOtherImo: string | null;
   workspaceEmail: string | null;
 }
 
@@ -189,20 +190,14 @@ export interface HierarchyNode {
 
 export interface AssistHierarchyMember {
   id: string;
-  email: string;
+  name: string;
   npn: string | null;
-  profilePhotoPath: string | null;
-  profileUpdatedAt: string | null;
 }
 
 export interface AssistHierarchyNode {
   id: string;
-  email: string;
+  name: string;
   npn: string | null;
-  referrerEmail: string | null;
-  referrerNpn: string | null;
-  profilePhotoPath: string | null;
-  profileUpdatedAt: string | null;
   children: AssistHierarchyNode[];
   isPartnerGroup?: boolean;
   memberIds?: string[];
@@ -211,7 +206,7 @@ export interface AssistHierarchyNode {
 
 export interface HierarchyFocusOption {
   id: string;
-  email: string;
+  name: string;
   npn: string | null;
 }
 
@@ -236,6 +231,7 @@ interface OnboardingRow {
   has_license: string;
   npn: string | null;
   has_eo_insurance: string;
+  has_other_imo: string | null;
   status: string;
   workspace_email: string | null;
   personal_email: string | null;
@@ -307,6 +303,7 @@ async function loadOnboardingMaps(
       has_license,
       npn,
       has_eo_insurance,
+      has_other_imo,
       status,
       workspace_email,
       personal_email,
@@ -398,6 +395,7 @@ async function buildOnboardingDetails(
     hasLicense: onboarding.has_license,
     npn: onboarding.npn,
     hasEoInsurance: onboarding.has_eo_insurance,
+    hasOtherImo: onboarding.has_other_imo,
     workspaceEmail: onboarding.workspace_email,
   };
 }
@@ -724,10 +722,8 @@ function toHierarchyMember(
 function toAssistHierarchyMember(agent: AgentSummary): AssistHierarchyMember {
   return {
     id: agent.id,
-    email: agent.email,
+    name: agent.name,
     npn: agent.npn,
-    profilePhotoPath: agent.profilePhotoPath ?? null,
-    profileUpdatedAt: agent.profileUpdatedAt ?? null,
   };
 }
 
@@ -856,7 +852,7 @@ export function buildAssistHierarchyTree(
       mergedIntoGroup.add(partner.id);
 
       const members = [agent, partner]
-        .sort((a, b) => a.email.localeCompare(b.email))
+        .sort((a, b) => a.name.localeCompare(b.name))
         .map(toAssistHierarchyMember);
 
       const childAgents = collectMergedChildAgents(
@@ -866,20 +862,14 @@ export function buildAssistHierarchyTree(
       );
 
       const children = childAgents
-        .sort((a, b) => a.email.localeCompare(b.email))
+        .sort((a, b) => a.name.localeCompare(b.name))
         .map(toNode)
         .filter((node): node is AssistHierarchyNode => node !== null);
 
-      const referrer = agent.referrerId ? byId.get(agent.referrerId) : null;
-
       return {
         id: getPartnerGroupId(agent.id, partner.id),
-        email: members.map((member) => member.email).join(" · "),
+        name: members.map((member) => member.name).join(" & "),
         npn: members.map((member) => member.npn ?? "—").join(" · "),
-        referrerEmail: referrer?.email ?? null,
-        referrerNpn: referrer?.npn ?? null,
-        profilePhotoPath: null,
-        profileUpdatedAt: null,
         isPartnerGroup: true,
         memberIds: members.map((member) => member.id),
         members,
@@ -887,20 +877,15 @@ export function buildAssistHierarchyTree(
       };
     }
 
-    const referrer = agent.referrerId ? byId.get(agent.referrerId) : null;
     const children = (childrenByReferrer.get(agent.id) ?? [])
-      .sort((a, b) => a.email.localeCompare(b.email))
+      .sort((a, b) => a.name.localeCompare(b.name))
       .map(toNode)
       .filter((node): node is AssistHierarchyNode => node !== null);
 
     return {
       id: agent.id,
-      email: agent.email,
+      name: agent.name,
       npn: agent.npn,
-      referrerEmail: referrer?.email ?? null,
-      referrerNpn: referrer?.npn ?? null,
-      profilePhotoPath: agent.profilePhotoPath ?? null,
-      profileUpdatedAt: agent.profileUpdatedAt ?? null,
       children,
     };
   };
@@ -917,17 +902,17 @@ export function buildAssistHierarchyTree(
   );
 
   return roots
-    .sort((a, b) => a.email.localeCompare(b.email))
+    .sort((a, b) => a.name.localeCompare(b.name))
     .map(toNode)
     .filter((node): node is AssistHierarchyNode => node !== null);
 }
 
 export function buildHierarchyFocusOptions(agents: AgentSummary[]): HierarchyFocusOption[] {
   return [...agents]
-    .sort((a, b) => a.email.localeCompare(b.email))
+    .sort((a, b) => a.name.localeCompare(b.name))
     .map((agent) => ({
       id: agent.id,
-      email: agent.email,
+      name: agent.name,
       npn: agent.npn,
     }));
 }

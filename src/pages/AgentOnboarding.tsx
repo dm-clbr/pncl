@@ -4,6 +4,7 @@ import OnboardingLayout from "@/components/OnboardingLayout";
 import OnboardingContractStep from "@/components/OnboardingContractStep";
 import { submitOnboarding, isSupabaseConfigured, readStoredEnrollmentHandoff } from "@/lib/onboarding-api";
 import { lookupCountyFromZip } from "@/lib/us-zip-county";
+import { OTHER_IMO_ONBOARDING_STEP } from "@/lib/onboarding-other-imo";
 import {
   clearStoredContractSession,
   readStoredContractLegalName,
@@ -50,6 +51,7 @@ interface OnboardingData {
   hasLicense: string;
   npn: string;
   hasEoInsurance: string;
+  hasOtherImo: string;
 }
 
 type StepKey = Exclude<keyof OnboardingData, "legalName">;
@@ -63,7 +65,7 @@ interface Step {
   type: "text" | "tel" | "select" | "yesno" | "file";
   placeholder?: string;
   required?: boolean;
-  options?: string[];
+  options?: readonly string[];
 }
 
 const STEPS: Step[] = [
@@ -172,6 +174,7 @@ const STEPS: Step[] = [
     options: ["Yes", "No"],
     required: true,
   },
+  OTHER_IMO_ONBOARDING_STEP,
 ];
 
 function formatPhone(value: string): string {
@@ -308,6 +311,7 @@ const EMPTY_DATA: OnboardingData = {
   hasLicense: "",
   npn: "",
   hasEoInsurance: "",
+  hasOtherImo: "",
 };
 
 const UPLINE_STEP_INDEX = STEPS.findIndex((step) => step.key === "uplineNetwork");
