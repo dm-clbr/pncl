@@ -74,12 +74,22 @@ function HierarchyTreeNode({
         )}
 
         {assistView ? (
-          <div className="admin-tree-select admin-tree-select-readonly">
+          <button
+            type="button"
+            className="admin-tree-select"
+            aria-label={`View hierarchy details for ${label}`}
+            onClick={() => onSelect(node.id)}
+          >
             {node.isPartnerGroup ? (
               <>
                 <div className="admin-hierarchy-tile-avatars admin-tree-avatars">
                   {((node as AssistHierarchyNode).members ?? []).map((member) => (
-                    <AdminUserAvatar key={member.id} name={member.name} size="sm" />
+                    <AdminUserAvatar
+                      key={member.id}
+                      name={member.name}
+                      email={member.email}
+                      size="sm"
+                    />
                   ))}
                 </div>
                 <span className="admin-tree-name">{label}</span>
@@ -89,7 +99,11 @@ function HierarchyTreeNode({
               </>
             ) : (
               <>
-                <AdminUserAvatar name={(node as AssistHierarchyNode).name} size="sm" />
+                <AdminUserAvatar
+                  name={(node as AssistHierarchyNode).name}
+                  email={(node as AssistHierarchyNode).email}
+                  size="sm"
+                />
                 <span className="admin-tree-name">{label}</span>
                 <span className="admin-tree-meta">NPN {(node as AssistHierarchyNode).npn ?? "—"}</span>
               </>
@@ -97,7 +111,7 @@ function HierarchyTreeNode({
             {hasChildren && (
               <span className="admin-tree-count">{node.children.length} direct</span>
             )}
-          </div>
+          </button>
         ) : (
           <button type="button" className="admin-tree-select" onClick={() => onSelect(node.id)}>
           {node.isPartnerGroup ? (

@@ -141,18 +141,26 @@ function HierarchyTile({
       : [{
           id: assistNode.id,
           name: assistNode.name,
+          email: assistNode.email,
           npn: assistNode.npn,
+          referrerName: assistNode.referrerName,
+          referrerEmail: assistNode.referrerEmail,
+          referrerNpn: assistNode.referrerNpn,
         }];
 
     return (
-      <div
-        className={`admin-hierarchy-tile admin-hierarchy-tile-assist admin-hierarchy-tile-readonly${partnerClass}`}
+      <button
+        type="button"
+        className={`admin-hierarchy-tile admin-hierarchy-tile-assist${partnerClass}${selected ? " admin-hierarchy-tile-selected" : ""}`}
+        aria-label={`View hierarchy details for ${assistNode.name}`}
+        onClick={() => onSelect(assistNode.id)}
       >
         <div className="admin-hierarchy-tile-avatars">
           {members.map((member) => (
             <AdminUserAvatar
               key={member.id}
               name={member.name}
+              email={member.email}
               size="md"
               className="admin-hierarchy-tile-avatar"
             />
@@ -169,7 +177,7 @@ function HierarchyTile({
             <span className="admin-hierarchy-tile-meta">{assistNode.children.length} direct</span>
           )}
         </div>
-      </div>
+      </button>
     );
   }
 

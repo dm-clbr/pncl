@@ -4457,16 +4457,6 @@ button.portal-todo-link {
   gap: 6px;
 }
 
-.home2-page .admin-hierarchy-tile-readonly {
-  cursor: default;
-}
-
-.home2-page .admin-hierarchy-tile-readonly:hover {
-  border-color: rgba(240, 237, 228, .12);
-  transform: none;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, .28);
-}
-
 .home2-page .admin-hierarchy-tile-partner {
   min-height: 100%;
 }
@@ -4601,6 +4591,76 @@ button.portal-todo-link {
 .home2-page .admin-hierarchy-assist-details dd {
   margin: 0;
   color: var(--bone);
+  word-break: break-word;
+}
+
+.home2-page .admin-hierarchy-assist-people {
+  display: grid;
+  gap: 14px;
+}
+
+.home2-page .admin-hierarchy-assist-person {
+  padding: 14px;
+  border: 1px solid rgba(240, 237, 228, .1);
+  border-radius: var(--radius);
+  background: rgba(0, 0, 0, .14);
+}
+
+.home2-page .admin-hierarchy-assist-person .admin-hierarchy-assist-identity {
+  justify-content: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.home2-page .admin-hierarchy-assist-person h3 {
+  margin: 0 0 3px;
+  color: var(--bone);
+  font-size: .95rem;
+}
+
+.home2-page .admin-hierarchy-assist-person p {
+  margin: 0;
+  color: var(--steel);
+  font-size: .78rem;
+  word-break: break-word;
+}
+
+.home2-page .admin-hierarchy-assist-downline {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(240, 237, 228, .1);
+}
+
+.home2-page .admin-hierarchy-assist-direct-list {
+  grid-column: 1 / -1;
+}
+
+.home2-page .admin-hierarchy-assist-direct-list ul {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home2-page .admin-hierarchy-assist-direct-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(240, 237, 228, .04);
+}
+
+.home2-page .admin-hierarchy-assist-direct-list strong {
+  color: var(--bone);
+  font-size: .82rem;
+}
+
+.home2-page .admin-hierarchy-assist-direct-list span {
+  color: var(--steel);
+  font-size: .72rem;
   word-break: break-word;
 }
 
@@ -4782,14 +4842,6 @@ button.portal-todo-link {
 
 .home2-page .admin-tree-select:hover .admin-tree-name {
   color: #e8a07a;
-}
-
-.home2-page .admin-tree-select-readonly {
-  cursor: default;
-}
-
-.home2-page .admin-tree-select-readonly:hover .admin-tree-name {
-  color: var(--bone);
 }
 
 .home2-page .admin-tree-name {

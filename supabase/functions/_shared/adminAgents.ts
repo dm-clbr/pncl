@@ -191,13 +191,21 @@ export interface HierarchyNode {
 export interface AssistHierarchyMember {
   id: string;
   name: string;
+  email: string;
   npn: string | null;
+  referrerName: string | null;
+  referrerEmail: string | null;
+  referrerNpn: string | null;
 }
 
 export interface AssistHierarchyNode {
   id: string;
   name: string;
+  email: string;
   npn: string | null;
+  referrerName: string | null;
+  referrerEmail: string | null;
+  referrerNpn: string | null;
   children: AssistHierarchyNode[];
   isPartnerGroup?: boolean;
   memberIds?: string[];
@@ -207,6 +215,7 @@ export interface AssistHierarchyNode {
 export interface HierarchyFocusOption {
   id: string;
   name: string;
+  email: string;
   npn: string | null;
 }
 
@@ -719,11 +728,19 @@ function toHierarchyMember(
   };
 }
 
-function toAssistHierarchyMember(agent: AgentSummary): AssistHierarchyMember {
+function toAssistHierarchyMember(
+  agent: AgentSummary,
+  byId: Map<string, AgentSummary>,
+): AssistHierarchyMember {
+  const referrer = agent.referrerId ? byId.get(agent.referrerId) : null;
   return {
     id: agent.id,
     name: agent.name,
+    email: agent.email,
     npn: agent.npn,
+    referrerName: referrer?.name ?? agent.referrerName ?? null,
+    referrerEmail: referrer?.email ?? null,
+    referrerNpn: referrer?.npn ?? null,
   };
 }
 
@@ -853,7 +870,7 @@ export function buildAssistHierarchyTree(
 
       const members = [agent, partner]
         .sort((a, b) => a.name.localeCompare(b.name))
-        .map(toAssistHierarchyMember);
+        .map((member) => toAssistHierarchyMember(member, byId));
 
       const childAgents = collectMergedChildAgents(
         childrenByReferrer,
@@ -869,7 +886,11 @@ export function buildAssistHierarchyTree(
       return {
         id: getPartnerGroupId(agent.id, partner.id),
         name: members.map((member) => member.name).join(" & "),
+        email: members.map((member) => member.email).join(" · "),
         npn: members.map((member) => member.npn ?? "—").join(" · "),
+        referrerName: members[0]?.referrerName ?? null,
+        referrerEmail: members[0]?.referrerEmail ?? null,
+        referrerNpn: members[0]?.referrerNpn ?? null,
         isPartnerGroup: true,
         memberIds: members.map((member) => member.id),
         members,
@@ -881,11 +902,16 @@ export function buildAssistHierarchyTree(
       .sort((a, b) => a.name.localeCompare(b.name))
       .map(toNode)
       .filter((node): node is AssistHierarchyNode => node !== null);
+    const referrer = agent.referrerId ? byId.get(agent.referrerId) : null;
 
     return {
       id: agent.id,
       name: agent.name,
+      email: agent.email,
       npn: agent.npn,
+      referrerName: referrer?.name ?? agent.referrerName ?? null,
+      referrerEmail: referrer?.email ?? null,
+      referrerNpn: referrer?.npn ?? null,
       children,
     };
   };
@@ -913,6 +939,7 @@ export function buildHierarchyFocusOptions(agents: AgentSummary[]): HierarchyFoc
     .map((agent) => ({
       id: agent.id,
       name: agent.name,
+      email: agent.email,
       npn: agent.npn,
     }));
 }

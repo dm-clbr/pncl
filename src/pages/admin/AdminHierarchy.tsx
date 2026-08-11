@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Download, GitBranch, LayoutGrid, ListTree } from "lucide-react";
+import { HierarchyAssistDetailModal } from "@/components/admin/HierarchyAssistDetailModal";
 import { HierarchyCanvas } from "@/components/admin/HierarchyCanvas";
 import { HierarchyEditModal } from "@/components/admin/HierarchyEditModal";
 import { HierarchyPartnerEditModal } from "@/components/admin/HierarchyPartnerEditModal";
@@ -13,7 +14,7 @@ import {
   type HierarchyNode,
 } from "@/lib/admin-api";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
-import { findHierarchyNode, isPartnerGroupId } from "@/lib/hierarchy-utils";
+import { findAssistHierarchyNode, findHierarchyNode, isPartnerGroupId } from "@/lib/hierarchy-utils";
 import { isAdminAssist } from "@/lib/roles";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
@@ -34,6 +35,7 @@ export default function AdminHierarchy() {
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [editAgentId, setEditAgentId] = useState<string | null>(null);
   const [editPartnerGroupId, setEditPartnerGroupId] = useState<string | null>(null);
+  const [assistDetailNodeId, setAssistDetailNodeId] = useState<string | null>(null);
   const [exportingCsv, setExportingCsv] = useState(false);
 
   const handleExportCsv = async () => {
@@ -63,6 +65,9 @@ export default function AdminHierarchy() {
   const editAgent = editAgentId ? agentsById.get(editAgentId) ?? null : null;
   const editPartnerNode = editPartnerGroupId
     ? findHierarchyNode(fullTree, editPartnerGroupId)
+    : null;
+  const assistDetailNode = assistDetailNodeId
+    ? findAssistHierarchyNode(assistTree, assistDetailNodeId)
     : null;
 
   const reloadHierarchy = useCallback(async () => {
@@ -100,8 +105,11 @@ export default function AdminHierarchy() {
   }, [reloadHierarchy]);
 
   function handleSelectNode(nodeId: string) {
-    if (assistView) return;
     setSelectedNodeId(nodeId);
+    if (assistView) {
+      setAssistDetailNodeId(nodeId);
+      return;
+    }
     if (isPartnerGroupId(nodeId)) {
       setEditPartnerGroupId(nodeId);
       setEditAgentId(null);
@@ -114,6 +122,8 @@ export default function AdminHierarchy() {
   function handleFocusAgent(agentId: string) {
     setEditAgentId(null);
     setEditPartnerGroupId(null);
+    setAssistDetailNodeId(null);
+    setSelectedNodeId(null);
     setRootUserId(agentId);
   }
 
@@ -132,7 +142,7 @@ export default function AdminHierarchy() {
           <h1>Referral hierarchy</h1>
           <p>
             {assistView
-              ? "Read-only view of referral connections. Partner groups appear as one combined box with shared downline."
+              ? "Read-only canvas and tree views. Select any person to see email, upline, downline, and NPN details."
               : "Connection lines from upline to downline. Link business partners at the same level to combine them into one box."}
           </p>
         </div>
@@ -150,7 +160,7 @@ export default function AdminHierarchy() {
             {assistView
               ? focusOptions.map((agent) => (
                   <option key={agent.id} value={agent.id}>
-                    {agent.name}{agent.npn ? ` (${agent.npn})` : ""}
+                    {agent.name} ({agent.email}){agent.npn ? ` · NPN ${agent.npn}` : ""}
                   </option>
                 ))
               : agentOptions.map((agent) => (
@@ -244,6 +254,17 @@ export default function AdminHierarchy() {
           tree={fullTree}
           onClose={() => setEditPartnerGroupId(null)}
           onSaved={() => void handleSaved()}
+          onFocusAgent={handleFocusAgent}
+        />
+      )}
+
+      {assistView && assistDetailNode && (
+        <HierarchyAssistDetailModal
+          node={assistDetailNode}
+          onClose={() => {
+            setAssistDetailNodeId(null);
+            setSelectedNodeId(null);
+          }}
           onFocusAgent={handleFocusAgent}
         />
       )}

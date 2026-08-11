@@ -149,13 +149,21 @@ export interface HierarchyNode {
 export interface AssistHierarchyMember {
   id: string;
   name: string;
+  email: string;
   npn: string | null;
+  referrerName: string | null;
+  referrerEmail: string | null;
+  referrerNpn: string | null;
 }
 
 export interface AssistHierarchyNode {
   id: string;
   name: string;
+  email: string;
   npn: string | null;
+  referrerName: string | null;
+  referrerEmail: string | null;
+  referrerNpn: string | null;
   children: AssistHierarchyNode[];
   isPartnerGroup?: boolean;
   memberIds?: string[];
@@ -165,6 +173,7 @@ export interface AssistHierarchyNode {
 export interface HierarchyFocusOption {
   id: string;
   name: string;
+  email: string;
   npn: string | null;
 }
 
