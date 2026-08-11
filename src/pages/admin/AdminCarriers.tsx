@@ -11,8 +11,10 @@ import {
   useAdminCarriers,
   type AdminCarrierSummary,
 } from "@/hooks/useAdminCarriers";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import type { UpsertCarrierPayload } from "@/lib/admin-api";
 import { trackPageView } from "@/lib/analytics";
+import { moveCarrierIntoAdjacentSection } from "@/lib/carrier-order";
 import { toast } from "sonner";
 
 type CarrierFormState = {
@@ -168,26 +170,39 @@ function validateDraftRows(rows: CarrierFormState[]): string | null {
 }
 
 export default function AdminCarriers() {
-  const { carriers, loading, error, saveMany, remove, reorder } = useAdminCarriers();
+  const { carriers, loading, error, saveSheet } = useAdminCarriers();
   const [sheetEditing, setSheetEditing] = useState(false);
   const [draftRows, setDraftRows] = useState<CarrierFormState[]>([]);
   const [savingSheet, setSavingSheet] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [reorderingId, setReorderingId] = useState<string | null>(null);
 
   useEffect(() => {
     document.title = "Carriers — PNCL Admin";
     trackPageView("admin_carriers");
   }, []);
 
+  useEffect(() => {
+    setDraftRows(carriers.map(toFormState));
+  }, [carriers]);
+
+  const savedRows = carriers.map(toFormState);
+  const isDirty = JSON.stringify(draftRows) !== JSON.stringify(savedRows);
+
   const startSheetEdit = () => {
-    setDraftRows(carriers.length > 0 ? carriers.map(toFormState) : [createEmptyDraftRow()]);
+    if (draftRows.length === 0) {
+      setDraftRows([createEmptyDraftRow()]);
+    }
     setSheetEditing(true);
   };
 
   const cancelSheetEdit = () => {
+    if (isDirty && !window.confirm("Discard unsaved carrier changes?")) return;
     setSheetEditing(false);
-    setDraftRows([]);
+    setDraftRows(savedRows);
+  };
+
+  const discardChanges = () => {
+    if (!window.confirm("Discard unsaved carrier changes?")) return;
+    setDraftRows(savedRows);
   };
 
   const handleCarrierPaste = (index: number, event: ClipboardEvent<HTMLInputElement>) => {
@@ -229,77 +244,63 @@ export default function AdminCarriers() {
   };
 
   const removeDraftRow = (index: number) => {
+    const row = draftRows[index];
+    if (!row || !window.confirm(`Remove ${rowLabel(row)} from the carrier sheet draft?`)) return;
     setDraftRows((prev) => prev.filter((_, rowIndex) => rowIndex !== index));
   };
 
-  const handleSheetSave = async () => {
+  const handleSheetSave = async (): Promise<boolean> => {
     const rowsToSave = prepareDraftRowsForSave(draftRows);
     if (rowsToSave.length === 0) {
       toast.error("Add at least one carrier row before saving.");
-      return;
+      return false;
     }
 
     const validationError = validateDraftRows(rowsToSave);
     if (validationError) {
       toast.error(validationError);
-      return;
+      return false;
     }
 
     setSavingSheet(true);
     try {
-      const existingCount = carriers.length;
-      let nextNewSortOrder = existingCount;
-      const payloads = rowsToSave.map((row) => {
-        if (row.id) {
-          return toPayload(row);
-        }
-        const payload = toPayload(row, nextNewSortOrder);
-        nextNewSortOrder += 1;
-        return payload;
-      });
-      await saveMany(payloads);
+      const retainedIds = new Set(
+        rowsToSave.flatMap((row) => (row.id ? [row.id] : [])),
+      );
+      const deletedIds = carriers
+        .filter(({ id }) => !retainedIds.has(id))
+        .map(({ id }) => id);
+      const payloads = rowsToSave.map((row, index) => toPayload(row, index));
+
+      await saveSheet(payloads, deletedIds);
       toast.success("Carrier sheet saved.");
-      cancelSheetEdit();
+      setSheetEditing(false);
+      return true;
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Unable to save carrier sheet");
+      return false;
     } finally {
       setSavingSheet(false);
     }
   };
 
-  const handleDelete = async (carrier: AdminCarrierSummary) => {
-    if (!window.confirm(`Delete ${rowLabel(carrier)}?`)) return;
-
-    setDeletingId(carrier.id);
-    try {
-      const result = await remove(carrier.id);
-      toast.success(result.message);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Unable to delete carrier");
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
-  const moveCarrier = async (index: number, direction: -1 | 1) => {
+  const moveCarrier = (index: number, direction: -1 | 1) => {
     const nextIndex = index + direction;
-    if (nextIndex < 0 || nextIndex >= carriers.length) return;
-
-    const reordered = [...carriers];
-    [reordered[index], reordered[nextIndex]] = [reordered[nextIndex], reordered[index]];
-
-    setReorderingId(reordered[nextIndex].id);
-    try {
-      const result = await reorder(reordered.map((carrier) => carrier.id));
-      toast.success(result.message);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Unable to reorder carriers");
-    } finally {
-      setReorderingId(null);
-    }
+    if (nextIndex < 0 || nextIndex >= draftRows.length) return;
+    setDraftRows((prev) => moveCarrierIntoAdjacentSection(prev, index, direction));
   };
 
-  const rows = sheetEditing ? draftRows : carriers;
+  const handleAttemptLeave = async (): Promise<"stay" | "leave"> => {
+    if (window.confirm("Do you want to save the carrier sheet before leaving?")) {
+      return await handleSheetSave() ? "leave" : "stay";
+    }
+
+    return window.confirm("Discard unsaved carrier changes and leave?") ? "leave" : "stay";
+  };
+
+  useUnsavedChangesGuard(isDirty, handleAttemptLeave);
+
+  const rows = draftRows;
 
   return (
     <section className="admin-panel">
@@ -320,14 +321,16 @@ export default function AdminCarriers() {
       {!loading && !error && (
         <>
           <div className="admin-sheet-toolbar">
-            {sheetEditing ? (
-              <>
-                <p className="admin-inline-note">
-                  {draftRows.length > 0
-                    ? "Paste a multi-line carrier list into any carrier name field to create rows automatically."
-                    : "Add a row or paste a carrier list into the carrier name field."}
-                </p>
-                <div className="admin-sheet-toolbar-actions">
+            <p className="admin-inline-note" role="status">
+              {sheetEditing
+                ? "Edit, add, remove, or reorder rows freely. Nothing is published until you save."
+                : isDirty
+                  ? "You have unsaved carrier sheet changes."
+                  : "Move carriers freely, then save the completed order when you are done."}
+            </p>
+            <div className="admin-sheet-toolbar-actions">
+              {sheetEditing ? (
+                <>
                   <button
                     type="button"
                     className="admin-secondary-link admin-sheet-add-row-btn"
@@ -339,32 +342,49 @@ export default function AdminCarriers() {
                   </button>
                   <button
                     type="button"
-                    className="admin-primary-btn"
-                    disabled={savingSheet}
-                    onClick={() => void handleSheetSave()}
-                  >
-                    {savingSheet ? "Saving..." : "Save sheet"}
-                  </button>
-                  <button
-                    type="button"
                     className="admin-secondary-link"
                     disabled={savingSheet}
                     onClick={cancelSheetEdit}
                   >
                     Cancel
                   </button>
-                </div>
-              </>
-            ) : (
-              <button type="button" className="admin-primary-btn" onClick={startSheetEdit}>
-                <Pencil size={16} aria-hidden="true" />
-                Edit sheet
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="admin-secondary-link"
+                    disabled={savingSheet}
+                    onClick={startSheetEdit}
+                  >
+                    <Pencil size={16} aria-hidden="true" />
+                    Edit sheet
+                  </button>
+                  {isDirty && (
+                    <button
+                      type="button"
+                      className="admin-secondary-link"
+                      disabled={savingSheet}
+                      onClick={discardChanges}
+                    >
+                      Discard
+                    </button>
+                  )}
+                </>
+              )}
+              <button
+                type="button"
+                className="admin-primary-btn"
+                disabled={savingSheet || !isDirty}
+                onClick={() => void handleSheetSave()}
+              >
+                {savingSheet ? "Saving..." : "Save changes"}
               </button>
-            )}
+            </div>
           </div>
 
           <div className="admin-table-wrap">
-            {(sheetEditing || carriers.length > 0) && (
+            {draftRows.length > 0 && (
             <table className={`admin-table${sheetEditing ? " admin-table-editing" : ""}`}>
               <thead>
                 <tr>
@@ -385,19 +405,15 @@ export default function AdminCarriers() {
               </thead>
               <tbody>
                 {rows.map((row, index) => {
-                  const carrier = sheetEditing ? null : (row as AdminCarrierSummary);
-                  const draft = sheetEditing ? (row as CarrierFormState) : null;
-                  const rowId = sheetEditing
-                    ? draft?.id ?? draft?.draftKey ?? `draft-${index}`
-                    : carrier!.id;
-                  const isDeleting = carrier ? deletingId === carrier.id : false;
-                  const isReordering = carrier ? reorderingId === carrier.id : false;
-                  const sectionTitle = carrier ? carrier.section || "Other" : "";
-                  const previousSection = carrier && index > 0
-                    ? carriers[index - 1].section || "Other"
+                  const carrier = row as CarrierFormState;
+                  const draft = sheetEditing ? carrier : null;
+                  const rowId = carrier.id ?? carrier.draftKey ?? `draft-${index}`;
+                  const sectionTitle = carrier.section || "Other";
+                  const previousSection = index > 0
+                    ? rows[index - 1].section || "Other"
                     : null;
                   const showSectionDivider =
-                    carrier !== null && (index === 0 || previousSection !== sectionTitle);
+                    !sheetEditing && (index === 0 || previousSection !== sectionTitle);
 
                   return (
                     <Fragment key={rowId}>
@@ -433,7 +449,7 @@ export default function AdminCarriers() {
                             placeholder="Carrier name"
                           />
                         ) : (
-                          carrier?.carrier || "—"
+                          carrier.carrier || "—"
                         )}
                       </td>
                       <td>
@@ -448,7 +464,7 @@ export default function AdminCarriers() {
                             placeholder="Company #"
                           />
                         ) : (
-                          carrier?.companyNumber || "—"
+                          carrier.companyNumber || "—"
                         )}
                       </td>
                       {sheetEditing && draft ? (
@@ -478,7 +494,7 @@ export default function AdminCarriers() {
                         </>
                       ) : (
                         <td>
-                          {carrier?.eAppUrl ? (
+                          {carrier.eAppUrl ? (
                             <a
                               href={carrier.eAppUrl}
                               target="_blank"
@@ -488,7 +504,7 @@ export default function AdminCarriers() {
                               {carrier.eAppLabel || carrier.eAppUrl}
                             </a>
                           ) : (
-                            carrier?.eAppLabel || "—"
+                            carrier.eAppLabel || "—"
                           )}
                         </td>
                       )}
@@ -505,55 +521,42 @@ export default function AdminCarriers() {
                             <span>{draft.published ? "Published" : "Hidden"}</span>
                           </label>
                         ) : (
-                          <span className={`admin-status${carrier?.published ? " active" : ""}`}>
-                            {carrier?.published ? "Published" : "Hidden"}
+                          <span className={`admin-status${carrier.published ? " active" : ""}`}>
+                            {carrier.published ? "Published" : "Hidden"}
                           </span>
                         )}
                       </td>
                       <td>
-                        {sheetEditing && draft ? (
-                          !draft.id ? (
-                            <button
-                              type="button"
-                              className="admin-icon-btn"
-                              onClick={() => removeDraftRow(index)}
-                              aria-label={`Remove ${rowLabel(draft)}`}
-                            >
-                              <Trash2 size={16} aria-hidden="true" />
-                              Remove
-                            </button>
-                          ) : null
-                        ) : carrier ? (
-                          <div className="admin-incentive-actions">
-                            <button
-                              type="button"
-                              className="admin-icon-btn"
-                              disabled={index === 0 || isReordering}
-                              onClick={() => void moveCarrier(index, -1)}
-                              aria-label={`Move ${rowLabel(carrier)} up`}
-                            >
-                              <ArrowUp size={16} aria-hidden="true" />
-                            </button>
-                            <button
-                              type="button"
-                              className="admin-icon-btn"
-                              disabled={index === carriers.length - 1 || isReordering}
-                              onClick={() => void moveCarrier(index, 1)}
-                              aria-label={`Move ${rowLabel(carrier)} down`}
-                            >
-                              <ArrowDown size={16} aria-hidden="true" />
-                            </button>
-                            <button
-                              type="button"
-                              className="admin-icon-btn"
-                              disabled={isDeleting}
-                              onClick={() => void handleDelete(carrier)}
-                            >
-                              <Trash2 size={16} aria-hidden="true" />
-                              Delete
-                            </button>
-                          </div>
-                        ) : null}
+                        <div className="admin-incentive-actions">
+                          <button
+                            type="button"
+                            className="admin-icon-btn"
+                            disabled={index === 0 || savingSheet}
+                            onClick={() => moveCarrier(index, -1)}
+                            aria-label={`Move ${rowLabel(carrier)} up`}
+                          >
+                            <ArrowUp size={16} aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-icon-btn"
+                            disabled={index === rows.length - 1 || savingSheet}
+                            onClick={() => moveCarrier(index, 1)}
+                            aria-label={`Move ${rowLabel(carrier)} down`}
+                          >
+                            <ArrowDown size={16} aria-hidden="true" />
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-icon-btn"
+                            disabled={savingSheet}
+                            onClick={() => removeDraftRow(index)}
+                            aria-label={`Remove ${rowLabel(carrier)}`}
+                          >
+                            <Trash2 size={16} aria-hidden="true" />
+                            {sheetEditing ? "Remove" : "Delete"}
+                          </button>
+                        </div>
                       </td>
                       </tr>
                     </Fragment>
@@ -563,12 +566,12 @@ export default function AdminCarriers() {
             </table>
             )}
 
-            {!sheetEditing && carriers.length === 0 && (
-              <p className="admin-empty">No carrier rows yet. Use Edit sheet to add your first rows.</p>
-            )}
-
-            {sheetEditing && draftRows.length === 0 && (
-              <p className="admin-empty">No rows yet. Click Add row to start building the sheet.</p>
+            {draftRows.length === 0 && (
+              <p className="admin-empty">
+                {sheetEditing
+                  ? "No rows yet. Click Add row to start building the sheet."
+                  : "No carrier rows in this draft. Edit the sheet to add a row or discard your changes."}
+              </p>
             )}
           </div>
         </>

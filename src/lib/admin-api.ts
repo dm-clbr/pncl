@@ -779,13 +779,21 @@ export async function deleteCarrier(
   });
 }
 
+export interface CarrierOrderUpdate {
+  id: string;
+  section: string;
+}
+
 export async function reorderCarriers(
   accessToken: string,
-  orderedIds: string[],
+  orderedCarriers: CarrierOrderUpdate[],
 ): Promise<{ message: string }> {
   return adminFetch("admin-reorder-carriers", accessToken, {
     method: "POST",
-    body: JSON.stringify({ orderedIds }),
+    body: JSON.stringify({
+      orderedIds: orderedCarriers.map(({ id }) => id),
+      orderedCarriers,
+    }),
   });
 }
 

@@ -6,6 +6,7 @@ import {
   reorderCarriers,
   upsertCarrier,
   type AdminCarrierSummary,
+  type CarrierOrderUpdate,
   type UpsertCarrierPayload,
 } from "@/lib/admin-api";
 
@@ -62,6 +63,28 @@ export function useAdminCarriers() {
     return results;
   }, [reload, session?.access_token]);
 
+  const saveSheet = useCallback(async (
+    inputs: UpsertCarrierPayload[],
+    deletedIds: string[],
+  ) => {
+    const token = session?.access_token;
+    if (!token) {
+      throw new Error("Not authenticated");
+    }
+
+    for (const id of deletedIds) {
+      await deleteCarrier(token, id);
+    }
+
+    const results = [];
+    for (const input of inputs) {
+      results.push(await upsertCarrier(token, input));
+    }
+
+    await reload();
+    return results;
+  }, [reload, session?.access_token]);
+
   const remove = useCallback(async (id: string) => {
     const token = session?.access_token;
     if (!token) {
@@ -72,17 +95,17 @@ export function useAdminCarriers() {
     return result;
   }, [reload, session?.access_token]);
 
-  const reorder = useCallback(async (orderedIds: string[]) => {
+  const reorder = useCallback(async (orderedCarriers: CarrierOrderUpdate[]) => {
     const token = session?.access_token;
     if (!token) {
       throw new Error("Not authenticated");
     }
-    const result = await reorderCarriers(token, orderedIds);
+    const result = await reorderCarriers(token, orderedCarriers);
     await reload();
     return result;
   }, [reload, session?.access_token]);
 
-  return { carriers, loading, error, reload, save, saveMany, remove, reorder };
+  return { carriers, loading, error, reload, save, saveMany, saveSheet, remove, reorder };
 }
 
 export type { AdminCarrierSummary };
