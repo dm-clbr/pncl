@@ -29,6 +29,11 @@ import {
   PORTAL_PHASE_LABELS,
 } from "@/lib/portal-todos";
 import { usePortalTodos } from "@/hooks/usePortalTodos";
+import { usePortalCarriers } from "@/hooks/usePortalCarriers";
+import {
+  buildCarrierApplicationsDescription,
+  CARRIER_APPLICATIONS_TODO_ID,
+} from "@/lib/carrier-applications";
 import { usePortalW9 } from "@/hooks/usePortalW9";
 import { usePortalDirectDeposit } from "@/hooks/usePortalDirectDeposit";
 import { usePortalIca } from "@/hooks/usePortalIca";
@@ -153,23 +158,35 @@ export default function PortalDashboard() {
   const { assets: brandAssets, loading: brandAssetsLoading } = usePortalBrandAssets();
   const { sections: dashboardSections } = usePortalDashboardTabs();
   const { todos: portalTodos } = usePortalTodos();
+  const { carriers: portalCarriers } = usePortalCarriers();
   const { submitted: icaSubmitted } = usePortalIca();
   const { submitted: w9Submitted } = usePortalW9();
   const { submitted: directDepositSubmitted } = usePortalDirectDeposit();
   const { profile, photoUrl, initials, displayName } = usePortalProfile(portalUser);
 
-  const resolvedTodos = useMemo(
-    () =>
-      portalTodos.map((todo) => ({
-        ...todo,
-        completed: isTodoCompleted(portalUser, todo, {
-          icaSubmitted,
-          w9Submitted,
-          directDepositSubmitted,
-        }),
-      })),
-    [portalUser, portalTodos, icaSubmitted, w9Submitted, directDepositSubmitted],
-  );
+  const resolvedTodos = useMemo(() => {
+    const carrierApplicationsDescription = buildCarrierApplicationsDescription(portalCarriers);
+
+    return portalTodos.map((todo) => ({
+      ...todo,
+      description:
+        todo.id === CARRIER_APPLICATIONS_TODO_ID && carrierApplicationsDescription
+          ? carrierApplicationsDescription
+          : todo.description,
+      completed: isTodoCompleted(portalUser, todo, {
+        icaSubmitted,
+        w9Submitted,
+        directDepositSubmitted,
+      }),
+    }));
+  }, [
+    portalUser,
+    portalTodos,
+    portalCarriers,
+    icaSubmitted,
+    w9Submitted,
+    directDepositSubmitted,
+  ]);
   const pendingTodos = useMemo(
     () => resolvedTodos.filter((todo) => !todo.completed),
     [resolvedTodos],
