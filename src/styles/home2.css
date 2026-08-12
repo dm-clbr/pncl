@@ -4223,6 +4223,37 @@ button.portal-todo-link {
   justify-content: space-between;
 }
 
+.home2-page .admin-hierarchy-preview {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(194, 78, 28, .42);
+  border-radius: calc(var(--radius) + 2px);
+  background: rgba(194, 78, 28, .12);
+  color: var(--accent-bright);
+}
+
+.home2-page .admin-hierarchy-preview div {
+  display: grid;
+  gap: 3px;
+}
+
+.home2-page .admin-hierarchy-preview strong {
+  color: var(--bone);
+  font-family: var(--ff-mono);
+  font-size: var(--admin-fs-badge);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.home2-page .admin-hierarchy-preview span {
+  color: var(--steel);
+  font-size: var(--admin-fs-body);
+  line-height: 1.45;
+}
+
 .home2-page .admin-hierarchy-view-toggle {
   display: inline-flex;
   gap: 4px;

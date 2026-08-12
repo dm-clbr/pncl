@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, GitBranch, LayoutGrid, ListTree } from "lucide-react";
+import { Download, Eye, GitBranch, LayoutGrid, ListTree } from "lucide-react";
 import { HierarchyAssistDetailModal } from "@/components/admin/HierarchyAssistDetailModal";
 import { HierarchyCanvas } from "@/components/admin/HierarchyCanvas";
 import { HierarchyEditModal } from "@/components/admin/HierarchyEditModal";
@@ -15,7 +15,7 @@ import {
 } from "@/lib/admin-api";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
 import { findAssistHierarchyNode, findHierarchyNode, isPartnerGroupId } from "@/lib/hierarchy-utils";
-import { isAdminAssist } from "@/lib/roles";
+import { isAdmin, isAdminAssist } from "@/lib/roles";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 
@@ -23,7 +23,10 @@ type HierarchyView = "canvas" | "tree";
 
 export default function AdminHierarchy() {
   const { user, session } = useAuth();
-  const assistView = isAdminAssist(user);
+  const actualAssistView = isAdminAssist(user);
+  const canPreviewAssistView = isAdmin(user);
+  const [previewAssistView, setPreviewAssistView] = useState(false);
+  const assistView = actualAssistView || previewAssistView;
   const { agents, loading: agentsLoading, reload: reloadAgents } = useAdminAgents({ enabled: !assistView });
   const [rootUserId, setRootUserId] = useState("");
   const [view, setView] = useState<HierarchyView>("canvas");
@@ -78,7 +81,12 @@ export default function AdminHierarchy() {
     setError(null);
 
     try {
-      const data = await getHierarchy(token, rootUserId || undefined);
+      const data = await getHierarchy(token, rootUserId || undefined, {
+        viewAsAdminAssist: previewAssistView,
+      });
+      if (assistView && data.readOnly !== true) {
+        throw new Error("The admin assist view could not be loaded securely. Please try again.");
+      }
       if (data.readOnly === true) {
         setAssistTree(data.tree);
         setFocusOptions(data.focusOptions);
@@ -93,12 +101,16 @@ export default function AdminHierarchy() {
     } finally {
       setLoading(false);
     }
-  }, [rootUserId, session?.access_token]);
+  }, [assistView, previewAssistView, rootUserId, session?.access_token]);
 
   useEffect(() => {
-    document.title = assistView ? "Hierarchy — PNCL Admin assist" : "Hierarchy — PNCL Admin";
+    document.title = actualAssistView
+      ? "Hierarchy — PNCL Admin assist"
+      : previewAssistView
+        ? "Hierarchy — Admin assist preview"
+        : "Hierarchy — PNCL Admin";
     trackPageView("admin_hierarchy");
-  }, [assistView]);
+  }, [actualAssistView, previewAssistView]);
 
   useEffect(() => {
     void reloadHierarchy();
@@ -127,6 +139,18 @@ export default function AdminHierarchy() {
     setRootUserId(agentId);
   }
 
+  function handleToggleAssistPreview() {
+    setRootUserId("");
+    setSelectedNodeId(null);
+    setEditAgentId(null);
+    setEditPartnerGroupId(null);
+    setAssistDetailNodeId(null);
+    setFullTree([]);
+    setAssistTree([]);
+    setFocusOptions([]);
+    setPreviewAssistView((current) => !current);
+  }
+
   async function handleSaved() {
     await Promise.all([reloadAgents(), reloadHierarchy()]);
   }
@@ -147,6 +171,19 @@ export default function AdminHierarchy() {
           </p>
         </div>
       </div>
+
+      {previewAssistView && (
+        <div className="admin-hierarchy-preview" role="status">
+          <Eye size={18} aria-hidden="true" />
+          <div>
+            <strong>Viewing as admin assist</strong>
+            <span>
+              This is the restricted, read-only hierarchy experience. Compensation and editing
+              controls are hidden.
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="admin-toolbar admin-hierarchy-toolbar">
         <label className="admin-field">
@@ -191,6 +228,19 @@ export default function AdminHierarchy() {
             Tree
           </button>
         </div>
+
+        {canPreviewAssistView && (
+          <button
+            type="button"
+            className="admin-secondary-btn"
+            aria-pressed={previewAssistView}
+            disabled={loading}
+            onClick={handleToggleAssistPreview}
+          >
+            <Eye size={14} aria-hidden="true" />
+            {previewAssistView ? "Exit admin assist view" : "View as admin assist"}
+          </button>
+        )}
 
         {!assistView && (
           <button

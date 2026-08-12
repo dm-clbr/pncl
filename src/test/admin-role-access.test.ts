@@ -5,6 +5,7 @@ import {
   canExportHierarchy,
   canUseGenesisAdminEndpoint,
   isFullAdminRole,
+  shouldReturnAdminAssistHierarchy,
   type PortalRole,
 } from "../../supabase/functions/_shared/adminRoles";
 
@@ -33,5 +34,16 @@ describe("admin role access boundaries", () => {
     expect(canUseGenesisAdminEndpoint(role)).toBe(true);
     expect(canAccessHierarchy(role)).toBe(false);
     expect(canExportHierarchy(role)).toBe(false);
+  });
+
+  it("always returns the restricted hierarchy to admin assists", () => {
+    expect(shouldReturnAdminAssistHierarchy("admin_assist", null)).toBe(true);
+    expect(shouldReturnAdminAssistHierarchy("admin_assist", "full")).toBe(true);
+  });
+
+  it("lets full admins request the restricted hierarchy preview", () => {
+    expect(shouldReturnAdminAssistHierarchy("admin", "admin_assist")).toBe(true);
+    expect(shouldReturnAdminAssistHierarchy("admin", null)).toBe(false);
+    expect(shouldReturnAdminAssistHierarchy("agent", "admin_assist")).toBe(false);
   });
 });

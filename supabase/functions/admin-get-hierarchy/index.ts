@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import {
   AdminAuthError,
-  isAdminAssistUser,
+  getUserRole,
   requireAdminOrAdminAssist,
 } from "../_shared/adminAuth.ts";
 import {
@@ -15,6 +15,7 @@ import { loadHierarchyPartnerLinks } from "../_shared/hierarchyPartners.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
 import { isValidReferrerUserId } from "../_shared/onboarding.ts";
+import { shouldReturnAdminAssistHierarchy } from "../_shared/adminRoles.ts";
 
 serve(async (req) => {
   const cors = handleCors(req);
@@ -36,7 +37,7 @@ serve(async (req) => {
     const agents = await buildAgentSummaries(adminClient);
     const partnerLinks = await loadHierarchyPartnerLinks(adminClient);
 
-    if (isAdminAssistUser(user)) {
+    if (shouldReturnAdminAssistHierarchy(getUserRole(user), url.searchParams.get("view"))) {
       const tree = buildAssistHierarchyTree(agents, rootUserId, partnerLinks);
       return jsonResponse({
         tree,

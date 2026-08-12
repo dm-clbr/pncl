@@ -19,3 +19,10 @@ export function isFullAdminRole(role: PortalRole): boolean {
 export function canExportHierarchy(role: PortalRole): boolean {
   return isFullAdminRole(role);
 }
+
+export function shouldReturnAdminAssistHierarchy(
+  role: PortalRole,
+  requestedView: string | null,
+): boolean {
+  return role === "admin_assist" || (role === "admin" && requestedView === "admin_assist");
+}

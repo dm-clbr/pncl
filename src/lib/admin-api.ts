@@ -287,9 +287,13 @@ export async function listAdminClients(accessToken: string): Promise<AdminClient
 export async function getHierarchy(
   accessToken: string,
   rootUserId?: string,
+  options?: { viewAsAdminAssist?: boolean },
 ): Promise<HierarchyResponse> {
-  const params = rootUserId ? `?root=${encodeURIComponent(rootUserId)}` : "";
-  return adminFetch(`admin-get-hierarchy${params}`, accessToken, { method: "GET" });
+  const params = new URLSearchParams();
+  if (rootUserId) params.set("root", rootUserId);
+  if (options?.viewAsAdminAssist) params.set("view", "admin_assist");
+  const query = params.size > 0 ? `?${params.toString()}` : "";
+  return adminFetch(`admin-get-hierarchy${query}`, accessToken, { method: "GET" });
 }
 
 export async function createUser(
