@@ -15,7 +15,7 @@
     "onboarding:deploy": "scripts/deploy-onboarding.sh",
     "prepare:w9": "node scripts/prepare-w9-pdf.mjs",
     "reset:w9": "node scripts/reset-portal-w9.mjs",
-    "postinstall": "cp node_modules/pdfjs-dist/build/pdf.worker.min.mjs public/pdf.worker.min.mjs 2>/dev/null || true"
+    "postinstall": "cp node_modules/pdfjs-dist/legacy/build/pdf.worker.min.mjs public/pdf.worker.min.mjs 2>/dev/null || true"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

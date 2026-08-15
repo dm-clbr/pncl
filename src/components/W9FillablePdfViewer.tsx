@@ -2,13 +2,13 @@ import { syncW9FormFieldsFromDom } from "@/lib/w9-acroform";
 import { W9_PDF_URL, W9_PDF_PAGES, W9_TOTAL_PAGES } from "@/lib/w9-form";
 import { prefillW9Fields, refreshW9SignatureDate } from "@/lib/w9-prefill";
 import "@/lib/pdfjs-setup";
-import { getDocument, type PDFDocumentProxy } from "pdfjs-dist";
+import { getDocument, type PDFDocumentProxy } from "pdfjs-dist/legacy/build/pdf.mjs";
 import {
   EventBus,
   PDFLinkService,
   PDFViewer,
-} from "pdfjs-dist/web/pdf_viewer.mjs";
-import "pdfjs-dist/web/pdf_viewer.css";
+} from "pdfjs-dist/legacy/web/pdf_viewer.mjs";
+import "pdfjs-dist/legacy/web/pdf_viewer.css";
 import W9FieldCallouts from "@/components/W9FieldCallouts";
 import {
   forwardRef,

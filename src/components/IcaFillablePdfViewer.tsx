@@ -3,13 +3,13 @@ import { prefillIcaServerFields, syncIcaMirroredNameFields } from "@/lib/ica-pre
 import { ICA_FORM_FIELDS, ICA_DEBIT_CHECK_INITIAL_FIELD_NAMES, ICA_DEBIT_CHECK_INITIAL_MAX_LENGTH } from "@/lib/ica-form-fields";
 import { getPdfFieldObjects } from "@/lib/pdf-field-objects";
 import "@/lib/pdfjs-setup";
-import { getDocument, type PDFDocumentProxy } from "pdfjs-dist";
+import { getDocument, type PDFDocumentProxy } from "pdfjs-dist/legacy/build/pdf.mjs";
 import {
   EventBus,
   PDFLinkService,
   PDFViewer,
-} from "pdfjs-dist/web/pdf_viewer.mjs";
-import "pdfjs-dist/web/pdf_viewer.css";
+} from "pdfjs-dist/legacy/web/pdf_viewer.mjs";
+import "pdfjs-dist/legacy/web/pdf_viewer.css";
 import IcaFieldCallouts from "@/components/IcaFieldCallouts";
 import IcaSignatureModal from "@/components/IcaSignatureModal";
 import {

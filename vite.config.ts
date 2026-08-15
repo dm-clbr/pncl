@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react-swc";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+import { NAVIGATION_FALLBACK_DENYLIST } from "./src/lib/navigation-fallback";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -50,7 +51,7 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/api\//],
+        navigateFallbackDenylist: [...NAVIGATION_FALLBACK_DENYLIST],
         // Main bundle includes pdf.js and admin UI; default 2 MiB precache limit is too small.
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         // The zipcodes-us dataset (~6 MB, lazy-loaded) is fetched on demand, not precached.
@@ -72,7 +73,10 @@ export default defineConfig(({ mode }) => ({
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "@tanstack/query-core"],
   },
   optimizeDeps: {
-    include: ["pdfjs-dist", "pdfjs-dist/web/pdf_viewer.mjs"],
+    include: [
+      "pdfjs-dist/legacy/build/pdf.mjs",
+      "pdfjs-dist/legacy/web/pdf_viewer.mjs",
+    ],
   },
   build: {
     rollupOptions: {
