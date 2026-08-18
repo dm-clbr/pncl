@@ -6,6 +6,7 @@ import ProfilePhotoCropModal from "@/components/ProfilePhotoCropModal";
 import PortalCarrierCredentials from "@/components/PortalCarrierCredentials";
 import PortalLicensingSection from "@/components/PortalLicensingSection";
 import PortalProfileDocumentsSection from "@/components/PortalProfileDocumentsSection";
+import PortalSureLcLinks from "@/components/PortalSureLcLinks";
 import PortalTeamDashboard from "@/components/PortalTeamDashboard";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -923,6 +924,7 @@ export default function PortalProfile() {
             aria-labelledby="profile-tab-carriers"
             hidden={activeTab !== "carriers"}
           >
+            <PortalSureLcLinks todos={resolvedTodos} />
             <PortalCarrierCredentials />
           </div>
         </div>

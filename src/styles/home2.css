@@ -2044,6 +2044,11 @@ button.portal-todo-link {
   color: var(--steel);
 }
 
+.home2-page .portal-todo-copy-done .portal-todo-link {
+  margin-top: 0;
+  padding: 6px 10px;
+}
+
 .home2-page .portal-w9-panel .admin-form {
   max-width: 720px;
 }
@@ -5813,6 +5818,62 @@ button.portal-todo-link {
   margin-top: 24px;
 }
 
+.home2-page .portal-surelc-account-links {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.home2-page .portal-profile-tabpanel .portal-surelc-accounts-panel + .portal-carrier-credentials-panel {
+  margin-top: 24px;
+}
+
+.home2-page .portal-surelc-account-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid rgba(194, 78, 28, .28);
+  border-radius: var(--radius);
+  background: rgba(194, 78, 28, .1);
+  color: var(--accent-bright);
+  transition: border-color .25s var(--ease), background .25s var(--ease), transform .25s var(--ease);
+}
+
+.home2-page .portal-surelc-account-link:hover {
+  border-color: rgba(194, 78, 28, .5);
+  background: rgba(194, 78, 28, .16);
+  transform: translateY(-1px);
+}
+
+.home2-page .portal-surelc-account-link > span {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.home2-page .portal-surelc-account-link strong {
+  font-size: .9rem;
+  color: var(--bone);
+}
+
+.home2-page .portal-surelc-account-link small {
+  overflow: hidden;
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  letter-spacing: .06em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.home2-page .portal-surelc-account-link svg {
+  flex-shrink: 0;
+}
+
 .home2-page .portal-carrier-credentials-table-wrap {
   min-width: 0;
 }
@@ -6670,6 +6731,10 @@ button.portal-todo-link {
   .home2-page .portal-profile-photo-section {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .home2-page .portal-surelc-account-links {
+    grid-template-columns: 1fr;
   }
 
   .home2-page .brand-assets-header {

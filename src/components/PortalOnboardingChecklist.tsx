@@ -21,6 +21,7 @@ import {
   SUBMIT_NEW_PRODUCER_TODO_ID,
   type PortalTodo,
 } from "@/lib/portal-todos";
+import { isSureLcAccountTodo } from "@/lib/surelc-accounts";
 import PortalNewProducerModal from "@/components/PortalNewProducerModal";
 
 export function PortalUrgentIcon({ size = 22 }: { size?: number }) {
@@ -180,6 +181,7 @@ function PortalTodoItem({
   const [videoOpen, setVideoOpen] = useState(false);
   const needsNewProducerConfirmation = todo.id === SUBMIT_NEW_PRODUCER_TODO_ID;
   const [confirmingNewProducer, setConfirmingNewProducer] = useState(false);
+  const keepCompletedLink = isSureLcAccountTodo(todo.id) && Boolean(todo.href);
 
   if (todo.completed) {
     return (
@@ -189,6 +191,17 @@ function PortalTodoItem({
         </span>
         <div className="portal-todo-copy portal-todo-copy-done">
           <strong>{todo.title}</strong>
+          {keepCompletedLink && (
+            <a
+              href={todo.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="portal-todo-link"
+            >
+              {todo.actionLabel || "Open SureLC"}
+              <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
+            </a>
+          )}
         </div>
       </div>
     );
