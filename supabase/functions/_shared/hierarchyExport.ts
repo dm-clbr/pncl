@@ -15,6 +15,8 @@ export interface HierarchyExportAgent {
   email: string;
   agentNumber: number | null;
   npn: string | null;
+  compLevel: number | null;
+  compLevelEffectiveAt: string | null;
   phase: string | null;
   referrerId: string | null;
   referrerName: string | null;
@@ -83,8 +85,18 @@ export function computeDownlineCounts(agents: HierarchyExportAgent[]): Map<strin
 export function resolveUplineLevels(
   agent: HierarchyExportAgent,
   agentsById: Map<string, HierarchyExportAgent>,
-): Array<Pick<HierarchyExportAgent, "name" | "email" | "agentNumber" | "npn">> {
-  const levels: Array<Pick<HierarchyExportAgent, "name" | "email" | "agentNumber" | "npn">> = [];
+): Array<
+  Pick<
+    HierarchyExportAgent,
+    "name" | "email" | "agentNumber" | "npn" | "compLevel" | "compLevelEffectiveAt"
+  >
+> {
+  const levels: Array<
+    Pick<
+      HierarchyExportAgent,
+      "name" | "email" | "agentNumber" | "npn" | "compLevel" | "compLevelEffectiveAt"
+    >
+  > = [];
   const visited = new Set<string>([agent.id]);
   let current = agent;
 
@@ -100,6 +112,8 @@ export function resolveUplineLevels(
           email: "",
           agentNumber: null,
           npn: null,
+          compLevel: null,
+          compLevelEffectiveAt: null,
         });
       }
       break;
@@ -115,6 +129,8 @@ export function resolveUplineLevels(
       email: "",
       agentNumber: null,
       npn: null,
+      compLevel: null,
+      compLevelEffectiveAt: null,
     });
   }
 
@@ -137,6 +153,8 @@ export function buildHierarchyExportCsv({
         `Upline ${level} Email`,
         `Upline ${level} Agent #`,
         `Upline ${level} NPN`,
+        `Upline ${level} Compensation Tier`,
+        `Upline ${level} Compensation Tier Effective Date`,
       ];
     },
   ).flat();
@@ -146,6 +164,8 @@ export function buildHierarchyExportCsv({
     "Email",
     "Agent #",
     "NPN",
+    "Compensation tier",
+    "Compensation tier effective date",
     "Stage",
     "Downline count",
     "State licenses",
@@ -168,6 +188,8 @@ export function buildHierarchyExportCsv({
           upline?.email ?? "",
           formatAgentNumber(upline?.agentNumber ?? null),
           upline?.npn ?? "",
+          upline?.compLevel ?? "",
+          upline?.compLevelEffectiveAt?.slice(0, 10) ?? "",
         ];
       },
     ).flat();
@@ -177,6 +199,8 @@ export function buildHierarchyExportCsv({
       agent.email,
       formatAgentNumber(agent.agentNumber),
       agent.npn,
+      agent.compLevel,
+      agent.compLevelEffectiveAt?.slice(0, 10) ?? "",
       agent.phase ? PHASE_LABELS[agent.phase] ?? agent.phase : "",
       downlineCounts.get(agent.id) ?? 0,
       (stateLicensesByUserId.get(agent.id) ?? []).join(" "),
