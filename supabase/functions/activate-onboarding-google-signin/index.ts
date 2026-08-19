@@ -34,6 +34,7 @@ serve(async (req) => {
 
     await adminClient.from("onboarding_records").update({
       google_first_sign_in_at: lastSignIn,
+      temporary_password_encrypted: null,
       enrollment_status: "ready",
       status: "ready",
       onboarding_completed_at: new Date().toISOString(),

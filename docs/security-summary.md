@@ -28,7 +28,7 @@ Prepared for the security review with Colin. Covers how PNCL Hub (Vite + React f
 | SSN / TIN | `portal_w9_forms`, `onboarding_records` | HMAC hash only; full value only inside the generated W-9 PDF in a private bucket |
 | Bank account + routing | `portal_direct_deposit_forms` | AES-256-GCM encrypted columns; decrypted only inside service-role edge functions |
 | Carrier portal passwords | `portal_carrier_credentials` | AES-256-GCM encrypted; decrypted per-request for the owning agent |
-| Temporary account passwords | `onboarding_records` | AES-256-GCM encrypted; one-time reveal |
+| Temporary account passwords | `onboarding_records` | AES-256-GCM encrypted; reveal requires the unexpired handoff token and stops after the first confirmed Google sign-in |
 | Signed PDFs (ICA, W-9, direct deposit, comp attachments) | Storage | Private buckets, short-lived signed URLs (1 h) |
 | Driver's license, E&O certificate, agent uploads | Storage `portal-profile-documents` | Private bucket, per-user folder RLS |
 

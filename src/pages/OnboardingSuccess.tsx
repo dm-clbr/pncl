@@ -13,30 +13,29 @@ import {
 } from "@/lib/onboarding-api";
 import { toast } from "sonner";
 import { trackPageView } from "@/lib/analytics";
+import { resolveOnboardingViewState } from "@/lib/onboarding-view-state";
 
 const POLL_INTERVAL_MS = 2500;
+const PREVIEW_STATUS: OnboardingStatusResponse = {
+  status: "email_created",
+  email: "new.agent@thepncl.com",
+  credentialsViewed: false,
+  credentialsAvailable: true,
+  portalInviteSent: true,
+};
+const PREVIEW_CREDENTIALS: RevealCredentialsResponse = {
+  email: "new.agent@thepncl.com",
+  temporaryPassword: "PncL-7mQ!4vX2",
+  mustChangePassword: true,
+  gmailUrl: buildGmailUrl("new.agent@thepncl.com"),
+};
 const TERMINAL_STATUSES = new Set<OnboardingStatus>([
+  "email_created",
   "ready",
   "failed",
   "expired",
   "credentials_viewed",
 ]);
-
-type ViewState = "loading" | "creating" | "ready" | "revealed" | "viewed" | "failed" | "expired";
-
-function resolveViewState(
-  status: OnboardingStatusResponse | null,
-  revealed: RevealCredentialsResponse | null,
-): ViewState {
-  if (revealed) return "revealed";
-  if (!status) return "loading";
-
-  if (status.status === "failed") return "failed";
-  if (status.status === "expired") return "expired";
-  if (status.status === "credentials_viewed" || status.credentialsViewed) return "viewed";
-  if (status.status === "ready" || status.status === "email_created") return "ready";
-  return "creating";
-}
 
 async function copyText(value: string, label: string) {
   try {
@@ -51,8 +50,11 @@ export default function OnboardingSuccess() {
   const { onboardingId } = useParams<{ onboardingId: string }>();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") ?? "";
+  const isGmailPreview = import.meta.env.DEV && searchParams.get("preview") === "gmail";
 
-  const [statusData, setStatusData] = useState<OnboardingStatusResponse | null>(null);
+  const [statusData, setStatusData] = useState<OnboardingStatusResponse | null>(
+    isGmailPreview ? PREVIEW_STATUS : null,
+  );
   const [revealed, setRevealed] = useState<RevealCredentialsResponse | null>(null);
   const [revealing, setRevealing] = useState(false);
   const [resendingInvite, setResendingInvite] = useState(false);
@@ -60,13 +62,15 @@ export default function OnboardingSuccess() {
   const [pollError, setPollError] = useState<string | null>(null);
   const pollingRef = useRef<number | null>(null);
 
-  const viewState = resolveViewState(statusData, revealed);
+  const viewState = resolveOnboardingViewState(statusData, revealed);
   const email = revealed?.email ?? statusData?.email ?? "";
   const gmailUrl = revealed?.gmailUrl ?? statusData?.gmailUrl ?? (email ? buildGmailUrl(email) : "");
   const portalInviteSent = statusData?.portalInviteSent ?? false;
   const showCredentials = viewState === "revealed" || viewState === "viewed";
+  const credentialsAvailable = statusData?.credentialsAvailable ?? false;
 
   const fetchStatus = useCallback(async () => {
+    if (isGmailPreview) return PREVIEW_STATUS;
     if (!onboardingId || !token) {
       setPollError("Missing onboarding handoff details.");
       return null;
@@ -81,7 +85,7 @@ export default function OnboardingSuccess() {
       setPollError(error instanceof Error ? error.message : "Unable to load onboarding status.");
       return null;
     }
-  }, [onboardingId, token]);
+  }, [isGmailPreview, onboardingId, token]);
 
   useEffect(() => {
     document.title = "PNCL Email Setup";
@@ -97,6 +101,7 @@ export default function OnboardingSuccess() {
   }, [statusData, onboardingId]);
 
   useEffect(() => {
+    if (isGmailPreview) return;
     if (!onboardingId || !token) return;
 
     let cancelled = false;
@@ -123,9 +128,18 @@ export default function OnboardingSuccess() {
         pollingRef.current = null;
       }
     };
-  }, [fetchStatus, onboardingId, token]);
+  }, [fetchStatus, isGmailPreview, onboardingId, token]);
 
   const handleReveal = async () => {
+    if (isGmailPreview) {
+      setRevealed(PREVIEW_CREDENTIALS);
+      setStatusData({
+        ...PREVIEW_STATUS,
+        status: "credentials_viewed",
+        credentialsViewed: true,
+      });
+      return;
+    }
     if (!onboardingId || !token) return;
 
     setRevealing(true);
@@ -149,6 +163,7 @@ export default function OnboardingSuccess() {
             ? { ...prev, status: "credentials_viewed", credentialsViewed: true }
             : { status: "credentials_viewed", credentialsViewed: true },
         );
+        toast.error("Refresh this page after PNCL finishes updating the secure handoff.");
       } else {
         toast.error(err.message ?? "Unable to reveal sign-in instructions.");
       }
@@ -158,6 +173,10 @@ export default function OnboardingSuccess() {
   };
 
   const handleResendInvite = async () => {
+    if (isGmailPreview) {
+      toast.success("Preview: portal welcome email would be sent.");
+      return;
+    }
     if (!onboardingId || !token) return;
 
     setResendingInvite(true);
@@ -186,7 +205,7 @@ export default function OnboardingSuccess() {
     }
   };
 
-  if (!onboardingId || !token) {
+  if ((!onboardingId || !token) && !isGmailPreview) {
     return (
       <OnboardingLayout>
         <StatusBadge tone="error">Invalid Link</StatusBadge>
@@ -222,35 +241,22 @@ export default function OnboardingSuccess() {
       {viewState === "ready" && (
         <>
           <StatusBadge tone="ready">Email Ready</StatusBadge>
-          <h2 className="h3" style={{ margin: "1rem 0" }}>Your PNCL email is ready.</h2>
+          <h2 className="h3" style={{ margin: "1rem 0" }}>Set up your PNCL Gmail account</h2>
           {email && (
             <div className="onboarding-email-block">
-              <span className="onboarding-email-label">Email</span>
+              <span className="onboarding-email-label">Your new PNCL email</span>
               <strong>{email}</strong>
             </div>
           )}
           <p className="lead">
-            {statusData?.pendingGmailVerification ? (
-              <>
-                {statusData.message ?? "Your PNCL email was created, but Google needs a quick verification before you can sign in."}
-                {" "}Check your personal email for instructions, then reveal your temporary Gmail password below.
-              </>
-            ) : portalInviteSent ? (
-              <>
-                A portal welcome email was sent to <strong>{email}</strong>. Sign in to Gmail first,
-                then use <strong>Sign in with Google</strong> on the portal login page.
-              </>
-            ) : (
-              <>
-                Your PNCL email is ready. Reveal your Gmail sign-in instructions below, then request
-                a portal welcome email for <strong>{email}</strong>.
-              </>
-            )}
+            Start with Gmail. You&apos;ll use the temporary password once, then Google will ask you to
+            create your own password. The PNCL portal uses <strong>Sign in with Google</strong>, so there
+            is no separate portal password.
           </p>
           <ol className="onboarding-steps">
-            <li>Reveal and save your temporary Gmail sign-in details</li>
-            <li>Sign in to Gmail and set your Google password</li>
-            <li>Sign in to the Employee Portal with Google using your @thepncl.com account</li>
+            <li>Show and copy your temporary Gmail password</li>
+            <li>Open Gmail and create your permanent Google password</li>
+            <li>Return to the PNCL portal and choose Sign in with Google</li>
           </ol>
           <button
             type="button"
@@ -259,40 +265,34 @@ export default function OnboardingSuccess() {
             disabled={revealing}
             style={{ marginTop: "0.5rem" }}
           >
-            {revealing ? "Loading…" : <>Reveal Gmail Sign-In <span className="arr">→</span></>}
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={handleResendInvite}
-            disabled={resendingInvite}
-            style={{ marginTop: "0.75rem" }}
-          >
-            {resendingInvite
-              ? "Sending…"
-              : portalInviteSent
-                ? "Resend portal welcome email"
-                : "Send portal welcome email"}
+            {revealing ? "Loading…" : <>Show Temporary Gmail Password <span className="arr">→</span></>}
           </button>
           <p className="onboarding-help-text">
-            If you close this page before saving your temporary password, contact PNCL support or an admin for a password reset.
+            This secure link is available for 24 hours. You can reopen it and show the temporary
+            password again until Gmail setup is complete.
           </p>
         </>
       )}
 
       {showCredentials && (
         <>
-          <StatusBadge tone="ready">Gmail Sign-In</StatusBadge>
-          <h2 className="h3" style={{ margin: "1rem 0" }}>Sign in to your PNCL email</h2>
+          <StatusBadge tone="ready">Step 1 of 2</StatusBadge>
+          <h2 className="h3" style={{ margin: "1rem 0" }}>Set up Gmail first</h2>
+          <p className="lead">
+            Use these details on Google&apos;s sign-in page. This is not a separate PNCL portal password.
+          </p>
+          {email && (
+            <div className="onboarding-email-block">
+              <span className="onboarding-email-label">PNCL Gmail address</span>
+              <strong>{email}</strong>
+            </div>
+          )}
           {revealed && (
             <>
-              <div className="onboarding-email-block">
-                <span className="onboarding-email-label">Email</span>
-                <strong>{revealed.email}</strong>
-              </div>
-              <div className="onboarding-email-block">
-                <span className="onboarding-email-label">Temporary password</span>
+              <div className="onboarding-email-block onboarding-password-block" aria-live="polite">
+                <span className="onboarding-email-label">Temporary Gmail password</span>
                 <strong className="onboarding-password">{revealed.temporaryPassword}</strong>
+                <span className="onboarding-field-hint">Paste it exactly as shown. Google will ask you to replace it.</span>
               </div>
               <div className="onboarding-action-row">
                 <button type="button" className="btn btn-ghost" onClick={() => copyText(revealed.email, "Email")}>
@@ -300,7 +300,7 @@ export default function OnboardingSuccess() {
                 </button>
                 <button
                   type="button"
-                  className="btn btn-ghost"
+                  className="btn btn-accent"
                   onClick={() => copyText(revealed.temporaryPassword, "Temporary password")}
                 >
                   Copy Temporary Password
@@ -308,22 +308,31 @@ export default function OnboardingSuccess() {
               </div>
             </>
           )}
-          {viewState === "viewed" && email && !revealed && (
-            <div className="onboarding-email-block">
-              <span className="onboarding-email-label">Email</span>
-              <strong>{email}</strong>
+          {viewState === "viewed" && !revealed && credentialsAvailable && (
+            <div className="onboarding-reveal-again">
+              <strong>Need the password again?</strong>
+              <p>This secure link can show it again until you finish signing in to Gmail.</p>
+              <button
+                type="button"
+                className="btn btn-accent"
+                onClick={handleReveal}
+                disabled={revealing}
+              >
+                {revealing ? "Loading…" : <>Show Temporary Password <span className="arr">→</span></>}
+              </button>
+            </div>
+          )}
+          {viewState === "viewed" && !revealed && !credentialsAvailable && (
+            <div className="onboarding-reveal-again tone-error">
+              <strong>The temporary password is no longer available from this link.</strong>
+              <p>Contact PNCL support for a new one. If an admin already issued a new password, use the newest password only.</p>
             </div>
           )}
           <ol className="onboarding-steps">
-            <li>Open Gmail and sign in with your temporary password</li>
-            <li>Create your new Google password when prompted</li>
-            <li>Sign in to the Employee Portal with Google using your @thepncl.com account</li>
+            <li>Copy the email and temporary password above</li>
+            <li>Open Gmail and sign in with those exact details</li>
+            <li>Create your permanent Google password when prompted</li>
           </ol>
-          <p className="onboarding-help-text">
-            Google may show <strong>Verify it&apos;s you</strong> on first sign-in. If phone verification fails
-            or asks for a number you cannot use, stop and contact PNCL support — do not keep retrying the same
-            phone number. An admin can briefly allow sign-in while you complete setup.
-          </p>
           <div className="onboarding-action-row" style={{ marginTop: "0.75rem" }}>
             <a
               href={revealed?.gmailUrl ?? gmailUrl}
@@ -333,25 +342,40 @@ export default function OnboardingSuccess() {
             >
               Open Gmail <span className="arr">→</span>
             </a>
-            <Link to="/portal/login" className="btn btn-ghost">
-              Sign in with Google <span className="arr">→</span>
-            </Link>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={handleResendInvite}
-              disabled={resendingInvite}
-            >
-              {resendingInvite
-                ? "Sending…"
-                : portalInviteSent
-                  ? "Resend portal welcome email"
-                  : "Send portal welcome email"}
-            </button>
           </div>
-          <p className="onboarding-help-text">
-            After Gmail is set up, use <strong>Sign in with Google</strong> on the portal login page.
-          </p>
+
+          <details className="onboarding-troubleshooting">
+            <summary>Temporary password not working?</summary>
+            <ul>
+              <li>Use the copy button so no extra spaces are added.</li>
+              <li>Confirm Google is signing in to <strong>{email}</strong>, not another account.</li>
+              <li>If an admin sent a newer temporary password, the older one will no longer work.</li>
+              <li>If Google shows <strong>Verify it&apos;s you</strong> and phone verification fails, stop retrying and contact PNCL support.</li>
+            </ul>
+          </details>
+
+          <div className="onboarding-next-step">
+            <StatusBadge tone="neutral">Step 2 of 2</StatusBadge>
+            <h3>After Gmail accepts your new password</h3>
+            <p>Return to the PNCL portal and choose <strong>Sign in with Google</strong> using your PNCL email.</p>
+            <div className="onboarding-action-row">
+              <Link to="/portal/login" className="btn btn-ghost">
+                Continue to PNCL Portal <span className="arr">→</span>
+              </Link>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={handleResendInvite}
+                disabled={resendingInvite}
+              >
+                {resendingInvite
+                  ? "Sending…"
+                  : portalInviteSent
+                    ? "Resend portal welcome email"
+                    : "Send portal welcome email"}
+              </button>
+            </div>
+          </div>
         </>
       )}
 

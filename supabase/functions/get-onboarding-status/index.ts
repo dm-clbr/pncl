@@ -10,6 +10,7 @@ import {
 import { validateHandoffToken } from "../_shared/security.ts";
 import { logOnboarding } from "../_shared/logger.ts";
 import { isEnrollmentReady } from "../_shared/enrollmentState.ts";
+import { canRevealTemporaryPassword } from "../_shared/onboardingCredentials.ts";
 
 const TERMINAL_STATUSES = new Set([
   "ready",
@@ -20,6 +21,7 @@ const TERMINAL_STATUSES = new Set([
 
 function buildStatusResponse(record: OnboardingRecord) {
   const credentialsViewed = !!record.credentials_viewed_at;
+  const credentialsAvailable = canRevealTemporaryPassword(record);
   const email = record.workspace_email ?? undefined;
   const gmailUrl = email ? buildGmailUrl(email) : undefined;
 
@@ -41,6 +43,7 @@ function buildStatusResponse(record: OnboardingRecord) {
       enrollmentStatus: "awaiting_google_sign_in",
       email,
       credentialsViewed,
+      credentialsAvailable,
       gmailUrl,
       portalInviteSent: Boolean(record.supabase_user_id),
       message: "Your PNCL email is ready. Sign in to Gmail, create your password, then return here to enter the portal.",
@@ -58,6 +61,7 @@ function buildStatusResponse(record: OnboardingRecord) {
         enrollmentStatus: "google_verification_required",
         email,
         credentialsViewed: false,
+        credentialsAvailable: false,
         gmailUrl,
         portalInviteSent: false,
         message: "Your PNCL email was created. Google needs a quick verification before you can sign in.",
@@ -92,9 +96,12 @@ function buildStatusResponse(record: OnboardingRecord) {
       status: "credentials_viewed",
       email,
       credentialsViewed: true,
+      credentialsAvailable,
       gmailUrl,
       portalInviteSent: Boolean(record.supabase_user_id),
-      message: "Temporary sign-in details have already been viewed.",
+      message: credentialsAvailable
+        ? "Your temporary Gmail password is still available from this secure link."
+        : "Temporary sign-in details are no longer available.",
     };
   }
 
@@ -104,6 +111,7 @@ function buildStatusResponse(record: OnboardingRecord) {
       enrollmentStatus: "ready",
       email,
       credentialsViewed: false,
+      credentialsAvailable,
       gmailUrl,
       portalInviteSent: Boolean(record.supabase_user_id),
       message: "Your PNCL email is ready.",

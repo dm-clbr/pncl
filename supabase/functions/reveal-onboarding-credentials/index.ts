@@ -11,6 +11,7 @@ import {
   validateHandoffToken,
 } from "../_shared/security.ts";
 import { logOnboarding } from "../_shared/logger.ts";
+import { canRevealTemporaryPassword } from "../_shared/onboardingCredentials.ts";
 
 serve(async (req) => {
   const cors = handleCors(req);
@@ -51,24 +52,26 @@ serve(async (req) => {
       return errorResponse("This sign-in link has expired.", 403, "handoff_token_expired");
     }
 
-    if (onboarding.credentials_viewed_at || onboarding.status === "credentials_viewed") {
+    if (onboarding.google_first_sign_in_at) {
       return errorResponse(
-        "Temporary sign-in details have already been viewed.",
+        "Gmail setup is complete, so the temporary password is no longer available.",
         409,
-        "credentials_already_viewed",
+        "credentials_no_longer_needed",
       );
     }
 
-    const credentialsReady = onboarding.enrollment_status === "ready"
-      && Boolean(onboarding.google_user_id)
-      && Boolean(onboarding.supabase_user_id);
+    if (!canRevealTemporaryPassword(onboarding)) {
+      const credentialsCreated = Boolean(onboarding.google_user_id)
+        && Boolean(onboarding.supabase_user_id);
+      if (!credentialsCreated) {
+        logOnboarding("reveal_not_ready", {
+          onboardingId: id,
+          status: onboarding.status,
+          enrollmentStatus: onboarding.enrollment_status,
+        }, "warn");
+        return errorResponse("Credentials are not ready yet.", 409, "credentials_not_ready");
+      }
 
-    if (!credentialsReady) {
-      logOnboarding("reveal_not_ready", { onboardingId: id, status: onboarding.status }, "warn");
-      return errorResponse("Credentials are not ready yet.", 409, "credentials_not_ready");
-    }
-
-    if (!onboarding.workspace_email || !onboarding.temporary_password_encrypted) {
       logOnboarding("reveal_unavailable", { onboardingId: id, status: onboarding.status }, "warn");
       return errorResponse("Temporary credentials are unavailable.", 409, "credentials_unavailable");
     }
@@ -77,23 +80,29 @@ serve(async (req) => {
       onboarding.temporary_password_encrypted,
     );
 
-    const viewedAt = new Date().toISOString();
-    const { error: updateError } = await supabase
-      .from("onboarding_records")
-      .update({
-        credentials_viewed_at: viewedAt,
-        temporary_password_encrypted: null,
-        status: "credentials_viewed",
-      })
-      .eq("id", onboarding.id)
-      .is("credentials_viewed_at", null);
+    const repeatedReveal = Boolean(onboarding.credentials_viewed_at);
+    if (!repeatedReveal) {
+      const viewedAt = new Date().toISOString();
+      const { error: updateError } = await supabase
+        .from("onboarding_records")
+        .update({
+          credentials_viewed_at: viewedAt,
+          status: "credentials_viewed",
+        })
+        .eq("id", onboarding.id)
+        .is("credentials_viewed_at", null);
 
-    if (updateError) {
-      logOnboarding("reveal_db_update_failed", { onboardingId: id, error: updateError.message }, "error");
-      return errorResponse("Unable to reveal credentials", 500);
+      if (updateError) {
+        logOnboarding("reveal_db_update_failed", { onboardingId: id, error: updateError.message }, "error");
+        return errorResponse("Unable to reveal credentials", 500);
+      }
     }
 
-    logOnboarding("reveal_succeeded", { onboardingId: id, workspaceEmail: onboarding.workspace_email });
+    logOnboarding("reveal_succeeded", {
+      onboardingId: id,
+      workspaceEmail: onboarding.workspace_email,
+      repeatedReveal,
+    });
 
     return jsonResponse({
       email: onboarding.workspace_email,

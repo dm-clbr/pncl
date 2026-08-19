@@ -1004,6 +1004,19 @@ a { text-decoration: none; color: inherit; }
 
 .onboarding-password {
   font-family: 'Space Mono', monospace;
+  font-size: clamp(1.15rem, 3vw, 1.45rem) !important;
+  letter-spacing: 0.04em;
+}
+
+.onboarding-password-block {
+  border-color: rgba(209, 91, 48, 0.45);
+  background: rgba(209, 91, 48, 0.08);
+}
+
+.onboarding-field-hint {
+  color: var(--space);
+  font-size: 0.78rem;
+  line-height: 1.45;
 }
 
 .onboarding-steps {
@@ -1045,6 +1058,56 @@ a { text-decoration: none; color: inherit; }
   font-size: 0.82rem;
   color: var(--graphite);
   line-height: 1.55;
+}
+
+.onboarding-reveal-again,
+.onboarding-next-step,
+.onboarding-troubleshooting {
+  margin: 1.25rem 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid rgba(240, 237, 228, 0.12);
+  border-radius: var(--radius);
+  background: rgba(240, 237, 228, 0.04);
+  text-align: left;
+}
+
+.onboarding-reveal-again p,
+.onboarding-next-step p {
+  margin: 0.45rem 0 1rem;
+  color: var(--steel);
+  line-height: 1.55;
+}
+
+.onboarding-reveal-again.tone-error {
+  border-color: rgba(248, 113, 113, 0.3);
+  background: rgba(248, 113, 113, 0.07);
+}
+
+.onboarding-troubleshooting summary {
+  cursor: pointer;
+  color: var(--bone);
+  font-weight: 700;
+}
+
+.onboarding-troubleshooting ul {
+  margin: 0.85rem 0 0;
+  padding-left: 1.2rem;
+  color: var(--steel);
+  line-height: 1.6;
+}
+
+.onboarding-next-step {
+  margin-top: 2rem;
+}
+
+.onboarding-next-step h3 {
+  margin: 0.9rem 0 0;
+  font-size: 1.05rem;
+}
+
+.onboarding-next-step .onboarding-action-row {
+  justify-content: flex-start;
+  margin-bottom: 0;
 }
 
 .onboarding-spinner {

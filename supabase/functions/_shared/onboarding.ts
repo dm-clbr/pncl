@@ -81,6 +81,7 @@ export interface OnboardingRecord {
   contract_signed_at: string | null;
   application_saved_at: string | null;
   google_provisioned_at: string | null;
+  google_first_sign_in_at: string | null;
   portal_linked_at: string | null;
   finalized_at: string | null;
 }

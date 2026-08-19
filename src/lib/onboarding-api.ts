@@ -75,6 +75,7 @@ export interface OnboardingStatusResponse {
   message?: string;
   email?: string;
   credentialsViewed?: boolean;
+  credentialsAvailable?: boolean;
   gmailUrl?: string;
   portalInviteSent?: boolean;
   pendingGmailVerification?: boolean;
