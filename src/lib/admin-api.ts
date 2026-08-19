@@ -83,6 +83,8 @@ export interface AgentSummary {
   profilePhotoPath: string | null;
   profileUpdatedAt: string | null;
   partnerUserId: string | null;
+  /** Present only for full admins; excludes carrier usernames and passwords. */
+  carrierWritingNumbers?: Array<{ carrier: string; writingNumber: string }>;
   flags?: AgentFlags;
 }
 

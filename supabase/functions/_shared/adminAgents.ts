@@ -28,6 +28,12 @@ import {
   loadHierarchyPartnerLinks,
   type PartnerLinkRow,
 } from "./hierarchyPartners.ts";
+import {
+  buildCarrierWritingNumbersByUserId,
+  type CarrierWritingNumber,
+  type CarrierWritingNumberCarrierRow,
+  type CarrierWritingNumberCredentialRow,
+} from "./carrierWritingNumbers.ts";
 
 export type GenesisAccountStatus = "pending" | "created" | "skipped";
 
@@ -155,6 +161,8 @@ export interface AgentSummary {
   profilePhotoPath: string | null;
   profileUpdatedAt: string | null;
   partnerUserId: string | null;
+  /** Full-admin-only carrier identity and writing numbers; never includes login credentials. */
+  carrierWritingNumbers?: CarrierWritingNumber[];
   /** Admin-only designations; never exposed to agent-facing endpoints. */
   flags: AgentFlags;
 }
@@ -470,11 +478,35 @@ async function loadAgentProfileFields(
   return map;
 }
 
+export async function loadCarrierWritingNumbersByUserId(
+  adminClient: SupabaseClient,
+): Promise<Map<string, CarrierWritingNumber[]>> {
+  const [carrierResult, credentialResult] = await Promise.all([
+    adminClient
+      .from("portal_carriers")
+      .select("id, carrier")
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true }),
+    adminClient
+      .from("portal_carrier_credentials")
+      .select("user_id, carrier_id, writing_number"),
+  ]);
+
+  if (carrierResult.error) throw new Error(carrierResult.error.message);
+  if (credentialResult.error) throw new Error(credentialResult.error.message);
+
+  return buildCarrierWritingNumbersByUserId(
+    (carrierResult.data ?? []) as CarrierWritingNumberCarrierRow[],
+    (credentialResult.data ?? []) as CarrierWritingNumberCredentialRow[],
+  );
+}
+
 export async function buildAgentSummaries(
   adminClient: SupabaseClient,
-  options?: { includeSensitive?: boolean },
+  options?: { includeSensitive?: boolean; includeCarrierWritingNumbers?: boolean },
 ): Promise<AgentSummary[]> {
   const includeSensitive = options?.includeSensitive ?? false;
+  const includeCarrierWritingNumbers = options?.includeCarrierWritingNumbers ?? false;
   const [
     users,
     onboardingMaps,
@@ -484,6 +516,7 @@ export async function buildAgentSummaries(
     profilesByUserId,
     partnerLinks,
     flagsByUserId,
+    carrierWritingNumbersByUserId,
   ] = await Promise.all([
     listPortalUsers(adminClient),
     loadOnboardingMaps(adminClient),
@@ -493,6 +526,9 @@ export async function buildAgentSummaries(
     loadPortalProfilePhotos(adminClient),
     loadHierarchyPartnerLinks(adminClient),
     loadAgentFlagsByUserId(adminClient),
+    includeCarrierWritingNumbers
+      ? loadCarrierWritingNumbersByUserId(adminClient)
+      : Promise.resolve(new Map<string, CarrierWritingNumber[]>()),
   ]);
   const partnerByUserId = buildPartnerLookup(partnerLinks);
 
@@ -557,6 +593,9 @@ export async function buildAgentSummaries(
       profilePhotoPath: profilePhoto?.profilePhotoPath ?? null,
       profileUpdatedAt: profilePhoto?.profileUpdatedAt ?? null,
       partnerUserId: partnerByUserId.get(user.id) ?? null,
+      ...(includeCarrierWritingNumbers
+        ? { carrierWritingNumbers: carrierWritingNumbersByUserId.get(user.id) ?? [] }
+        : {}),
       flags: flagsByUserId.get(user.id) ?? { ...EMPTY_AGENT_FLAGS },
     };
   }));

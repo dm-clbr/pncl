@@ -1,3 +1,8 @@
+import {
+  formatCarrierWritingNumbers,
+  type CarrierWritingNumber,
+} from "./carrierWritingNumbers.ts";
+
 export const HIERARCHY_EXPORT_UPLINE_LEVELS = 10;
 
 const PHASE_LABELS: Record<string, string> = {
@@ -34,6 +39,7 @@ export interface BuildHierarchyExportInput {
   allAgents: HierarchyExportAgent[];
   exportedAgents?: HierarchyExportAgent[];
   stateLicensesByUserId?: Map<string, string[]>;
+  carrierWritingNumbersByUserId?: Map<string, CarrierWritingNumber[]>;
 }
 
 export function csvEscape(value: string | number | null | undefined): string {
@@ -141,6 +147,7 @@ export function buildHierarchyExportCsv({
   allAgents,
   exportedAgents = allAgents,
   stateLicensesByUserId = new Map(),
+  carrierWritingNumbersByUserId = new Map(),
 }: BuildHierarchyExportInput): string {
   const agentsById = new Map(allAgents.map((agent) => [agent.id, agent]));
   const downlineCounts = computeDownlineCounts(allAgents);
@@ -164,6 +171,7 @@ export function buildHierarchyExportCsv({
     "Email",
     "Agent #",
     "NPN",
+    "Carrier writing numbers",
     "Compensation tier",
     "Compensation tier effective date",
     "Stage",
@@ -199,6 +207,7 @@ export function buildHierarchyExportCsv({
       agent.email,
       formatAgentNumber(agent.agentNumber),
       agent.npn,
+      formatCarrierWritingNumbers(carrierWritingNumbersByUserId.get(agent.id)),
       agent.compLevel,
       agent.compLevelEffectiveAt?.slice(0, 10) ?? "",
       agent.phase ? PHASE_LABELS[agent.phase] ?? agent.phase : "",

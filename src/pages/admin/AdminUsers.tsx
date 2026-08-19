@@ -27,6 +27,7 @@ import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
 import { trackPageView } from "@/lib/analytics";
 import { formatRoleLabel, isAdminAssist, type PortalRole } from "@/lib/roles";
+import { matchesAdminAgentSearch } from "@/lib/admin-agent-search";
 import { toast } from "sonner";
 
 function statusLabel(agent: AgentSummary): string {
@@ -139,15 +140,10 @@ export default function AdminUsers() {
   }, []);
 
   const filteredAgents = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
     return agents.filter((agent) => {
       if (!matchesGoogleStatusFilter(agent, googleFilter)) return false;
       if (flagFilter !== "all" && !agent.flags?.[flagFilter]) return false;
-      if (!normalized) return true;
-      return agent.name.toLowerCase().includes(normalized)
-        || agent.email.toLowerCase().includes(normalized)
-        || (agent.npn?.toLowerCase().includes(normalized) ?? false)
-        || (agent.referrerName?.toLowerCase().includes(normalized) ?? false);
+      return matchesAdminAgentSearch(agent, query);
     });
   }, [agents, query, googleFilter, flagFilter]);
 
@@ -404,7 +400,7 @@ export default function AdminUsers() {
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Name, email, NPN, or upline"
+            placeholder="Name, email, NPN, upline, or writing number"
           />
         </label>
 

@@ -20,6 +20,11 @@ export function canExportHierarchy(role: PortalRole): boolean {
   return isFullAdminRole(role);
 }
 
+/** Carrier writing numbers are private agent credential data for full admins only. */
+export function canAccessCarrierWritingNumbers(role: PortalRole): boolean {
+  return isFullAdminRole(role);
+}
+
 export function shouldReturnAdminAssistHierarchy(
   role: PortalRole,
   requestedView: string | null,

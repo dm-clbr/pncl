@@ -74,6 +74,46 @@ describe("hierarchy CSV export", () => {
     expect(row[headers.indexOf("Compensation tier effective date")]).toBe("");
   });
 
+  it("exports multiple carrier writing numbers in one agent-only cell", () => {
+    const csv = buildHierarchyExportCsv({
+      allAgents: [agent(0)],
+      carrierWritingNumbersByUserId: new Map([
+        ["agent-0", [
+          { carrier: "Ethos", writingNumber: "ETH-123" },
+          { carrier: "Mutual of Omaha", writingNumber: "MOO-456" },
+        ]],
+      ]),
+    });
+    const [headerLine, rowLine] = csv.split("\r\n");
+    const headers = headerLine.split(",");
+    const row = rowLine.split(",");
+
+    expect(row[headers.indexOf("Carrier writing numbers")])
+      .toBe("Ethos: ETH-123; Mutual of Omaha: MOO-456");
+    expect(headers.some((header) => /Upline .*writing number/i.test(header))).toBe(false);
+    expect(headers.some((header) => /username|password/i.test(header))).toBe(false);
+  });
+
+  it("leaves carrier writing numbers blank when an agent has none", () => {
+    const csv = buildHierarchyExportCsv({ allAgents: [agent(0)] });
+    const [headerLine, rowLine] = csv.split("\r\n");
+    const headers = headerLine.split(",");
+    const row = rowLine.split(",");
+
+    expect(row[headers.indexOf("Carrier writing numbers")]).toBe("");
+  });
+
+  it("CSV-escapes punctuation inside the carrier writing-number cell", () => {
+    const csv = buildHierarchyExportCsv({
+      allAgents: [agent(0)],
+      carrierWritingNumbersByUserId: new Map([
+        ["agent-0", [{ carrier: "Carrier, Inc.", writingNumber: 'WR-"700"' }]],
+      ]),
+    });
+
+    expect(csv).toContain('"Carrier, Inc.: WR-""700"""');
+  });
+
   it("stops safely when malformed hierarchy links contain a cycle", () => {
     const first = agent(1);
     const second = agent(2);

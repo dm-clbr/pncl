@@ -1,6 +1,9 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requireAdmin } from "../_shared/adminAuth.ts";
-import { buildAgentSummaries } from "../_shared/adminAgents.ts";
+import {
+  buildAgentSummaries,
+  loadCarrierWritingNumbersByUserId,
+} from "../_shared/adminAgents.ts";
 import { buildHierarchyExportCsv } from "../_shared/hierarchyExport.ts";
 import { corsHeaders, errorResponse, handleCors } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
@@ -29,7 +32,10 @@ serve(async (req) => {
       }
     }
 
-    const allAgents = await buildAgentSummaries(adminClient);
+    const [allAgents, carrierWritingNumbersByUserId] = await Promise.all([
+      buildAgentSummaries(adminClient),
+      loadCarrierWritingNumbersByUserId(adminClient),
+    ]);
     const agents = userIdFilter
       ? allAgents.filter((agent) => userIdFilter!.has(agent.id))
       : allAgents;
@@ -46,6 +52,7 @@ serve(async (req) => {
       allAgents,
       exportedAgents: agents,
       stateLicensesByUserId,
+      carrierWritingNumbersByUserId,
     });
     const fileName = `pncl-agents-${new Date().toISOString().slice(0, 10)}.csv`;
 

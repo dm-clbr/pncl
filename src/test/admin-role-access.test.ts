@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  canAccessCarrierWritingNumbers,
   canAccessAdminConsole,
   canAccessHierarchy,
   canExportHierarchy,
@@ -10,6 +11,13 @@ import {
 } from "../../supabase/functions/_shared/adminRoles";
 
 describe("admin role access boundaries", () => {
+  it("limits carrier writing-number access to full admins", () => {
+    expect(canAccessCarrierWritingNumbers("admin")).toBe(true);
+    expect(canAccessCarrierWritingNumbers("genesis_admin")).toBe(false);
+    expect(canAccessCarrierWritingNumbers("admin_assist")).toBe(false);
+    expect(canAccessCarrierWritingNumbers("agent")).toBe(false);
+  });
+
   it("limits admin_assist to the read-only hierarchy surface", () => {
     const role: PortalRole = "admin_assist";
 
