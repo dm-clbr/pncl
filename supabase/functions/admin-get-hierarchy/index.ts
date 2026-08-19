@@ -16,6 +16,7 @@ import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
 import { isValidReferrerUserId } from "../_shared/onboarding.ts";
 import { shouldReturnAdminAssistHierarchy } from "../_shared/adminRoles.ts";
+import { buildAdminAssistHierarchyResponse } from "../_shared/adminAssistHierarchyResponse.ts";
 
 serve(async (req) => {
   const cors = handleCors(req);
@@ -39,12 +40,11 @@ serve(async (req) => {
 
     if (shouldReturnAdminAssistHierarchy(getUserRole(user), url.searchParams.get("view"))) {
       const tree = buildAssistHierarchyTree(agents, rootUserId, partnerLinks);
-      return jsonResponse({
+      return jsonResponse(buildAdminAssistHierarchyResponse({
         tree,
         focusOptions: buildHierarchyFocusOptions(agents),
         totalAgents: agents.length,
-        readOnly: true,
-      });
+      }));
     }
 
     const profilesByUserId = await loadPortalProfilePhotos(adminClient);

@@ -14,10 +14,8 @@ function getNodePeople(node: AssistHierarchyNode): AssistHierarchyMember[] {
   return [{
     id: node.id,
     name: node.name,
-    email: node.email,
     npn: node.npn,
     referrerName: node.referrerName,
-    referrerEmail: node.referrerEmail,
     referrerNpn: node.referrerNpn,
   }];
 }
@@ -34,11 +32,7 @@ function countTotalDownline(node: AssistHierarchyNode): number {
 }
 
 function formatUpline(person: AssistHierarchyMember): string {
-  if (!person.referrerName && !person.referrerEmail) return "—";
-  if (person.referrerName && person.referrerEmail) {
-    return `${person.referrerName} (${person.referrerEmail})`;
-  }
-  return person.referrerName ?? person.referrerEmail ?? "—";
+  return person.referrerName ?? "—";
 }
 
 export function HierarchyAssistDetailModal({
@@ -77,20 +71,14 @@ export function HierarchyAssistDetailModal({
               <div className="admin-hierarchy-assist-identity">
                 <AdminUserAvatar
                   name={person.name}
-                  email={person.email}
                   size="lg"
                 />
                 <div>
                   <h3>{person.name}</h3>
-                  <p>{person.email}</p>
                 </div>
               </div>
 
               <dl className="admin-hierarchy-assist-details">
-                <div>
-                  <dt>Email</dt>
-                  <dd>{person.email || "—"}</dd>
-                </div>
                 <div>
                   <dt>NPN number</dt>
                   <dd>{person.npn ?? "—"}</dd>
@@ -126,7 +114,7 @@ export function HierarchyAssistDetailModal({
                   {directDownline.map((person) => (
                     <li key={person.id}>
                       <strong>{person.name}</strong>
-                      <span>{person.email || "No email"} · NPN {person.npn ?? "—"}</span>
+                      <span>NPN {person.npn ?? "—"}</span>
                     </li>
                   ))}
                 </ul>

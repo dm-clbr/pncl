@@ -81,7 +81,8 @@ describe("full admin hierarchy preview", () => {
       "true",
     );
     expect(screen.queryByRole("button", { name: "Download CSV" })).not.toBeInTheDocument();
-    expect(screen.getByText(/select any person to see email, upline, downline, and NPN details/i))
+    expect(screen.getByText(/select any person to see upline, downline, and NPN details/i))
       .toBeInTheDocument();
+    expect(screen.queryByText(/select any person to see email/i)).not.toBeInTheDocument();
   });
 });

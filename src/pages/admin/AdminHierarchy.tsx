@@ -166,7 +166,7 @@ export default function AdminHierarchy() {
           <h1>Referral hierarchy</h1>
           <p>
             {assistView
-              ? "Read-only canvas and tree views. Select any person to see email, upline, downline, and NPN details."
+              ? "Read-only canvas and tree views. Select any person to see upline, downline, and NPN details."
               : "Connection lines from upline to downline. Link business partners at the same level to combine them into one box."}
           </p>
         </div>
@@ -197,7 +197,7 @@ export default function AdminHierarchy() {
             {assistView
               ? focusOptions.map((agent) => (
                   <option key={agent.id} value={agent.id}>
-                    {agent.name} ({agent.email}){agent.npn ? ` · NPN ${agent.npn}` : ""}
+                    {agent.name}{agent.npn ? ` · NPN ${agent.npn}` : ""}
                   </option>
                 ))
               : agentOptions.map((agent) => (

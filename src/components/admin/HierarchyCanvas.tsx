@@ -141,10 +141,8 @@ function HierarchyTile({
       : [{
           id: assistNode.id,
           name: assistNode.name,
-          email: assistNode.email,
           npn: assistNode.npn,
           referrerName: assistNode.referrerName,
-          referrerEmail: assistNode.referrerEmail,
           referrerNpn: assistNode.referrerNpn,
         }];
 
@@ -160,7 +158,6 @@ function HierarchyTile({
             <AdminUserAvatar
               key={member.id}
               name={member.name}
-              email={member.email}
               size="md"
               className="admin-hierarchy-tile-avatar"
             />

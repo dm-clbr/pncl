@@ -34,6 +34,9 @@ describe("admin role access boundaries", () => {
     expect(canAccessHierarchy(role)).toBe(true);
     expect(canExportHierarchy(role)).toBe(true);
     expect(isFullAdminRole(role)).toBe(true);
+    expect(canExportHierarchy("admin_assist")).toBe(false);
+    expect(canExportHierarchy("genesis_admin")).toBe(false);
+    expect(canExportHierarchy("agent")).toBe(false);
   });
 
   it("keeps Genesis admins out of hierarchy and hierarchy export", () => {

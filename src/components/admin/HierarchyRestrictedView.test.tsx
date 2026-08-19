@@ -8,18 +8,14 @@ import type { AssistHierarchyNode } from "@/lib/admin-api";
 const TREE: AssistHierarchyNode[] = [{
   id: "raychel",
   name: "Raychel Weidler",
-  email: "raychel@thepncl.com",
   npn: "12345678",
   referrerName: "Upline Agent",
-  referrerEmail: "upline@thepncl.com",
   referrerNpn: "87654321",
   children: [{
     id: "downline",
     name: "Downline Agent",
-    email: "downline@thepncl.com",
     npn: null,
     referrerName: "Raychel Weidler",
-    referrerEmail: "raychel@thepncl.com",
     referrerNpn: "12345678",
     children: [],
   }],
@@ -62,22 +58,26 @@ describe("restricted hierarchy view", () => {
     expect(container).not.toHaveTextContent(/tier|effective/i);
   });
 
-  it("shows the allowed person, upline, and downline fields without compensation", () => {
+  it("shows allowed hierarchy details without email or other sensitive fields", () => {
+    const onFocusAgent = vi.fn();
     const { container } = render(
       <HierarchyAssistDetailModal
         node={TREE[0]}
         onClose={() => undefined}
-        onFocusAgent={() => undefined}
+        onFocusAgent={onFocusAgent}
       />,
     );
 
-    expect(screen.getAllByText("raychel@thepncl.com").length).toBeGreaterThan(0);
     expect(screen.getByText("12345678")).toBeInTheDocument();
-    expect(screen.getByText("Upline Agent (upline@thepncl.com)")).toBeInTheDocument();
+    expect(screen.getByText("Upline Agent")).toBeInTheDocument();
     expect(screen.getByText(/87654321/)).toBeInTheDocument();
     expect(screen.getByText("Direct downline")).toBeInTheDocument();
     expect(screen.getByText("Total downline")).toBeInTheDocument();
     expect(screen.getByText("Downline Agent")).toBeInTheDocument();
-    expect(container).not.toHaveTextContent(/comp|tier|effective/i);
+    expect(screen.getByText("NPN —")).toBeInTheDocument();
+    expect(container).not.toHaveTextContent(/@|email|comp|tier|effective|phone|credential|document|bank/i);
+
+    fireEvent.click(screen.getByRole("button", { name: "Focus on this person" }));
+    expect(onFocusAgent).toHaveBeenCalledWith("raychel");
   });
 });

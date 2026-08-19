@@ -26,7 +26,7 @@ function agent(index: number): HierarchyExportAgent {
 }
 
 describe("hierarchy CSV export", () => {
-  it("exports the nearest ten uplines with identity and compensation data", () => {
+  it("exports agent and nearest-ten-upline hierarchy fields without upline emails", () => {
     const allAgents = Array.from({ length: 12 }, (_, index) => agent(index));
     const csv = buildHierarchyExportCsv({
       allAgents,
@@ -38,16 +38,28 @@ describe("hierarchy CSV export", () => {
     const value = (header: string) => row[headers.indexOf(header)];
 
     expect(HIERARCHY_EXPORT_UPLINE_LEVELS).toBe(10);
+    expect(value("Name")).toBe("Agent 11");
+    expect(value("NPN")).toBe("NPN-11");
+    expect(value("Compensation tier")).toBe("125");
+    expect(value("Compensation tier effective date")).toBe("2026-07-12");
     expect(value("Upline 1 Name")).toBe("Agent 10");
     expect(value("Upline 1 NPN")).toBe("NPN-10");
     expect(value("Upline 1 Compensation Tier")).toBe("120");
     expect(value("Upline 1 Compensation Tier Effective Date")).toBe("2026-07-11");
     expect(value("Upline 10 Name")).toBe("Agent 1");
     expect(value("Upline 10 Agent #")).toBe("PNCL-00001");
+    expect(value("Upline 10 NPN")).toBe("NPN-1");
     expect(value("Upline 10 Compensation Tier")).toBe("75");
     expect(value("Upline 10 Compensation Tier Effective Date")).toBe("2026-07-02");
     expect(headers).not.toContain("Upline 11 Name");
     expect(headers).not.toContain("Upline 11 Compensation Tier");
+    expect(headers.some((header) => /^Upline \d+ Email$/.test(header))).toBe(false);
+    for (let index = 1; index <= 10; index++) {
+      expect(csv).not.toContain(`agent${index}@thepncl.com`);
+    }
+
+    expect(resolveUplineLevels(allAgents[11], new Map(allAgents.map((entry) => [entry.id, entry])))[0])
+      .not.toHaveProperty("email");
   });
 
   it("exports each agent's compensation tier and latest tier-effective date", () => {

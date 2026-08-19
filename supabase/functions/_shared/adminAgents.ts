@@ -34,6 +34,17 @@ import {
   type CarrierWritingNumberCarrierRow,
   type CarrierWritingNumberCredentialRow,
 } from "./carrierWritingNumbers.ts";
+import type {
+  AssistHierarchyMember,
+  AssistHierarchyNode,
+  HierarchyFocusOption,
+} from "./adminAssistHierarchyResponse.ts";
+
+export type {
+  AssistHierarchyMember,
+  AssistHierarchyNode,
+  HierarchyFocusOption,
+} from "./adminAssistHierarchyResponse.ts";
 
 export type GenesisAccountStatus = "pending" | "created" | "skipped";
 
@@ -194,37 +205,6 @@ export interface HierarchyNode {
   isPartnerGroup?: boolean;
   memberIds?: string[];
   members?: HierarchyMember[];
-}
-
-export interface AssistHierarchyMember {
-  id: string;
-  name: string;
-  email: string;
-  npn: string | null;
-  referrerName: string | null;
-  referrerEmail: string | null;
-  referrerNpn: string | null;
-}
-
-export interface AssistHierarchyNode {
-  id: string;
-  name: string;
-  email: string;
-  npn: string | null;
-  referrerName: string | null;
-  referrerEmail: string | null;
-  referrerNpn: string | null;
-  children: AssistHierarchyNode[];
-  isPartnerGroup?: boolean;
-  memberIds?: string[];
-  members?: AssistHierarchyMember[];
-}
-
-export interface HierarchyFocusOption {
-  id: string;
-  name: string;
-  email: string;
-  npn: string | null;
 }
 
 interface PortalProfilePhotoRow {
@@ -775,10 +755,8 @@ function toAssistHierarchyMember(
   return {
     id: agent.id,
     name: agent.name,
-    email: agent.email,
     npn: agent.npn,
     referrerName: referrer?.name ?? agent.referrerName ?? null,
-    referrerEmail: referrer?.email ?? null,
     referrerNpn: referrer?.npn ?? null,
   };
 }
@@ -925,10 +903,8 @@ export function buildAssistHierarchyTree(
       return {
         id: getPartnerGroupId(agent.id, partner.id),
         name: members.map((member) => member.name).join(" & "),
-        email: members.map((member) => member.email).join(" · "),
         npn: members.map((member) => member.npn ?? "—").join(" · "),
         referrerName: members[0]?.referrerName ?? null,
-        referrerEmail: members[0]?.referrerEmail ?? null,
         referrerNpn: members[0]?.referrerNpn ?? null,
         isPartnerGroup: true,
         memberIds: members.map((member) => member.id),
@@ -946,10 +922,8 @@ export function buildAssistHierarchyTree(
     return {
       id: agent.id,
       name: agent.name,
-      email: agent.email,
       npn: agent.npn,
       referrerName: referrer?.name ?? agent.referrerName ?? null,
-      referrerEmail: referrer?.email ?? null,
       referrerNpn: referrer?.npn ?? null,
       children,
     };
@@ -978,7 +952,6 @@ export function buildHierarchyFocusOptions(agents: AgentSummary[]): HierarchyFoc
     .map((agent) => ({
       id: agent.id,
       name: agent.name,
-      email: agent.email,
       npn: agent.npn,
     }));
 }

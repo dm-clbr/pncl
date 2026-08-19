@@ -42,6 +42,11 @@ export interface BuildHierarchyExportInput {
   carrierWritingNumbersByUserId?: Map<string, CarrierWritingNumber[]>;
 }
 
+export type HierarchyExportUpline = Pick<
+  HierarchyExportAgent,
+  "name" | "agentNumber" | "npn" | "compLevel" | "compLevelEffectiveAt"
+>;
+
 export function csvEscape(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return "";
   const text = String(value);
@@ -91,18 +96,8 @@ export function computeDownlineCounts(agents: HierarchyExportAgent[]): Map<strin
 export function resolveUplineLevels(
   agent: HierarchyExportAgent,
   agentsById: Map<string, HierarchyExportAgent>,
-): Array<
-  Pick<
-    HierarchyExportAgent,
-    "name" | "email" | "agentNumber" | "npn" | "compLevel" | "compLevelEffectiveAt"
-  >
-> {
-  const levels: Array<
-    Pick<
-      HierarchyExportAgent,
-      "name" | "email" | "agentNumber" | "npn" | "compLevel" | "compLevelEffectiveAt"
-    >
-  > = [];
+): HierarchyExportUpline[] {
+  const levels: HierarchyExportUpline[] = [];
   const visited = new Set<string>([agent.id]);
   let current = agent;
 
@@ -115,7 +110,6 @@ export function resolveUplineLevels(
       if (levels.length === 0) {
         levels.push({
           name: current.referrerName ?? current.uplineNetwork ?? "",
-          email: "",
           agentNumber: null,
           npn: null,
           compLevel: null,
@@ -125,14 +119,19 @@ export function resolveUplineLevels(
       break;
     }
 
-    levels.push(referrer);
+    levels.push({
+      name: referrer.name,
+      agentNumber: referrer.agentNumber,
+      npn: referrer.npn,
+      compLevel: referrer.compLevel,
+      compLevelEffectiveAt: referrer.compLevelEffectiveAt,
+    });
     current = referrer;
   }
 
   if (levels.length === 0 && (agent.referrerName || agent.uplineNetwork)) {
     levels.push({
       name: agent.referrerName ?? agent.uplineNetwork ?? "",
-      email: "",
       agentNumber: null,
       npn: null,
       compLevel: null,
@@ -157,7 +156,6 @@ export function buildHierarchyExportCsv({
       const level = index + 1;
       return [
         `Upline ${level} Name`,
-        `Upline ${level} Email`,
         `Upline ${level} Agent #`,
         `Upline ${level} NPN`,
         `Upline ${level} Compensation Tier`,
@@ -193,7 +191,6 @@ export function buildHierarchyExportCsv({
         const upline = uplineLevels[index];
         return [
           upline?.name ?? "",
-          upline?.email ?? "",
           formatAgentNumber(upline?.agentNumber ?? null),
           upline?.npn ?? "",
           upline?.compLevel ?? "",

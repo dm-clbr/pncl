@@ -87,7 +87,6 @@ function HierarchyTreeNode({
                     <AdminUserAvatar
                       key={member.id}
                       name={member.name}
-                      email={member.email}
                       size="sm"
                     />
                   ))}
@@ -101,7 +100,6 @@ function HierarchyTreeNode({
               <>
                 <AdminUserAvatar
                   name={(node as AssistHierarchyNode).name}
-                  email={(node as AssistHierarchyNode).email}
                   size="sm"
                 />
                 <span className="admin-tree-name">{label}</span>
