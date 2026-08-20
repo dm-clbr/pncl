@@ -3,6 +3,7 @@ import {
   canAccessCarrierWritingNumbers,
   canAccessAdminConsole,
   canAccessHierarchy,
+  canManageStateAvailability,
   canExportHierarchy,
   canUseGenesisAdminEndpoint,
   isFullAdminRole,
@@ -26,6 +27,7 @@ describe("admin role access boundaries", () => {
     expect(isFullAdminRole(role)).toBe(false);
     expect(canExportHierarchy(role)).toBe(false);
     expect(canUseGenesisAdminEndpoint(role)).toBe(false);
+    expect(canManageStateAvailability(role)).toBe(false);
   });
 
   it("preserves full admin hierarchy and export access", () => {
@@ -34,6 +36,7 @@ describe("admin role access boundaries", () => {
     expect(canAccessHierarchy(role)).toBe(true);
     expect(canExportHierarchy(role)).toBe(true);
     expect(isFullAdminRole(role)).toBe(true);
+    expect(canManageStateAvailability(role)).toBe(true);
     expect(canExportHierarchy("admin_assist")).toBe(false);
     expect(canExportHierarchy("genesis_admin")).toBe(false);
     expect(canExportHierarchy("agent")).toBe(false);

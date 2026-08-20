@@ -30,6 +30,7 @@ describe("admin_assist client access", () => {
     expect(screen.getByRole("link", { name: "Hierarchy" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Users" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Genesis" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "State availability" })).not.toBeInTheDocument();
   });
 
   it("redirects restricted nested admin routes to hierarchy", () => {

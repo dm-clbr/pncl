@@ -25,6 +25,11 @@ export function canAccessCarrierWritingNumbers(role: PortalRole): boolean {
   return isFullAdminRole(role);
 }
 
+/** Company operating-state availability is managed by full admins only. */
+export function canManageStateAvailability(role: PortalRole): boolean {
+  return isFullAdminRole(role);
+}
+
 export function shouldReturnAdminAssistHierarchy(
   role: PortalRole,
   requestedView: string | null,

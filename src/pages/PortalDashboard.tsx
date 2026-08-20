@@ -49,6 +49,7 @@ import {
 import PortalIncentivesList from "@/components/PortalIncentivesList";
 import PortalBrandAssetsList from "@/components/PortalBrandAssetsList";
 import PortalDashboardFilesList from "@/components/PortalDashboardFilesList";
+import PortalPrimaryNav from "@/components/PortalPrimaryNav";
 import { usePortalIncentives } from "@/hooks/usePortalIncentives";
 import { usePortalBrandAssets } from "@/hooks/usePortalBrandAssets";
 import { usePortalProfile } from "@/hooks/usePortalProfile";
@@ -353,6 +354,8 @@ export default function PortalDashboard() {
               </span>
             </Link>
           </header>
+
+          <PortalPrimaryNav />
 
           {resolvedTodos.length > 0 && (
             <Link

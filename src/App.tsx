@@ -20,6 +20,7 @@ import OnboardingActivate from "./pages/OnboardingActivate.tsx";
 import PortalLogin from "./pages/PortalLogin.tsx";
 import PortalSetPassword from "./pages/PortalSetPassword.tsx";
 import PortalDashboard from "./pages/PortalDashboard.tsx";
+import PortalStateMap from "./pages/PortalStateMap.tsx";
 import PortalCarrierSheet from "./pages/PortalCarrierSheet.tsx";
 import PortalBrandAssets from "./pages/PortalBrandAssets.tsx";
 import PortalProfile from "./pages/PortalProfile.tsx";
@@ -43,6 +44,7 @@ import AdminAddUser from "./pages/admin/AdminAddUser.tsx";
 import AdminIncentives from "./pages/admin/AdminIncentives.tsx";
 import AdminBrandAssets from "./pages/admin/AdminBrandAssets.tsx";
 import AdminCarriers from "./pages/admin/AdminCarriers.tsx";
+import AdminStateAvailability from "./pages/admin/AdminStateAvailability.tsx";
 import AdminGenesis from "./pages/admin/AdminGenesis.tsx";
 import AdminContracting from "./pages/admin/AdminContracting.tsx";
 import AdminLeadCharges from "./pages/admin/AdminLeadCharges.tsx";
@@ -108,6 +110,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <PortalCarrierSheet />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/portal/state-map"
+            element={
+              <ProtectedRoute>
+                <PortalStateMap />
               </ProtectedRoute>
             }
           />
@@ -220,6 +230,7 @@ const App = () => (
             <Route path="incentives" element={<AdminFullRoute><AdminIncentives /></AdminFullRoute>} />
             <Route path="brand-assets" element={<AdminFullRoute><AdminBrandAssets /></AdminFullRoute>} />
             <Route path="carriers" element={<AdminFullRoute><AdminCarriers /></AdminFullRoute>} />
+            <Route path="state-availability" element={<AdminFullRoute><AdminStateAvailability /></AdminFullRoute>} />
             <Route path="clients" element={<AdminFullRoute><AdminClients /></AdminFullRoute>} />
             <Route path="dashboard-tabs" element={<AdminFullRoute><AdminDashboardTabs /></AdminFullRoute>} />
             <Route path="todos" element={<AdminFullRoute><AdminTodos /></AdminFullRoute>} />

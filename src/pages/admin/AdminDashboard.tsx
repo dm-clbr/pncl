@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Building2, CheckSquare, Eye, FileText, GitBranch, GraduationCap, LayoutGrid, Palette, Shield, Trophy, UserPlus, Users } from "lucide-react";
+import { Building2, CheckSquare, Eye, FileText, GitBranch, GraduationCap, LayoutGrid, MapPinned, Palette, Shield, Trophy, UserPlus, Users } from "lucide-react";
 import { useAdminAgents } from "@/hooks/useAdminAgents";
 import { AGENT_PHASE_LABELS, AGENT_PHASE_ORDER } from "@/lib/admin-api";
 import { trackPageView } from "@/lib/analytics";
@@ -41,6 +41,12 @@ const ADMIN_CARDS = [
     title: "Manage carriers",
     description: "Update carrier contacts and e-app links on the agent carrier sheet.",
     icon: Building2,
+  },
+  {
+    to: "/portal/admin/state-availability",
+    title: "Manage state availability",
+    description: "Set PNCL's Active, Pending, or Inactive operating status for every state.",
+    icon: MapPinned,
   },
   {
     to: "/portal/admin/todos",

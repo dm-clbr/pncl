@@ -1,5 +1,5 @@
 import { NavLink, Outlet, Link } from "react-router-dom";
-import { ArrowLeft, Building2, CheckSquare, ClipboardCheck, ClipboardList, DollarSign, Eye, FileSignature, FileText, GitBranch, GraduationCap, Handshake, LayoutDashboard, LayoutGrid, Mail, Palette, Receipt, Trophy, UserPlus, Users, Workflow } from "lucide-react";
+import { ArrowLeft, Building2, CheckSquare, ClipboardCheck, ClipboardList, DollarSign, Eye, FileSignature, FileText, GitBranch, GraduationCap, Handshake, LayoutDashboard, LayoutGrid, Mail, MapPinned, Palette, Receipt, Trophy, UserPlus, Users, Workflow } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdminAssist, isGenesisAdmin } from "@/lib/roles";
@@ -21,6 +21,7 @@ const FULL_ADMIN_NAV = [
   { to: "/portal/admin/incentives", label: "Incentives", icon: Trophy, end: false },
   { to: "/portal/admin/brand-assets", label: "Brand assets", icon: Palette, end: false },
   { to: "/portal/admin/carriers", label: "Carriers", icon: Building2, end: false },
+  { to: "/portal/admin/state-availability", label: "State availability", icon: MapPinned, end: false },
   { to: "/portal/admin/todos", label: "To-dos", icon: CheckSquare, end: false },
   { to: "/portal/admin/clients", label: "Clients", icon: ClipboardList, end: false },
   { to: "/portal/admin/dashboard-tabs", label: "Dashboard tabs", icon: LayoutGrid, end: false },

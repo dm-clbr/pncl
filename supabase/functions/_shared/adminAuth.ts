@@ -3,6 +3,7 @@ import { getEmailDomain } from "./onboarding.ts";
 import {
   canAccessAdminConsole,
   canAccessHierarchy,
+  canManageStateAvailability,
   canUseGenesisAdminEndpoint,
   isFullAdminRole,
   type PortalRole,
@@ -86,6 +87,18 @@ export async function requireAdmin(req: Request): Promise<{ user: User; adminCli
 
   if (!isFullAdminRole(getUserRole(user))) {
     throw new AdminAuthError("Admin access required", 403, "forbidden");
+  }
+
+  return { user, adminClient };
+}
+
+export async function requireStateAvailabilityAdmin(
+  req: Request,
+): Promise<{ user: User; adminClient: SupabaseClient }> {
+  const { user, adminClient } = await requirePortalUser(req);
+
+  if (!canManageStateAvailability(getUserRole(user))) {
+    throw new AdminAuthError("Full admin access required", 403, "forbidden");
   }
 
   return { user, adminClient };

@@ -75,6 +75,9 @@ verify_jwt = true
 [functions.admin-set-agent-flags]
 verify_jwt = true
 
+[functions.admin-update-state-availability]
+verify_jwt = true
+
 [functions.submit-portal-ticket]
 verify_jwt = true
 

@@ -1,19 +1,14 @@
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseClient, getSupabaseConfig } from "@/lib/supabase";
 import { lookupCountyFromZip, requireCountyFromZip } from "@/lib/us-zip-county";
+import { US_STATE_CODES } from "@/lib/us-states";
 
 export const PROFILE_PHOTO_BUCKET = "portal-profile-photos";
 export const PROFILE_DOCUMENTS_BUCKET = "portal-profile-documents";
 export const MAX_PROFILE_PHOTO_BYTES = 300 * 1024;
 export const MAX_DRIVERS_LICENSE_BYTES = 5 * 1024 * 1024;
 
-export const US_STATES = [
-  "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
-  "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
-  "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
-  "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
-  "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
-] as const;
+export const US_STATES = US_STATE_CODES;
 
 export const CLOTHING_SIZES = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL"] as const;
 export const WAIST_SIZES = ["28", "30", "32", "34", "36", "38", "40", "42", "44", "46", "48"] as const;
