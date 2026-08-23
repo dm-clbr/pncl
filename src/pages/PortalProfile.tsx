@@ -532,11 +532,15 @@ export default function PortalProfile() {
 
             {!loading && (
               <AgentBusinessCardDownload
+                userId={user?.id ?? ""}
                 firstName={profileRow?.first_name ?? form.firstName}
                 lastName={profileRow?.last_name ?? form.lastName}
                 workEmail={agentEmail}
                 workEmailVerified={isEmailConfirmed(user)}
                 phoneNumber={profileRow?.phone_number}
+                profilePhotoPath={profileRow?.profile_photo_path}
+                profilePhotoUrl={savedPhotoUrl}
+                profileUpdatedAt={profileRow?.updated_at}
               />
             )}
 

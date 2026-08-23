@@ -1,4 +1,6 @@
-import { PDFDocument } from "pdf-lib";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { PDFDict, PDFDocument, PDFName } from "pdf-lib";
 import {
   BUSINESS_CARD_HEIGHT_POINTS,
   BUSINESS_CARD_WIDTH_POINTS,
@@ -38,6 +40,30 @@ describe("agent business card PDF", () => {
     expect(page.getWidth()).toBe(BUSINESS_CARD_WIDTH_POINTS);
     expect(page.getHeight()).toBe(BUSINESS_CARD_HEIGHT_POINTS);
     expect(pdf.getTitle()).toBe("Avery Rivera - PNCL Business Card");
+  });
+
+  it("embeds a normalized profile portrait and falls back when image bytes are unsafe", async () => {
+    const pngBytes = new Uint8Array(readFileSync(resolve(process.cwd(), "public/pwa-192x192.png")));
+    const portraitBytes = await buildAgentBusinessCardPdf({
+      ...COMPLETE_CARD,
+      profilePhoto: { pngBytes },
+    });
+    const portraitPdf = await PDFDocument.load(portraitBytes);
+    const portraitResources = portraitPdf.getPages()[0].node.Resources();
+    const portraitImages = portraitResources?.lookupMaybe(PDFName.of("XObject"), PDFDict);
+
+    expect(portraitImages?.keys().length).toBeGreaterThan(0);
+
+    const fallbackBytes = await buildAgentBusinessCardPdf({
+      ...COMPLETE_CARD,
+      profilePhoto: { pngBytes: new Uint8Array([1, 2, 3]) },
+    });
+    const fallbackPdf = await PDFDocument.load(fallbackBytes);
+    const fallbackResources = fallbackPdf.getPages()[0].node.Resources();
+    const fallbackImages = fallbackResources?.lookupMaybe(PDFName.of("XObject"), PDFDict);
+
+    expect(fallbackPdf.getPageCount()).toBe(1);
+    expect(fallbackImages?.keys().length ?? 0).toBe(0);
   });
 
   it("requires a verified PNCL email and valid phone", () => {
