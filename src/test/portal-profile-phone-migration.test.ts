@@ -2,12 +2,12 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const migration = readFileSync(
-  resolve(process.cwd(), "supabase/migrations/20260823211238_add_portal_profile_phone.sql"),
+  resolve(process.cwd(), "supabase/migrations/20260823212450_add_portal_profile_phone.sql"),
   "utf8",
 );
 
 const placeholderMigration = readFileSync(
-  resolve(process.cwd(), "supabase/migrations/20260823212828_reject_portal_profile_placeholder_phone.sql"),
+  resolve(process.cwd(), "supabase/migrations/20260823212943_reject_portal_profile_placeholder_phone.sql"),
   "utf8",
 );
 
