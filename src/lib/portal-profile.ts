@@ -2,6 +2,7 @@ import type { User } from "@supabase/supabase-js";
 import { getSupabaseClient, getSupabaseConfig } from "@/lib/supabase";
 import { lookupCountyFromZip, requireCountyFromZip } from "@/lib/us-zip-county";
 import { US_STATE_CODES } from "@/lib/us-states";
+import { formatAgentPhoneInput, isValidAgentPhoneNumber, requireValidAgentPhoneNumber } from "@/lib/agent-phone";
 
 export const PROFILE_PHOTO_BUCKET = "portal-profile-photos";
 export const PROFILE_DOCUMENTS_BUCKET = "portal-profile-documents";
@@ -39,6 +40,7 @@ export interface PortalProfile {
   address_state: string | null;
   address_zip: string | null;
   county: string | null;
+  phone_number: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -79,6 +81,7 @@ export interface PortalProfileFormValues {
   addressCity: string;
   addressState: string;
   addressZip: string;
+  phoneNumber: string;
 }
 
 function readMetadataString(user: User | null, key: string): string {
@@ -112,6 +115,7 @@ export function getDefaultProfileValues(user: User | null): PortalProfileFormVal
     addressCity: "",
     addressState: "",
     addressZip: "",
+    phoneNumber: "",
   };
 }
 
@@ -128,6 +132,7 @@ export function profileToFormValues(profile: PortalProfile): PortalProfileFormVa
     addressCity: profile.address_city ?? "",
     addressState: profile.address_state ?? "",
     addressZip: profile.address_zip ?? "",
+    phoneNumber: formatAgentPhoneInput(profile.phone_number ?? ""),
   };
 }
 
@@ -141,6 +146,7 @@ export async function resolveCountyForZip(
 
 /** Address fields required for contracting and the profile onboarding step. */
 export function validatePortalProfileContractFields(values: PortalProfileFormValues): void {
+  requireValidAgentPhoneNumber(values.phoneNumber);
   if (!values.addressLine1.trim()) {
     throw new Error("Street address is required.");
   }
@@ -158,9 +164,10 @@ export function validatePortalProfileContractFields(values: PortalProfileFormVal
 
 export function isPortalProfileContractComplete(profile: Pick<
   PortalProfile,
-  "first_name" | "last_name" | "address_line1" | "address_city" | "address_state" | "address_zip" | "county"
+  "first_name" | "last_name" | "phone_number" | "address_line1" | "address_city" | "address_state" | "address_zip" | "county"
 >): boolean {
   if (!profile.first_name?.trim() || !profile.last_name?.trim()) return false;
+  if (!isValidAgentPhoneNumber(profile.phone_number)) return false;
   if (!profile.address_line1?.trim() || !profile.address_city?.trim() || !profile.address_state?.trim()) {
     return false;
   }
@@ -237,6 +244,7 @@ export async function savePortalProfile(
 
   validatePortalProfileContractFields(values);
   const county = await requireCountyFromZip(values.addressZip.trim());
+  const phoneNumber = requireValidAgentPhoneNumber(values.phoneNumber);
 
   let profilePhotoPath = existingPhotoPath;
   if (photoFile) {
@@ -257,6 +265,7 @@ export async function savePortalProfile(
     address_state: values.addressState || null,
     address_zip: values.addressZip.trim() || null,
     county,
+    phone_number: phoneNumber,
     profile_photo_path: profilePhotoPath,
   };
 

@@ -1,55 +1,51 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import AgentBusinessCardDownload from "@/components/AgentBusinessCardDownload";
+import { downloadAgentBusinessCardPdf } from "@/lib/agent-business-card-pdf";
+
+vi.mock("@/lib/agent-business-card-pdf", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/agent-business-card-pdf")>();
+  return { ...actual, downloadAgentBusinessCardPdf: vi.fn().mockResolvedValue(undefined) };
+});
 
 describe("AgentBusinessCardDownload", () => {
-  const originalCreateObjectUrl = URL.createObjectURL;
-  const originalRevokeObjectUrl = URL.revokeObjectURL;
+  afterEach(() => vi.clearAllMocks());
 
-  afterEach(() => {
-    Object.defineProperty(URL, "createObjectURL", { configurable: true, value: originalCreateObjectUrl });
-    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: originalRevokeObjectUrl });
-    vi.restoreAllMocks();
-    vi.useRealTimers();
-  });
-
-  it("offers an accessible .vcf download and excludes private data in its explanation", () => {
-    vi.useFakeTimers();
-    const createObjectUrl = vi.fn(() => "blob:agent-card");
-    const revokeObjectUrl = vi.fn();
-    Object.defineProperty(URL, "createObjectURL", { configurable: true, value: createObjectUrl });
-    Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: revokeObjectUrl });
-    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
-
+  it("locks the PDF download until a valid phone is saved", () => {
     render(
       <AgentBusinessCardDownload
         firstName="Avery"
         lastName="Rivera"
         workEmail="avery.rivera@thepncl.com"
+        workEmailVerified
+        phoneNumber="000-000-0000"
       />,
     );
 
-    const button = screen.getByRole("button", {
-      name: "Download digital business card for Avery Rivera as a vCard file",
-    });
-    expect(button).toHaveAccessibleDescription(/home address and private onboarding details are not included/i);
-
-    fireEvent.click(button);
-
-    expect(createObjectUrl).toHaveBeenCalledWith(expect.objectContaining({ type: "text/vcard;charset=utf-8" }));
-    expect(click).toHaveBeenCalledTimes(1);
-    expect(click.mock.instances[0]).toMatchObject({
-      download: "avery-rivera-pncl.vcf",
-      href: "blob:agent-card",
-    });
-    vi.runAllTimers();
-    expect(revokeObjectUrl).toHaveBeenCalledWith("blob:agent-card");
+    expect(screen.getByRole("button", { name: "Download PDF business card for Avery Rivera" })).toBeDisabled();
+    expect(screen.getByRole("status")).toHaveTextContent(/add a valid phone number below and save your profile/i);
+    expect(screen.getByLabelText("Business card preview for Avery Rivera")).toHaveTextContent("Phone required");
+    expect(screen.getByText(/home address and onboarding data stay private/i)).toBeInTheDocument();
   });
 
-  it("disables the action when neither a name nor work email is available", () => {
-    render(<AgentBusinessCardDownload />);
+  it("downloads the PDF when name, verified work email, and phone are complete", async () => {
+    render(
+      <AgentBusinessCardDownload
+        firstName="Avery"
+        lastName="Rivera"
+        workEmail="avery.rivera@thepncl.com"
+        workEmailVerified
+        phoneNumber="555-555-0100"
+      />,
+    );
 
-    expect(screen.getByRole("button", {
-      name: "Download digital business card for this agent as a vCard file",
-    })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Download PDF business card for Avery Rivera" }));
+
+    await waitFor(() => expect(downloadAgentBusinessCardPdf).toHaveBeenCalledWith({
+      firstName: "Avery",
+      lastName: "Rivera",
+      workEmail: "avery.rivera@thepncl.com",
+      workEmailVerified: true,
+      phoneNumber: "555-555-0100",
+    }));
   });
 });

@@ -9,7 +9,8 @@ import PortalProfileDocumentsSection from "@/components/PortalProfileDocumentsSe
 import PortalSureLcLinks from "@/components/PortalSureLcLinks";
 import PortalTeamDashboard from "@/components/PortalTeamDashboard";
 import AgentBusinessCardDownload from "@/components/AgentBusinessCardDownload";
-import { useAuth } from "@/contexts/AuthContext";
+import { isEmailConfirmed, useAuth } from "@/contexts/AuthContext";
+import { formatAgentPhoneInput } from "@/lib/agent-phone";
 import {
   CLOTHING_SIZES,
   fetchPortalProfile,
@@ -68,6 +69,7 @@ const EMPTY_FORM: PortalProfileFormValues = {
   addressCity: "",
   addressState: "",
   addressZip: "",
+  phoneNumber: "",
 };
 
 function SizeSelect({
@@ -533,6 +535,8 @@ export default function PortalProfile() {
                 firstName={profileRow?.first_name ?? form.firstName}
                 lastName={profileRow?.last_name ?? form.lastName}
                 workEmail={agentEmail}
+                workEmailVerified={isEmailConfirmed(user)}
+                phoneNumber={profileRow?.phone_number}
               />
             )}
 
@@ -600,6 +604,32 @@ export default function PortalProfile() {
                       autoComplete="family-name"
                     />
                   </label>
+                </div>
+
+                <div className="portal-profile-form-grid">
+                  <label className="admin-field">
+                    <span>Phone number</span>
+                    <input
+                      type="tel"
+                      inputMode="tel"
+                      value={form.phoneNumber}
+                      onChange={(event) => updateField("phoneNumber", formatAgentPhoneInput(event.target.value))}
+                      placeholder="555-555-0100"
+                      autoComplete="tel"
+                      required
+                      pattern="\d{3}-\d{3}-\d{4}"
+                      title="Enter a 10-digit phone number"
+                      aria-describedby="profile-phone-help"
+                    />
+                    <small id="profile-phone-help" className="portal-profile-field-help">
+                      Pre-filled from your onboarding record when available. Required to complete
+                      your profile and generate your PDF business card.
+                    </small>
+                  </label>
+                  <div className="admin-field">
+                    <span>Verified PNCL work email</span>
+                    <p className="portal-profile-derived-value">{agentEmail || "Not available"}</p>
+                  </div>
                 </div>
 
                 <div className="portal-profile-form-grid">
