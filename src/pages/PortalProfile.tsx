@@ -8,6 +8,7 @@ import PortalLicensingSection from "@/components/PortalLicensingSection";
 import PortalProfileDocumentsSection from "@/components/PortalProfileDocumentsSection";
 import PortalSureLcLinks from "@/components/PortalSureLcLinks";
 import PortalTeamDashboard from "@/components/PortalTeamDashboard";
+import AgentBusinessCardDownload from "@/components/AgentBusinessCardDownload";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   CLOTHING_SIZES,
@@ -526,6 +527,14 @@ export default function PortalProfile() {
                 </div>
               )}
             </div>
+
+            {!loading && (
+              <AgentBusinessCardDownload
+                firstName={profileRow?.first_name ?? form.firstName}
+                lastName={profileRow?.last_name ?? form.lastName}
+                workEmail={agentEmail}
+              />
+            )}
 
             {loading ? (
               <div className="portal-incentives-loading">

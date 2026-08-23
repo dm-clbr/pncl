@@ -6116,6 +6116,48 @@ button.portal-todo-link {
   max-width: 640px;
 }
 
+.home2-page .portal-profile-business-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 0 0 20px;
+  padding: 16px 18px;
+  border: 1px solid rgba(194, 78, 28, .28);
+  border-radius: var(--radius);
+  background: rgba(194, 78, 28, .07);
+}
+
+.home2-page .portal-profile-business-card > div {
+  min-width: 0;
+}
+
+.home2-page .portal-profile-business-card strong {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--bone);
+  font-size: .94rem;
+}
+
+.home2-page .portal-profile-business-card p {
+  max-width: 62ch;
+  color: var(--steel);
+  font-size: .82rem;
+  line-height: 1.45;
+}
+
+.home2-page .portal-profile-business-card-btn {
+  flex: 0 0 auto;
+  align-self: center;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.home2-page .portal-profile-business-card-btn:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
 .home2-page .portal-profile-photo-section {
   display: flex;
   align-items: center;
@@ -7274,6 +7316,15 @@ button.portal-todo-link {
 
   .home2-page .portal-profile-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .home2-page .portal-profile-business-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .home2-page .portal-profile-business-card-btn {
+    width: 100%;
   }
 
   .home2-page .portal-profile-photo-section {
