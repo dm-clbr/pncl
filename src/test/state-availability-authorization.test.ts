@@ -7,6 +7,7 @@ import {
 } from "../../supabase/functions/_shared/adminRoles";
 import {
   parseStateAvailabilityUpdates,
+  US_STATE_NAMES,
 } from "../../supabase/functions/_shared/stateAvailability";
 
 describe("state availability authorization", () => {
@@ -17,35 +18,46 @@ describe("state availability authorization", () => {
 
   it("accepts valid batch updates and rejects invalid or duplicate entries", () => {
     expect(parseStateAvailabilityUpdates([
-      { stateCode: "ut", status: "Active" },
+      { stateCode: "dc", status: "Active" },
       { stateCode: "CA", status: "Pending" },
     ])).toEqual([
-      { stateCode: "UT", status: "Active" },
+      { stateCode: "DC", status: "Active" },
       { stateCode: "CA", status: "Pending" },
     ]);
 
     expect(() => parseStateAvailabilityUpdates([{ stateCode: "UT", status: "Unknown" }]))
       .toThrow("Invalid availability status for UT");
-    expect(() => parseStateAvailabilityUpdates([{ stateCode: "DC", status: "Active" }]))
-      .toThrow("Invalid U.S. state code: DC");
+    expect(() => parseStateAvailabilityUpdates([{ stateCode: "PR", status: "Active" }]))
+      .toThrow("Invalid U.S. state code: PR");
     expect(() => parseStateAvailabilityUpdates([
       { stateCode: "UT", status: "Active" },
       { stateCode: "UT", status: "Pending" },
     ])).toThrow("Duplicate state update: UT");
+
+    expect(parseStateAvailabilityUpdates(
+      Object.keys(US_STATE_NAMES).map((stateCode) => ({ stateCode, status: "Inactive" })),
+    )).toHaveLength(51);
   });
 
-  it("seeds all 50 states Inactive and grants authenticated users read-only access", () => {
-    const migration = readFileSync(
+  it("seeds 50 states plus D.C. Inactive and preserves authenticated read-only access", () => {
+    const initialMigration = readFileSync(
       resolve(process.cwd(), "supabase/migrations/20260819160839_portal_state_availability.sql"),
       "utf8",
     );
-    const seededStates = migration.match(/\('[A-Z]{2}', '[A-Za-z ]+', 'Inactive'\)/g) ?? [];
+    const dcMigration = readFileSync(
+      resolve(process.cwd(), "supabase/migrations/20260823203115_add_dc_state_availability.sql"),
+      "utf8",
+    );
+    const seededStates = initialMigration.match(/\('[A-Z]{2}', '[A-Za-z ]+', 'Inactive'\)/g) ?? [];
 
     expect(seededStates).toHaveLength(50);
-    expect(migration).toContain("status in ('Active', 'Pending', 'Inactive')");
-    expect(migration).toContain("alter table public.portal_state_availability enable row level security");
-    expect(migration).toContain("revoke all on table public.portal_state_availability from anon, authenticated");
-    expect(migration).toContain("grant select (state_code, state_name, status, created_at, updated_at)");
-    expect(migration).not.toContain("grant update on table public.portal_state_availability to authenticated");
+    expect(dcMigration).toContain("values ('DC', 'District of Columbia', 'Inactive')");
+    expect(dcMigration).toContain("on conflict (state_code) do nothing");
+    expect(dcMigration).toContain("'DE', 'DC', 'FL'");
+    expect(initialMigration).toContain("status in ('Active', 'Pending', 'Inactive')");
+    expect(initialMigration).toContain("alter table public.portal_state_availability enable row level security");
+    expect(initialMigration).toContain("revoke all on table public.portal_state_availability from anon, authenticated");
+    expect(initialMigration).toContain("grant select (state_code, state_name, status, created_at, updated_at)");
+    expect(initialMigration).not.toContain("grant update on table public.portal_state_availability to authenticated");
   });
 });

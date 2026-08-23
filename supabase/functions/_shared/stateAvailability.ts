@@ -4,7 +4,8 @@ export type StateAvailabilityStatus = (typeof STATE_AVAILABILITY_STATUSES)[numbe
 
 export const US_STATE_NAMES = {
   AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California",
-  CO: "Colorado", CT: "Connecticut", DE: "Delaware", FL: "Florida", GA: "Georgia",
+  CO: "Colorado", CT: "Connecticut", DE: "Delaware", DC: "District of Columbia",
+  FL: "Florida", GA: "Georgia",
   HI: "Hawaii", ID: "Idaho", IL: "Illinois", IN: "Indiana", IA: "Iowa",
   KS: "Kansas", KY: "Kentucky", LA: "Louisiana", ME: "Maine", MD: "Maryland",
   MA: "Massachusetts", MI: "Michigan", MN: "Minnesota", MS: "Mississippi", MO: "Missouri",
@@ -16,6 +17,8 @@ export const US_STATE_NAMES = {
 } as const;
 
 export type UsStateCode = keyof typeof US_STATE_NAMES;
+
+const US_JURISDICTION_COUNT = Object.keys(US_STATE_NAMES).length;
 
 export function isStateAvailabilityStatus(value: unknown): value is StateAvailabilityStatus {
   return typeof value === "string"
@@ -32,8 +35,10 @@ export interface StateAvailabilityUpdate {
 }
 
 export function parseStateAvailabilityUpdates(value: unknown): StateAvailabilityUpdate[] {
-  if (!Array.isArray(value) || value.length === 0 || value.length > 50) {
-    throw new Error("updates must contain between 1 and 50 state updates");
+  if (!Array.isArray(value) || value.length === 0 || value.length > US_JURISDICTION_COUNT) {
+    throw new Error(
+      `updates must contain between 1 and ${US_JURISDICTION_COUNT} jurisdiction updates`,
+    );
   }
 
   const updates: StateAvailabilityUpdate[] = [];

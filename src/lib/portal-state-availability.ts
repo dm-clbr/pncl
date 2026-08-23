@@ -2,6 +2,7 @@ import { getSupabaseClient } from "@/lib/supabase";
 import { normalizeStateLicenseNumbers } from "@/lib/portal-profile";
 import {
   US_STATES,
+  US_JURISDICTION_COUNT,
   isUsStateCode,
   type UsStateCode,
 } from "@/lib/us-states";
@@ -74,8 +75,10 @@ export function normalizeStateAvailabilityRows(value: unknown): StateAvailabilit
     });
   }
 
-  if (byCode.size !== US_STATES.length) {
-    throw new Error(`State availability is incomplete (${byCode.size} of ${US_STATES.length} states).`);
+  if (byCode.size !== US_JURISDICTION_COUNT) {
+    throw new Error(
+      `State availability is incomplete (${byCode.size} of ${US_JURISDICTION_COUNT} jurisdictions).`,
+    );
   }
 
   return US_STATES.map((state) => byCode.get(state.code) as StateAvailability);

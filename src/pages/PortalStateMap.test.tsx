@@ -7,7 +7,7 @@ import { US_STATES } from "@/lib/us-states";
 const availability = US_STATES.map((state) => ({
   stateCode: state.code,
   stateName: state.name,
-  status: state.code === "UT" ? "Active" as const : state.code === "CA" ? "Pending" as const : "Inactive" as const,
+  status: state.code === "DC" ? "Active" as const : state.code === "CA" ? "Pending" as const : "Inactive" as const,
   createdAt: "2026-08-19T00:00:00.000Z",
   updatedAt: "2026-08-19T00:00:00.000Z",
 }));
@@ -23,7 +23,7 @@ vi.mock("@/contexts/AuthContext", () => ({
 
 vi.mock("@/hooks/usePortalProfile", () => ({
   usePortalProfile: () => ({
-    profile: { address_state: "UT", state_license_numbers: { UT: "LIC-123" } },
+    profile: { address_state: "DC", state_license_numbers: { DC: "LIC-DC" } },
     photoUrl: null,
     initials: "TA",
     displayName: "Test Agent",
@@ -72,9 +72,11 @@ describe("portal state map", () => {
     expect(await screen.findByTestId("three-state-map")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "PNCL State Map" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Agent portal" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Utah: Active, licensed on your profile" })).toBeInTheDocument();
+    expect(screen.getByRole("button", {
+      name: "District of Columbia: Active, licensed on your profile",
+    })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "California: Pending" })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { pressed: false }).length).toBeGreaterThanOrEqual(49);
+    expect(screen.getAllByRole("button", { pressed: false }).length).toBeGreaterThanOrEqual(50);
     expect(screen.getByText("Licensed on your profile", { selector: ".state-map-license-note" })).toBeInTheDocument();
   });
 
@@ -94,10 +96,10 @@ describe("portal state map", () => {
       "data-availability-unavailable",
       "true",
     );
-    expect(screen.getByTestId("three-state-map")).toHaveAttribute("data-licensed-states", "UT");
-    expect(screen.getAllByRole("button", { name: /availability unavailable/i })).toHaveLength(50);
+    expect(screen.getByTestId("three-state-map")).toHaveAttribute("data-licensed-states", "DC");
+    expect(screen.getAllByRole("button", { name: /availability unavailable/i })).toHaveLength(51);
     expect(screen.getByRole("button", {
-      name: "Utah: availability unavailable, licensed on your profile",
+      name: "District of Columbia: availability unavailable, licensed on your profile",
     })).toBeInTheDocument();
     expect(screen.getByText("Availability unavailable", {
       selector: ".state-map-detail-status",

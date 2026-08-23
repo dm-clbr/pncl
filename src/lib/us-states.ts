@@ -7,6 +7,7 @@ export const US_STATES = [
   { code: "CO", name: "Colorado", fips: "08" },
   { code: "CT", name: "Connecticut", fips: "09" },
   { code: "DE", name: "Delaware", fips: "10" },
+  { code: "DC", name: "District of Columbia", fips: "11" },
   { code: "FL", name: "Florida", fips: "12" },
   { code: "GA", name: "Georgia", fips: "13" },
   { code: "HI", name: "Hawaii", fips: "15" },
@@ -52,6 +53,8 @@ export const US_STATES = [
 ] as const;
 
 export type UsStateCode = (typeof US_STATES)[number]["code"];
+
+export const US_JURISDICTION_COUNT = US_STATES.length;
 
 export const US_STATE_CODES = US_STATES.map((state) => state.code) as UsStateCode[];
 

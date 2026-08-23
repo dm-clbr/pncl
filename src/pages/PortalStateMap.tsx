@@ -214,10 +214,10 @@ export default function PortalStateMap() {
                 <div className="state-map-list-head">
                   <div>
                     <p className="state-map-eyebrow">Accessible state directory</p>
-                    <h2 id="state-list-title">All states</h2>
+                    <h2 id="state-list-title">All jurisdictions</h2>
                   </div>
                   <p>
-                    Use Tab to move through states. Selecting a state updates the detail panel
+                    Use Tab to move through jurisdictions. Selecting one updates the detail panel
                     and interactive map.
                   </p>
                 </div>

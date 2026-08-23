@@ -80,7 +80,7 @@ export default function AdminStateAvailability() {
           <div>
             <h1>State availability</h1>
             <p>
-              Set PNCL&apos;s company-wide operating status for every U.S. state. These
+              Set PNCL&apos;s company-wide operating status for every supported U.S. jurisdiction. These
               statuses are separate from each agent&apos;s personal licenses.
             </p>
           </div>
@@ -130,7 +130,7 @@ export default function AdminStateAvailability() {
           </div>
 
           <p className="state-availability-admin-note" id="state-availability-help">
-            All 50 states were initialized as Inactive. Change a state only when PNCL&apos;s
+            Supported jurisdictions start Inactive. Change one only when PNCL&apos;s
             operating availability is confirmed.
           </p>
 
@@ -138,7 +138,7 @@ export default function AdminStateAvailability() {
             <table className="admin-table state-availability-admin-table">
               <thead>
                 <tr>
-                  <th scope="col">State</th>
+                  <th scope="col">State / jurisdiction</th>
                   <th scope="col">Company status</th>
                   <th scope="col">Last updated</th>
                 </tr>

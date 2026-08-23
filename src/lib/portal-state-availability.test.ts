@@ -4,7 +4,7 @@ import {
   licensedStateCodes,
   normalizeStateAvailabilityRows,
 } from "@/lib/portal-state-availability";
-import { US_STATES } from "@/lib/us-states";
+import { US_STATES, US_STATE_BY_FIPS } from "@/lib/us-states";
 
 function completeRows() {
   return US_STATES.map((state, index) => ({
@@ -21,21 +21,29 @@ describe("state availability model", () => {
     expect(STATE_AVAILABILITY_STATUSES).toEqual(["Active", "Pending", "Inactive"]);
   });
 
-  it("accepts one valid row for each of the 50 states", () => {
+  it("accepts one valid row for every supported jurisdiction, including D.C.", () => {
     const states = normalizeStateAvailabilityRows(completeRows().reverse());
 
-    expect(states).toHaveLength(50);
-    expect(new Set(states.map((state) => state.stateCode))).toHaveLength(50);
+    expect(states).toHaveLength(51);
+    expect(new Set(states.map((state) => state.stateCode))).toHaveLength(51);
     expect(states[0]).toMatchObject({ stateCode: "AL", stateName: "Alabama", status: "Active" });
+    expect(states).toContainEqual(expect.objectContaining({
+      stateCode: "DC",
+      stateName: "District of Columbia",
+    }));
+    expect(US_STATE_BY_FIPS.get("11")).toMatchObject({
+      code: "DC",
+      name: "District of Columbia",
+    });
   });
 
   it("rejects incomplete availability instead of inventing a status", () => {
-    expect(() => normalizeStateAvailabilityRows(completeRows().slice(0, 49)))
-      .toThrow("State availability is incomplete (49 of 50 states).");
+    expect(() => normalizeStateAvailabilityRows(completeRows().filter((row) => row.state_code !== "DC")))
+      .toThrow("State availability is incomplete (50 of 51 jurisdictions).");
   });
 
   it("derives the licensed overlay only from number-bearing profile entries", () => {
-    expect([...licensedStateCodes({ UT: "LIC-123", ca: " 88 ", TX: "", ZZ: "nope" })].sort())
-      .toEqual(["CA", "UT"]);
+    expect([...licensedStateCodes({ DC: "LIC-DC", UT: "LIC-123", ca: " 88 ", TX: "", ZZ: "nope" })].sort())
+      .toEqual(["CA", "DC", "UT"]);
   });
 });

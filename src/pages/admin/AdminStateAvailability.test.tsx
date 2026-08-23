@@ -34,15 +34,20 @@ describe("admin state availability", () => {
   it("lets a full admin stage and batch-save state status changes", async () => {
     render(<MemoryRouter><AdminStateAvailability /></MemoryRouter>);
 
-    const utahSelect = screen.getByRole("combobox", { name: "Utah company status" });
-    fireEvent.change(utahSelect, { target: { value: "Active" } });
+    expect(screen.getAllByRole("combobox")).toHaveLength(51);
+    expect(screen.getByText("51", { selector: ".admin-stat strong" })).toBeInTheDocument();
+
+    const dcSelect = screen.getByRole("combobox", {
+      name: "District of Columbia company status",
+    });
+    fireEvent.change(dcSelect, { target: { value: "Active" } });
 
     const saveButton = screen.getByRole("button", { name: "Save changes (1)" });
     expect(saveButton).toBeEnabled();
     fireEvent.click(saveButton);
 
     await waitFor(() => expect(save).toHaveBeenCalledWith([
-      { stateCode: "UT", status: "Active" },
+      { stateCode: "DC", status: "Active" },
     ]));
   });
 });
