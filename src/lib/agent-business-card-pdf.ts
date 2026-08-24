@@ -22,6 +22,7 @@ export interface AgentBusinessCardData {
   workEmail: string;
   workEmailVerified: boolean;
   phoneNumber: string;
+  npn?: string | null;
   profilePhoto?: AgentBusinessCardPhoto | null;
 }
 
@@ -34,6 +35,7 @@ export interface AgentBusinessCardContent {
   affiliation: "PNCL AGENT";
   workEmail: string;
   phoneNumber: string;
+  npn: string | null;
 }
 
 const PNCL_EMAIL_PATTERN = /^[^\s@]+@thepncl\.com$/i;
@@ -61,6 +63,7 @@ export function getAgentBusinessCardContent(data: AgentBusinessCardData): AgentB
     affiliation: "PNCL AGENT",
     workEmail,
     phoneNumber: requireValidAgentPhoneNumber(data.phoneNumber),
+    npn: cleanSingleLine(data.npn ?? "") || null,
   };
 }
 
@@ -267,21 +270,22 @@ export async function buildAgentBusinessCardPdf(data: AgentBusinessCardData): Pr
     opacity: 0.16,
   });
 
-  drawContactLine({
-    page,
-    label: "EMAIL",
-    value: content.workEmail,
-    y: 35,
-    labelFont: bold,
-    valueFont: regular,
-  });
-  drawContactLine({
-    page,
-    label: "PHONE",
-    value: content.phoneNumber,
-    y: 18,
-    labelFont: bold,
-    valueFont: regular,
+  const contactLines = [
+    { label: "EMAIL", value: content.workEmail },
+    { label: "PHONE", value: content.phoneNumber },
+    ...(content.npn ? [{ label: "NPN", value: content.npn }] : []),
+  ];
+
+  contactLines.forEach(({ label, value }, index) => {
+    const y = content.npn ? 39 - index * 14 : 35 - index * 17;
+    drawContactLine({
+      page,
+      label,
+      value,
+      y,
+      labelFont: bold,
+      valueFont: regular,
+    });
   });
 
   page.drawLine({

@@ -23,6 +23,7 @@ interface AgentBusinessCardDownloadProps {
   workEmail?: string | null;
   workEmailVerified: boolean;
   phoneNumber?: string | null;
+  npn?: string | null;
   profilePhotoPath?: string | null;
   profilePhotoUrl?: string | null;
   profileUpdatedAt?: string | null;
@@ -39,18 +40,21 @@ export default function AgentBusinessCardDownload({
   workEmail,
   workEmailVerified,
   phoneNumber,
+  npn,
   profilePhotoPath,
   profilePhotoUrl,
   profileUpdatedAt,
 }: AgentBusinessCardDownloadProps) {
   const [activeAction, setActiveAction] = useState<"download" | "share" | null>(null);
   const [previewPhotoFailed, setPreviewPhotoFailed] = useState(false);
+  const normalizedNpn = npn?.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim() || null;
   const card: AgentBusinessCardData = {
     firstName: firstName ?? "",
     lastName: lastName ?? "",
     workEmail: workEmail ?? "",
     workEmailVerified,
     phoneNumber: phoneNumber ?? "",
+    npn: normalizedNpn,
   };
   const agentName = [firstName?.trim(), lastName?.trim()].filter(Boolean).join(" ") || "Your name";
   const canDownload = canGenerateAgentBusinessCard(card);
@@ -119,9 +123,9 @@ export default function AgentBusinessCardDownload({
           <strong id="digital-business-card-title">PDF business card</strong>
           <p id="digital-business-card-description">
             A print-ready 3.5 x 2 inch card with your saved profile photo, name, PNCL affiliation,
-            verified work email, and profile phone. A branded placeholder appears when your photo
-            is unavailable; home address and onboarding data stay private. Share PDF sends only the
-            PDF file, never this portal page.
+            verified work email, profile phone, and NPN when available. A branded placeholder
+            appears when your photo is unavailable; home address and onboarding data stay private.
+            Share PDF sends only the PDF file, never this portal page.
           </p>
         </div>
         <FileText size={22} aria-hidden="true" />
@@ -146,6 +150,12 @@ export default function AgentBusinessCardDownload({
                   <dt>Phone</dt>
                   <dd>{hasValidPhone ? phoneNumber : "Phone required"}</dd>
                 </div>
+                {normalizedNpn && (
+                  <div>
+                    <dt>NPN</dt>
+                    <dd>{normalizedNpn}</dd>
+                  </div>
+                )}
               </dl>
             </div>
             <div className="portal-business-card-portrait">

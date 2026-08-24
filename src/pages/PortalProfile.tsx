@@ -538,6 +538,7 @@ export default function PortalProfile() {
                 workEmail={agentEmail}
                 workEmailVerified={isEmailConfirmed(user)}
                 phoneNumber={profileRow?.phone_number}
+                npn={profileRow?.npn}
                 profilePhotoPath={profileRow?.profile_photo_path}
                 profilePhotoUrl={savedPhotoUrl}
                 profileUpdatedAt={profileRow?.updated_at}

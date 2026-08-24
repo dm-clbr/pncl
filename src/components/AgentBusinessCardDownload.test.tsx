@@ -79,6 +79,7 @@ describe("AgentBusinessCardDownload", () => {
         workEmail="avery.rivera@thepncl.com"
         workEmailVerified
         phoneNumber="555-555-0100"
+        npn="1234567890"
         profilePhotoPath="agent-1/avatar.jpg"
         profilePhotoUrl="https://storage.example/agent-1/avatar.jpg"
         profileUpdatedAt="2026-08-24T00:00:00.000Z"
@@ -88,6 +89,7 @@ describe("AgentBusinessCardDownload", () => {
     vi.mocked(loadOwnProfilePhotoForBusinessCard).mockResolvedValueOnce(PROFILE_PHOTO);
 
     expect(screen.getByRole("img", { name: "Profile portrait of Avery Rivera" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Business card preview for Avery Rivera")).toHaveTextContent("NPN1234567890");
 
     fireEvent.click(screen.getByRole("button", { name: "Download PDF business card for Avery Rivera" }));
 
@@ -102,8 +104,30 @@ describe("AgentBusinessCardDownload", () => {
       workEmail: "avery.rivera@thepncl.com",
       workEmailVerified: true,
       phoneNumber: "555-555-0100",
+      npn: "1234567890",
       profilePhoto: PROFILE_PHOTO,
     }));
+  });
+
+  it("omits NPN from the preview and generated card when one is not available", async () => {
+    render(
+      <AgentBusinessCardDownload
+        userId="agent-1"
+        firstName="Avery"
+        lastName="Rivera"
+        workEmail="avery.rivera@thepncl.com"
+        workEmailVerified
+        phoneNumber="555-555-0100"
+        npn="   "
+      />,
+    );
+
+    expect(screen.getByLabelText("Business card preview for Avery Rivera")).not.toHaveTextContent("NPN");
+    fireEvent.click(screen.getByRole("button", { name: "Download PDF business card for Avery Rivera" }));
+
+    await waitFor(() => expect(downloadAgentBusinessCardPdf).toHaveBeenCalledWith(expect.objectContaining({
+      npn: null,
+    })));
   });
 
   it("downloads with a branded portrait fallback when no safe photo can load", async () => {

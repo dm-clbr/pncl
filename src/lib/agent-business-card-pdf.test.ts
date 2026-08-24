@@ -21,6 +21,7 @@ const COMPLETE_CARD: AgentBusinessCardData = {
   workEmail: "Avery.Rivera@thepncl.com",
   workEmailVerified: true,
   phoneNumber: "(555) 555-0100",
+  npn: " 1234567890 ",
 };
 
 describe("agent business card PDF", () => {
@@ -36,8 +37,15 @@ describe("agent business card PDF", () => {
       affiliation: "PNCL AGENT",
       workEmail: "avery.rivera@thepncl.com",
       phoneNumber: "555-555-0100",
+      npn: "1234567890",
     });
     expect(getAgentBusinessCardFileName(COMPLETE_CARD)).toBe("avery-rivera-pncl-business-card.pdf");
+  });
+
+  it("keeps NPN optional without affecting card eligibility", () => {
+    expect(getAgentBusinessCardContent({ ...COMPLETE_CARD, npn: " \n " }).npn).toBeNull();
+    expect(canGenerateAgentBusinessCard({ ...COMPLETE_CARD, npn: null })).toBe(true);
+    expect(canGenerateAgentBusinessCard({ ...COMPLETE_CARD, npn: undefined })).toBe(true);
   });
 
   it("creates a one-page, print-size PDF", async () => {
