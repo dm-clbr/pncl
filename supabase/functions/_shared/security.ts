@@ -64,13 +64,14 @@ async function getEncryptionKey(): Promise<CryptoKey> {
   );
 }
 
-export async function encryptTemporaryPassword(password: string): Promise<string> {
+/** Encrypts a server-side secret with the shared AES-GCM credential key. */
+export async function encryptSecret(secretValue: string): Promise<string> {
   const key = await getEncryptionKey();
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ciphertext = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
     key,
-    encoder.encode(password),
+    encoder.encode(secretValue),
   );
   const combined = new Uint8Array(iv.length + ciphertext.byteLength);
   combined.set(iv, 0);
@@ -78,7 +79,8 @@ export async function encryptTemporaryPassword(password: string): Promise<string
   return bytesToBase64Url(combined);
 }
 
-export async function decryptTemporaryPassword(encrypted: string): Promise<string> {
+/** Decrypts a value produced by encryptSecret. Never call this in browser code. */
+export async function decryptSecret(encrypted: string): Promise<string> {
   const key = await getEncryptionKey();
   const combined = base64UrlToBytes(encrypted);
   const iv = combined.slice(0, 12);
@@ -90,6 +92,10 @@ export async function decryptTemporaryPassword(encrypted: string): Promise<strin
   );
   return new TextDecoder().decode(plaintext);
 }
+
+// Backward-compatible names used by the existing onboarding/document flows.
+export const encryptTemporaryPassword = encryptSecret;
+export const decryptTemporaryPassword = decryptSecret;
 
 function base64UrlToBytes(value: string): Uint8Array {
   const base64 = value.replace(/-/g, "+").replace(/_/g, "/");

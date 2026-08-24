@@ -21,6 +21,7 @@ import PortalLogin from "./pages/PortalLogin.tsx";
 import PortalSetPassword from "./pages/PortalSetPassword.tsx";
 import PortalDashboard from "./pages/PortalDashboard.tsx";
 import PortalStateMap from "./pages/PortalStateMap.tsx";
+import PortalCalendar from "./pages/PortalCalendar.tsx";
 import PortalCarrierSheet from "./pages/PortalCarrierSheet.tsx";
 import PortalBrandAssets from "./pages/PortalBrandAssets.tsx";
 import PortalProfile from "./pages/PortalProfile.tsx";
@@ -102,6 +103,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <PortalDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/portal/calendar"
+            element={
+              <ProtectedRoute>
+                <PortalCalendar />
               </ProtectedRoute>
             }
           />

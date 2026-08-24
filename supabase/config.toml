@@ -310,3 +310,18 @@ verify_jwt = true
 
 [functions.admin-create-enrollment-resume]
 verify_jwt = true
+
+[functions.start-portal-google-calendar-oauth]
+verify_jwt = true
+
+[functions.portal-google-calendar-callback]
+verify_jwt = false
+
+[functions.get-portal-google-calendar]
+verify_jwt = true
+
+[functions.sync-portal-google-calendar]
+verify_jwt = true
+
+[functions.disconnect-portal-google-calendar]
+verify_jwt = true

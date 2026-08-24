@@ -28,6 +28,8 @@ Prepared for the security review with Colin. Covers how PNCL Hub (Vite + React f
 | SSN / TIN | `portal_w9_forms`, `onboarding_records` | HMAC hash only; full value only inside the generated W-9 PDF in a private bucket |
 | Bank account + routing | `portal_direct_deposit_forms` | AES-256-GCM encrypted columns; decrypted only inside service-role edge functions |
 | Carrier portal passwords | `portal_carrier_credentials` | AES-256-GCM encrypted; decrypted per-request for the owning agent |
+| Google Calendar refresh tokens | `portal_google_calendar_credentials` | AES-256-GCM encrypted; no browser-role grants or RLS policies; decrypted only for the owning user's sync/revoke request |
+| Google Calendar preview | `portal_google_calendar_events` | Owner-scoped RLS; at most 10 events/14 days; privacy-filtered title/time plus at most one validated HTTPS conference join URL |
 | Temporary account passwords | `onboarding_records` | AES-256-GCM encrypted; reveal requires the unexpired handoff token and stops after the first confirmed Google sign-in |
 | Signed PDFs (ICA, W-9, direct deposit, comp attachments) | Storage | Private buckets, short-lived signed URLs (1 h) |
 | Driver's license, E&O certificate, agent uploads | Storage `portal-profile-documents` | Private bucket, per-user folder RLS |
@@ -51,6 +53,17 @@ The encryption key (`CREDENTIAL_ENCRYPTION_KEY`) is a Supabase secret available 
 - Edge functions use a **service account** with domain-wide delegation, restricted to the Admin SDK Directory scopes needed to create users, set recovery info, and check account status.
 - The service-account JSON lives in Supabase secrets (never in the client bundle). The example file in the repo (`google-service-account.json.example`) contains placeholders only.
 - Account lifecycle: portal account deletion does **not** silently delete the Google account; admins manage Workspace accounts explicitly, and suspension status is surfaced read-only in the admin console.
+
+## Per-user Google Calendar preview
+
+- Calendar access uses a dedicated user OAuth flow, not the Workspace service account and not the portal sign-in grant.
+- It requests only `calendar.events.readonly`, uses a one-time 256-bit state value plus PKCE, and accepts no caller-provided return URL.
+- Refresh tokens are encrypted with `CREDENTIAL_ENCRYPTION_KEY`; access tokens are never persisted or returned to the browser.
+- The public OAuth callback consumes a hashed, 10-minute state record before exchanging the code. All other Calendar functions require a verified portal JWT and derive the data owner from that JWT.
+- RLS restricts non-secret connection metadata and cached events to `auth.uid() = user_id`. Credential and OAuth-attempt tables have RLS enabled with no browser-role policies or grants.
+- Each sync replaces a bounded cache of up to 10 primary-calendar events over 14 days. Private/confidential titles become `Private event`; descriptions, attendees, raw locations, unrelated links, organizers, event IDs, and Google account emails are not retained.
+- At most one conference join URL is retained: a public HTTPS structured video entry point, or a narrowly allowlisted Meet/Zoom/Teams/Webex/Jitsi/GoTo URL extracted in memory from location/description. Unsafe, unrelated, credential-bearing, local/private-host, or non-HTTPS URLs are discarded.
+- Disconnect attempts Google revocation and always deletes the local token and cache. Full setup and retention details are in `docs/portal-google-calendar-setup.md`.
 
 ## Signing flows (no third-party e-sign)
 
