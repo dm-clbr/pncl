@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
-import { Download, FileText, LockKeyhole } from "lucide-react";
+import { Download, FileText, LockKeyhole, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import {
+  canShareAgentBusinessCardPdfFile,
   canGenerateAgentBusinessCard,
+  createAgentBusinessCardPdfFile,
   downloadAgentBusinessCardPdf,
+  downloadAgentBusinessCardPdfFile,
+  shareAgentBusinessCardPdfFile,
   type AgentBusinessCardData,
 } from "@/lib/agent-business-card-pdf";
 import { isValidAgentPhoneNumber } from "@/lib/agent-phone";
@@ -24,6 +28,10 @@ interface AgentBusinessCardDownloadProps {
   profileUpdatedAt?: string | null;
 }
 
+function isShareCancellation(error: unknown): boolean {
+  return typeof error === "object" && error !== null && (error as { name?: unknown }).name === "AbortError";
+}
+
 export default function AgentBusinessCardDownload({
   userId,
   firstName,
@@ -35,7 +43,7 @@ export default function AgentBusinessCardDownload({
   profilePhotoUrl,
   profileUpdatedAt,
 }: AgentBusinessCardDownloadProps) {
-  const [generating, setGenerating] = useState(false);
+  const [activeAction, setActiveAction] = useState<"download" | "share" | null>(null);
   const [previewPhotoFailed, setPreviewPhotoFailed] = useState(false);
   const card: AgentBusinessCardData = {
     firstName: firstName ?? "",
@@ -56,7 +64,7 @@ export default function AgentBusinessCardDownload({
   }, [profilePhotoUrl]);
 
   const handleDownload = async () => {
-    setGenerating(true);
+    setActiveAction("download");
     try {
       const profilePhoto = await loadOwnProfilePhotoForBusinessCard({
         userId,
@@ -68,7 +76,39 @@ export default function AgentBusinessCardDownload({
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to create the PDF business card.");
     } finally {
-      setGenerating(false);
+      setActiveAction(null);
+    }
+  };
+
+  const handleShare = async () => {
+    setActiveAction("share");
+    try {
+      const profilePhoto = await loadOwnProfilePhotoForBusinessCard({
+        userId,
+        profilePhotoPath,
+        profileUpdatedAt,
+      });
+      const pdfFile = await createAgentBusinessCardPdfFile({ ...card, profilePhoto });
+
+      if (!canShareAgentBusinessCardPdfFile(pdfFile)) {
+        downloadAgentBusinessCardPdfFile(pdfFile);
+        toast.info("File sharing is not supported here. The PDF was downloaded so you can attach it manually.");
+        return;
+      }
+
+      try {
+        await shareAgentBusinessCardPdfFile(pdfFile);
+        toast.success("PDF business card shared.");
+      } catch (error) {
+        if (isShareCancellation(error)) return;
+
+        downloadAgentBusinessCardPdfFile(pdfFile);
+        toast.error("The share sheet could not be opened. The PDF was downloaded so you can attach it manually.");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to create the PDF business card.");
+    } finally {
+      setActiveAction(null);
     }
   };
 
@@ -80,7 +120,8 @@ export default function AgentBusinessCardDownload({
           <p id="digital-business-card-description">
             A print-ready 3.5 x 2 inch card with your saved profile photo, name, PNCL affiliation,
             verified work email, and profile phone. A branded placeholder appears when your photo
-            is unavailable; home address and onboarding data stay private.
+            is unavailable; home address and onboarding data stay private. Share PDF sends only the
+            PDF file, never this portal page.
           </p>
         </div>
         <FileText size={22} aria-hidden="true" />
@@ -125,20 +166,34 @@ export default function AgentBusinessCardDownload({
           {!canDownload && (
             <p className="portal-profile-business-card-required" role="status">
               <LockKeyhole size={15} aria-hidden="true" />
-              Add a valid phone number below and save your profile to unlock the PDF download.
+              Add a valid phone number below and save your profile to unlock PDF sharing and download.
             </p>
           )}
           <button
             type="button"
             className="portal-panel-btn portal-profile-business-card-btn"
+            aria-label={`Share PDF business card for ${agentName}`}
+            aria-describedby="digital-business-card-description digital-business-card-share-fallback"
+            disabled={!canDownload || activeAction !== null}
+            onClick={() => void handleShare()}
+          >
+            <Share2 size={16} aria-hidden="true" />
+            {activeAction === "share" ? "Creating PDF..." : "Share PDF"}
+          </button>
+          <button
+            type="button"
+            className="portal-panel-btn portal-profile-business-card-btn"
             aria-label={`Download PDF business card for ${agentName}`}
             aria-describedby="digital-business-card-description"
-            disabled={!canDownload || generating}
+            disabled={!canDownload || activeAction !== null}
             onClick={() => void handleDownload()}
           >
             <Download size={16} aria-hidden="true" />
-            {generating ? "Creating PDF..." : "Download PDF"}
+            {activeAction === "download" ? "Creating PDF..." : "Download PDF"}
           </button>
+          <p id="digital-business-card-share-fallback" className="portal-profile-business-card-fallback">
+            If this device cannot share files directly, the PDF will download so you can attach it manually.
+          </p>
         </div>
       </div>
     </section>

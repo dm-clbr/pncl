@@ -308,19 +308,44 @@ export function getAgentBusinessCardFileName(data: AgentBusinessCardData): strin
   return `${slug || "pncl-agent"}-pncl-business-card.pdf`;
 }
 
-export async function downloadAgentBusinessCardPdf(data: AgentBusinessCardData): Promise<void> {
+export async function createAgentBusinessCardPdfFile(data: AgentBusinessCardData): Promise<File> {
   const bytes = await buildAgentBusinessCardPdf(data);
-  const blob = new Blob([new Uint8Array(bytes)], { type: "application/pdf" });
-  const objectUrl = URL.createObjectURL(blob);
+  return new File([new Uint8Array(bytes)], getAgentBusinessCardFileName(data), {
+    type: "application/pdf",
+  });
+}
+
+export function canShareAgentBusinessCardPdfFile(file: File): boolean {
+  if (typeof navigator === "undefined" || typeof navigator.share !== "function" || typeof navigator.canShare !== "function") {
+    return false;
+  }
+
+  try {
+    return navigator.canShare({ files: [file] });
+  } catch {
+    return false;
+  }
+}
+
+export async function shareAgentBusinessCardPdfFile(file: File): Promise<void> {
+  // Do not add title, text, or URL: the native share payload must contain only the PDF.
+  await navigator.share({ files: [file] });
+}
+
+export function downloadAgentBusinessCardPdfFile(file: File): void {
+  const objectUrl = URL.createObjectURL(file);
   const link = document.createElement("a");
 
   link.href = objectUrl;
-  link.download = getAgentBusinessCardFileName(data);
-  link.target = "_blank";
-  link.rel = "noopener";
+  link.download = file.name;
   document.body.appendChild(link);
   link.click();
   link.remove();
 
-  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1_000);
+}
+
+export async function downloadAgentBusinessCardPdf(data: AgentBusinessCardData): Promise<void> {
+  const file = await createAgentBusinessCardPdfFile(data);
+  downloadAgentBusinessCardPdfFile(file);
 }

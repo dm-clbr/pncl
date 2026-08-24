@@ -6763,6 +6763,14 @@ button.portal-todo-link {
   opacity: .55;
 }
 
+.home2-page .portal-profile-business-card-fallback {
+  max-width: 34rem;
+  margin: 0;
+  color: var(--steel);
+  font-size: .72rem;
+  line-height: 1.45;
+}
+
 .home2-page .portal-profile-field-help {
   display: block;
   margin-top: 6px;
