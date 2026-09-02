@@ -51,18 +51,22 @@ function getVideoEmbedUrl(href: string): string | null {
     /^https:\/\/(?:player\.mediadelivery\.net\/play|iframe\.mediadelivery\.net\/embed)\/(\d+)\/([\w-]+)/,
   );
   if (!match) return null;
-  return `https://iframe.mediadelivery.net/embed/${match[1]}/${match[2]}?autoplay=true`;
+  return `https://iframe.mediadelivery.net/embed/${match[1]}/${match[2]}`;
 }
 
 function PortalVideoModal({
   title,
   embedUrl,
+  sourceUrl,
   onClose,
 }: {
   title: string;
   embedUrl: string;
+  sourceUrl: string;
   onClose: () => void;
 }) {
+  const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
+
   useEffect(() => {
     document.body.style.overflow = "hidden";
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -74,6 +78,14 @@ function PortalVideoModal({
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [onClose]);
+
+  useEffect(() => {
+    setLoadState("loading");
+    const timeout = window.setTimeout(() => {
+      setLoadState((current) => current === "loading" ? "error" : current);
+    }, 8_000);
+    return () => window.clearTimeout(timeout);
+  }, [embedUrl]);
 
   const handleBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) onClose();
@@ -99,13 +111,32 @@ function PortalVideoModal({
           </button>
         </div>
         <div className="portal-video-frame">
+          {loadState !== "ready" && (
+            <div
+              className={`portal-video-status${loadState === "error" ? " is-error" : ""}`}
+              role={loadState === "error" ? "alert" : "status"}
+            >
+              {loadState === "error"
+                ? "The embedded player could not load. Open the video in a new tab below."
+                : "Loading video…"}
+            </div>
+          )}
           <iframe
             src={embedUrl}
             title={title}
-            loading="lazy"
+            loading="eager"
             allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
             allowFullScreen
+            onLoad={() => setLoadState("ready")}
+            onError={() => setLoadState("error")}
           />
+        </div>
+        <div className="portal-video-fallback">
+          <span>If the player stays blank, use the direct video page.</span>
+          <a href={sourceUrl} target="_blank" rel="noopener noreferrer">
+            Open video in a new tab
+            <ArrowUpRight size={14} aria-hidden="true" />
+          </a>
         </div>
       </div>
     </div>
@@ -313,6 +344,7 @@ function PortalTodoItem({
           <PortalVideoModal
             title={todo.title}
             embedUrl={videoEmbedUrl}
+            sourceUrl={todo.href}
             onClose={() => setVideoOpen(false)}
           />
         )}

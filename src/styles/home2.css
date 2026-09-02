@@ -1853,6 +1853,54 @@ button.portal-todo-link {
   border: 0;
 }
 
+.home2-page .portal-video-status {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #000;
+  color: var(--steel);
+  font-size: .86rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.home2-page .portal-video-status.is-error {
+  color: var(--bone);
+}
+
+.home2-page .portal-video-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  color: var(--steel);
+  font-size: .78rem;
+}
+
+.home2-page .portal-video-fallback a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  color: var(--accent-bright);
+  font-weight: 700;
+}
+
+.home2-page .portal-video-fallback a:hover {
+  color: var(--bone);
+}
+
+@media (max-width: 540px) {
+  .home2-page .portal-video-fallback {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 /* Submit for New Producer confirmation */
 .home2-page .portal-new-producer-modal {
   width: min(560px, 100%);

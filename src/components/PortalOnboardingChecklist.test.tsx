@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import PortalOnboardingChecklist from "@/components/PortalOnboardingChecklist";
@@ -70,6 +70,73 @@ describe("PortalOnboardingChecklist completed SureLC links", () => {
       const link = screen.getByRole("link", { name: `Open SureLC #${accountNumber}` });
       expect(link).toHaveAttribute("href", `https://example.com/surelc-${accountNumber}`);
       expect(link).toHaveAttribute("target", "_blank");
+    }
+  });
+});
+
+describe("PortalOnboardingChecklist tutorial video", () => {
+  const tutorialUrl = "https://player.mediadelivery.net/play/687293/tutorial-video-id";
+
+  function renderTutorial() {
+    render(
+      <MemoryRouter>
+        <PortalOnboardingChecklist
+          todos={[
+            todo({
+              id: "surelc_tutorial",
+              title: "Watch the SureLC tutorial video",
+              href: tutorialUrl,
+              actionLabel: "Watch tutorial video",
+              external: true,
+            }),
+          ]}
+          agentEmail="agent@thepncl.com"
+          completingTodoId={null}
+          onComplete={vi.fn()}
+        />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Watch tutorial video" }));
+  }
+
+  it("uses a click-to-play embed and always provides a direct fallback", () => {
+    renderTutorial();
+
+    expect(screen.getByRole("status")).toHaveTextContent("Loading video");
+
+    const frame = screen.getByTitle("Watch the SureLC tutorial video");
+    expect(frame).toHaveAttribute(
+      "src",
+      "https://iframe.mediadelivery.net/embed/687293/tutorial-video-id",
+    );
+    expect(frame.getAttribute("src")).not.toContain("autoplay");
+
+    const fallback = screen.getByRole("link", { name: /Open video in a new tab/i });
+    expect(fallback).toHaveAttribute("href", tutorialUrl);
+    expect(fallback).toHaveAttribute("target", "_blank");
+    expect(fallback).toHaveAttribute("rel", "noopener noreferrer");
+
+    fireEvent.load(frame);
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("shows a useful recovery message if the embedded player stays blank", () => {
+    vi.useFakeTimers();
+    try {
+      renderTutorial();
+
+      act(() => vi.advanceTimersByTime(8_000));
+
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "The embedded player could not load",
+      );
+      expect(screen.getByRole("link", { name: /Open video in a new tab/i })).toHaveAttribute(
+        "href",
+        tutorialUrl,
+      );
+    } finally {
+      vi.useRealTimers();
     }
   });
 });
