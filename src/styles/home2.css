@@ -3131,8 +3131,9 @@ button.portal-todo-link {
 }
 
 .home2-page .admin-shell {
+  --admin-sidebar-width: 284px;
   display: grid;
-  grid-template-columns: 284px minmax(0, 1fr);
+  grid-template-columns: var(--admin-sidebar-width) minmax(0, 1fr);
   min-width: 0;
   min-height: 100svh;
   font-size: var(--admin-fs-body);
@@ -3141,17 +3142,17 @@ button.portal-todo-link {
 }
 
 .home2-page .admin-shell-collapsed {
-  grid-template-columns: 86px minmax(0, 1fr);
+  --admin-sidebar-width: 86px;
 }
 
 .home2-page .admin-sidebar {
-  position: sticky;
-  top: 0;
+  position: fixed;
+  inset: 0 auto 0 0;
   z-index: 200;
   display: flex;
   flex-direction: column;
-  width: 100%;
-  height: 100svh;
+  width: var(--admin-sidebar-width);
+  height: 100dvh;
   min-width: 0;
   box-sizing: border-box;
   border-right: 1px solid rgba(240, 237, 228, .1);
@@ -3159,6 +3160,7 @@ button.portal-todo-link {
     linear-gradient(180deg, rgba(240, 237, 228, .035), transparent 22%),
     var(--ink-3);
   box-shadow: 18px 0 60px rgba(0, 0, 0, .16);
+  transition: width .35s var(--ease);
 }
 
 .home2-page .admin-sidebar-header {
@@ -3399,6 +3401,7 @@ button.portal-todo-link {
 }
 
 .home2-page .admin-main {
+  grid-column: 2;
   min-width: 0;
   width: 100%;
   padding: clamp(28px, 4.5vw, 64px);
