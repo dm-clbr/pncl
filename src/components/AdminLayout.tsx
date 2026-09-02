@@ -1,9 +1,40 @@
-import { NavLink, Outlet, Link } from "react-router-dom";
-import { ArrowLeft, Building2, CheckSquare, ClipboardCheck, ClipboardList, DollarSign, Eye, FileSignature, FileText, GitBranch, GraduationCap, Handshake, LayoutDashboard, LayoutGrid, Mail, MapPinned, Palette, Receipt, Trophy, UserPlus, Users, Workflow } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Link, NavLink, Outlet } from "react-router-dom";
+import {
+  ArrowLeft,
+  Building2,
+  CheckSquare,
+  ClipboardCheck,
+  ClipboardList,
+  DollarSign,
+  Eye,
+  FileSignature,
+  FileText,
+  GitBranch,
+  GraduationCap,
+  Handshake,
+  LayoutDashboard,
+  LayoutGrid,
+  Mail,
+  MapPinned,
+  Menu,
+  Palette,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Receipt,
+  Trophy,
+  UserPlus,
+  Users,
+  Workflow,
+  X,
+} from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdminAssist, isGenesisAdmin } from "@/lib/roles";
 import "@/styles/home2.css";
+
+const ADMIN_SIDEBAR_STORAGE_KEY = "pncl.admin.sidebar.collapsed";
+const ADMIN_MOBILE_QUERY = "(max-width: 899px)";
 
 const FULL_ADMIN_NAV = [
   { to: "/portal/admin", label: "Overview", icon: LayoutDashboard, end: true },
@@ -40,8 +71,51 @@ const ADMIN_ASSIST_NAV = [
   { to: "/portal/admin/hierarchy", label: "Hierarchy", icon: GitBranch, end: false },
 ] as const;
 
+function getStoredSidebarPreference() {
+  if (typeof window === "undefined") return false;
+
+  try {
+    return window.localStorage.getItem(ADMIN_SIDEBAR_STORAGE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function storeSidebarPreference(collapsed: boolean) {
+  try {
+    window.localStorage.setItem(ADMIN_SIDEBAR_STORAGE_KEY, String(collapsed));
+  } catch {
+    // Storage can be unavailable in privacy-restricted browser contexts.
+  }
+}
+
+function useIsMobileAdminViewport() {
+  const [isMobile, setIsMobile] = useState(() => (
+    typeof window !== "undefined" && typeof window.matchMedia === "function"
+      ? window.matchMedia(ADMIN_MOBILE_QUERY).matches
+      : false
+  ));
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(ADMIN_MOBILE_QUERY);
+    const handleChange = (event: MediaQueryListEvent) => setIsMobile(event.matches);
+
+    setIsMobile(mediaQuery.matches);
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  return isMobile;
+}
+
 export default function AdminLayout() {
   const { user } = useAuth();
+  const [collapsed, setCollapsed] = useState(getStoredSidebarPreference);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileCloseButtonRef = useRef<HTMLButtonElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const isMobile = useIsMobileAdminViewport();
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Admin";
   const adminAssistOnly = isAdminAssist(user);
   const genesisAdminOnly = isGenesisAdmin(user);
@@ -56,43 +130,199 @@ export default function AdminLayout() {
       ? "Genesis admin"
       : "Admin console";
 
+  useEffect(() => {
+    if (!isMobile) setMobileNavOpen(false);
+  }, [isMobile]);
+
+  useEffect(() => {
+    const sidebar = sidebarRef.current;
+    if (!sidebar) return;
+
+    if (isMobile && !mobileNavOpen) {
+      sidebar.setAttribute("inert", "");
+    } else {
+      sidebar.removeAttribute("inert");
+    }
+  }, [isMobile, mobileNavOpen]);
+
+  useEffect(() => {
+    if (!isMobile || !mobileNavOpen) return;
+
+    const sidebar = sidebarRef.current;
+    const previousOverflow = document.body.style.overflow;
+    const focusFrame = window.requestAnimationFrame(() => mobileCloseButtonRef.current?.focus());
+
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setMobileNavOpen(false);
+        window.requestAnimationFrame(() => mobileMenuButtonRef.current?.focus());
+        return;
+      }
+
+      if (event.key !== "Tab" || !sidebar) return;
+
+      const focusable = Array.from(sidebar.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ));
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (!first || !last) return;
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMobile, mobileNavOpen]);
+
+  const toggleCollapsed = () => {
+    setCollapsed((current) => {
+      const next = !current;
+      storeSidebarPreference(next);
+      return next;
+    });
+  };
+
+  const closeMobileNavigation = (restoreFocus = true) => {
+    setMobileNavOpen(false);
+    if (restoreFocus) {
+      window.requestAnimationFrame(() => mobileMenuButtonRef.current?.focus());
+    }
+  };
+
   return (
     <div className="home2-page">
       <div className="grain" aria-hidden="true" />
 
       <main className="portal-dash dark admin-dash">
-        <div className="wrap admin-wrap">
-          <header className="admin-header">
-            <Link to="/" className="portal-hero-logo" aria-label="PNCL home">
-              <PNCLLogo height={40} />
-            </Link>
-            <div className="admin-header-copy">
-              <p className="portal-welcome">{consoleTitle}</p>
-              <p className="portal-meta">{displayName}</p>
-            </div>
-            <Link to="/portal" className="admin-back-link">
-              <ArrowLeft size={16} aria-hidden="true" />
-              Agent portal
-            </Link>
-          </header>
+        <div className={`admin-shell${collapsed ? " admin-shell-collapsed" : ""}`}>
+          <button
+            type="button"
+            className={`admin-sidebar-backdrop${mobileNavOpen ? " open" : ""}`}
+            aria-label="Close admin navigation"
+            tabIndex={mobileNavOpen ? 0 : -1}
+            onClick={() => closeMobileNavigation()}
+          />
 
-          <nav className="admin-nav" aria-label="Admin navigation">
-            {navItems.map(({ to, label, icon: Icon, end }) => (
-              <NavLink
-                key={to}
-                to={to}
-                end={end}
-                className={({ isActive }) => `admin-nav-link${isActive ? " active" : ""}`}
+          <aside
+            ref={sidebarRef}
+            id="admin-sidebar"
+            className={`admin-sidebar${mobileNavOpen ? " open" : ""}`}
+            aria-label="Admin navigation panel"
+            aria-hidden={isMobile && !mobileNavOpen ? true : undefined}
+            aria-modal={isMobile ? true : undefined}
+            role={isMobile ? "dialog" : undefined}
+          >
+            <div className="admin-sidebar-header">
+              <Link to="/" className="admin-sidebar-brand" aria-label="PNCL home">
+                <span className="admin-sidebar-logo-full">
+                  <PNCLLogo height={32} />
+                </span>
+                <span className="admin-sidebar-logo-mark" aria-hidden="true">P</span>
+              </Link>
+
+              <button
+                type="button"
+                className="admin-sidebar-collapse"
+                aria-label={collapsed ? "Expand navigation" : "Collapse navigation"}
+                aria-controls="admin-navigation"
+                aria-expanded={!collapsed}
+                title={collapsed ? "Expand navigation" : "Collapse navigation"}
+                onClick={toggleCollapsed}
               >
-                <Icon size={16} aria-hidden="true" />
-                {label}
-              </NavLink>
-            ))}
-          </nav>
+                {collapsed
+                  ? <PanelLeftOpen size={19} aria-hidden="true" />
+                  : <PanelLeftClose size={19} aria-hidden="true" />}
+              </button>
 
-          <div className="admin-content">
-            <Outlet />
-          </div>
+              <button
+                ref={mobileCloseButtonRef}
+                type="button"
+                className="admin-sidebar-close"
+                aria-label="Close navigation"
+                onClick={() => closeMobileNavigation()}
+              >
+                <X size={21} aria-hidden="true" />
+              </button>
+            </div>
+
+            <div className="admin-sidebar-account">
+              <span className="admin-sidebar-account-mark" aria-hidden="true">
+                {displayName.charAt(0).toUpperCase()}
+              </span>
+              <span className="admin-sidebar-account-copy">
+                <span className="portal-welcome">{consoleTitle}</span>
+                <span className="portal-meta">{displayName}</span>
+              </span>
+            </div>
+
+            <nav id="admin-navigation" className="admin-nav" aria-label="Admin navigation">
+              {navItems.map(({ to, label, icon: Icon, end }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={end}
+                  className={({ isActive }) => `admin-nav-link${isActive ? " active" : ""}`}
+                  title={collapsed && !isMobile ? label : undefined}
+                  onClick={() => {
+                    if (isMobile) closeMobileNavigation(false);
+                  }}
+                >
+                  <Icon size={18} aria-hidden="true" />
+                  <span className="admin-nav-label">{label}</span>
+                </NavLink>
+              ))}
+            </nav>
+
+            <div className="admin-sidebar-footer">
+              <Link
+                to="/portal"
+                className="admin-back-link"
+                title={collapsed && !isMobile ? "Agent portal" : undefined}
+              >
+                <ArrowLeft size={18} aria-hidden="true" />
+                <span className="admin-nav-label">Agent portal</span>
+              </Link>
+            </div>
+          </aside>
+
+          <section className="admin-main">
+            <header className="admin-mobile-bar">
+              <button
+                ref={mobileMenuButtonRef}
+                type="button"
+                className="admin-mobile-menu"
+                aria-label="Open navigation"
+                aria-controls="admin-sidebar"
+                aria-expanded={mobileNavOpen}
+                onClick={() => setMobileNavOpen(true)}
+              >
+                <Menu size={21} aria-hidden="true" />
+              </button>
+              <Link to="/" className="admin-mobile-brand" aria-label="PNCL home">
+                <PNCLLogo height={26} />
+              </Link>
+              <span className="admin-mobile-title">{consoleTitle}</span>
+            </header>
+
+            <div className="admin-content">
+              <Outlet />
+            </div>
+          </section>
         </div>
       </main>
     </div>
