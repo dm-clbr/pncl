@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import {
   ArrowUpRight,
@@ -66,6 +67,7 @@ function PortalVideoModal({
   onClose: () => void;
 }) {
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
+  const portalTarget = document.querySelector<HTMLElement>(".home2-page") ?? document.body;
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -91,8 +93,12 @@ function PortalVideoModal({
     if (event.target === event.currentTarget) onClose();
   };
 
-  return (
-    <div className="admin-modal-overlay" onClick={handleBackdropClick} role="presentation">
+  return createPortal(
+    <div
+      className="admin-modal-overlay portal-video-overlay"
+      onClick={handleBackdropClick}
+      role="presentation"
+    >
       <div
         className="portal-video-modal"
         role="dialog"
@@ -139,7 +145,8 @@ function PortalVideoModal({
           </a>
         </div>
       </div>
-    </div>
+    </div>,
+    portalTarget,
   );
 }
 

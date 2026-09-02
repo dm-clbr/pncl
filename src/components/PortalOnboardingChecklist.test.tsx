@@ -79,22 +79,26 @@ describe("PortalOnboardingChecklist tutorial video", () => {
 
   function renderTutorial() {
     render(
-      <MemoryRouter>
-        <PortalOnboardingChecklist
-          todos={[
-            todo({
-              id: "surelc_tutorial",
-              title: "Watch the SureLC tutorial video",
-              href: tutorialUrl,
-              actionLabel: "Watch tutorial video",
-              external: true,
-            }),
-          ]}
-          agentEmail="agent@thepncl.com"
-          completingTodoId={null}
-          onComplete={vi.fn()}
-        />
-      </MemoryRouter>,
+      <div className="home2-page">
+        <div className="portal-checklist-drawer open">
+          <MemoryRouter>
+            <PortalOnboardingChecklist
+              todos={[
+                todo({
+                  id: "surelc_tutorial",
+                  title: "Watch the SureLC tutorial video",
+                  href: tutorialUrl,
+                  actionLabel: "Watch tutorial video",
+                  external: true,
+                }),
+              ]}
+              agentEmail="agent@thepncl.com"
+              completingTodoId={null}
+              onComplete={vi.fn()}
+            />
+          </MemoryRouter>
+        </div>
+      </div>,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Watch tutorial video" }));
@@ -103,6 +107,10 @@ describe("PortalOnboardingChecklist tutorial video", () => {
   it("uses a click-to-play embed and always provides a direct fallback", () => {
     renderTutorial();
 
+    const dialog = screen.getByRole("dialog", { name: "Watch the SureLC tutorial video" });
+    expect(dialog.closest(".portal-checklist-drawer")).toBeNull();
+    expect(dialog.parentElement?.parentElement).toHaveClass("home2-page");
+    expect(dialog.parentElement).toHaveClass("portal-video-overlay");
     expect(screen.getByRole("status")).toHaveTextContent("Loading video");
 
     const frame = screen.getByTitle("Watch the SureLC tutorial video");

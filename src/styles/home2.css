@@ -1814,6 +1814,10 @@ button.portal-todo-link {
   cursor: pointer;
 }
 
+.home2-page .portal-video-overlay {
+  z-index: 10000;
+}
+
 .home2-page .portal-video-modal {
   width: min(960px, 100%);
   background: var(--ink-2);
