@@ -1814,7 +1814,7 @@ button.portal-todo-link {
   cursor: pointer;
 }
 
-.home2-page .portal-video-overlay {
+.home2-page .admin-modal-overlay.portal-video-overlay {
   z-index: 10000;
 }
 
