@@ -5,7 +5,6 @@ import {
   ChevronDown,
   ClipboardList,
   FileSignature,
-  GraduationCap,
   LogOut,
   Shield,
   X,
@@ -38,10 +37,7 @@ import { usePortalW9 } from "@/hooks/usePortalW9";
 import { usePortalDirectDeposit } from "@/hooks/usePortalDirectDeposit";
 import { usePortalIca } from "@/hooks/usePortalIca";
 import {
-  dismissGenesisNotice,
-  GENESIS_LOGIN_URL,
   refreshPortalUser,
-  shouldShowGenesisNotice,
   shouldShowDirectDepositResignNotice,
   shouldShowIcaResignNotice,
   shouldShowW9ResignNotice,
@@ -152,7 +148,6 @@ export default function PortalDashboard() {
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [completingTodoId, setCompletingTodoId] = useState<string | null>(null);
-  const [dismissingGenesisNotice, setDismissingGenesisNotice] = useState(false);
   const [checklistOpen, setChecklistOpen] = useState(false);
 
   const { incentives, loading: incentivesLoading } = usePortalIncentives();
@@ -198,7 +193,6 @@ export default function PortalDashboard() {
     ? 0
     : Math.round((completedTodoCount / resolvedTodos.length) * 100);
   const pendingRequiredForms = pendingTodos.some((todo) => isRequiredFormTodo(todo.id));
-  const showGenesisNotice = shouldShowGenesisNotice(portalUser);
   const showIcaResignNotice = shouldShowIcaResignNotice(portalUser) && !icaSubmitted;
   const showW9ResignNotice = shouldShowW9ResignNotice(portalUser) && !w9Submitted;
   const showDirectDepositResignNotice =
@@ -301,19 +295,6 @@ export default function PortalDashboard() {
       toast.error(err instanceof Error ? err.message : "Unable to update to-do.");
     } finally {
       setCompletingTodoId(null);
-    }
-  };
-
-  const handleDismissGenesisNotice = async () => {
-    setDismissingGenesisNotice(true);
-    try {
-      await dismissGenesisNotice();
-      const refreshedUser = await refreshPortalUser();
-      if (refreshedUser) setPortalUser(refreshedUser);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Unable to dismiss notice.");
-    } finally {
-      setDismissingGenesisNotice(false);
     }
   };
 
@@ -443,40 +424,6 @@ export default function PortalDashboard() {
                   <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
                 </Link>
               </div>
-            </div>
-          )}
-
-          {showGenesisNotice && (
-            <div className="portal-notice-banner" role="status">
-              <span className="portal-notice-icon" aria-hidden="true">
-                <GraduationCap size={20} strokeWidth={2.25} />
-              </span>
-              <div className="portal-notice-copy">
-                <strong>Your Pinnacle Genesis account is ready</strong>
-                <p>
-                  Check your email for login instructions to access Genesis. You can also open
-                  Genesis anytime from the <strong>Pinnacle Genesis</strong> link under{" "}
-                  <strong>Training &amp; Resources</strong> below.
-                </p>
-                <a
-                  href={GENESIS_LOGIN_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="portal-notice-link"
-                >
-                  Go to Pinnacle Genesis
-                  <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
-                </a>
-              </div>
-              <button
-                type="button"
-                className="portal-notice-dismiss"
-                onClick={() => void handleDismissGenesisNotice()}
-                disabled={dismissingGenesisNotice}
-                aria-label="Dismiss Genesis account notice"
-              >
-                <X size={18} strokeWidth={2.5} aria-hidden="true" />
-              </button>
             </div>
           )}
 

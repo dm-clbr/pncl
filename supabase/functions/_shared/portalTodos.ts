@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { lookupCountyFromZip } from "./usZipCounty.ts";
 import { listIcaSignedUserIds } from "./portalIca.ts";
+import { isTodoCompleteForUser } from "./todoCompletion.ts";
+export { isTodoCompleteForUser } from "./todoCompletion.ts";
 
 export const PORTAL_TODO_PHASES = [
   "on_board",
@@ -334,27 +336,41 @@ export async function computeAutoCompletionSets(
     tasks.push((async () => {
       const { data: disclosureRows, error: disclosureError } = await adminClient
         .from("portal_disclosures")
-        .select("id")
+        .select("id, content_version, video_url")
         .eq("published", true);
 
       if (disclosureError) throw new Error(disclosureError.message);
 
-      const publishedIds = new Set(((disclosureRows ?? []) as { id: string }[]).map((row) => row.id));
-      if (publishedIds.size === 0) {
+      const publishedDisclosures = (disclosureRows ?? []) as Array<{
+        id: string;
+        content_version: number;
+        video_url: string | null;
+      }>;
+      const currentVersions = new Map(
+        publishedDisclosures.map((row) => [row.id, row.content_version]),
+      );
+      const everyModuleIsReady = publishedDisclosures.length > 0
+        && publishedDisclosures.every((row) => Boolean(row.video_url?.trim()));
+
+      if (!everyModuleIsReady) {
         sets.set("disclosures", new Set());
         return;
       }
 
       const { data: ackRows, error: ackError } = await adminClient
         .from("portal_disclosure_acknowledgments")
-        .select("user_id, disclosure_id")
+        .select("user_id, disclosure_id, content_version")
         .in("user_id", userIds);
 
       if (ackError) throw new Error(ackError.message);
 
       const ackCounts = new Map<string, Set<string>>();
-      for (const row of (ackRows ?? []) as { user_id: string; disclosure_id: string }[]) {
-        if (!publishedIds.has(row.disclosure_id)) continue;
+      for (const row of (ackRows ?? []) as Array<{
+        user_id: string;
+        disclosure_id: string;
+        content_version: number;
+      }>) {
+        if (currentVersions.get(row.disclosure_id) !== row.content_version) continue;
         const acked = ackCounts.get(row.user_id) ?? new Set<string>();
         acked.add(row.disclosure_id);
         ackCounts.set(row.user_id, acked);
@@ -364,7 +380,7 @@ export async function computeAutoCompletionSets(
         "disclosures",
         new Set(
           [...ackCounts.entries()]
-            .filter(([, acked]) => acked.size >= publishedIds.size)
+            .filter(([, acked]) => acked.size >= currentVersions.size)
             .map(([userId]) => userId),
         ),
       );
@@ -394,22 +410,6 @@ export async function computeAutoCompletionSets(
 
   await Promise.all(tasks);
   return sets;
-}
-
-/** Whether a todo is complete for a user, combining auto rules and manual check-offs. */
-export function isTodoCompleteForUser(
-  row: Pick<PortalTodoRecord, "slug" | "completion_type" | "auto_key">,
-  userId: string,
-  completedMetadata: Record<string, boolean>,
-  autoSets: Map<string, Set<string>>,
-): boolean {
-  if (completedMetadata[row.slug] === true) {
-    return true;
-  }
-  if (row.completion_type === "auto" && row.auto_key) {
-    return autoSets.get(row.auto_key)?.has(userId) ?? false;
-  }
-  return false;
 }
 
 export const PORTAL_TODO_PHASE_LABELS: Record<PortalTodoPhase, string> = {

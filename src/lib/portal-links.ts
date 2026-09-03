@@ -86,11 +86,11 @@ export const PORTAL_SECTIONS: PortalLinkSection[] = [
     title: "Training & Resources",
     links: [
       {
-        id: "pinnacle-genesis",
-        title: "Pinnacle Genesis",
-        description: "Agent training platform and curriculum.",
-        href: "https://www.pinnaclegenesis.cc/",
-        external: true,
+        id: "pncl-training",
+        title: "PNCL Training",
+        description: "Complete the PNCL onboarding training curriculum.",
+        href: "/portal/disclosures",
+        external: false,
         icon: GraduationCap,
       },
     ],

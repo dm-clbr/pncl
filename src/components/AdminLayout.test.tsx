@@ -86,9 +86,9 @@ describe("admin sidebar layout", () => {
       "aria-current",
       "page",
     );
-    expect(within(navigation).getByRole("link", { name: "Genesis" })).toBeInTheDocument();
+    expect(within(navigation).queryByRole("link", { name: "Genesis" })).not.toBeInTheDocument();
     expect(within(navigation).getByRole("link", { name: "W-9 preview" })).toBeInTheDocument();
-    expect(within(navigation).getAllByRole("link")).toHaveLength(22);
+    expect(within(navigation).getAllByRole("link")).toHaveLength(21);
     expect(screen.getByRole("link", { name: "Agent portal" })).toHaveAttribute("href", "/portal");
   });
 

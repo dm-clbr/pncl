@@ -5,8 +5,11 @@ import PNCLLogo from "@/components/PNCLLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   acknowledgeDisclosure,
-  fetchAcknowledgedDisclosureIds,
+  fetchAcknowledgedDisclosureKeys,
   fetchPortalDisclosures,
+  getDisclosureAcknowledgmentKey,
+  hasDisclosureVideo,
+  isDisclosureCompleted,
   toEmbedUrl,
   type PortalDisclosure,
 } from "@/lib/portal-disclosures";
@@ -14,7 +17,7 @@ import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 import "@/styles/home2.css";
 
-function DisclosureVideo({ videoUrl }: { videoUrl: string }) {
+function DisclosureVideo({ title, videoUrl }: { title: string; videoUrl: string }) {
   const embedUrl = toEmbedUrl(videoUrl);
 
   if (embedUrl) {
@@ -22,7 +25,7 @@ function DisclosureVideo({ videoUrl }: { videoUrl: string }) {
       <div className="portal-disclosure-video">
         <iframe
           src={embedUrl}
-          title="Disclosure video"
+          title={`${title} video`}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
         />
@@ -41,14 +44,14 @@ function DisclosureVideo({ videoUrl }: { videoUrl: string }) {
 export default function PortalDisclosures() {
   const { user } = useAuth();
   const [disclosures, setDisclosures] = useState<PortalDisclosure[]>([]);
-  const [acknowledgedIds, setAcknowledgedIds] = useState<Set<string>>(new Set());
+  const [acknowledgedKeys, setAcknowledgedKeys] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
 
   useEffect(() => {
-    document.title = "Disclosures — PNCL Portal";
-    trackPageView("portal_disclosures");
+    document.title = "PNCL Training — PNCL Portal";
+    trackPageView("portal_training");
     window.scrollTo(0, 0);
   }, []);
 
@@ -61,11 +64,11 @@ export default function PortalDisclosures() {
     let cancelled = false;
     setLoading(true);
 
-    void Promise.all([fetchPortalDisclosures(), fetchAcknowledgedDisclosureIds(user.id)])
+    void Promise.all([fetchPortalDisclosures(), fetchAcknowledgedDisclosureKeys(user.id)])
       .then(([modules, acked]) => {
         if (cancelled) return;
         setDisclosures(modules);
-        setAcknowledgedIds(acked);
+        setAcknowledgedKeys(acked);
         setError(null);
       })
       .catch((err) => {
@@ -82,18 +85,21 @@ export default function PortalDisclosures() {
   }, [user]);
 
   const completedCount = useMemo(
-    () => disclosures.filter((disclosure) => acknowledgedIds.has(disclosure.id)).length,
-    [disclosures, acknowledgedIds],
+    () => disclosures.filter((disclosure) => isDisclosureCompleted(acknowledgedKeys, disclosure)).length,
+    [disclosures, acknowledgedKeys],
   );
   const allDone = disclosures.length > 0 && completedCount === disclosures.length;
 
   const handleAcknowledge = async (disclosure: PortalDisclosure) => {
-    if (!user) return;
+    if (!user || !hasDisclosureVideo(disclosure)) return;
 
     setAcknowledgingId(disclosure.id);
     try {
-      await acknowledgeDisclosure(user.id, disclosure.id);
-      setAcknowledgedIds((prev) => new Set([...prev, disclosure.id]));
+      await acknowledgeDisclosure(user.id, disclosure.id, disclosure.content_version);
+      setAcknowledgedKeys((prev) => new Set([
+        ...prev,
+        getDisclosureAcknowledgmentKey(disclosure),
+      ]));
       toast.success(`${disclosure.title} acknowledged.`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Unable to save acknowledgment.");
@@ -113,10 +119,9 @@ export default function PortalDisclosures() {
               <PNCLLogo height={40} />
             </Link>
             <div className="carrier-sheet-header-copy">
-              <p className="portal-welcome">Disclosures</p>
+              <p className="portal-welcome">PNCL Training</p>
               <p className="portal-meta">
-                Watch each module and confirm you understand and will comply with all state and
-                national regulations.
+                Complete each module in order, then confirm you understand the material.
               </p>
             </div>
             <Link to="/portal" className="admin-back-link">
@@ -138,7 +143,7 @@ export default function PortalDisclosures() {
             </div>
           ) : disclosures.length === 0 ? (
             <div className="carrier-sheet-panel portal-profile-panel">
-              <p className="portal-panel-note">No disclosure modules are published yet. Check back soon.</p>
+              <p className="portal-panel-note">No training modules are published yet. Check back soon.</p>
             </div>
           ) : (
             <>
@@ -166,7 +171,8 @@ export default function PortalDisclosures() {
               </div>
 
               {disclosures.map((disclosure) => {
-                const acknowledged = acknowledgedIds.has(disclosure.id);
+                const acknowledged = isDisclosureCompleted(acknowledgedKeys, disclosure);
+                const hasVideo = hasDisclosureVideo(disclosure);
                 return (
                   <div key={disclosure.id} className="carrier-sheet-panel portal-profile-panel">
                     <div className="carrier-sheet-panel-head">
@@ -187,12 +193,12 @@ export default function PortalDisclosures() {
                       </div>
                     </div>
 
-                    {disclosure.video_url ? (
-                      <DisclosureVideo videoUrl={disclosure.video_url} />
+                    {hasVideo && disclosure.video_url ? (
+                      <DisclosureVideo title={disclosure.title} videoUrl={disclosure.video_url} />
                     ) : (
                       <p className="portal-panel-note portal-disclosure-pending-video">
                         <PlaySquare size={16} aria-hidden="true" />
-                        Video coming soon — review the module title above and acknowledge below.
+                        Video coming soon. This module can be acknowledged after the training is available.
                       </p>
                     )}
 
@@ -200,7 +206,7 @@ export default function PortalDisclosures() {
                       <p className="portal-panel-note">
                         You&apos;ve acknowledged this disclosure.
                       </p>
-                    ) : (
+                    ) : hasVideo ? (
                       <div className="admin-form-actions">
                         <button
                           type="button"
@@ -210,10 +216,10 @@ export default function PortalDisclosures() {
                         >
                           {acknowledgingId === disclosure.id
                             ? "Saving..."
-                            : "I understand and agree to comply"}
+                            : "I completed this training"}
                         </button>
                       </div>
-                    )}
+                    ) : null}
                   </div>
                 );
               })}

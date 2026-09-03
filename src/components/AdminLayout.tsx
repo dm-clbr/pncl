@@ -58,7 +58,6 @@ const FULL_ADMIN_NAV = [
   { to: "/portal/admin/dashboard-tabs", label: "Dashboard tabs", icon: LayoutGrid, end: false },
   { to: "/portal/admin/onboarding-preview", label: "Onboarding preview", icon: Eye, end: false },
   { to: "/portal/admin/w9-preview", label: "W-9 preview", icon: FileText, end: false },
-  { to: "/portal/admin/genesis", label: "Genesis", icon: GraduationCap, end: false },
 ] as const;
 
 const GENESIS_ADMIN_NAV = [
