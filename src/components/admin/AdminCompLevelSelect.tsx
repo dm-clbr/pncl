@@ -77,7 +77,7 @@ export function AdminCompLevelSelect({
       }}
     >
       <option value="">
-        {saving ? "Saving…" : formatCompLevel(currentValue)}
+        {saving ? "Saving…" : "Not set"}
       </option>
       {selectOptions.map((level) => (
         <option key={level} value={level}>
