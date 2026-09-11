@@ -1,6 +1,7 @@
 import { PDFDocument, StandardFonts, rgb, type PDFForm } from "https://esm.sh/pdf-lib@1.17.1";
 import { ICA_FORM_FIELDS, assertValidDebitCheckInitial } from "./icaFormFields.ts";
 import { loadIcaTemplateBytes } from "./icaTemplate.ts";
+import { requirePersonalRecoveryEmail } from "./recoveryEmail.ts";
 
 // r2: template pre-fills the company counter-signature; contractor signature
 // is stamped on the execution "BY" line (previously held the signing date).
@@ -130,7 +131,9 @@ export function validateSubmitOnboardingContractPayload(body: unknown): SubmitOn
 
   const data = body as Record<string, unknown>;
   const legalName = normalizeRequiredString(data.legalName, "legalName");
-  const personalEmail = normalizeRequiredString(data.personalEmail, "personalEmail").toLowerCase();
+  const personalEmail = requirePersonalRecoveryEmail(
+    normalizeRequiredString(data.personalEmail, "personalEmail"),
+  );
   const signatureName = normalizeRequiredString(data.signatureName, "signatureName");
   const signatureImageBase64 = normalizeSignatureImageBase64(data.signatureImageBase64);
 

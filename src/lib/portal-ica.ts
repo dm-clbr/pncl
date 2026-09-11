@@ -164,6 +164,7 @@ export function isIcaTodoComplete(user: User | null, icaSigned: boolean): boolea
 export function getDefaultIcaPrefill(
   user: { email?: string | null; user_metadata?: Record<string, unknown> } | null,
   profile?: { firstName: string; lastName: string } | null,
+  recoveryEmail?: string | null,
 ): { legalName: string; email: string } {
   const meta = user?.user_metadata;
   const profileName = profile
@@ -174,6 +175,9 @@ export function getDefaultIcaPrefill(
 
   return {
     legalName,
-    email: user?.email?.trim() ?? "",
+    // The PNCL work address cannot be a recovery address. Leave the field
+    // blank when no personal address is known instead of pre-filling it with
+    // an invalid value.
+    email: recoveryEmail?.trim() ?? "",
   };
 }

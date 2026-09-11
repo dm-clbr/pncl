@@ -18,6 +18,7 @@ export interface SyncOnboardingProfileAssetsInput {
   onboardingId: string;
   firstName: string;
   lastName: string;
+  recoveryEmail: string;
   npn?: string | null;
   driversLicense?: OnboardingImagePayload;
   profilePhoto?: OnboardingImagePayload;
@@ -87,7 +88,7 @@ export async function syncOnboardingProfileAssets(
   const hasAddress = Boolean(
     address && (address.line1 || address.city || address.zip || address.county),
   );
-  if (!driversLicensePath && !profilePhotoPath && !npn && !hasAddress) {
+  if (!driversLicensePath && !profilePhotoPath && !npn && !hasAddress && !input.recoveryEmail.trim()) {
     return;
   }
 
@@ -99,6 +100,12 @@ export async function syncOnboardingProfileAssets(
   if (driversLicensePath) payload.drivers_license_path = driversLicensePath;
   if (profilePhotoPath) payload.profile_photo_path = profilePhotoPath;
   if (npn) payload.npn = npn;
+  if (input.recoveryEmail.trim()) {
+    payload.recovery_email = input.recoveryEmail.trim().toLowerCase();
+    payload.recovery_email_sync_status = "synced";
+    payload.recovery_email_last_synced_at = new Date().toISOString();
+    payload.recovery_email_last_sync_error = null;
+  }
   if (hasAddress && address) {
     if (address.line1) payload.address_line1 = address.line1;
     if (address.city) payload.address_city = address.city;

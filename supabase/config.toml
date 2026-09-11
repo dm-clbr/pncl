@@ -141,6 +141,9 @@ verify_jwt = true
 [functions.admin-backfill-google-recovery]
 verify_jwt = true
 
+[functions.sync-portal-recovery-email]
+verify_jwt = true
+
 [functions.admin-reactivate-google-user]
 verify_jwt = true
 

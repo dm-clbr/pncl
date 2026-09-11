@@ -45,7 +45,7 @@ export default function PortalIca() {
         setPrefill(getDefaultIcaPrefill(user, profile ? {
           firstName: profile.first_name,
           lastName: profile.last_name,
-        } : null));
+        } : null, profile?.recovery_email));
       })
       .catch(() => {
         if (cancelled) return;

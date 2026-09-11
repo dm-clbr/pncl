@@ -2,8 +2,7 @@ import type { PDFDocumentProxy } from "pdfjs-dist";
 import { ICA_FORM_FIELDS, isValidDebitCheckInitial, normalizeDebitCheckInitial } from "@/lib/ica-form-fields";
 import { getPdfFieldObjects, type PdfFieldObjects } from "@/lib/pdf-field-objects";
 import type { DebitCheckInitials } from "@/lib/onboarding-contract";
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+import { validateRecoveryEmail } from "@/lib/recovery-email";
 
 export interface ExtractedIcaFormValues {
   legalName: string;
@@ -127,9 +126,8 @@ export function validateExtractedIcaFormValues(
   if (!values.personalEmail.trim()) {
     return "Enter your email address on the signature page.";
   }
-  if (!EMAIL_PATTERN.test(values.personalEmail.trim())) {
-    return "Enter a valid email address on the signature page.";
-  }
+  const recoveryEmailError = validateRecoveryEmail(values.personalEmail);
+  if (recoveryEmailError) return recoveryEmailError;
 
   if (signatureImage) {
     if (!signatureImage.startsWith("data:image/png")) {

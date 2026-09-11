@@ -15,6 +15,7 @@ import {
   type PortalIcaRecord,
 } from "../_shared/portalIca.ts";
 import { notifyAdminsOfIcaSigned } from "../_shared/contractingNotifications.ts";
+import { syncPortalRecoveryEmailForUser } from "../_shared/portalRecoveryEmail.ts";
 
 function getCompletedTodos(metadata: Record<string, unknown> | undefined): Record<string, boolean> {
   const value = metadata?.completed_portal_todos;
@@ -107,7 +108,13 @@ serve(async (req) => {
       throw new Error(metadataError.message);
     }
 
-    logOnboarding("portal_ica_submitted", { userId: user.id });
+    const recoverySync = await syncPortalRecoveryEmailForUser(
+      adminClient,
+      user,
+      payload.personalEmail,
+    );
+
+    logOnboarding("portal_ica_submitted", { userId: user.id, recoverySyncStatus: recoverySync.syncStatus });
 
     try {
       await notifyAdminsOfIcaSigned(adminClient, {
@@ -125,6 +132,7 @@ serve(async (req) => {
 
     return jsonResponse({
       ica: mapPortalIcaSummary(data as PortalIcaRecord),
+      recoverySync,
       message: "Independent Contractor Agreement signed successfully.",
     });
   } catch (error) {

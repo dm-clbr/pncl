@@ -4,6 +4,7 @@ import {
   getWorkspaceUser,
   GoogleWorkspaceAutoSuspendedError,
   isAutomaticallySuspendedGoogleUser,
+  updateWorkspaceUserRecovery,
   waitForWorkspaceMailboxReady,
 } from "./googleWorkspace.ts";
 import type { OnboardingImagePayload } from "./onboarding.ts";
@@ -248,6 +249,11 @@ export async function provisionEnrollment(
           googleUserId,
         });
       }
+      await updateWorkspaceUserRecovery({
+        userKey: existingGoogleUser.id,
+        recoveryEmail: row.personal_email,
+        currentUser: existingGoogleUser,
+      });
     } else {
       googleUserId = await createWorkspaceUser({
         firstName: row.first_name,
@@ -291,6 +297,7 @@ export async function provisionEnrollment(
       legalName: row.legal_name,
       firstName: row.first_name,
       lastName: row.last_name,
+      recoveryEmail: row.personal_email,
       onboardingId,
       existingSupabaseUserId: supabaseUserId,
     });

@@ -27,6 +27,7 @@ import {
   type PortalProfile,
   type PortalProfileFormValues,
 } from "@/lib/portal-profile";
+import { syncPortalRecoveryEmail } from "@/lib/portal-recovery-email";
 import { getDirectDepositPdfUrl } from "@/lib/portal-direct-deposit";
 import { fetchPortalW9Document, getW9PdfUrl } from "@/lib/portal-w9";
 import { fetchPortalIcaDocument } from "@/lib/portal-ica";
@@ -70,6 +71,7 @@ const EMPTY_FORM: PortalProfileFormValues = {
   addressState: "",
   addressZip: "",
   phoneNumber: "",
+  recoveryEmail: "",
 };
 
 function SizeSelect({
@@ -112,6 +114,7 @@ export default function PortalProfile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [syncingRecoveryEmail, setSyncingRecoveryEmail] = useState(false);
   const [form, setForm] = useState<PortalProfileFormValues>(EMPTY_FORM);
   const [profileRow, setProfileRow] = useState<PortalProfile | null>(null);
   const [photoPath, setPhotoPath] = useState<string | null>(null);
@@ -424,10 +427,49 @@ export default function PortalProfile() {
       }
       setPhotoPreviewUrl(null);
       toast.success("Profile saved.");
+
+      if (session?.access_token) {
+        setSyncingRecoveryEmail(true);
+        try {
+          const recoveryResult = await syncPortalRecoveryEmail(session.access_token, form.recoveryEmail);
+          const syncedProfile = await fetchPortalProfile(user.id);
+          if (syncedProfile) setProfileRow(syncedProfile);
+          if (recoveryResult.syncStatus === "synced") {
+            toast.success("Your Google recovery email is up to date.");
+          } else {
+            toast.error(recoveryResult.error ?? "Your recovery email needs to be synced again.");
+          }
+        } catch (syncError) {
+          const pendingProfile = await fetchPortalProfile(user.id).catch(() => null);
+          if (pendingProfile) setProfileRow(pendingProfile);
+          toast.error(syncError instanceof Error ? syncError.message : "Your recovery email needs to be synced again.");
+        } finally {
+          setSyncingRecoveryEmail(false);
+        }
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Unable to save profile.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleRecoveryRetry = async () => {
+    if (!session?.access_token || !user) return;
+    setSyncingRecoveryEmail(true);
+    try {
+      const recoveryResult = await syncPortalRecoveryEmail(session.access_token, form.recoveryEmail);
+      const syncedProfile = await fetchPortalProfile(user.id);
+      if (syncedProfile) setProfileRow(syncedProfile);
+      if (recoveryResult.syncStatus === "synced") {
+        toast.success("Your Google recovery email is up to date.");
+      } else {
+        toast.error(recoveryResult.error ?? "Your recovery email needs to be synced again.");
+      }
+    } catch (syncError) {
+      toast.error(syncError instanceof Error ? syncError.message : "Unable to sync your recovery email.");
+    } finally {
+      setSyncingRecoveryEmail(false);
     }
   };
 
@@ -634,6 +676,44 @@ export default function PortalProfile() {
                   <div className="admin-field">
                     <span>Verified PNCL work email</span>
                     <p className="portal-profile-derived-value">{agentEmail || "Not available"}</p>
+                  </div>
+                </div>
+
+                <div className="portal-profile-form-grid">
+                  <label className="admin-field">
+                    <span>Personal recovery email</span>
+                    <input
+                      type="email"
+                      value={form.recoveryEmail}
+                      onChange={(event) => updateField("recoveryEmail", event.target.value)}
+                      placeholder="you@example.com"
+                      autoComplete="email"
+                      required
+                      aria-describedby="profile-recovery-email-help"
+                    />
+                    <small id="profile-recovery-email-help" className="portal-profile-field-help">
+                      Required. This personal address helps you recover your PNCL Google account. Do not use your @thepncl.com email.
+                    </small>
+                  </label>
+                  <div className="admin-field">
+                    <span>Google recovery status</span>
+                    <p className="portal-profile-derived-value">
+                      {profileRow?.recovery_email_sync_status === "synced"
+                        ? "Synced"
+                        : profileRow?.recovery_email_sync_status === "error"
+                          ? "Needs attention"
+                          : "Sync pending"}
+                    </p>
+                    {profileRow?.recovery_email_sync_status === "error" && (
+                      <button
+                        type="button"
+                        className="portal-panel-btn"
+                        onClick={() => void handleRecoveryRetry()}
+                        disabled={syncingRecoveryEmail}
+                      >
+                        {syncingRecoveryEmail ? "Syncing…" : "Retry Google sync"}
+                      </button>
+                    )}
                   </div>
                 </div>
 

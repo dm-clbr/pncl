@@ -3,6 +3,7 @@ import { getSupabaseClient, getSupabaseConfig } from "@/lib/supabase";
 import { lookupCountyFromZip, requireCountyFromZip } from "@/lib/us-zip-county";
 import { US_STATE_CODES } from "@/lib/us-states";
 import { formatAgentPhoneInput, isValidAgentPhoneNumber, requireValidAgentPhoneNumber } from "@/lib/agent-phone";
+import { normalizeRecoveryEmail, validateRecoveryEmail } from "@/lib/recovery-email";
 
 export const PROFILE_PHOTO_BUCKET = "portal-profile-photos";
 export const PROFILE_DOCUMENTS_BUCKET = "portal-profile-documents";
@@ -41,6 +42,10 @@ export interface PortalProfile {
   address_zip: string | null;
   county: string | null;
   phone_number: string | null;
+  recovery_email: string | null;
+  recovery_email_sync_status: "pending" | "synced" | "error" | null;
+  recovery_email_last_synced_at: string | null;
+  recovery_email_last_sync_error: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -82,6 +87,7 @@ export interface PortalProfileFormValues {
   addressState: string;
   addressZip: string;
   phoneNumber: string;
+  recoveryEmail: string;
 }
 
 function readMetadataString(user: User | null, key: string): string {
@@ -116,6 +122,7 @@ export function getDefaultProfileValues(user: User | null): PortalProfileFormVal
     addressState: "",
     addressZip: "",
     phoneNumber: "",
+    recoveryEmail: "",
   };
 }
 
@@ -133,6 +140,7 @@ export function profileToFormValues(profile: PortalProfile): PortalProfileFormVa
     addressState: profile.address_state ?? "",
     addressZip: profile.address_zip ?? "",
     phoneNumber: formatAgentPhoneInput(profile.phone_number ?? ""),
+    recoveryEmail: profile.recovery_email ?? "",
   };
 }
 
@@ -147,6 +155,8 @@ export async function resolveCountyForZip(
 /** Address fields required for contracting and the profile onboarding step. */
 export function validatePortalProfileContractFields(values: PortalProfileFormValues): void {
   requireValidAgentPhoneNumber(values.phoneNumber);
+  const recoveryError = validateRecoveryEmail(values.recoveryEmail);
+  if (recoveryError) throw new Error(recoveryError);
   if (!values.addressLine1.trim()) {
     throw new Error("Street address is required.");
   }
@@ -245,6 +255,7 @@ export async function savePortalProfile(
   validatePortalProfileContractFields(values);
   const county = await requireCountyFromZip(values.addressZip.trim());
   const phoneNumber = requireValidAgentPhoneNumber(values.phoneNumber);
+  const recoveryEmail = normalizeRecoveryEmail(values.recoveryEmail);
 
   let profilePhotoPath = existingPhotoPath;
   if (photoFile) {
@@ -266,6 +277,10 @@ export async function savePortalProfile(
     address_zip: values.addressZip.trim() || null,
     county,
     phone_number: phoneNumber,
+    recovery_email: recoveryEmail,
+    recovery_email_sync_status: "pending" as const,
+    recovery_email_last_synced_at: null,
+    recovery_email_last_sync_error: null,
     profile_photo_path: profilePhotoPath,
   };
 

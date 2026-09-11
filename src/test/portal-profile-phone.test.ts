@@ -19,6 +19,7 @@ const COMPLETE_FORM: PortalProfileFormValues = {
   firstName: "Avery",
   lastName: "Rivera",
   phoneNumber: "555-555-0100",
+  recoveryEmail: "avery.personal@example.com",
   shirtSize: "",
   poloShirtSize: "",
   hoodieSize: "",
