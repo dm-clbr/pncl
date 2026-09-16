@@ -14,6 +14,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -85,12 +86,14 @@ export default function PortalTile({
   forceUnpinned = false,
 }: PortalTileProps) {
   const { registerContent } = usePortalCamera();
+  const cardRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const revealRef = useRef<HTMLDivElement | null>(null);
   const dwell = useRef<number | null>(null);
 
   const [hovered, setHovered] = useState(false);
   const [pinned, setPinned] = useState(false);
+  const [flip, setFlip] = useState<"down" | "up">("down");
   const revealId = useId();
 
   useEffect(() => registerContent(contentRef.current), [registerContent]);
@@ -100,6 +103,22 @@ export default function PortalTile({
   }, [forceUnpinned, pinned]);
 
   const open = Boolean(reveal) && (pinned || hovered);
+
+  // The panel leaves the tile, so it has to choose a direction that stays on
+  // screen. Measured in a layout effect so it never paints the wrong way first.
+  useLayoutEffect(() => {
+    if (!open) return;
+    const card = cardRef.current;
+    const panel = revealRef.current;
+    if (!card || !panel) return;
+    const box = card.getBoundingClientRect();
+    const needed = panel.scrollHeight;
+    // The panel hangs off the card's edges, so room is measured from those
+    // edges, not from the card's top.
+    const roomBelow = window.innerHeight - box.bottom - 12;
+    const roomAbove = box.top - 12;
+    setFlip(needed > roomBelow && roomAbove > roomBelow ? "up" : "down");
+  }, [open]);
 
   // inert is not a React 18 prop, so it is set on the node directly. Keeping
   // Tier 3 mounted preserves its state; inert removes it from the tab order.
@@ -164,6 +183,7 @@ export default function PortalTile({
     "ptile",
     urgent ? "is-urgent" : "",
     open ? "is-open" : "",
+    open ? `opens-${flip}` : "",
     pinned ? "is-pinned" : "",
     reveal ? "is-actionable" : "",
     className,
@@ -173,6 +193,7 @@ export default function PortalTile({
 
   return (
     <div
+      ref={cardRef}
       className={classes}
       style={style}
       onPointerEnter={handleEnter}

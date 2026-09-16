@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
+  ArrowUpRight,
   Award,
   Building2,
   CalendarDays,
@@ -158,12 +159,14 @@ function SectionReveal({
           <li key={link.id}>
             {link.external ? (
               <a
-                className="ptile-link"
+                className="ptile-link is-external"
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 {link.title}
+                <ArrowUpRight size={13} strokeWidth={2} aria-hidden="true" />
+                <span className="ptile-sr">opens in a new tab</span>
               </a>
             ) : (
               <Link className="ptile-link" to={link.href}>

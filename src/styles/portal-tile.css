@@ -77,6 +77,15 @@
   cursor: pointer;
 }
 
+.ptile.is-open {
+  overflow: visible;
+  z-index: 40;
+}
+
+.ptile.is-pinned {
+  z-index: 50;
+}
+
 .ptile.is-actionable:hover,
 .ptile:has(:focus-visible),
 .ptile.is-pinned {
@@ -182,15 +191,7 @@
   transition: margin 200ms var(--ease-out);
 }
 
-/* Opening lifts the name to the top so the reveal gets the whole body, while
-   the name itself stays on screen as the tile's anchor. */
-.ptile.is-open .ptile-rest {
-  margin-top: calc(var(--u) * 2);
-}
-
-.ptile.is-open .ptile-icon {
-  display: none;
-}
+/* The card itself does not change at rest size or position when it opens. */
 
 /* Holds the meta line at rest and the reveal when open. */
 .ptile-swap {
@@ -202,7 +203,7 @@
 }
 
 .ptile.is-open .ptile-swap {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
 }
 
 .ptile-name {
@@ -233,17 +234,41 @@
 
 /* ── Tier 3, the reveal ─────────────────────────────────────────────────── */
 
+/* The panel leaves the card. Content that cannot fit 84px of tile interior
+   would otherwise clip, so it extends instead, sized to what it holds. Nothing
+   in the grid reflows: the panel floats above it. */
 .ptile-tier3 {
   position: absolute;
-  inset: 0;
+  left: -1px;
+  right: -1px;
+  z-index: 2;
+  padding: calc(var(--u) * 2) 0 0;
+  /* Never taller than the viewport allows; scrolls only past that. */
+  max-height: min(58vh, 420px);
   overflow-y: auto;
   scrollbar-width: none;
   opacity: 0;
-  transform: translateY(6px);
+  transform: translateY(-4px);
   pointer-events: none;
   transition:
-    opacity 180ms var(--ease-out),
-    transform 180ms var(--ease-out);
+    opacity 160ms var(--ease-out),
+    transform 160ms var(--ease-out);
+}
+
+.ptile.opens-down .ptile-tier3 {
+  top: 100%;
+}
+
+.ptile.opens-up .ptile-tier3 {
+  bottom: 100%;
+  padding: 0 0 calc(var(--u) * 2);
+  transform: translateY(4px);
+}
+
+.ptile.is-open .ptile-tier3 {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
 .ptile-tier3::-webkit-scrollbar {
@@ -257,13 +282,21 @@
 }
 
 /* The reveal grows upward over the empty interval once the tile is open. */
-.ptile.is-open .ptile-reveal-body {
+.ptile.is-open /* The panel reads as the card continuing, not as a tooltip floating near it. */
+.ptile-reveal-body {
   display: flex;
   flex-direction: column;
   gap: calc(var(--u) * 2);
+  padding: calc(var(--u) * 4);
+  border: 1px solid var(--tile-border-hot);
+  border-radius: var(--tile-radius);
+  background: #17171a;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 18px 36px rgba(0, 0, 0, 0.55),
+    0 40px 64px rgba(0, 0, 0, 0.4);
   font-size: var(--t-body);
   font-weight: 400;
-  letter-spacing: 0;
   line-height: 1.5;
   color: var(--c-t3-body);
 }
@@ -275,7 +308,7 @@
 .ptile-reveal-strong {
   font-size: var(--t-body);
   font-weight: 600;
-  line-height: 1.5;
+  line-height: 1.45;
   color: var(--c-t1-value);
 }
 
@@ -286,7 +319,7 @@
   line-height: 1;
   text-transform: uppercase;
   color: var(--c-t2-label);
-  margin: 0;
+  margin: 0 0 var(--u);
 }
 
 .ptile-reveal-list {
@@ -297,19 +330,35 @@
   flex-direction: column;
 }
 
+/* Rows are separated by hairlines so a long list stays readable. */
+.ptile-reveal-list li + li {
+  border-top: 1px solid var(--c-rule);
+}
+
+.ptile-reveal-list li {
+  font-size: var(--t-body);
+  line-height: 1.45;
+  color: var(--c-t3-body);
+  padding: calc(var(--u) * 1.5) 0;
+}
+
 .ptile-link {
   display: block;
   padding: calc(var(--u) * 1.5) 0;
   font-size: var(--t-body);
-  font-weight: 400;
-  line-height: 1.5;
-  color: var(--c-t3-body);
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--c-t1-value);
   text-decoration: none;
   transition: color 140ms var(--ease-out);
 }
 
+.ptile-reveal-list li:has(.ptile-link) {
+  padding: 0;
+}
+
 .ptile-link:hover {
-  color: var(--c-t1-value);
+  color: var(--portal-accent);
 }
 
 .ptile-link:focus-visible {
@@ -321,13 +370,17 @@
   display: inline-block;
   margin-top: var(--u);
   padding-bottom: 2px;
+  border: none;
   border-bottom: 1px solid rgba(255, 58, 30, 0.5);
+  background: none;
+  font-family: inherit;
   font-size: var(--t-body);
   font-weight: 600;
-  line-height: 1.5;
+  line-height: 1.45;
   color: var(--portal-accent);
   text-decoration: none;
   align-self: flex-start;
+  cursor: pointer;
 }
 
 .ptile-action:hover {
@@ -339,37 +392,26 @@
   outline-offset: 2px;
 }
 
-
-.ptile-meta {
-  transition:
-    opacity 180ms var(--ease-out),
-    transform 180ms var(--ease-out);
+.ptile-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(var(--u) * 2);
+  padding: calc(var(--u) * 1.5) 0;
+  font-size: var(--t-body);
+  line-height: 1.45;
+  color: var(--c-t3-body);
 }
 
-.ptile.is-open .ptile-meta {
-  opacity: 0;
-  transform: translateY(-6px);
-  pointer-events: none;
+.ptile-row + .ptile-row {
+  border-top: 1px solid var(--c-rule);
 }
 
-/* Reveal rows sit tighter than the reveal body default so more fit the tile. */
-.ptile-tier3 .ptile-link {
-  padding: 3px 0;
-  line-height: 1.35;
-}
-
-/* A row is padded once: by the link when there is one, by the li otherwise. */
-.ptile-tier3 .ptile-reveal-list li {
-  padding: 3px 0;
-  line-height: 1.35;
-}
-
-.ptile-tier3 .ptile-reveal-list li:has(.ptile-link) {
-  padding: 0;
-}
-
-.ptile-tier3 .ptile-reveal-body {
-  gap: var(--u);
+.ptile-row-count {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--c-t1-value);
+  flex-shrink: 0;
 }
 
 /* ── Data marks: flat geometry only, never in the Tier 1 position ───────── */
@@ -505,4 +547,33 @@ button.ptile-action {
 .ptile-tier3 .portal-referral-panel,
 .ptile-tier3 .portal-downline-panel {
   font-size: var(--t-body);
+}
+
+/* External links carry a mark so the destination is obvious before clicking. */
+.ptile-link.is-external {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--u) * 2);
+}
+
+.ptile-link.is-external svg {
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+.ptile-link.is-external:hover svg {
+  opacity: 1;
+}
+
+.ptile-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
