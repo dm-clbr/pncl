@@ -22,15 +22,15 @@ import {
 
 /* Spring rather than a plain lerp, so the camera carries momentum: it takes a
    moment to get going, overshoots slightly, and settles. */
-const STIFFNESS = 0.028;
-const DAMPING = 0.88;
-const SETTLE = 0.0004;
+const STIFFNESS = 0.0022;
+const DAMPING = 0.972;
+const SETTLE = 0.0002;
 
-const ROTATE_Y_DEG = 4.2;
-const ROTATE_X_DEG = -3;
-const DRIFT_X_PX = 7;
-const DRIFT_Y_PX = 5;
-const CAMERA_Z_PX = -18;
+const ROTATE_Y_DEG = 2.2;
+const ROTATE_X_DEG = -1.5;
+const DRIFT_X_PX = 4;
+const DRIFT_Y_PX = 3;
+const CAMERA_Z_PX = -14;
 
 /** Share of the inverse camera rotation that tile contents take back. */
 const PARALLAX = 0.35;
