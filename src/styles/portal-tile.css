@@ -557,14 +557,25 @@ button.ptile-action {
     0 18px 44px rgba(0, 0, 0, 0.42),
     0 40px 80px rgba(0, 0, 0, 0.28);
   /* Grows out of the card's edge rather than appearing next to it. */
-  transform-origin: top center;
-  animation: ptile-menu-in 260ms var(--ease-out);
+  animation: ptile-menu-in 320ms cubic-bezier(0.22, 1, 0.36, 1);
   font-family: var(--ff-sans, "Manrope", sans-serif);
 }
 
-/* The seam. The card loses the edge the menu joined, so the two read as one
-   surface rather than a card with something stuck to it. Which edge depends on
-   which way the menu opened. */
+/* An opaque card against a glass menu reads as two objects however flush they
+   are. While open the card takes the menu's material, so card and menu are one
+   continuous surface with one outline around the pair. */
+.ptile.is-open {
+  background: rgba(24, 21, 20, 0.38);
+  -webkit-backdrop-filter: blur(40px) saturate(165%);
+  backdrop-filter: blur(40px) saturate(165%);
+  border-color: rgba(255, 255, 255, 0.13);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42);
+}
+
+.ptile.is-open::before {
+  opacity: 0;
+}
+
 .ptile.is-open-below {
   border-bottom-color: transparent;
   border-bottom-left-radius: 0;
@@ -581,7 +592,6 @@ button.ptile-action {
   border-top: 1px solid rgba(255, 255, 255, 0.13);
   border-bottom: none;
   border-radius: var(--tile-radius) var(--tile-radius) 0 0;
-  transform-origin: bottom center;
   padding: 6px 6px 4px;
 }
 
@@ -595,10 +605,11 @@ button.ptile-action {
 
 @keyframes ptile-menu-in {
   from {
-    opacity: 0;
-    transform: scaleY(0.72) translateY(-6px);
+    clip-path: inset(0 0 100% 0);
+    opacity: 0.4;
   }
-  60% {
+  to {
+    clip-path: inset(0 0 0 0);
     opacity: 1;
   }
 }
@@ -609,10 +620,11 @@ button.ptile-action {
 
 @keyframes ptile-menu-in-up {
   from {
-    opacity: 0;
-    transform: scaleY(0.72) translateY(6px);
+    clip-path: inset(100% 0 0 0);
+    opacity: 0.4;
   }
-  60% {
+  to {
+    clip-path: inset(0 0 0 0);
     opacity: 1;
   }
 }
