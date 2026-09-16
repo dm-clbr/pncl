@@ -36,7 +36,15 @@
   color: var(--t-primary);
   font-family: var(--ff-sans, "Manrope", sans-serif);
 
-  /* Lit from the upper left, falling off to near-black at the lower right. */
+  /* Flat base. The wall light is the WebGL canvas above this, so every part of
+     the backdrop answers to the tuner. This colour is only what shows if WebGL2
+     is unavailable, or behind the canvas at low opacity. */
+  background: #0e0c0b;
+}
+
+/* The old static gradient, kept behind a class so it can be compared against
+   the canvas from the tuner. Off by default. */
+.portal-bento.has-static-base {
   background:
     radial-gradient(
       88% 78% at 16% 4%,
@@ -57,6 +65,7 @@
   inset: 0;
   pointer-events: none;
   z-index: 0;
+  opacity: var(--vignette, 1);
   background: radial-gradient(
     115% 105% at 20% 6%,
     transparent 0%,

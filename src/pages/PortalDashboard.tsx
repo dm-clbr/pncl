@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowUpRight,
@@ -955,14 +955,23 @@ export default function PortalDashboard() {
   });
 
   // Hidden backdrop tuner. Cmd/Ctrl + Shift + G in dev.
-  const { gradient, layerOpacity, blendMode, panel: tunerPanel } =
-    usePortalGradientTuner();
+  const {
+    gradient,
+    layerOpacity,
+    blendMode,
+    vignette,
+    staticBase,
+    panel: tunerPanel,
+  } = usePortalGradientTuner();
 
   return (
     <div className="home2-page">
       <div className="grain" aria-hidden="true" />
 
-      <main className="portal-bento portal-dash portal-home-dash">
+      <main
+        className={`portal-bento portal-dash portal-home-dash${staticBase ? " has-static-base" : ""}`}
+        style={{ "--vignette": vignette } as CSSProperties}
+      >
         {/* Living backdrop. Pauses itself offscreen, on a hidden tab, and under
             prefers-reduced-motion; the CSS gradient underneath is the fallback
             if WebGL2 is unavailable. */}
