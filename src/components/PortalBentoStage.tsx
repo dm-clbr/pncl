@@ -23,11 +23,11 @@ import {
 const LERP = 0.075;
 const SETTLE = 0.001;
 
-const ROTATE_Y_DEG = 9;
-const ROTATE_X_DEG = -6.5;
-const DRIFT_X_PX = 14;
-const DRIFT_Y_PX = 10;
-const CAMERA_Z_PX = -30;
+const ROTATE_Y_DEG = 4.2;
+const ROTATE_X_DEG = -3;
+const DRIFT_X_PX = 7;
+const DRIFT_Y_PX = 5;
+const CAMERA_Z_PX = -18;
 
 /** Share of the inverse camera rotation that tile contents take back. */
 const PARALLAX = 0.35;

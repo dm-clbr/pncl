@@ -4,18 +4,7 @@
    Scoped to .portal-bento so nothing here reaches the rest of the portal.
    ========================================================================== */
 
-@font-face {
-  font-family: "Departure Mono";
-  src:
-    url("/fonts/DepartureMono-Regular.woff2") format("woff2"),
-    url("/fonts/DepartureMono-Regular.woff") format("woff");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
-
 .portal-bento {
-  --dm: "Departure Mono", ui-monospace, monospace;
 
   /* Tile surface. Darkest point is #0E0C0B; there is no pure black here. */
   --tile-top: #141414;
@@ -119,7 +108,6 @@
 
 .portal-bento-title {
   margin: 0;
-  font-family: var(--dm);
   font-size: 21px;
   font-weight: 400;
   line-height: 1;
@@ -132,7 +120,6 @@
   display: inline-flex;
   align-items: center;
   gap: 9px;
-  font-family: var(--dm);
   font-size: 13px;
   letter-spacing: 0.04em;
   color: rgba(255, 255, 255, 0.45);
@@ -180,7 +167,6 @@
 }
 
 .portal-bento-profile-mail {
-  font-family: var(--dm);
   font-size: 10px;
   letter-spacing: 0.06em;
   color: var(--t-label);
@@ -210,7 +196,6 @@
 }
 
 .portal-bento-avatar span {
-  font-family: var(--dm);
   font-size: 11px;
   color: var(--t-label);
 }
@@ -251,258 +236,6 @@
   transform-style: preserve-3d;
 }
 
-/* ── Tile ───────────────────────────────────────────────────────────────── */
-
-.portal-tile-card {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  box-sizing: border-box;
-  border: 1px solid var(--tile-border);
-  border-radius: var(--tile-radius);
-  background: linear-gradient(180deg, var(--tile-top) 0%, var(--tile-bottom) 100%);
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  text-decoration: none;
-  overflow: hidden;
-  min-height: 0;
-  transform-style: preserve-3d;
-
-  /* Thickness comes from stacked shadows, not one large blur. */
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 18px 28px rgba(0, 0, 0, 0.55),
-    0 44px 70px rgba(0, 0, 0, 0.45);
-
-  transform: translateZ(var(--tile-depth, 0px));
-  transition:
-    transform 420ms var(--ease-out),
-    box-shadow 420ms var(--ease-out),
-    border-color 420ms var(--ease-out);
-}
-
-/* Top inset highlight, faded out by the vertical midpoint. */
-.portal-tile-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  padding: 1px 0 0;
-  background: linear-gradient(180deg, var(--tile-inset) 0%, transparent 50%);
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-}
-
-.portal-tile-card.is-actionable {
-  cursor: pointer;
-}
-
-.portal-tile-card.is-actionable:hover,
-.portal-tile-card.is-actionable:focus-visible,
-.portal-tile-card:focus-within {
-  transform: translateZ(calc(var(--tile-depth, 0px) + 48px)) scale(1.015);
-  border-color: var(--tile-border-hot);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.08) inset,
-    0 60px 90px rgba(0, 0, 0, 0.6);
-}
-
-.portal-tile-card.is-expanded {
-  transform: translateZ(calc(var(--tile-depth, 0px) + 60px));
-  border-color: var(--tile-border-hot);
-}
-
-.portal-tile-card:focus-visible,
-.portal-tile-trigger:focus-visible {
-  outline: 2px solid var(--portal-accent);
-  outline-offset: 3px;
-}
-
-.portal-tile-card.is-urgent {
-  border-color: rgba(255, 58, 30, 0.45);
-}
-
-.portal-tile-content {
-  position: absolute;
-  inset: 16px;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  gap: 8px;
-  transform-style: preserve-3d;
-}
-
-.portal-tile-head {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  flex-shrink: 0;
-  line-height: 1.25;
-}
-
-
-.portal-tile-index {
-  font-family: var(--dm);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  color: var(--t-index);
-}
-
-.portal-tile-name {
-  font-family: var(--dm);
-  font-size: 11px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--t-title);
-}
-
-.portal-tile-aside {
-  margin-left: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--dm);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--t-label);
-}
-
-.portal-tile-trigger {
-  display: block;
-  width: 100%;
-  padding: 0;
-  border: none;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.portal-tile-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  align-items: flex-start;
-  gap: 6px;
-  overflow: hidden;
-}
-
-.portal-tile-body > .pdot-grid {
-  align-self: stretch;
-  width: 100%;
-  flex: 0 0 auto;
-  height: clamp(30px, 7vh, 56px);
-}
-
-/* Below this the strip is unreadable, so it goes rather than squashing. */
-@media (max-height: 620px) {
-  .portal-tile-body > .pdot-grid {
-    display: none;
-  }
-}
-
-/* Expanded panels scroll inside the tile so the grid never reflows. */
-.portal-tile-panel-scroll {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  margin: 0 -6px;
-  padding: 0 6px;
-}
-
-.portal-tile-stats {
-  display: flex;
-  align-items: flex-end;
-  gap: 14px;
-  flex-shrink: 0;
-  margin-top: auto;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.portal-tile-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.portal-tile-stat-label {
-  font-family: var(--dm);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.portal-tile-stat-value {
-  font-family: var(--dm);
-  font-size: 21px;
-  line-height: 1;
-  letter-spacing: 0.01em;
-  font-variant-numeric: tabular-nums;
-  color: var(--t-primary);
-}
-
-.portal-tile-stat-value.is-accent {
-  color: var(--portal-accent);
-}
-
-/* ── Display type inside tiles ──────────────────────────────────────────── */
-
-.portal-tile-display {
-  font-family: var(--dm);
-  font-size: 21px;
-  line-height: 1.1;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--t-primary);
-  overflow-wrap: anywhere;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.portal-tile-lede {
-  font-size: 11.5px;
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.66);
-  margin: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.portal-tile-note {
-  font-family: var(--dm);
-  font-size: 9.5px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.55);
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  flex-shrink: 0;
-}
-
 .portal-pill {
   display: inline-flex;
   align-items: center;
@@ -510,7 +243,6 @@
   padding: 4px 10px;
   border-radius: 999px;
   border: 1px solid rgba(255, 58, 30, 0.5);
-  font-family: var(--dm);
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -523,136 +255,6 @@
   border-radius: 50%;
   background: var(--portal-accent);
   flex-shrink: 0;
-}
-
-/* ── Dot matrix ─────────────────────────────────────────────────────────── */
-
-.pdot-grid {
-  display: block;
-  max-width: 100%;
-}
-
-.pdot-off {
-  fill: var(--dot-off);
-}
-
-.pdot-on {
-  fill: var(--dot-on);
-}
-
-.pdot-accent {
-  fill: var(--portal-accent);
-}
-
-.pdot-ok {
-  fill: var(--portal-success);
-}
-
-.pdot-gauge {
-  margin-inline: auto;
-}
-
-.pdot-inline {
-  max-width: 100%;
-}
-
-.portal-gauge {
-  position: relative;
-  flex: 0 0 auto;
-  height: 100%;
-  aspect-ratio: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 0;
-}
-
-.portal-gauge > .pdot-grid {
-  width: 100%;
-  height: 100%;
-}
-
-.portal-gauge-value {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  pointer-events: none;
-}
-
-.portal-gauge-number {
-  font-family: var(--dm);
-  font-size: clamp(15px, 2.1vw, 22px);
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  color: var(--t-primary);
-}
-
-.portal-gauge-unit {
-  font-family: var(--dm);
-  font-size: 9px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.portal-legend {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.portal-legend-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--dm);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.62);
-}
-
-.portal-legend-swatch {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--dot-on);
-  flex-shrink: 0;
-}
-
-.portal-legend-swatch.is-accent {
-  background: var(--portal-accent);
-}
-
-.portal-gauge-split {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
-
-/* Once a tile is expanded the list is the point, so the decorative strip gives
-   its height back to the panel. */
-.portal-tile-card.is-expanded .portal-tile-body > .pdot-grid {
-  display: none;
-}
-
-.portal-tile-card.is-expanded .portal-tile-body {
-  flex: 0 0 auto;
-}
-
-/* The unit label crowds the ring once the gauge is small. */
-@media (max-width: 1320px) {
-  .portal-gauge-unit {
-    display: none;
-  }
 }
 
 /* ── Footer row ─────────────────────────────────────────────────────────── */
@@ -677,7 +279,6 @@
   border: none;
   background: none;
   color: rgba(255, 255, 255, 0.62);
-  font-family: var(--dm);
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -744,11 +345,6 @@
     opacity: 1;
     transform: translateY(0) translateZ(var(--tile-depth, 0px));
   }
-}
-
-.portal-tile-card {
-  animation: portal-tile-in 520ms var(--ease-out) backwards;
-  animation-delay: calc(var(--tile-order, 0) * 18ms);
 }
 
 /* ── Responsive ─────────────────────────────────────────────────────────── */
@@ -872,30 +468,9 @@
   }
 }
 
-/* Short viewports: drop the illustration before the numbers. */
-@media (max-height: 680px) {
-  .portal-tile-body > .pdot-grid {
-    display: none;
-  }
-}
-
 /* Touch and coarse pointers render the grid flat; the stage sets data-tilt. */
 .portal-stage[data-tilt="off"] {
   perspective: none;
-}
-
-.portal-stage[data-tilt="off"] .portal-scene,
-.portal-stage[data-tilt="off"] .portal-tile-content {
-  transform: none !important;
-}
-
-.portal-stage[data-tilt="off"] .portal-tile-card {
-  transform: none;
-}
-
-.portal-stage[data-tilt="off"] .portal-tile-card.is-actionable:hover,
-.portal-stage[data-tilt="off"] .portal-tile-card.is-actionable:focus-visible {
-  transform: none;
 }
 
 @media (pointer: coarse) {
@@ -930,19 +505,9 @@
   .portal-tile-card.is-actionable:focus-visible {
     border-color: var(--tile-border-hot);
     box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.08) inset,
-      0 60px 90px rgba(0, 0, 0, 0.6);
+      0 1px 0 rgba(255, 255, 255, 0.07) inset,
+      0 14px 26px rgba(0, 0, 0, 0.44);
   }
-}
-
-/* ── Tile internals ─────────────────────────────────────────────────────── */
-
-.portal-tile-display-sm {
-  font-size: 15px;
-  line-height: 1.2;
-  text-transform: none;
-  letter-spacing: 0.01em;
-  -webkit-line-clamp: 2;
 }
 
 .portal-agent-identity {
@@ -952,10 +517,6 @@
   min-width: 0;
   width: 100%;
   flex-shrink: 0;
-}
-
-.portal-agent-identity .portal-tile-note {
-  display: none;
 }
 
 .portal-agent-identity .portal-bento-avatar {
@@ -980,17 +541,9 @@
   white-space: nowrap;
 }
 
-.portal-agent-identity .portal-tile-note {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 100%;
-}
-
 .portal-step-labels {
   display: flex;
   gap: 26px;
-  font-family: var(--dm);
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1001,54 +554,11 @@
   color: var(--portal-success);
 }
 
-.portal-tile-alert strong {
-  display: block;
-  font-family: var(--dm);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--portal-accent);
-  margin-bottom: 5px;
-}
-
 .portal-required-links {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 6px;
-}
-
-.portal-tile-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  margin-top: 6px;
-  padding-bottom: 2px;
-  border-bottom: 1px solid rgba(255, 58, 30, 0.5);
-  font-family: var(--dm);
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--portal-accent);
-  text-decoration: none;
-  transition: border-color 0.18s var(--ease-out);
-}
-
-.portal-tile-cta:hover {
-  border-bottom-color: var(--portal-accent);
-}
-
-.portal-tile-cta:focus-visible {
-  outline: 2px solid var(--portal-accent);
-  outline-offset: 3px;
-}
-
-/* Panels reuse the existing portal list components, retoned for the dark tile. */
-.portal-bento .portal-tile-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding: 4px 0 0;
 }
 
 .portal-bento .portal-sub-link {
@@ -1088,19 +598,6 @@
   color: rgba(255, 255, 255, 0.58);
 }
 
-.portal-tile-subgroup + .portal-tile-subgroup {
-  margin-top: 14px;
-}
-
-.portal-tile-subgroup-title {
-  margin: 0 0 2px;
-  font-family: var(--dm);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.5);
-}
-
 .portal-bento .portal-incentives-loading {
   display: flex;
   align-items: center;
@@ -1130,7 +627,6 @@
   border-bottom: 2px solid transparent;
   border-radius: 0;
   color: rgba(255, 255, 255, 0.55);
-  font-family: var(--dm);
   font-size: 11px;
   font-weight: 400;
   letter-spacing: 0.12em;
