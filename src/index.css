@@ -21,6 +21,10 @@
   --border-subtle: rgba(240, 237, 228, 0.06);
   --hover-bg: rgba(240, 237, 228, 0.03);
   --radius: 0px;
+
+  /* Bento dashboard accent. Single swap point if PNCL rejects the red. */
+  --portal-accent: #FF3A1E;
+  --portal-success: #3BD66B;
 }
 
 html { scroll-behavior: smooth; font-size: 16px; }
