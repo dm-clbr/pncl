@@ -2,9 +2,9 @@
  * A card in the portal bento grid, and the menu it opens.
  *
  * Interaction contract: click, tap, Enter or Space opens the menu and it stays
- * open. Escape, a click outside, or opening another card closes it. Hover is a
- * preview only, so nothing depends on it; the dashboard has to behave the same
- * on a phone as on a desktop.
+ * open. Escape, a click outside, or opening another card closes it. Hover does
+ * nothing but light the card, so the dashboard behaves the same on a phone as
+ * on a desktop and nothing opens or closes by accident.
  *
  * The menu renders into a flat overlay outside the 3D stage rather than inside
  * the card. A panel positioned inside a rotated preserve-3d scene is just
@@ -29,12 +29,6 @@ import { usePortalCamera } from "@/components/PortalBentoStage";
 
 /** translateZ per grid row, so lower rows sit nearer the camera. */
 const ROW_DEPTH_PX = 12 / 3;
-
-/** Hover has to linger before it previews, so crossing the grid stays quiet. */
-const HOVER_DWELL_MS = 200;
-
-/** Grace on the way out, so the pointer can travel into the menu. */
-const HOVER_CLOSE_MS = 220;
 
 const MENU_GAP = 8;
 const MENU_MIN_WIDTH = 248;
@@ -130,23 +124,12 @@ export default function PortalTile({
   const cardRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
-  const dwell = useRef<number | null>(null);
-  const closeTimer = useRef<number | null>(null);
 
   const [box, setBox] = useState<MenuBox | null>(null);
   const menuId = useId();
   const hasMenu = Boolean(reveal);
 
   useEffect(() => registerContent(contentRef.current), [registerContent]);
-
-  const clearTimers = useCallback(() => {
-    if (dwell.current !== null) window.clearTimeout(dwell.current);
-    if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
-    dwell.current = null;
-    closeTimer.current = null;
-  }, []);
-
-  useEffect(() => clearTimers, [clearTimers]);
 
   // The menu lives outside the stage, so it has to follow its card while the
   // camera drifts. One rAF loop, only while this card's menu is open.
@@ -199,27 +182,10 @@ export default function PortalTile({
     };
   }, [open, onOpenChange]);
 
-  const handleEnter = useCallback(() => {
-    if (!hasMenu || open) return;
-    clearTimers();
-    dwell.current = window.setTimeout(() => onOpenChange?.(true), HOVER_DWELL_MS);
-  }, [hasMenu, open, clearTimers, onOpenChange]);
-
-  const handleLeave = useCallback(() => {
-    if (!hasMenu) return;
-    clearTimers();
-    closeTimer.current = window.setTimeout(() => {
-      const overCard = cardRef.current?.matches(":hover");
-      const overMenu = menuRef.current?.matches(":hover");
-      if (!overCard && !overMenu) onOpenChange?.(false);
-    }, HOVER_CLOSE_MS);
-  }, [hasMenu, clearTimers, onOpenChange]);
-
   const toggle = useCallback(() => {
     if (!hasMenu) return;
-    clearTimers();
     onOpenChange?.(!open);
-  }, [hasMenu, open, clearTimers, onOpenChange]);
+  }, [hasMenu, open, onOpenChange]);
 
   const onKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -253,8 +219,6 @@ export default function PortalTile({
         ref={cardRef}
         className={classes}
         style={style}
-        onPointerEnter={handleEnter}
-        onPointerLeave={handleLeave}
         onClick={toggle}
         onKeyDown={onKeyDown}
         tabIndex={hasMenu ? 0 : -1}
@@ -305,8 +269,6 @@ export default function PortalTile({
             className={`ptile-menu is-${box?.placement ?? "below"}`}
             role="group"
             aria-label={title}
-            onPointerEnter={clearTimers}
-            onPointerLeave={handleLeave}
             style={{
               left: box?.left ?? -9999,
               top: box?.top ?? -9999,
