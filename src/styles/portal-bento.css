@@ -827,3 +827,65 @@
   border-color: var(--portal-accent);
   color: var(--portal-accent);
 }
+
+.gtuner-palettes {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 3px;
+}
+
+.gtuner-palettes button {
+  height: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.gtuner-palettes button:hover {
+  border-color: var(--portal-accent);
+}
+
+.gtuner-stop {
+  position: relative;
+  display: inline-flex;
+}
+
+.gtuner-stop-x {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--portal-accent);
+  color: #fff;
+  cursor: pointer;
+}
+
+.gtuner-stop:hover .gtuner-stop-x {
+  display: inline-flex;
+}
+
+.gtuner-stop-add {
+  width: 30px;
+  height: 22px;
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+  border-radius: 5px;
+  background: none;
+  color: rgba(255, 255, 255, 0.6);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.gtuner-stop-add:hover {
+  border-color: var(--portal-accent);
+  color: var(--portal-accent);
+}
