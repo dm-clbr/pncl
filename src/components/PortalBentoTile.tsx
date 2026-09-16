@@ -42,13 +42,15 @@ export interface PortalTileProps {
   row: number;
   /** Reading-order position, used for the entry stagger. */
   order: number;
-  /** Tier 1: the single glance element. */
-  tier1: ReactNode;
-  /** Tier 2: the scan row, replaced by the reveal. */
-  tier2?: ReactNode;
+  /** One short supporting line under the name. Everything else is a reveal. */
+  meta?: ReactNode;
+  /** Marks the meta line as needing action. */
+  accent?: boolean;
   /** Tier 3: hidden at rest. */
   reveal?: ReactNode;
-  /** Sits at the tile's top right; the only non-type element allowed at rest. */
+  /** A small outline mark left of the title, so tiles are tellable apart. */
+  icon?: ReactNode;
+  /** Sits at the tile's top right. */
   headerAside?: ReactNode;
   /** Count shown at the far right of an index tile's header. */
   headerCount?: ReactNode;
@@ -70,9 +72,10 @@ export default function PortalTile({
   title,
   row,
   order,
-  tier1,
-  tier2,
+  meta,
+  accent = false,
   reveal,
+  icon,
   headerAside,
   headerCount,
   urgent = false,
@@ -187,20 +190,30 @@ export default function PortalTile({
           <span className="ptile-index" aria-hidden="true">
             {formatIndex(index)}
           </span>
-          <span className="ptile-title">{title}</span>
           {headerCount !== undefined && (
             <span className="ptile-head-count">{headerCount}</span>
           )}
           {headerAside && <span className="ptile-head-aside">{headerAside}</span>}
         </div>
 
-        <div className="ptile-tier1">{tier1}</div>
+        {/* The name is the anchor and stays put; only the line under it swaps. */}
+        <div className="ptile-rest">
+          {icon && (
+            <span className="ptile-icon" aria-hidden="true">
+              {icon}
+            </span>
+          )}
+          <span className="ptile-name">{title}</span>
+        </div>
 
-        <div className="ptile-foot">
-          {tier2 && (
-            <div className="ptile-tier2" aria-hidden={open ? "true" : undefined}>
-              {tier2}
-            </div>
+        <div className="ptile-swap">
+          {meta && (
+            <span
+              className={`ptile-meta${accent ? " is-accent" : ""}`}
+              aria-hidden={open ? "true" : undefined}
+            >
+              {meta}
+            </span>
           )}
           {reveal && (
             <div className="ptile-tier3" id={revealId} ref={revealRef}>
@@ -233,50 +246,4 @@ export function PortalTileStats({ stats }: { stats: PortalTileStat[] }) {
   );
 }
 
-/** Tier 1 for a metric tile: one value, one label naming it. */
-export function PortalTileMetric({
-  value,
-  label,
-  suffix,
-  accent = false,
-  success = false,
-}: {
-  value: ReactNode;
-  label: string;
-  suffix?: string;
-  accent?: boolean;
-  success?: boolean;
-}) {
-  return (
-    <>
-      <span
-        className={`ptile-display${accent ? " is-accent" : ""}${
-          success ? " is-success" : ""
-        }`}
-      >
-        {value}
-        {suffix && <span className="ptile-display-suffix">{suffix}</span>}
-      </span>
-      <span
-        className={`ptile-display-label${accent ? " is-accent" : ""}${
-          success ? " is-success" : ""
-        }`}
-      >
-        {label}
-      </span>
-    </>
-  );
-}
 
-/** Tier 1 for an index tile: a flush-left list of item titles, nothing else. */
-export function PortalTileList({ items }: { items: string[] }) {
-  return (
-    <ul className="ptile-list">
-      {items.map((item) => (
-        <li className="ptile-list-item" key={item}>
-          {item}
-        </li>
-      ))}
-    </ul>
-  );
-}

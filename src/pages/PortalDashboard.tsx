@@ -1,6 +1,39 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ClipboardList, LogOut, Shield, X } from "lucide-react";
+import {
+  Award,
+  Building2,
+  CalendarDays,
+  ClipboardList,
+  FileSignature,
+  GraduationCap,
+  Link2,
+  LogOut,
+  MapPinned,
+  Palette,
+  Shield,
+  TrendingUp,
+  UserRound,
+  Users,
+  Wrench,
+  X,
+} from "lucide-react";
+
+/** 14px outline marks, one per tile, so a tile is identifiable at a glance. */
+const ICON = { size: 18, strokeWidth: 1.75 } as const;
+
+/** Picks a mark for a server-driven section by its id or title. */
+function sectionIcon(id: string, title: string) {
+  const key = `${id} ${title}`.toLowerCase();
+  if (key.includes("script")) return <ClipboardList {...ICON} />;
+  if (key.includes("track") || key.includes("sheet")) return <TrendingUp {...ICON} />;
+  if (key.includes("brand")) return <Palette {...ICON} />;
+  if (key.includes("incentive")) return <Award {...ICON} />;
+  if (key.includes("train") || key.includes("resource")) return <GraduationCap {...ICON} />;
+  if (key.includes("account")) return <UserRound {...ICON} />;
+  if (key.includes("tool") || key.includes("sales")) return <Wrench {...ICON} />;
+  return <Link2 {...ICON} />;
+}
 import PNCLLogo from "@/components/PNCLLogo";
 import PortalOnboardingChecklist from "@/components/PortalOnboardingChecklist";
 import { useAuth } from "@/contexts/AuthContext";
@@ -50,11 +83,7 @@ import PortalBrandAssetsList from "@/components/PortalBrandAssetsList";
 import PortalDashboardFilesList from "@/components/PortalDashboardFilesList";
 import PortalPrimaryNav from "@/components/PortalPrimaryNav";
 import PortalBentoStage from "@/components/PortalBentoStage";
-import PortalTile, {
-  PortalTileList,
-  PortalTileMetric,
-  PortalTileStats,
-} from "@/components/PortalBentoTile";
+import PortalTile from "@/components/PortalBentoTile";
 import { usePortalIncentives } from "@/hooks/usePortalIncentives";
 import { usePortalBrandAssets } from "@/hooks/usePortalBrandAssets";
 import { usePortalProfile } from "@/hooks/usePortalProfile";
@@ -89,11 +118,13 @@ const SALES_TOOLS_ID = "sales-tools";
 const RESOURCE_SECTION_IDS = ["training", "account", "pncl"];
 const GRID_COLUMNS = 4;
 
-/** Tier 1 of an index tile shows at most this many item titles. */
-const LIST_LIMIT = 3;
-
 function pad(value: number): string {
   return String(value).padStart(2, "0");
+}
+
+/** "1 item", "7 items". */
+function count(n: number, noun: string): string {
+  return `${n} ${noun}${n === 1 ? "" : "s"}`;
 }
 
 function sectionItems(section: PortalDashboardSection): string[] {
@@ -488,9 +519,8 @@ export default function PortalDashboard() {
     reveal: ReactNode,
     emptyCopy: string,
   ) => {
+    const icon = sectionIcon(id, title);
     const spot = slot();
-    const shown = items.slice(0, LIST_LIMIT);
-    const remainder = items.length - shown.length;
     return (
       <PortalTile
         key={id}
@@ -498,19 +528,11 @@ export default function PortalDashboard() {
         row={spot.row}
         order={spot.order}
         title={title}
+        icon={icon}
         headerCount={pad(items.length)}
         ariaLabel={`${title}, ${items.length} items`}
         {...pinProps(id)}
-        tier1={
-          shown.length > 0 ? (
-            <PortalTileList items={shown} />
-          ) : (
-            <p className="ptile-line ptile-line-muted">{emptyCopy}</p>
-          )
-        }
-        tier2={
-          remainder > 0 ? <span className="ptile-micro">{remainder} more</span> : undefined
-        }
+        meta={items.length > 0 ? count(items.length, "item") : emptyCopy}
         reveal={<div className="ptile-reveal-body">{reveal}</div>}
       />
     );
@@ -526,6 +548,7 @@ export default function PortalDashboard() {
         row={spot.row}
         order={spot.order}
         title="Agent Status"
+        icon={<UserRound {...ICON} />}
         ariaLabel={`Agent status, current stage ${phaseLabel}`}
         {...pinProps("agent")}
         headerAside={
@@ -533,18 +556,7 @@ export default function PortalDashboard() {
             {photoUrl ? <img src={photoUrl} alt="" /> : <span>{initials}</span>}
           </span>
         }
-        tier1={<PortalTileMetric value={phaseLabel} label="Current stage" />}
-        tier2={
-          <PortalTileStats
-            stats={[
-              { label: "Steps", value: `${completedTodoCount}/${resolvedTodos.length}` },
-              {
-                label: "Tier",
-                value: profile?.comp_level != null ? String(profile.comp_level) : "None",
-              },
-            ]}
-          />
-        }
+        meta={`${completedTodoCount} of ${resolvedTodos.length} steps complete`}
         reveal={
           <>
             <span className="ptile-reveal-strong">{displayName}</span>
@@ -568,17 +580,10 @@ export default function PortalDashboard() {
         row={spot.row}
         order={spot.order}
         title="Onboarding Progress"
+        icon={<TrendingUp {...ICON} />}
         ariaLabel={`Onboarding progress ${progressPercent} percent complete`}
         {...pinProps("progress")}
-        tier1={<PortalTileMetric value={progressPercent} suffix="%" label="Complete" />}
-        tier2={
-          <PortalTileStats
-            stats={[
-              { label: "Remaining", value: pad(pendingTodos.length) },
-              { label: "Stage", value: phaseLabel },
-            ]}
-          />
-        }
+        meta={`${progressPercent}% complete, ${phaseLabel}`}
         reveal={
           <>
             {phaseBreakdown.map((phase) => (
@@ -616,41 +621,17 @@ export default function PortalDashboard() {
         row={spot.row}
         order={spot.order}
         title="Required Forms"
+        icon={<FileSignature {...ICON} />}
         urgent={hasResignNotice || pendingRequiredForms}
         ariaLabel={`Required forms, ${outstandingRequired} outstanding`}
         {...pinProps("forms")}
-        tier1={
-          <PortalTileMetric
-            value={outstandingRequired}
-            label={
-              hasResignNotice ? "Action needed" : allSigned ? "All signed" : "Outstanding"
-            }
-            accent={hasResignNotice}
-            success={allSigned && !hasResignNotice}
-          />
-        }
-        tier2={
-          <div className="ptile-markers">
-            {[
-              { label: "ICA", done: icaSubmitted, action: showIcaResignNotice },
-              { label: "W-9", done: w9Submitted, action: showW9ResignNotice },
-              {
-                label: "Deposit",
-                done: directDepositSubmitted,
-                action: showDirectDepositResignNotice,
-              },
-            ].map((marker) => (
-              <div
-                key={marker.label}
-                className={`ptile-marker${marker.done ? " is-done" : ""}${
-                  marker.action ? " is-action" : ""
-                }`}
-              >
-                <span className="ptile-marker-label">{marker.label}</span>
-                <span className="ptile-marker-rule" />
-              </div>
-            ))}
-          </div>
+        accent={hasResignNotice || outstandingRequired > 0}
+        meta={
+          hasResignNotice
+            ? "Action needed"
+            : outstandingRequired === 0
+              ? "All signed"
+              : `${outstandingRequired} outstanding`
         }
         reveal={
           hasResignNotice ? (
@@ -701,21 +682,10 @@ export default function PortalDashboard() {
         row={spot.row}
         order={spot.order}
         title="Carrier Appointments"
+        icon={<Building2 {...ICON} />}
         ariaLabel={`${portalCarriers.length} carrier appointments`}
         {...pinProps("carriers")}
-        tier1={<PortalTileMetric value={portalCarriers.length} label="Carriers" />}
-        tier2={
-          <PortalTileStats
-            stats={[
-              { label: "Automatic", value: pad(carrierSplit.automatic) },
-              {
-                label: "Action",
-                value: pad(carrierSplit.action),
-                accent: carrierSplit.action > 0,
-              },
-            ]}
-          />
-        }
+        meta={count(portalCarriers.length, "appointment")}
         reveal={
           <>
             {portalCarriers.length === 0 ? (
@@ -765,14 +735,10 @@ export default function PortalDashboard() {
         row={spot.row}
         order={spot.order}
         title="Team Progress"
+        icon={<Users {...ICON} />}
         ariaLabel={`${teamActive} team members in progress`}
         {...pinProps("team")}
-        tier1={<PortalTileMetric value={teamActive} label="In progress" />}
-        tier2={
-          <PortalTileStats
-            stats={[{ label: "Team", value: pad(downlineMembers.length) }]}
-          />
-        }
+        meta={`${teamActive} of ${downlineMembers.length} in progress`}
         reveal={<PortalDownlinePanel embedded />}
       />,
     );
@@ -789,14 +755,10 @@ export default function PortalDashboard() {
         row={spot.row}
         order={spot.order}
         title="Referral Links"
+        icon={<Link2 {...ICON} />}
         ariaLabel={`${activeInvites.length} active referral links`}
         {...pinProps("referrals")}
-        tier1={<PortalTileMetric value={activeInvites.length} label="Active links" />}
-        tier2={
-          latest?.recipientLabel ? (
-            <span className="ptile-stat-value">{latest.recipientLabel}</span>
-          ) : undefined
-        }
+        meta={count(activeInvites.length, "active link")}
         reveal={<PortalReferralPanel embedded />}
       />,
     );
@@ -863,20 +825,12 @@ export default function PortalDashboard() {
         row={spot.row}
         order={spot.order}
         title="Calendar"
+        icon={<CalendarDays {...ICON} />}
         ariaLabel="Calendar preview"
         {...pinProps("calendar")}
-        tier1={
-          stateLine ? (
-            <p className="ptile-line ptile-line-muted">{stateLine}</p>
-          ) : (
-            <PortalTileMetric
-              value={formatCalendarEventTime(nextEvent)}
-              label={formatCalendarEventDate(nextEvent)}
-            />
-          )
-        }
-        tier2={
-          nextEvent ? <span className="ptile-stat-value">{nextEvent.title}</span> : undefined
+        meta={
+          stateLine ??
+          `${formatCalendarEventDate(nextEvent)}, ${formatCalendarEventTime(nextEvent)}`
         }
         reveal={
           <>
@@ -936,9 +890,10 @@ export default function PortalDashboard() {
         row={spot.row}
         order={spot.order}
         title="State Map"
+        icon={<MapPinned {...ICON} />}
         ariaLabel={`${licensedStates} licensed states`}
         {...pinProps("state-map")}
-        tier1={<PortalTileMetric value={licensedStates} label="Licensed states" />}
+        meta={count(licensedStates, "licensed state")}
         reveal={
           <>
             <p>State availability and your licence numbers.</p>
