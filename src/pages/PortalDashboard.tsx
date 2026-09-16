@@ -1,18 +1,15 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import {
-  ArrowUpRight,
-  ClipboardList,
-  LogOut,
-  Shield,
-  X,
-} from "lucide-react";
+import { ClipboardList, LogOut, Shield, X } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
 import PortalOnboardingChecklist from "@/components/PortalOnboardingChecklist";
 import { useAuth } from "@/contexts/AuthContext";
 import { PORTAL_SECTIONS } from "@/lib/portal-links";
 import { usePortalDashboardTabs } from "@/hooks/usePortalDashboardTabs";
-import { isLinksDashboardSection, isDownloadsDashboardSection } from "@/lib/portal-dashboard-section-types";
+import {
+  isLinksDashboardSection,
+  isDownloadsDashboardSection,
+} from "@/lib/portal-dashboard-section-types";
 import type { PortalDashboardSection } from "@/lib/portal-dashboard-tabs";
 import PortalReferralPanel from "@/components/PortalReferralPanel";
 import PortalDownlinePanel from "@/components/PortalDownlinePanel";
@@ -34,6 +31,9 @@ import { usePortalW9 } from "@/hooks/usePortalW9";
 import { usePortalDirectDeposit } from "@/hooks/usePortalDirectDeposit";
 import { usePortalIca } from "@/hooks/usePortalIca";
 import { usePortalGoogleCalendar } from "@/hooks/usePortalGoogleCalendar";
+import { usePortalDownline } from "@/hooks/usePortalDownline";
+import { usePortalReferrals } from "@/hooks/usePortalReferrals";
+import { isReferralInviteCopyable } from "@/lib/portal-referrals";
 import {
   calendarEventSortValue,
   formatCalendarEventDate,
@@ -50,20 +50,11 @@ import PortalBrandAssetsList from "@/components/PortalBrandAssetsList";
 import PortalDashboardFilesList from "@/components/PortalDashboardFilesList";
 import PortalPrimaryNav from "@/components/PortalPrimaryNav";
 import PortalBentoStage from "@/components/PortalBentoStage";
-import PortalBentoTile, {
-  PortalBentoExpandTile,
-  type PortalBentoStat,
+import PortalTile, {
+  PortalTileList,
+  PortalTileMetric,
+  PortalTileStats,
 } from "@/components/PortalBentoTile";
-import {
-  DotGrid,
-  barMask,
-  ringMask,
-  segmentMask,
-  sparkMask,
-  stepperMask,
-  usMask,
-  waveMask,
-} from "@/components/PortalDotMatrix";
 import { usePortalIncentives } from "@/hooks/usePortalIncentives";
 import { usePortalBrandAssets } from "@/hooks/usePortalBrandAssets";
 import { usePortalProfile } from "@/hooks/usePortalProfile";
@@ -71,6 +62,7 @@ import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 import "@/styles/home2.css";
 import "@/styles/portal-bento.css";
+import "@/styles/portal-tile.css";
 
 const PORTAL_SOCIAL_LINKS = [
   {
@@ -93,56 +85,25 @@ const PORTAL_SOCIAL_LINKS = [
   },
 ] as const;
 
-/** Section ids that get their own named tile; everything else appends. */
 const SALES_TOOLS_ID = "sales-tools";
 const RESOURCE_SECTION_IDS = ["training", "account", "pncl"];
+const GRID_COLUMNS = 4;
 
-const GRID_COLUMNS = 3;
+/** Tier 1 of an index tile shows at most this many item titles. */
+const LIST_LIMIT = 3;
 
-function PortalSubLink({
-  link,
-}: {
-  link: { title: string; href: string; external: boolean };
-}) {
-  const content = (
-    <>
-      <span>{link.title}</span>
-      <ArrowUpRight size={16} strokeWidth={2} aria-hidden="true" />
-    </>
-  );
-
-  if (link.external) {
-    return (
-      <a
-        href={link.href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="portal-sub-link"
-      >
-        {content}
-      </a>
-    );
-  }
-
-  return (
-    <Link to={link.href} className="portal-sub-link">
-      {content}
-    </Link>
-  );
+function pad(value: number): string {
+  return String(value).padStart(2, "0");
 }
 
-function sectionCount(
-  section: PortalDashboardSection,
-  incentivesLength: number,
-  brandAssetsLength: number,
-): number {
-  if (isLinksDashboardSection(section)) return section.links.length;
-  if (isDownloadsDashboardSection(section)) return section.files.length;
-  if (section.sectionType === "incentives") return incentivesLength;
-  return brandAssetsLength;
+function sectionItems(section: PortalDashboardSection): string[] {
+  if (isLinksDashboardSection(section)) return section.links.map((l) => l.title);
+  if (isDownloadsDashboardSection(section)) return section.files.map((f) => f.title);
+  return [];
 }
 
-function SectionPanel({
+/** Tier 3 list for a section, with its existing empty and loading copy kept. */
+function SectionReveal({
   section,
   incentives,
   incentivesLoading,
@@ -157,14 +118,29 @@ function SectionPanel({
 }) {
   if (isLinksDashboardSection(section)) {
     if (section.links.length === 0) {
-      return <p className="portal-panel-note">No links published yet.</p>;
+      return <p className="ptile-micro">No links published yet.</p>;
     }
     return (
-      <>
+      <ul className="ptile-reveal-list">
         {section.links.map((link) => (
-          <PortalSubLink key={link.id} link={link} />
+          <li key={link.id}>
+            {link.external ? (
+              <a
+                className="ptile-link"
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {link.title}
+              </a>
+            ) : (
+              <Link className="ptile-link" to={link.href}>
+                {link.title}
+              </Link>
+            )}
+          </li>
         ))}
-      </>
+      </ul>
     );
   }
 
@@ -172,48 +148,30 @@ function SectionPanel({
     return section.files.length > 0 ? (
       <PortalDashboardFilesList items={section.files} />
     ) : (
-      <p className="portal-panel-note">No files published yet.</p>
+      <p className="ptile-micro">No files published yet.</p>
     );
   }
 
   if (section.sectionType === "incentives") {
-    if (incentivesLoading) {
-      return (
-        <div className="portal-incentives-loading">
-          <span className="onboarding-spinner" aria-hidden="true" />
-          <span>Loading incentives...</span>
-        </div>
-      );
-    }
+    if (incentivesLoading) return <p className="ptile-micro">Loading incentives...</p>;
     return incentives.length > 0 ? (
       <PortalIncentivesList items={incentives} />
     ) : (
-      <p className="portal-panel-note">No incentives published yet.</p>
+      <p className="ptile-micro">No incentives published yet.</p>
     );
   }
 
-  if (brandAssetsLoading) {
-    return (
-      <div className="portal-incentives-loading">
-        <span className="onboarding-spinner" aria-hidden="true" />
-        <span>Loading brand assets...</span>
-      </div>
-    );
-  }
+  if (brandAssetsLoading) return <p className="ptile-micro">Loading brand assets...</p>;
 
   return brandAssets.length > 0 ? (
     <>
-      <p className="portal-panel-note">
-        Official PNCL logos, templates, and brand files.
-      </p>
       <PortalBrandAssetsList items={brandAssets} />
-      <Link to="/portal/brand-assets" className="portal-sub-link">
-        <span>View all brand assets</span>
-        <ArrowUpRight size={16} strokeWidth={2} aria-hidden="true" />
+      <Link className="ptile-link" to="/portal/brand-assets">
+        View all brand assets
       </Link>
     </>
   ) : (
-    <p className="portal-panel-note">No brand assets published yet.</p>
+    <p className="ptile-micro">No brand assets published yet.</p>
   );
 }
 
@@ -224,6 +182,8 @@ export default function PortalDashboard() {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [completingTodoId, setCompletingTodoId] = useState<string | null>(null);
   const [checklistOpen, setChecklistOpen] = useState(false);
+  /** Only one tile is pinned at a time. */
+  const [pinnedTile, setPinnedTile] = useState<string | null>(null);
 
   const { incentives, loading: incentivesLoading } = usePortalIncentives();
   const { assets: brandAssets, loading: brandAssetsLoading } = usePortalBrandAssets();
@@ -234,12 +194,13 @@ export default function PortalDashboard() {
   const { submitted: w9Submitted } = usePortalW9();
   const { submitted: directDepositSubmitted } = usePortalDirectDeposit();
   const { profile, photoUrl, initials, displayName } = usePortalProfile(portalUser);
-  // Read-only here. Connect, sync and disconnect stay on /portal/calendar so a
-  // destructive action never sits inside a hover-lifting tile.
   const calendar = usePortalGoogleCalendar();
+  const { members: downlineMembers } = usePortalDownline();
+  const { invites: referralInvites } = usePortalReferrals();
 
   const resolvedTodos = useMemo(() => {
-    const carrierApplicationsDescription = buildCarrierApplicationsDescription(portalCarriers);
+    const carrierApplicationsDescription =
+      buildCarrierApplicationsDescription(portalCarriers);
 
     return portalTodos.map((todo) => ({
       ...todo,
@@ -261,20 +222,38 @@ export default function PortalDashboard() {
     w9Submitted,
     directDepositSubmitted,
   ]);
+
   const pendingTodos = useMemo(
     () => resolvedTodos.filter((todo) => !todo.completed),
     [resolvedTodos],
   );
   const completedTodoCount = resolvedTodos.length - pendingTodos.length;
   const currentPhase = derivePortalPhase(resolvedTodos);
-  const progressPercent = resolvedTodos.length === 0
-    ? 0
-    : Math.round((completedTodoCount / resolvedTodos.length) * 100);
+  const progressPercent =
+    resolvedTodos.length === 0
+      ? 0
+      : Math.round((completedTodoCount / resolvedTodos.length) * 100);
   const pendingRequiredForms = pendingTodos.some((todo) => isRequiredFormTodo(todo.id));
   const showIcaResignNotice = shouldShowIcaResignNotice(portalUser) && !icaSubmitted;
   const showW9ResignNotice = shouldShowW9ResignNotice(portalUser) && !w9Submitted;
   const showDirectDepositResignNotice =
     shouldShowDirectDepositResignNotice(portalUser) && !directDepositSubmitted;
+
+  /** Completed-of-total per phase, for the progress tile's reveal. */
+  const phaseBreakdown = useMemo(() => {
+    const byPhase = new Map<string, { done: number; total: number }>();
+    for (const todo of resolvedTodos) {
+      const entry = byPhase.get(todo.phase) ?? { done: 0, total: 0 };
+      entry.total += 1;
+      if (todo.completed) entry.done += 1;
+      byPhase.set(todo.phase, entry);
+    }
+    return [...byPhase.entries()].map(([phase, counts]) => ({
+      phase,
+      label: PORTAL_PHASE_LABELS[phase as keyof typeof PORTAL_PHASE_LABELS] ?? phase,
+      ...counts,
+    }));
+  }, [resolvedTodos]);
 
   const displaySections = useMemo((): PortalDashboardSection[] => {
     if (dashboardSections.length > 0) {
@@ -318,47 +297,33 @@ export default function PortalDashboard() {
     ];
   }, [dashboardSections]);
 
-  /** Sections claimed by a named tile, and whatever is left to append. */
   const sectionBuckets = useMemo(() => {
-    const salesTools = displaySections.find((section) => section.id === SALES_TOOLS_ID);
-    const incentivesSection = displaySections.find(
-      (section) => section.sectionType === "incentives",
-    );
-    const brandSection = displaySections.find(
-      (section) => section.sectionType === "brand_assets",
-    );
+    const salesTools = displaySections.find((s) => s.id === SALES_TOOLS_ID);
+    const incentivesSection = displaySections.find((s) => s.sectionType === "incentives");
+    const brandSection = displaySections.find((s) => s.sectionType === "brand_assets");
     const resources = displaySections.filter(
-      (section) =>
-        RESOURCE_SECTION_IDS.includes(section.id) || isDownloadsDashboardSection(section),
+      (s) => RESOURCE_SECTION_IDS.includes(s.id) || isDownloadsDashboardSection(s),
     );
 
     const claimed = new Set<string>();
-    [salesTools, incentivesSection, brandSection, ...resources].forEach((section) => {
-      if (section) claimed.add(section.id);
+    [salesTools, incentivesSection, brandSection, ...resources].forEach((s) => {
+      if (s) claimed.add(s.id);
     });
-    const extras = displaySections.filter((section) => !claimed.has(section.id));
+    const extras = displaySections.filter((s) => !claimed.has(s.id));
 
     return { salesTools, incentivesSection, brandSection, resources, extras };
   }, [displaySections]);
 
-  const resourcesCount = useMemo(
-    () =>
-      sectionBuckets.resources.reduce(
-        (total, section) =>
-          total +
-          (isLinksDashboardSection(section) ? section.links.length : 0) +
-          (isDownloadsDashboardSection(section) ? section.files.length : 0),
-        0,
-      ),
+  const resourceItems = useMemo(
+    () => sectionBuckets.resources.flatMap(sectionItems),
     [sectionBuckets.resources],
   );
 
   /**
    * Carriers carry no status field, only `section`. The codebase already treats
-   * "automatic" as the no-action group, so that is the split shown here rather
-   * than inventing a status the backend does not return.
+   * "automatic" as the no-action group, so that is the split shown.
    */
-  const carrierBreakdown = useMemo(() => {
+  const carrierSplit = useMemo(() => {
     let automatic = 0;
     for (const carrier of portalCarriers) {
       if (carrier.section.trim().toLowerCase() === "automatic") automatic += 1;
@@ -366,13 +331,37 @@ export default function PortalDashboard() {
     return { automatic, action: portalCarriers.length - automatic };
   }, [portalCarriers]);
 
-  const nextEvent = useMemo(() => {
+  const teamActive = useMemo(
+    () =>
+      downlineMembers.filter((member) => {
+        if (member.onboardingStatus === "expired") return false;
+        if (member.portalPhase === "complete") return false;
+        if (member.todoProgress) {
+          return (
+            member.todoProgress.completedCount < member.todoProgress.totalCount ||
+            !member.hasPortalAccount
+          );
+        }
+        return true;
+      }).length,
+    [downlineMembers],
+  );
+
+  const activeInvites = useMemo(
+    () => referralInvites.filter((invite) => isReferralInviteCopyable(invite)),
+    [referralInvites],
+  );
+
+  const sortedEvents = useMemo(() => {
     const events = calendar.data?.events ?? [];
-    if (events.length === 0) return null;
-    return [...events].sort(
-      (a, b) => calendarEventSortValue(a) - calendarEventSortValue(b),
-    )[0];
+    return [...events].sort((a, b) => calendarEventSortValue(a) - calendarEventSortValue(b));
   }, [calendar.data]);
+  const nextEvent = sortedEvents[0] ?? null;
+
+  const licensedStates = profile?.state_licenses?.length ?? 0;
+  const outstandingRequired = [icaSubmitted, w9Submitted, directDepositSubmitted].filter(
+    (done) => !done,
+  ).length;
 
   useEffect(() => {
     setPortalUser(authUser);
@@ -407,9 +396,18 @@ export default function PortalDashboard() {
     };
   }, [checklistOpen]);
 
-  const toggleSection = (id: string) => {
+  const toggleSection = useCallback((id: string) => {
     setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  }, []);
+
+  /** Pinning a tile unpins whichever tile was pinned before. */
+  const handlePin = useCallback(
+    (id: string) => (pinned: boolean) => {
+      setPinnedTile(pinned ? id : null);
+      toggleSection(id);
+    },
+    [toggleSection],
+  );
 
   const handleSignOut = async () => {
     try {
@@ -446,352 +444,379 @@ export default function PortalDashboard() {
       : "Admin console";
 
   const phaseLabel = PORTAL_PHASE_LABELS[currentPhase];
-  const requiredStates = [icaSubmitted, w9Submitted, directDepositSubmitted];
-  const resignNotice = showIcaResignNotice
-    ? {
-        title: "Re-sign your Independent Contractor Agreement",
-        body: "The ICA was updated, so your previous signature is no longer on file.",
-        href: "/portal/ica",
-        cta: "Re-sign agreement",
-      }
-    : showW9ResignNotice
-      ? {
-          title: "Fill out a new W-9",
-          body: "Your previous W-9 was removed and needs to be completed again.",
-          href: "/portal/w9",
-          cta: "Complete W-9",
-        }
-      : showDirectDepositResignNotice
-        ? {
-            title: "Fill out a new direct deposit form",
-            body: "Your previous direct deposit form was removed and needs to be completed again.",
-            href: "/portal/direct-deposit",
-            cta: "Complete direct deposit form",
-          }
-        : null;
 
-  // Tiles are built as a list so numbering, row and stagger order stay correct
-  // no matter how many sections the server returns.
+  const resignNotices = [
+    showIcaResignNotice && {
+      title: "Re-sign your Independent Contractor Agreement",
+      body: "The ICA was updated, so your previous signature is no longer on file.",
+      href: "/portal/ica",
+      cta: "Re-sign agreement",
+    },
+    showW9ResignNotice && {
+      title: "Fill out a new W-9",
+      body: "Your previous W-9 was removed and needs to be completed again.",
+      href: "/portal/w9",
+      cta: "Complete W-9",
+    },
+    showDirectDepositResignNotice && {
+      title: "Fill out a new direct deposit form",
+      body: "Your previous direct deposit form was removed and needs completing again.",
+      href: "/portal/direct-deposit",
+      cta: "Complete direct deposit form",
+    },
+  ].filter(Boolean) as Array<{ title: string; body: string; href: string; cta: string }>;
+  const hasResignNotice = resignNotices.length > 0;
+
   const tiles: ReactNode[] = [];
-  const at = () => {
+  const slot = () => {
     const position = tiles.length;
-    return { index: position + 1, row: Math.floor(position / GRID_COLUMNS), order: position };
+    return {
+      index: position + 1,
+      row: Math.floor(position / GRID_COLUMNS),
+      order: position,
+    };
   };
+  const pinProps = (id: string) => ({
+    onPin: handlePin(id),
+    forceUnpinned: pinnedTile !== null && pinnedTile !== id,
+  });
 
-  const expandTile = (
-    section: PortalDashboardSection,
+  const indexTile = (
+    id: string,
     title: string,
-    illustration: ReactNode,
-    extraStats: PortalBentoStat[] = [],
+    items: string[],
+    reveal: ReactNode,
+    emptyCopy: string,
   ) => {
-    const count = sectionCount(section, incentives.length, brandAssets.length);
-    const spot = at();
+    const spot = slot();
+    const shown = items.slice(0, LIST_LIMIT);
+    const remainder = items.length - shown.length;
     return (
-      <PortalBentoExpandTile
-        key={section.id}
+      <PortalTile
+        key={id}
         index={spot.index}
         row={spot.row}
         order={spot.order}
         title={title}
-        expanded={Boolean(openSections[section.id])}
-        onToggle={() => toggleSection(section.id)}
-        panelLabel={title}
-        stats={[{ label: "Items", value: String(count).padStart(2, "0") }, ...extraStats]}
-        panel={
-          <div className="portal-tile-panel">
-            <SectionPanel
-              section={section}
-              incentives={incentives}
-              incentivesLoading={incentivesLoading}
-              brandAssets={brandAssets}
-              brandAssetsLoading={brandAssetsLoading}
-            />
-          </div>
+        headerCount={pad(items.length)}
+        ariaLabel={`${title}, ${items.length} items`}
+        {...pinProps(id)}
+        tier1={
+          shown.length > 0 ? (
+            <PortalTileList items={shown} />
+          ) : (
+            <p className="ptile-line ptile-line-muted">{emptyCopy}</p>
+          )
         }
-      >
-        {illustration}
-      </PortalBentoExpandTile>
+        tier2={
+          remainder > 0 ? <span className="ptile-micro">{remainder} more</span> : undefined
+        }
+        reveal={<div className="ptile-reveal-body">{reveal}</div>}
+      />
     );
   };
 
   // 01 Agent status
   {
-    const spot = at();
+    const spot = slot();
     tiles.push(
-      <PortalBentoTile
-        key="agent-status"
+      <PortalTile
+        key="agent"
         index={spot.index}
         row={spot.row}
         order={spot.order}
         title="Agent Status"
-        to="/portal/profile"
-        ariaLabel={`Agent status: ${phaseLabel}. View profile.`}
-        stats={[
-          {
-            label: "Steps",
-            value: `${completedTodoCount}/${resolvedTodos.length}`,
-          },
-          {
-            label: "Tier",
-            value: profile?.comp_level != null ? String(profile.comp_level) : "—",
-          },
-          {
-            label: "Open",
-            value: String(pendingTodos.length).padStart(2, "0"),
-            accent: pendingTodos.length > 0,
-          },
-        ]}
-      >
-        <span className="portal-tile-display">{phaseLabel}</span>
-        <DotGrid mask={waveMask(progressPercent)} className="pdot-inline" hideOff />
-        <div className="portal-agent-identity">
-          <span className="portal-bento-avatar" aria-hidden="true">
+        ariaLabel={`Agent status, current stage ${phaseLabel}`}
+        {...pinProps("agent")}
+        headerAside={
+          <span className="ptile-avatar" aria-hidden="true">
             {photoUrl ? <img src={photoUrl} alt="" /> : <span>{initials}</span>}
           </span>
-          <span className="portal-agent-identity-copy">
-            <span className="portal-agent-name">{displayName}</span>
-            {agentEmail && <span className="portal-tile-note">{agentEmail}</span>}
-          </span>
-        </div>
-      </PortalBentoTile>,
+        }
+        tier1={<PortalTileMetric value={phaseLabel} label="Current stage" />}
+        tier2={
+          <PortalTileStats
+            stats={[
+              { label: "Steps", value: `${completedTodoCount}/${resolvedTodos.length}` },
+              {
+                label: "Tier",
+                value: profile?.comp_level != null ? String(profile.comp_level) : "None",
+              },
+            ]}
+          />
+        }
+        reveal={
+          <>
+            <span className="ptile-reveal-strong">{displayName}</span>
+            {agentEmail && <p>{agentEmail}</p>}
+            <Link className="ptile-link" to="/portal/profile">
+              View profile
+            </Link>
+          </>
+        }
+      />,
     );
   }
 
   // 02 Onboarding progress
   {
-    const spot = at();
+    const spot = slot();
     tiles.push(
-      <PortalBentoTile
+      <PortalTile
         key="progress"
         index={spot.index}
         row={spot.row}
         order={spot.order}
         title="Onboarding Progress"
-        onClick={() => setChecklistOpen(true)}
-        ariaExpanded={checklistOpen}
-        ariaLabel={`Onboarding progress ${progressPercent} percent. Open checklist.`}
-        stats={[
-          { label: "Done", value: String(completedTodoCount).padStart(2, "0") },
-          {
-            label: "Left",
-            value: String(pendingTodos.length).padStart(2, "0"),
-            accent: pendingTodos.length > 0,
-          },
-        ]}
-      >
-        <div className="portal-gauge-split">
-          <div className="portal-gauge">
-            <DotGrid
-              mask={ringMask(progressPercent)}
-              className="pdot-gauge" hideOff
-              label={`Onboarding ${progressPercent} percent complete`}
-            />
-            <span className="portal-gauge-value">
-              <span className="portal-gauge-number">{progressPercent}%</span>
-              <span className="portal-gauge-unit">Complete</span>
-            </span>
-          </div>
-          <div className="portal-legend">
-            <span className="portal-legend-row">
-              <span className="portal-legend-swatch" />
-              Complete
-            </span>
-            <span className="portal-legend-row">
-              <span className="portal-legend-swatch is-accent" />
-              Remaining
-            </span>
-          </div>
-        </div>
-      </PortalBentoTile>,
+        ariaLabel={`Onboarding progress ${progressPercent} percent complete`}
+        {...pinProps("progress")}
+        tier1={<PortalTileMetric value={progressPercent} suffix="%" label="Complete" />}
+        tier2={
+          <PortalTileStats
+            stats={[
+              { label: "Remaining", value: pad(pendingTodos.length) },
+              { label: "Stage", value: phaseLabel },
+            ]}
+          />
+        }
+        reveal={
+          <>
+            {phaseBreakdown.map((phase) => (
+              <div className="ptile-row" key={phase.phase}>
+                <span>{phase.label}</span>
+                <span className="ptile-row-count">
+                  {phase.done}/{phase.total}
+                </span>
+              </div>
+            ))}
+            <button
+              type="button"
+              className="ptile-action"
+              onClick={(event) => {
+                event.stopPropagation();
+                setChecklistOpen(true);
+              }}
+            >
+              Open checklist
+            </button>
+          </>
+        }
+      />,
     );
   }
 
   // 03 Required forms
   {
-    const spot = at();
-    const doneCount = requiredStates.filter(Boolean).length;
+    const spot = slot();
+    const allSigned = outstandingRequired === 0;
     tiles.push(
-      <PortalBentoTile
-        key="required-forms"
+      <PortalTile
+        key="forms"
         index={spot.index}
         row={spot.row}
         order={spot.order}
         title="Required Forms"
-        urgent={Boolean(resignNotice) || pendingRequiredForms}
-        headerAside={
-          resignNotice ? (
-            <span className="portal-pill">
-              <span className="portal-live-dot" />
-              Action
-            </span>
-          ) : undefined
+        urgent={hasResignNotice || pendingRequiredForms}
+        ariaLabel={`Required forms, ${outstandingRequired} outstanding`}
+        {...pinProps("forms")}
+        tier1={
+          <PortalTileMetric
+            value={outstandingRequired}
+            label={
+              hasResignNotice ? "Action needed" : allSigned ? "All signed" : "Outstanding"
+            }
+            accent={hasResignNotice}
+            success={allSigned && !hasResignNotice}
+          />
         }
-        stats={[
-          { label: "Signed", value: `${doneCount}/3` },
-          {
-            label: "Status",
-            value: doneCount === 3 ? "OK" : "OPEN",
-            accent: doneCount !== 3,
-          },
-        ]}
-      >
-        <DotGrid
-          mask={stepperMask(requiredStates)}
-          className="pdot-inline"
-          hideOff
-          label={`Required forms: ${doneCount} of 3 complete`}
-        />
-        <div className="portal-step-labels" aria-hidden="true">
-          <span className={icaSubmitted ? "is-done" : ""}>ICA</span>
-          <span className={w9Submitted ? "is-done" : ""}>W-9</span>
-          <span className={directDepositSubmitted ? "is-done" : ""}>Deposit</span>
-        </div>
-        {resignNotice ? (
-          <div className="portal-tile-alert" role="alert">
-            <strong>{resignNotice.title}</strong>
-            <p className="portal-tile-lede">{resignNotice.body}</p>
-            <Link to={resignNotice.href} className="portal-tile-cta">
-              {resignNotice.cta}
-              <ArrowUpRight size={14} strokeWidth={2} aria-hidden="true" />
-            </Link>
+        tier2={
+          <div className="ptile-markers">
+            {[
+              { label: "ICA", done: icaSubmitted, action: showIcaResignNotice },
+              { label: "W-9", done: w9Submitted, action: showW9ResignNotice },
+              {
+                label: "Deposit",
+                done: directDepositSubmitted,
+                action: showDirectDepositResignNotice,
+              },
+            ].map((marker) => (
+              <div
+                key={marker.label}
+                className={`ptile-marker${marker.done ? " is-done" : ""}${
+                  marker.action ? " is-action" : ""
+                }`}
+              >
+                <span className="ptile-marker-label">{marker.label}</span>
+                <span className="ptile-marker-rule" />
+              </div>
+            ))}
           </div>
-        ) : (
-          <div className="portal-required-links">
-            {!icaSubmitted && (
-              <Link to="/portal/ica" className="portal-tile-cta">
-                Sign ICA
-                <ArrowUpRight size={14} strokeWidth={2} aria-hidden="true" />
-              </Link>
-            )}
-            {!w9Submitted && (
-              <Link to="/portal/w9" className="portal-tile-cta">
-                Submit W-9
-                <ArrowUpRight size={14} strokeWidth={2} aria-hidden="true" />
-              </Link>
-            )}
-            {!directDepositSubmitted && (
-              <Link to="/portal/direct-deposit" className="portal-tile-cta">
-                Set up deposit
-                <ArrowUpRight size={14} strokeWidth={2} aria-hidden="true" />
-              </Link>
-            )}
-            {doneCount === 3 && (
-              <p className="portal-tile-note">All required forms are on file.</p>
-            )}
-          </div>
-        )}
-      </PortalBentoTile>,
+        }
+        reveal={
+          hasResignNotice ? (
+            <>
+              {resignNotices.map((notice) => (
+                <div key={notice.href}>
+                  <span className="ptile-reveal-strong">{notice.title}</span>
+                  <p>{notice.body}</p>
+                  <Link className="ptile-action" to={notice.href}>
+                    {notice.cta}
+                  </Link>
+                </div>
+              ))}
+            </>
+          ) : allSigned ? (
+            <p>All required forms are on file.</p>
+          ) : (
+            <>
+              {!icaSubmitted && (
+                <Link className="ptile-link" to="/portal/ica">
+                  Sign your ICA
+                </Link>
+              )}
+              {!w9Submitted && (
+                <Link className="ptile-link" to="/portal/w9">
+                  Submit your W-9
+                </Link>
+              )}
+              {!directDepositSubmitted && (
+                <Link className="ptile-link" to="/portal/direct-deposit">
+                  Set up direct deposit
+                </Link>
+              )}
+            </>
+          )
+        }
+      />,
     );
   }
 
   // 04 Carrier appointments
   {
-    const spot = at();
+    const spot = slot();
     tiles.push(
-      <PortalBentoTile
+      <PortalTile
         key="carriers"
         index={spot.index}
         row={spot.row}
         order={spot.order}
         title="Carrier Appointments"
-        to="/portal/carriers"
-        ariaLabel={`${portalCarriers.length} carrier appointments. Open carrier sheet.`}
-        stats={[
-          { label: "Automatic", value: String(carrierBreakdown.automatic).padStart(2, "0") },
-          {
-            label: "Action",
-            value: String(carrierBreakdown.action).padStart(2, "0"),
-            accent: carrierBreakdown.action > 0,
-          },
-        ]}
-      >
-        <span className="portal-tile-display">
-          {String(portalCarriers.length).padStart(2, "0")}
-        </span>
-        <p className="portal-tile-note">Carriers</p>
-        {portalCarriers.length > 0 ? (
-          <DotGrid
-            mask={segmentMask(
-              carrierBreakdown.automatic,
-              Math.max(portalCarriers.length, 1),
-            )}
-            className="pdot-inline"
-            label={`${carrierBreakdown.automatic} automatic of ${portalCarriers.length} carriers`}
+        ariaLabel={`${portalCarriers.length} carrier appointments`}
+        {...pinProps("carriers")}
+        tier1={<PortalTileMetric value={portalCarriers.length} label="Carriers" />}
+        tier2={
+          <PortalTileStats
+            stats={[
+              { label: "Automatic", value: pad(carrierSplit.automatic) },
+              {
+                label: "Action",
+                value: pad(carrierSplit.action),
+                accent: carrierSplit.action > 0,
+              },
+            ]}
           />
-        ) : (
-          <p className="portal-tile-lede">No carriers published yet.</p>
-        )}
-      </PortalBentoTile>,
+        }
+        reveal={
+          <>
+            {portalCarriers.length === 0 ? (
+              <p>No carriers published yet.</p>
+            ) : (
+              <ul className="ptile-reveal-list">
+                {portalCarriers.slice(0, 8).map((carrier) => (
+                  <li key={carrier.id}>{carrier.carrier}</li>
+                ))}
+              </ul>
+            )}
+            <Link className="ptile-link" to="/portal/carriers">
+              Open carrier sheet
+            </Link>
+          </>
+        }
+      />,
     );
   }
 
   // 05 Sales tools
   if (sectionBuckets.salesTools) {
     tiles.push(
-      expandTile(
-        sectionBuckets.salesTools,
+      indexTile(
+        "sales-tools",
         "Sales Tools",
-        <DotGrid mask={barMask([0.25, 0.4, 0.3, 0.55, 0.45, 0.7, 0.5, 0.85, 0.6, 0.45, 0.75, 0.55, 0.9, 0.65, 1, 0.8], 16, 12)} className="pdot-inline" hideOff />,
+        sectionItems(sectionBuckets.salesTools),
+        <SectionReveal
+          section={sectionBuckets.salesTools}
+          incentives={incentives}
+          incentivesLoading={incentivesLoading}
+          brandAssets={brandAssets}
+          brandAssetsLoading={brandAssetsLoading}
+        />,
+        "No tools published yet.",
       ),
     );
   }
 
   // 06 Team progress
   {
-    const spot = at();
+    const spot = slot();
     tiles.push(
-      <PortalBentoExpandTile
-        key="downline"
+      <PortalTile
+        key="team"
         index={spot.index}
         row={spot.row}
         order={spot.order}
         title="Team Progress"
-        expanded={Boolean(openSections.downline)}
-        onToggle={() => toggleSection("downline")}
-        panelLabel="Team progress"
-        panel={
-          <div className="portal-tile-panel">
-            <PortalDownlinePanel embedded />
-          </div>
+        ariaLabel={`${teamActive} team members in progress`}
+        {...pinProps("team")}
+        tier1={<PortalTileMetric value={teamActive} label="In progress" />}
+        tier2={
+          <PortalTileStats
+            stats={[{ label: "Team", value: pad(downlineMembers.length) }]}
+          />
         }
-      >
-        <DotGrid mask={barMask([0.3, 0.55, 0.4, 0.8, 0.5, 0.35, 0.7, 0.45, 0.9, 0.6, 0.5, 0.75, 0.4, 0.85, 0.55, 0.65], 16)} className="pdot-inline" hideOff />
-      </PortalBentoExpandTile>,
+        reveal={<PortalDownlinePanel embedded />}
+      />,
     );
   }
 
   // 07 Referral links
   {
-    const spot = at();
+    const spot = slot();
+    const latest = referralInvites[0];
     tiles.push(
-      <PortalBentoExpandTile
+      <PortalTile
         key="referrals"
         index={spot.index}
         row={spot.row}
         order={spot.order}
         title="Referral Links"
-        expanded={Boolean(openSections.referrals)}
-        onToggle={() => toggleSection("referrals")}
-        panelLabel="Referral links"
-        panel={
-          <div className="portal-tile-panel">
-            <PortalReferralPanel embedded />
-          </div>
+        ariaLabel={`${activeInvites.length} active referral links`}
+        {...pinProps("referrals")}
+        tier1={<PortalTileMetric value={activeInvites.length} label="Active links" />}
+        tier2={
+          latest?.recipientLabel ? (
+            <span className="ptile-stat-value">{latest.recipientLabel}</span>
+          ) : undefined
         }
-      >
-        <DotGrid mask={sparkMask([2, 3, 2.5, 5, 4, 6, 5.5, 8, 7, 9, 8.5, 11, 10, 13])} className="pdot-inline" hideOff />
-        <p className="portal-tile-note">Invite an agent</p>
-      </PortalBentoExpandTile>,
+        reveal={<PortalReferralPanel embedded />}
+      />,
     );
   }
 
   // 08 Incentives
   if (sectionBuckets.incentivesSection) {
     tiles.push(
-      expandTile(
-        sectionBuckets.incentivesSection,
+      indexTile(
+        "incentives",
         "Incentives",
-        <DotGrid mask={ringMask(Math.min(100, incentives.length * 25), 32, 19)} className="pdot-gauge" hideOff />,
+        incentives.map((item) => item.title),
+        <SectionReveal
+          section={sectionBuckets.incentivesSection}
+          incentives={incentives}
+          incentivesLoading={incentivesLoading}
+          brandAssets={brandAssets}
+          brandAssetsLoading={brandAssetsLoading}
+        />,
+        incentivesLoading ? "Loading incentives..." : "No incentives published yet.",
       ),
     );
   }
@@ -799,128 +824,148 @@ export default function PortalDashboard() {
   // 09 Brand assets
   if (sectionBuckets.brandSection) {
     tiles.push(
-      expandTile(
-        sectionBuckets.brandSection,
+      indexTile(
+        "brand-assets",
         "Brand Assets",
-        <DotGrid mask={barMask([0.4, 0.65, 0.5, 0.9, 0.6, 0.45, 0.8, 0.55, 0.7, 0.5, 0.85, 0.6, 0.4, 0.75, 0.55, 0.9], 16)} className="pdot-inline" hideOff />,
+        brandAssets.map((item) => item.title),
+        <SectionReveal
+          section={sectionBuckets.brandSection}
+          incentives={incentives}
+          incentivesLoading={incentivesLoading}
+          brandAssets={brandAssets}
+          brandAssetsLoading={brandAssetsLoading}
+        />,
+        brandAssetsLoading ? "Loading brand assets..." : "No brand assets published yet.",
       ),
     );
   }
 
   // 10 Calendar
   {
-    const spot = at();
-    const calendarBody = calendar.loading ? (
-      <div className="portal-incentives-loading">
-        <span className="onboarding-spinner" aria-hidden="true" />
-        <span>Loading calendar...</span>
-      </div>
-    ) : calendar.error ? (
-      <p className="portal-tile-lede">Calendar preview is unavailable.</p>
-    ) : !calendar.data?.connection ? (
-      <p className="portal-tile-lede">
-        Google Calendar is not connected. Connect it to preview upcoming events.
-      </p>
-    ) : calendar.data.connection.status === "reauthorization_required" ? (
-      <p className="portal-tile-lede">
-        Calendar authorization expired. Reconnect to restore your preview.
-      </p>
-    ) : nextEvent ? (
-      <>
-        <span className="portal-tile-display portal-tile-display-sm">
-          {nextEvent.title}
-        </span>
-        <p className="portal-tile-note">
-          {formatCalendarEventDate(nextEvent)} · {formatCalendarEventTime(nextEvent)}
-        </p>
-      </>
-    ) : (
-      <p className="portal-tile-lede">No upcoming events in the next 14 days.</p>
-    );
+    const spot = slot();
+    const connection = calendar.data?.connection;
+    const stateLine = calendar.loading
+      ? "Loading your calendar"
+      : calendar.error
+        ? "Calendar preview is unavailable"
+        : !connection
+          ? "Google Calendar is not connected"
+          : connection.status === "reauthorization_required"
+            ? "Calendar authorization expired"
+            : !nextEvent
+              ? "No upcoming events"
+              : null;
 
     tiles.push(
-      <PortalBentoTile
+      <PortalTile
         key="calendar"
         index={spot.index}
         row={spot.row}
         order={spot.order}
         title="Calendar"
-        to="/portal/calendar"
-        ariaLabel="Calendar preview. Open calendar."
-        stats={[
-          {
-            label: "Events",
-            value: String(calendar.data?.events?.length ?? 0).padStart(2, "0"),
-          },
-        ]}
-      >
-        {calendarBody}
-      </PortalBentoTile>,
+        ariaLabel="Calendar preview"
+        {...pinProps("calendar")}
+        tier1={
+          stateLine ? (
+            <p className="ptile-line ptile-line-muted">{stateLine}</p>
+          ) : (
+            <PortalTileMetric
+              value={formatCalendarEventTime(nextEvent)}
+              label={formatCalendarEventDate(nextEvent)}
+            />
+          )
+        }
+        tier2={
+          nextEvent ? <span className="ptile-stat-value">{nextEvent.title}</span> : undefined
+        }
+        reveal={
+          <>
+            {sortedEvents.length > 0 ? (
+              <ul className="ptile-reveal-list">
+                {sortedEvents.slice(0, 3).map((event) => (
+                  <li key={event.id}>
+                    {formatCalendarEventDate(event)} · {event.title}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>Your primary calendar is clear for the next 14 days.</p>
+            )}
+            <Link className="ptile-link" to="/portal/calendar">
+              Open calendar
+            </Link>
+          </>
+        }
+      />,
     );
   }
 
   // 11 Training and resources
   if (sectionBuckets.resources.length > 0) {
-    const spot = at();
     tiles.push(
-      <PortalBentoExpandTile
-        key="resources"
-        index={spot.index}
-        row={spot.row}
-        order={spot.order}
-        title="Training and Resources"
-        expanded={Boolean(openSections.resources)}
-        onToggle={() => toggleSection("resources")}
-        panelLabel="Training and resources"
-        stats={[{ label: "Items", value: String(resourcesCount).padStart(2, "0") }]}
-        panel={
-          <div className="portal-tile-panel">
-            {sectionBuckets.resources.map((section) => (
-              <div className="portal-tile-subgroup" key={section.id}>
-                <h3 className="portal-tile-subgroup-title">{section.title}</h3>
-                <SectionPanel
-                  section={section}
-                  incentives={incentives}
-                  incentivesLoading={incentivesLoading}
-                  brandAssets={brandAssets}
-                  brandAssetsLoading={brandAssetsLoading}
-                />
-              </div>
-            ))}
-          </div>
-        }
-      >
-        <DotGrid mask={barMask([0.3, 0.5, 0.65, 0.45, 0.8, 0.55, 0.4, 0.7, 0.9, 0.5, 0.6, 0.85, 0.45, 0.75, 0.55, 0.7], 16)} className="pdot-inline" hideOff />
-      </PortalBentoExpandTile>,
+      indexTile(
+        "resources",
+        "Training and Resources",
+        resourceItems,
+        <>
+          {sectionBuckets.resources.map((section) => (
+            <div key={section.id}>
+              <p className="ptile-reveal-label">{section.title}</p>
+              <SectionReveal
+                section={section}
+                incentives={incentives}
+                incentivesLoading={incentivesLoading}
+                brandAssets={brandAssets}
+                brandAssetsLoading={brandAssetsLoading}
+              />
+            </div>
+          ))}
+        </>,
+        "No resources published yet.",
+      ),
     );
   }
 
   // 12 State map
   {
-    const spot = at();
+    const spot = slot();
     tiles.push(
-      <PortalBentoTile
+      <PortalTile
         key="state-map"
         index={spot.index}
         row={spot.row}
         order={spot.order}
         title="State Map"
-        to="/portal/state-map"
-        ariaLabel="Open the state availability map."
-        stats={[{ label: "View", value: "MAP" }]}
-      >
-        <DotGrid mask={usMask()} className="pdot-inline" label="United States" hideOff />
-      </PortalBentoTile>,
+        ariaLabel={`${licensedStates} licensed states`}
+        {...pinProps("state-map")}
+        tier1={<PortalTileMetric value={licensedStates} label="Licensed states" />}
+        reveal={
+          <>
+            <p>State availability and your licence numbers.</p>
+            <Link className="ptile-link" to="/portal/state-map">
+              Open state map
+            </Link>
+          </>
+        }
+      />,
     );
   }
 
   // Anything the server returns that no named tile claimed.
   sectionBuckets.extras.forEach((section) => {
     tiles.push(
-      expandTile(
-        section,
+      indexTile(
+        section.id,
         section.title,
-        <DotGrid mask={barMask([0.35, 0.6, 0.45, 0.75, 0.55, 0.4, 0.85, 0.5, 0.7, 0.6, 0.45, 0.8, 0.55, 0.65, 0.5, 0.9], 16)} className="pdot-inline" hideOff />,
+        sectionItems(section),
+        <SectionReveal
+          section={section}
+          incentives={incentives}
+          incentivesLoading={incentivesLoading}
+          brandAssets={brandAssets}
+          brandAssetsLoading={brandAssetsLoading}
+        />,
+        "Nothing published yet.",
       ),
     );
   });
