@@ -31,6 +31,8 @@ export interface LiquidGradientParams {
   jellify: number | boolean;
   ditherMode: LiquidDitherMode;
   dither: number;
+  /** 0 holds the noise still; higher walks it over time. */
+  ditherAnim: number;
   exposure: number;
   contrast: number;
   saturation: number;
@@ -64,6 +66,7 @@ export const LIQUID_GRADIENT_DEFAULTS: LiquidGradientParams = {
   jellify: 0,
   ditherMode: "smooth",
   dither: 0.06,
+  ditherAnim: 0,
   exposure: 1.2,
   contrast: 1.15,
   saturation: 1.1,
@@ -101,6 +104,7 @@ export const LIQUID_GRADIENT_PRESETS = {
     distBias: 0.25,
     ditherMode: "grain" as LiquidDitherMode,
     dither: 0.05,
+    ditherAnim: 0.35,
     exposure: 1.02,
     contrast: 1.04,
     saturation: 0.9,
@@ -179,6 +183,7 @@ uniform float u_distBias;
 uniform float u_jellify;
 uniform float u_ditherMode;
 uniform float u_dither;
+uniform float u_ditherAnim;
 uniform float u_exposure;
 uniform float u_contrast;
 uniform float u_saturation;
@@ -307,11 +312,20 @@ float quickNoise(vec2 I) {
     return fract(sin(dot(I, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
-// 0 = off, 1 = smooth (IGN), 2 = grain
-float getDither(vec2 I, float mode) {
+// 0 = off, 1 = smooth (IGN), 2 = grain.
+// anim > 0 walks the noise field over time, so banding shimmers instead of
+// sitting in one place as a fixed pattern.
+float getDither(vec2 I, float mode, float anim) {
+    vec2 J = I;
+    if (anim > 0.0) {
+        J += floor(vec2(
+            fract(sin(u_time * anim * 7.13) * 43758.5453) * 512.0,
+            fract(sin(u_time * anim * 11.37 + 2.7) * 22578.1459) * 512.0
+        ));
+    }
     if (mode < 0.5) return 0.5;
-    if (mode < 1.5) return IGN(I);
-    return quickNoise(I);
+    if (mode < 1.5) return IGN(J);
+    return quickNoise(J);
 }
 
 vec3 softGamutMap(vec3 linearRgb) {
@@ -379,7 +393,7 @@ void main() {
     float sn = sin(seedAngle);
     p = mat2(cs, -sn, sn, cs) * p;
 
-    float dither = getDither(floor(fragCoord / u_pixelRatio), u_ditherMode);
+    float dither = getDither(floor(fragCoord / u_pixelRatio), u_ditherMode, u_ditherAnim);
 
     float totalVal = 0.0;
     float totalWeight = 0.0;
@@ -494,6 +508,7 @@ export const LiquidGradientCanvas = forwardRef<
     jellify = LIQUID_GRADIENT_DEFAULTS.jellify,
     ditherMode = LIQUID_GRADIENT_DEFAULTS.ditherMode,
     dither = LIQUID_GRADIENT_DEFAULTS.dither,
+    ditherAnim = LIQUID_GRADIENT_DEFAULTS.ditherAnim,
     exposure = LIQUID_GRADIENT_DEFAULTS.exposure,
     contrast = LIQUID_GRADIENT_DEFAULTS.contrast,
     saturation = LIQUID_GRADIENT_DEFAULTS.saturation,
@@ -535,6 +550,7 @@ export const LiquidGradientCanvas = forwardRef<
     jellify,
     ditherMode,
     dither,
+    ditherAnim,
     exposure,
     contrast,
     saturation,
@@ -555,6 +571,7 @@ export const LiquidGradientCanvas = forwardRef<
     jellify,
     ditherMode,
     dither,
+    ditherAnim,
     exposure,
     contrast,
     saturation,
@@ -701,6 +718,7 @@ export const LiquidGradientCanvas = forwardRef<
           "u_jellify",
           "u_ditherMode",
           "u_dither",
+          "u_ditherAnim",
           "u_exposure",
           "u_contrast",
           "u_saturation",
@@ -770,6 +788,7 @@ export const LiquidGradientCanvas = forwardRef<
       gl!.uniform1f(uLocs.u_jellify, p.jellify ? 1 : 0);
       gl!.uniform1f(uLocs.u_ditherMode, ditherModeToNumber(p.ditherMode));
       gl!.uniform1f(uLocs.u_dither, p.dither);
+      gl!.uniform1f(uLocs.u_ditherAnim, p.ditherAnim);
       gl!.uniform1f(uLocs.u_exposure, p.exposure);
       gl!.uniform1f(uLocs.u_contrast, p.contrast);
       gl!.uniform1f(uLocs.u_saturation, p.saturation);

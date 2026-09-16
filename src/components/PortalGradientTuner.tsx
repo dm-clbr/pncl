@@ -45,12 +45,22 @@ const FIELDS: Field[] = [
   { key: "waveFreq", label: "Wave freq", min: 0.2, max: 6, step: 0.05 },
   { key: "distBias", label: "Distribution bias", min: -1, max: 1, step: 0.01 },
   { key: "dither", label: "Dither", min: 0, max: 0.3, step: 0.005 },
+  { key: "ditherAnim", label: "Dither motion", min: 0, max: 2, step: 0.01 },
   { key: "exposure", label: "Exposure", min: 0.5, max: 2, step: 0.01 },
   { key: "contrast", label: "Contrast", min: 0.5, max: 2, step: 0.01 },
   { key: "saturation", label: "Saturation", min: 0, max: 2, step: 0.01 },
 ];
 
 const DITHER_MODES: LiquidDitherMode[] = ["off", "smooth", "grain"];
+
+const MAX_STOPS = 8;
+const MIN_STOPS = 2;
+
+/** Palettes to start from; colours stay editable afterwards. */
+const PALETTES = Object.entries(LIQUID_GRADIENT_PRESETS).map(([name, preset]) => ({
+  name,
+  colors: preset.colors,
+}));
 
 function readStored(): TunerState {
   if (typeof window === "undefined") return TUNER_DEFAULTS;
@@ -214,20 +224,78 @@ function TunerPanel({
           </div>
         </label>
 
-        <div className="gtuner-colors">
-          {values.colors.map((c, i) => (
-            <input
-              key={i}
-              type="color"
-              value={c}
-              aria-label={`Colour ${i + 1}`}
-              onChange={(e) => {
-                const next = [...values.colors];
-                next[i] = e.target.value;
-                onChange("colors", next as unknown as string);
-              }}
-            />
-          ))}
+        <div className="gtuner-row">
+          <span className="gtuner-label">Palette</span>
+          <div className="gtuner-palettes">
+            {PALETTES.map((p) => (
+              <button
+                type="button"
+                key={p.name}
+                title={p.name}
+                onClick={() => onChange("colors", [...p.colors] as unknown as string)}
+                style={{
+                  background: `linear-gradient(90deg, ${p.colors.join(", ")})`,
+                }}
+                aria-label={`Use ${p.name} palette`}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="gtuner-row">
+          <span className="gtuner-label">
+            Stops
+            <span className="gtuner-value">{values.colors.length}</span>
+          </span>
+          <div className="gtuner-colors">
+            {values.colors.map((c, i) => (
+              <span className="gtuner-stop" key={i}>
+                <input
+                  type="color"
+                  value={c}
+                  aria-label={`Colour ${i + 1}`}
+                  onChange={(e) => {
+                    const next = [...values.colors];
+                    next[i] = e.target.value;
+                    onChange("colors", next as unknown as string);
+                  }}
+                />
+                {values.colors.length > MIN_STOPS && (
+                  <button
+                    type="button"
+                    className="gtuner-stop-x"
+                    aria-label={`Remove colour ${i + 1}`}
+                    onClick={() =>
+                      onChange(
+                        "colors",
+                        values.colors.filter((_, j) => j !== i) as unknown as string,
+                      )
+                    }
+                  >
+                    <X size={9} strokeWidth={2.5} aria-hidden="true" />
+                  </button>
+                )}
+              </span>
+            ))}
+            {values.colors.length < MAX_STOPS && (
+              <button
+                type="button"
+                className="gtuner-stop-add"
+                aria-label="Add colour stop"
+                onClick={() =>
+                  onChange(
+                    "colors",
+                    [
+                      ...values.colors,
+                      values.colors[values.colors.length - 1] ?? "#000000",
+                    ] as unknown as string,
+                  )
+                }
+              >
+                +
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
