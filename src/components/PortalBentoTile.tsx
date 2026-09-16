@@ -128,6 +128,32 @@ export default function PortalTile({
     setFlip(needed > roomBelow && roomAbove > roomBelow ? "up" : "down");
   }, [open]);
 
+  // The wheel is routed to the panel by hand. React attaches wheel passively, so
+  // the page would scroll underneath instead of the list moving, and the panel
+  // is small enough that the pointer is often over a child rather than it.
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card || !reveal) return;
+
+    const onWheel = (event: WheelEvent) => {
+      const panel = revealRef.current;
+      if (!panel || !open) return;
+      const max = panel.scrollHeight - panel.clientHeight;
+      if (max <= 0) return;
+
+      const next = Math.min(max, Math.max(0, panel.scrollTop + event.deltaY));
+      // Only swallow the event while the panel still has somewhere to go, so
+      // reaching either end hands scrolling back to the page.
+      if (next !== panel.scrollTop) {
+        panel.scrollTop = next;
+        event.preventDefault();
+      }
+    };
+
+    card.addEventListener("wheel", onWheel, { passive: false });
+    return () => card.removeEventListener("wheel", onWheel);
+  }, [open, reveal]);
+
   // inert is not a React 18 prop, so it is set on the node directly. Keeping
   // Tier 3 mounted preserves its state; inert removes it from the tab order.
   useEffect(() => {
