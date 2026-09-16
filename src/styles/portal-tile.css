@@ -78,7 +78,6 @@
 }
 
 .ptile.is-open {
-  overflow: visible;
   z-index: 40;
 }
 
@@ -191,7 +190,15 @@
   transition: margin 200ms var(--ease-out);
 }
 
-/* The card itself does not change at rest size or position when it opens. */
+/* Opening lifts the name clear so the reveal has the body to itself. The name
+   stays on screen as the tile's anchor. */
+.ptile.is-open .ptile-rest {
+  margin-top: 0;
+}
+
+.ptile.is-open .ptile-icon {
+  display: none;
+}
 
 /* Holds the meta line at rest and the reveal when open. */
 .ptile-swap {
@@ -203,7 +210,12 @@
 }
 
 .ptile.is-open .ptile-swap {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+}
+
+.ptile.is-open .ptile-meta {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .ptile-name {
@@ -234,35 +246,21 @@
 
 /* ── Tier 3, the reveal ─────────────────────────────────────────────────── */
 
-/* The panel leaves the card. Content that cannot fit 84px of tile interior
-   would otherwise clip, so it extends instead, sized to what it holds. Nothing
-   in the grid reflows: the panel floats above it. */
+/* The reveal lives inside the card. A panel positioned outside it becomes its
+   own plane in a rotated preserve-3d scene, which neighbouring card planes cut
+   through no matter how its Z is set. Long lists scroll here instead. */
 .ptile-tier3 {
   position: absolute;
-  left: -1px;
-  right: -1px;
-  z-index: 2;
-  padding: calc(var(--u) * 2) 0 0;
-  /* Never taller than the viewport allows; scrolls only past that. */
-  max-height: min(58vh, 420px);
+  inset: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   scrollbar-width: none;
   opacity: 0;
-  transform: translateY(-4px);
+  transform: translateY(6px);
   pointer-events: none;
   transition:
     opacity 160ms var(--ease-out),
     transform 160ms var(--ease-out);
-}
-
-.ptile.opens-down .ptile-tier3 {
-  top: 100%;
-}
-
-.ptile.opens-up .ptile-tier3 {
-  bottom: 100%;
-  padding: 0 0 calc(var(--u) * 2);
-  transform: translateY(4px);
 }
 
 .ptile.is-open .ptile-tier3 {
@@ -287,14 +285,7 @@
   display: flex;
   flex-direction: column;
   gap: calc(var(--u) * 2);
-  padding: calc(var(--u) * 4);
-  border: 1px solid var(--tile-border-hot);
-  border-radius: var(--tile-radius);
-  background: #17171a;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.06) inset,
-    0 18px 36px rgba(0, 0, 0, 0.55),
-    0 40px 64px rgba(0, 0, 0, 0.4);
+  padding: 0;
   font-size: var(--t-body);
   font-weight: 400;
   line-height: 1.5;
@@ -576,35 +567,4 @@ button.ptile-action {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
-}
-
-/* ── Opening a tile flattens the scene ─────────────────────────────────────
-   Inside a preserve-3d context z-index is ignored and stacking follows real 3D
-   position, so a panel that leaves its card gets sliced by neighbouring card
-   planes. While any tile is open the scene drops to flat and the camera parks,
-   which restores normal stacking and stops the grid moving under the cursor
-   while the panel is being read. The tilt returns when the tile closes. */
-.portal-scene:has(.ptile.is-open) {
-  transform: none !important;
-  transform-style: flat !important;
-  transition: transform 260ms var(--ease-out);
-}
-
-.portal-scene:has(.ptile.is-open) .portal-bento-grid,
-.portal-scene:has(.ptile.is-open) .ptile,
-.portal-scene:has(.ptile.is-open) .ptile-inner {
-  transform-style: flat !important;
-}
-
-.portal-scene:has(.ptile.is-open) .ptile-inner {
-  transform: none !important;
-}
-
-/* Cards keep their depth as a flat offset so the grid does not jump. */
-.portal-scene:has(.ptile.is-open) .ptile {
-  transform: none;
-}
-
-.portal-scene:has(.ptile.is-open) .ptile.is-open {
-  transform: scale(1.006);
 }

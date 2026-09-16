@@ -29,6 +29,13 @@ const ROW_DEPTH_PX = 12 / 3;
 /** Dwell before a hover opens the reveal, so crossing the grid does not flicker. */
 const HOVER_DWELL_MS = 120;
 
+/**
+ * Grace period before a hover closes it. The panel hangs outside the card, so
+ * reaching an item in it can mean clipping a neighbouring card on the way. With
+ * no grace the panel vanishes before the cursor arrives.
+ */
+const HOVER_CLOSE_MS = 260;
+
 export interface PortalTileStat {
   label: string;
   value: ReactNode;
@@ -90,6 +97,7 @@ export default function PortalTile({
   const contentRef = useRef<HTMLDivElement | null>(null);
   const revealRef = useRef<HTMLDivElement | null>(null);
   const dwell = useRef<number | null>(null);
+  const closeTimer = useRef<number | null>(null);
 
   const [hovered, setHovered] = useState(false);
   const [pinned, setPinned] = useState(false);
@@ -129,25 +137,31 @@ export default function PortalTile({
     else node.setAttribute("inert", "");
   }, [pinned]);
 
-  const clearDwell = useCallback(() => {
+  const clearTimers = useCallback(() => {
     if (dwell.current !== null) {
       window.clearTimeout(dwell.current);
       dwell.current = null;
     }
+    if (closeTimer.current !== null) {
+      window.clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
   }, []);
 
-  useEffect(() => clearDwell, [clearDwell]);
+  useEffect(() => clearTimers, [clearTimers]);
 
   const handleEnter = useCallback(() => {
     if (!reveal) return;
-    clearDwell();
+    clearTimers();
+    // Coming back before the grace period expires just cancels the close.
+    if (hovered) return;
     dwell.current = window.setTimeout(() => setHovered(true), HOVER_DWELL_MS);
-  }, [reveal, clearDwell]);
+  }, [reveal, clearTimers, hovered]);
 
   const handleLeave = useCallback(() => {
-    clearDwell();
-    setHovered(false);
-  }, [clearDwell]);
+    clearTimers();
+    closeTimer.current = window.setTimeout(() => setHovered(false), HOVER_CLOSE_MS);
+  }, [clearTimers]);
 
   const togglePin = useCallback(() => {
     setPinned((was) => {
