@@ -577,3 +577,34 @@ button.ptile-action {
   white-space: nowrap;
   border: 0;
 }
+
+/* ── Opening a tile flattens the scene ─────────────────────────────────────
+   Inside a preserve-3d context z-index is ignored and stacking follows real 3D
+   position, so a panel that leaves its card gets sliced by neighbouring card
+   planes. While any tile is open the scene drops to flat and the camera parks,
+   which restores normal stacking and stops the grid moving under the cursor
+   while the panel is being read. The tilt returns when the tile closes. */
+.portal-scene:has(.ptile.is-open) {
+  transform: none !important;
+  transform-style: flat !important;
+  transition: transform 260ms var(--ease-out);
+}
+
+.portal-scene:has(.ptile.is-open) .portal-bento-grid,
+.portal-scene:has(.ptile.is-open) .ptile,
+.portal-scene:has(.ptile.is-open) .ptile-inner {
+  transform-style: flat !important;
+}
+
+.portal-scene:has(.ptile.is-open) .ptile-inner {
+  transform: none !important;
+}
+
+/* Cards keep their depth as a flat offset so the grid does not jump. */
+.portal-scene:has(.ptile.is-open) .ptile {
+  transform: none;
+}
+
+.portal-scene:has(.ptile.is-open) .ptile.is-open {
+  transform: scale(1.006);
+}
