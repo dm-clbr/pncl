@@ -33,6 +33,8 @@ export interface LiquidGradientParams {
   dither: number;
   /** 0 holds the noise still; higher walks it over time. */
   ditherAnim: number;
+  /** Size of a noise cell in CSS pixels. 1 is per-pixel and near invisible. */
+  ditherSize: number;
   exposure: number;
   contrast: number;
   saturation: number;
@@ -67,6 +69,7 @@ export const LIQUID_GRADIENT_DEFAULTS: LiquidGradientParams = {
   ditherMode: "smooth",
   dither: 0.06,
   ditherAnim: 0,
+  ditherSize: 2,
   exposure: 1.2,
   contrast: 1.15,
   saturation: 1.1,
@@ -103,8 +106,9 @@ export const LIQUID_GRADIENT_PRESETS = {
     waveFreq: 1.4,
     distBias: 0.25,
     ditherMode: "grain" as LiquidDitherMode,
-    dither: 0.05,
+    dither: 0.26,
     ditherAnim: 0.35,
+    ditherSize: 3,
     exposure: 1.02,
     contrast: 1.04,
     saturation: 0.9,
@@ -184,6 +188,7 @@ uniform float u_jellify;
 uniform float u_ditherMode;
 uniform float u_dither;
 uniform float u_ditherAnim;
+uniform float u_ditherSize;
 uniform float u_exposure;
 uniform float u_contrast;
 uniform float u_saturation;
@@ -393,7 +398,8 @@ void main() {
     float sn = sin(seedAngle);
     p = mat2(cs, -sn, sn, cs) * p;
 
-    float dither = getDither(floor(fragCoord / u_pixelRatio), u_ditherMode, u_ditherAnim);
+    float cell = max(u_ditherSize, 1.0);
+    float dither = getDither(floor(fragCoord / (u_pixelRatio * cell)), u_ditherMode, u_ditherAnim);
 
     float totalVal = 0.0;
     float totalWeight = 0.0;
@@ -509,6 +515,7 @@ export const LiquidGradientCanvas = forwardRef<
     ditherMode = LIQUID_GRADIENT_DEFAULTS.ditherMode,
     dither = LIQUID_GRADIENT_DEFAULTS.dither,
     ditherAnim = LIQUID_GRADIENT_DEFAULTS.ditherAnim,
+    ditherSize = LIQUID_GRADIENT_DEFAULTS.ditherSize,
     exposure = LIQUID_GRADIENT_DEFAULTS.exposure,
     contrast = LIQUID_GRADIENT_DEFAULTS.contrast,
     saturation = LIQUID_GRADIENT_DEFAULTS.saturation,
@@ -551,6 +558,7 @@ export const LiquidGradientCanvas = forwardRef<
     ditherMode,
     dither,
     ditherAnim,
+    ditherSize,
     exposure,
     contrast,
     saturation,
@@ -572,6 +580,7 @@ export const LiquidGradientCanvas = forwardRef<
     ditherMode,
     dither,
     ditherAnim,
+    ditherSize,
     exposure,
     contrast,
     saturation,
@@ -719,6 +728,7 @@ export const LiquidGradientCanvas = forwardRef<
           "u_ditherMode",
           "u_dither",
           "u_ditherAnim",
+          "u_ditherSize",
           "u_exposure",
           "u_contrast",
           "u_saturation",
@@ -789,6 +799,7 @@ export const LiquidGradientCanvas = forwardRef<
       gl!.uniform1f(uLocs.u_ditherMode, ditherModeToNumber(p.ditherMode));
       gl!.uniform1f(uLocs.u_dither, p.dither);
       gl!.uniform1f(uLocs.u_ditherAnim, p.ditherAnim);
+      gl!.uniform1f(uLocs.u_ditherSize, p.ditherSize);
       gl!.uniform1f(uLocs.u_exposure, p.exposure);
       gl!.uniform1f(uLocs.u_contrast, p.contrast);
       gl!.uniform1f(uLocs.u_saturation, p.saturation);
