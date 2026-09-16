@@ -889,3 +889,12 @@
   border-color: var(--portal-accent);
   color: var(--portal-accent);
 }
+
+.gtuner-seg-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.gtuner-seg-4 button {
+  font-size: 9px;
+  letter-spacing: 0.04em;
+}

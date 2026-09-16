@@ -35,6 +35,8 @@ export interface LiquidGradientParams {
   ditherAnim: number;
   /** Size of a noise cell in CSS pixels. 1 is per-pixel and near invisible. */
   ditherSize: number;
+  /** Grain applied to the output colour, so it shows evenly across the ramp. */
+  ditherFlat: number;
   exposure: number;
   contrast: number;
   saturation: number;
@@ -70,6 +72,7 @@ export const LIQUID_GRADIENT_DEFAULTS: LiquidGradientParams = {
   dither: 0.06,
   ditherAnim: 0,
   ditherSize: 2,
+  ditherFlat: 0.25,
   exposure: 1.2,
   contrast: 1.15,
   saturation: 1.1,
@@ -109,6 +112,7 @@ export const LIQUID_GRADIENT_PRESETS = {
     dither: 0.26,
     ditherAnim: 0.35,
     ditherSize: 3,
+    ditherFlat: 0.3,
     exposure: 1.02,
     contrast: 1.04,
     saturation: 0.9,
@@ -189,6 +193,7 @@ uniform float u_ditherMode;
 uniform float u_dither;
 uniform float u_ditherAnim;
 uniform float u_ditherSize;
+uniform float u_ditherFlat;
 uniform float u_exposure;
 uniform float u_contrast;
 uniform float u_saturation;
@@ -447,7 +452,13 @@ void main() {
     col = softGamutMap(col);
     col = toSrgb(col);
 
-    fragColor = vec4(col, 1.0);
+    // Grain on the output, not just on the palette lookup above. Perturbing
+    // only the lookup makes dither invisible wherever the palette has little
+    // local contrast, which is exactly what happens at the dark end where
+    // neighbouring stops are nearly the same colour.
+    col += (dither - 0.5) * u_dither * u_ditherFlat;
+
+    fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
 }
 `;
 
@@ -516,6 +527,7 @@ export const LiquidGradientCanvas = forwardRef<
     dither = LIQUID_GRADIENT_DEFAULTS.dither,
     ditherAnim = LIQUID_GRADIENT_DEFAULTS.ditherAnim,
     ditherSize = LIQUID_GRADIENT_DEFAULTS.ditherSize,
+    ditherFlat = LIQUID_GRADIENT_DEFAULTS.ditherFlat,
     exposure = LIQUID_GRADIENT_DEFAULTS.exposure,
     contrast = LIQUID_GRADIENT_DEFAULTS.contrast,
     saturation = LIQUID_GRADIENT_DEFAULTS.saturation,
@@ -559,6 +571,7 @@ export const LiquidGradientCanvas = forwardRef<
     dither,
     ditherAnim,
     ditherSize,
+    ditherFlat,
     exposure,
     contrast,
     saturation,
@@ -581,6 +594,7 @@ export const LiquidGradientCanvas = forwardRef<
     dither,
     ditherAnim,
     ditherSize,
+    ditherFlat,
     exposure,
     contrast,
     saturation,
@@ -729,6 +743,7 @@ export const LiquidGradientCanvas = forwardRef<
           "u_dither",
           "u_ditherAnim",
           "u_ditherSize",
+          "u_ditherFlat",
           "u_exposure",
           "u_contrast",
           "u_saturation",
@@ -800,6 +815,7 @@ export const LiquidGradientCanvas = forwardRef<
       gl!.uniform1f(uLocs.u_dither, p.dither);
       gl!.uniform1f(uLocs.u_ditherAnim, p.ditherAnim);
       gl!.uniform1f(uLocs.u_ditherSize, p.ditherSize);
+      gl!.uniform1f(uLocs.u_ditherFlat, p.ditherFlat);
       gl!.uniform1f(uLocs.u_exposure, p.exposure);
       gl!.uniform1f(uLocs.u_contrast, p.contrast);
       gl!.uniform1f(uLocs.u_saturation, p.saturation);
