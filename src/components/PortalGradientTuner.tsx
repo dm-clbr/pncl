@@ -29,8 +29,8 @@ const ENABLE_KEY = "pncl:tuner";
 
 export const TUNER_DEFAULTS: TunerState = {
   ...LIQUID_GRADIENT_PRESETS.pncl,
-  layerOpacity: 0.55,
-  blendMode: "soft-light",
+  layerOpacity: 1,
+  blendMode: "normal",
   vignette: 1,
   staticBase: false,
 };
