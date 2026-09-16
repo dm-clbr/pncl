@@ -71,6 +71,23 @@
   z-index: 1;
 }
 
+/* Sits above the static gradient and below the vignette, so the wall light
+   drifts without the page losing its shape. */
+.portal-bento-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.55;
+  mix-blend-mode: soft-light;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-bento-canvas {
+    opacity: 0.4;
+  }
+}
+
 .portal-bento-wrap {
   width: 100%;
   max-width: 1180px;

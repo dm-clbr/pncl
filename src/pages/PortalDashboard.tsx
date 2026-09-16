@@ -84,6 +84,9 @@ import PortalBrandAssetsList from "@/components/PortalBrandAssetsList";
 import PortalDashboardFilesList from "@/components/PortalDashboardFilesList";
 import PortalPrimaryNav from "@/components/PortalPrimaryNav";
 import PortalBentoStage from "@/components/PortalBentoStage";
+import LiquidGradientCanvas, {
+  LIQUID_GRADIENT_PRESETS,
+} from "@/components/ui/liquid-gradient";
 import PortalTile from "@/components/PortalBentoTile";
 import { usePortalIncentives } from "@/hooks/usePortalIncentives";
 import { usePortalBrandAssets } from "@/hooks/usePortalBrandAssets";
@@ -957,6 +960,18 @@ export default function PortalDashboard() {
       <div className="grain" aria-hidden="true" />
 
       <main className="portal-bento portal-dash portal-home-dash">
+        {/* Living backdrop. Pauses itself offscreen, on a hidden tab, and under
+            prefers-reduced-motion; the CSS gradient underneath is the fallback
+            if WebGL2 is unavailable. */}
+        <div className="portal-bento-canvas" aria-hidden="true">
+          <LiquidGradientCanvas
+            {...LIQUID_GRADIENT_PRESETS.pncl}
+            fps={30}
+            maxDpr={1}
+            fallbackColor="transparent"
+          />
+        </div>
+
         <div className="portal-bento-wrap">
           <header className="portal-bento-head">
             <div className="portal-bento-brand">
