@@ -20,8 +20,11 @@ import {
   type ReactNode,
 } from "react";
 
-const LERP = 0.075;
-const SETTLE = 0.001;
+/* Spring rather than a plain lerp, so the camera carries momentum: it takes a
+   moment to get going, overshoots slightly, and settles. */
+const STIFFNESS = 0.028;
+const DAMPING = 0.88;
+const SETTLE = 0.0004;
 
 const ROTATE_Y_DEG = 4.2;
 const ROTATE_X_DEG = -3;
@@ -67,6 +70,7 @@ export default function PortalBentoStage({
 
   const target = useRef({ x: 0, y: 0 });
   const current = useRef({ x: 0, y: 0 });
+  const velocity = useRef({ x: 0, y: 0 });
   const frame = useRef<number | null>(null);
   const primed = useRef(false);
   const enabled = useRef(false);
@@ -118,14 +122,24 @@ export default function PortalBentoStage({
       const dx = target.current.x - current.current.x;
       const dy = target.current.y - current.current.y;
 
-      current.current.x += dx * LERP;
-      current.current.y += dy * LERP;
+      velocity.current.x = (velocity.current.x + dx * STIFFNESS) * DAMPING;
+      velocity.current.y = (velocity.current.y + dy * STIFFNESS) * DAMPING;
+      current.current.x += velocity.current.x;
+      current.current.y += velocity.current.y;
       write();
 
-      if (Math.abs(dx) < SETTLE && Math.abs(dy) < SETTLE) {
+      const atRest =
+        Math.abs(dx) < SETTLE &&
+        Math.abs(dy) < SETTLE &&
+        Math.abs(velocity.current.x) < SETTLE &&
+        Math.abs(velocity.current.y) < SETTLE;
+
+      if (atRest) {
         // Settled. Snap off the residual, drop will-change, park the loop.
         current.current.x = target.current.x;
         current.current.y = target.current.y;
+        velocity.current.x = 0;
+        velocity.current.y = 0;
         write();
         setWillChange(false);
         frame.current = null;
@@ -153,16 +167,6 @@ export default function PortalBentoStage({
         1,
         Math.max(-1, (event.clientY / window.innerHeight) * 2 - 1),
       );
-
-      // Seed from the first sample so the grid eases out of where the cursor
-      // already is instead of jumping in from centre on the first event.
-      if (!primed.current) {
-        primed.current = true;
-        current.current.x = target.current.x;
-        current.current.y = target.current.y;
-        write();
-        return;
-      }
 
       start();
     };
