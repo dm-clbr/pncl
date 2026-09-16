@@ -224,13 +224,16 @@
 .portal-bento-grid {
   --cols: 4;
   --rows: 3;
-  --tile-min: 158px;
+  --tile-min: 164px;
 
   flex: 1;
   min-height: 0;
   display: grid;
   grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
   grid-template-rows: repeat(var(--rows), minmax(var(--tile-min), 1fr));
+  /* The server can return more sections than the row count assumes. Without
+     this, extra tiles land in implicit rows with no height and vanish. */
+  grid-auto-rows: minmax(var(--tile-min), 1fr);
   align-items: stretch;
   gap: var(--grid-gap);
   transform-style: preserve-3d;
@@ -359,7 +362,7 @@
   .portal-bento-grid {
     --cols: 3;
     --rows: 4;
-    --tile-min: 150px;
+    --tile-min: 160px;
   }
 }
 
@@ -367,7 +370,7 @@
   .portal-bento-grid {
     --cols: 2;
     --rows: 6;
-    --tile-min: 146px;
+    --tile-min: 158px;
   }
 }
 
@@ -379,7 +382,7 @@
   .portal-bento-grid {
     --cols: 2;
     --rows: 6;
-    --tile-min: 152px;
+    --tile-min: 168px;
     --grid-gap: 10px;
   }
 
@@ -450,13 +453,13 @@
    scrolls even though the columns fit. */
 @media (min-width: 621px) and (max-height: 820px) {
   .portal-bento-grid {
-    --tile-min: 138px;
+    --tile-min: 148px;
   }
 }
 
 @media (min-width: 621px) and (max-height: 740px) {
   .portal-bento-grid {
-    --tile-min: 118px;
+    --tile-min: 130px;
   }
 
   .portal-bento-title {

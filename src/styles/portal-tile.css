@@ -6,8 +6,8 @@
 
 .portal-bento {
   /* Type scale. These seven steps are the only sizes used inside a tile. */
-  --t-display: 48px;
-  --t-large: 30px;
+  --t-display: 34px;
+  --t-large: 22px;
   --t-mid: 20px;
   --t-body: 13px;
   --t-label: 10px;
@@ -111,9 +111,23 @@
 /* Header row. Index and title sit on one baseline at the single left edge. */
 .ptile-head {
   display: flex;
-  align-items: baseline;
-  gap: calc(var(--u) * 2);
+  align-items: center;
+  gap: calc(var(--u) * 1.5);
   flex-shrink: 0;
+}
+
+/* A 14px outline mark so a tile is identifiable before its number is read. */
+.ptile-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--c-t1-label);
+  flex-shrink: 0;
+  margin-bottom: calc(var(--u) * 1.5);
+}
+
+.ptile.is-urgent .ptile-icon {
+  color: var(--portal-accent);
 }
 
 .ptile-index {
@@ -154,241 +168,74 @@
   flex-shrink: 0;
 }
 
-/* Tier 1 sits below one large interval and above the biggest gap in the tile.
-   That gap is the design; nothing fills it. */
-.ptile-tier1 {
+/* The rest state is three elements: index and icon above, the name, and one
+   supporting line. Everything else waits in the reveal. */
+.ptile-rest {
+  margin-top: auto;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: calc(var(--u) * 2);
-  margin-top: calc(var(--u) * 5);
-  min-width: 0;
-  flex-shrink: 0;
-}
-
-.ptile-foot {
-  position: relative;
-  margin-top: auto;
-  flex-shrink: 0;
-  min-height: 0;
-}
-
-/* The rule divides Tier 1 from Tier 2. A tile with no Tier 2 has nothing to
-   divide, so it does not get a rule. */
-.ptile-foot:has(.ptile-tier2) {
-  padding-top: calc(var(--u) * 2);
-  border-top: 1px solid var(--c-rule);
-}
-
-/* ── Tier 1 type ────────────────────────────────────────────────────────── */
-
-.ptile-display {
-  display: block;
-  font-size: var(--t-display);
-  font-weight: 800;
-  letter-spacing: -0.035em;
-  line-height: 0.95;
-  font-variant-numeric: tabular-nums lining-nums;
-  color: var(--c-t1-value);
-  /* Pulls the numeral's side bearing back onto the tile's left edge. */
-  margin-left: -0.04em;
-}
-
-.ptile-display.is-accent {
-  color: var(--portal-accent);
-}
-
-.ptile-display.is-success {
-  color: var(--portal-success);
-}
-
-.ptile-display-suffix {
-  font-size: var(--t-large);
-  font-weight: 700;
-  letter-spacing: -0.025em;
-  margin-left: 0.04em;
-}
-
-.ptile-display-label {
-  display: block;
-  font-size: var(--t-label);
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  line-height: 1;
-  text-transform: uppercase;
-  color: var(--c-t1-label);
-}
-
-.ptile-display-label.is-accent {
-  color: var(--portal-accent);
-}
-
-.ptile-display-label.is-success {
-  color: var(--portal-success);
-}
-
-/* Index tiles: a flush-left list, no rules, no icons, no arrows. */
-.ptile-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--u) * 3);
+  gap: calc(var(--u) * 1.5);
   min-width: 0;
   width: 100%;
+  flex-shrink: 0;
+  transition: margin 200ms var(--ease-out);
 }
 
-.ptile-list-item {
+/* Opening lifts the name to the top so the reveal gets the whole body, while
+   the name itself stays on screen as the tile's anchor. */
+.ptile.is-open .ptile-rest {
+  margin-top: calc(var(--u) * 2);
+}
+
+.ptile.is-open .ptile-icon {
+  display: none;
+}
+
+/* Holds the meta line at rest and the reveal when open. */
+.ptile-swap {
+  position: relative;
+  flex-shrink: 0;
+  min-height: 0;
+  margin-top: var(--u);
+  transition: flex 200ms var(--ease-out);
+}
+
+.ptile.is-open .ptile-swap {
+  flex: 1 1 auto;
+}
+
+.ptile-name {
   font-size: var(--t-mid);
   font-weight: 600;
   letter-spacing: -0.015em;
-  line-height: 1.25;
+  line-height: 1.2;
   color: var(--c-t1-value);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   max-width: 100%;
 }
 
-/* A single Mid line used where a tile has no numeral: empty and error states. */
-.ptile-line {
-  font-size: var(--t-mid);
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  line-height: 1.25;
-  color: var(--c-t1-value);
-  margin: 0;
-}
-
-.ptile-line-muted {
-  color: var(--c-t3-body);
-}
-
-/* ── Tier 2 ─────────────────────────────────────────────────────────────── */
-
-.ptile-tier2 {
-  display: block;
-  transition:
-    opacity 180ms var(--ease-out),
-    transform 180ms var(--ease-out);
-}
-
-.ptile.is-open .ptile-tier2 {
-  opacity: 0;
-  transform: translateY(-6px);
-  pointer-events: none;
-}
-
-.ptile-stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: calc(var(--u) * 2);
-}
-
-.ptile-stat {
-  display: flex;
-  flex-direction: column;
-  gap: var(--u);
-  min-width: 0;
-  grid-column: span 2;
-}
-
-.ptile-stats > .ptile-stat:nth-child(3) {
-  grid-column: span 4;
-}
-
-.ptile-stat-label {
-  font-size: var(--t-label);
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  line-height: 1;
-  text-transform: uppercase;
-  color: var(--c-t2-label);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.ptile-stat-value {
-  font-size: var(--t-mid);
-  font-weight: 600;
-  letter-spacing: -0.015em;
-  line-height: 1.25;
-  font-variant-numeric: tabular-nums lining-nums;
-  color: var(--c-t2-value);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.ptile-stat-value.is-accent {
-  color: var(--portal-accent);
-}
-
-.ptile-stat-value.is-success {
-  color: var(--portal-success);
-}
-
-.ptile-micro {
-  display: block;
-  font-size: var(--t-micro);
+.ptile-meta {
+  font-size: var(--t-body);
   font-weight: 400;
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
   line-height: 1.4;
   font-variant-numeric: tabular-nums lining-nums;
-  color: var(--c-t2-label);
-  margin: 0;
-}
-
-/* Required-forms markers: label over a 2px state underline, no chips. */
-.ptile-markers {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: calc(var(--u) * 2);
-}
-
-.ptile-marker {
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--u) * 1.5);
-  min-width: 0;
-}
-
-.ptile-marker-label {
-  font-size: var(--t-label);
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  line-height: 1;
-  text-transform: uppercase;
-  color: var(--c-t2-label);
+  color: var(--c-t1-label);
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.ptile-marker-rule {
-  height: 2px;
-  background: rgba(255, 255, 255, 0.14);
-}
-
-.ptile-marker.is-done .ptile-marker-rule {
-  background: var(--portal-success);
-}
-
-.ptile-marker.is-action .ptile-marker-rule {
-  background: var(--portal-accent);
+.ptile-meta.is-accent {
+  color: var(--portal-accent);
 }
 
 /* ── Tier 3, the reveal ─────────────────────────────────────────────────── */
 
 .ptile-tier3 {
   position: absolute;
-  left: 0;
-  right: 0;
-  /* Occupies the space Tier 2 vacates plus the large interval above it. */
-  bottom: 0;
-  top: calc(var(--u) * 2);
+  inset: 0;
   overflow-y: auto;
   scrollbar-width: none;
   opacity: 0;
@@ -410,11 +257,7 @@
 }
 
 /* The reveal grows upward over the empty interval once the tile is open. */
-.ptile.is-open .ptile-foot {
-  min-height: 62%;
-}
-
-.ptile-reveal-body {
+.ptile.is-open .ptile-reveal-body {
   display: flex;
   flex-direction: column;
   gap: calc(var(--u) * 2);
@@ -496,6 +339,39 @@
   outline-offset: 2px;
 }
 
+
+.ptile-meta {
+  transition:
+    opacity 180ms var(--ease-out),
+    transform 180ms var(--ease-out);
+}
+
+.ptile.is-open .ptile-meta {
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+}
+
+/* Reveal rows sit tighter than the reveal body default so more fit the tile. */
+.ptile-tier3 .ptile-link {
+  padding: 3px 0;
+  line-height: 1.35;
+}
+
+/* A row is padded once: by the link when there is one, by the li otherwise. */
+.ptile-tier3 .ptile-reveal-list li {
+  padding: 3px 0;
+  line-height: 1.35;
+}
+
+.ptile-tier3 .ptile-reveal-list li:has(.ptile-link) {
+  padding: 0;
+}
+
+.ptile-tier3 .ptile-reveal-body {
+  gap: var(--u);
+}
+
 /* ── Data marks: flat geometry only, never in the Tier 1 position ───────── */
 
 .ptile-track {
@@ -522,16 +398,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .ptile,
-  .ptile-tier2,
-  .ptile-tier3 {
-    transition: none !important;
-  }
-
-  .ptile.is-open .ptile-tier2 {
-    transform: none;
-  }
-
-  .ptile-tier3 {
+    .ptile.is-open   .ptile-tier3 {
     transform: none;
   }
 
@@ -544,46 +411,36 @@
 
 @media (max-width: 1199px) {
   .portal-bento {
-    --t-display: 40px;
+    --t-display: 30px;
   }
 }
 
 @media (max-width: 860px) {
   .portal-bento {
-    --t-display: 36px;
-    --t-large: 24px;
+    --t-display: 28px;
+    --t-large: 20px;
   }
 }
 
 @media (max-width: 620px) {
   .portal-bento {
-    --t-display: 30px;
-    --t-large: 20px;
-    --t-mid: 16px;
+    --t-display: 26px;
+    --t-large: 18px;
+    --t-mid: 15px;
   }
 
   .ptile-inner {
     inset: 12px;
   }
 
-  .ptile-tier1 {
-    margin-top: calc(var(--u) * 3);
-  }
-
-  .ptile-list {
-    gap: calc(var(--u) * 2);
-  }
-}
+    }
 
 @media (max-height: 740px) and (min-width: 621px) {
   .portal-bento {
-    --t-display: 36px;
+    --t-display: 28px;
   }
 
-  .ptile-tier1 {
-    margin-top: calc(var(--u) * 3);
   }
-}
 
 /* Reveal rows: phase breakdown and similar label/value pairs. */
 .ptile-row {
