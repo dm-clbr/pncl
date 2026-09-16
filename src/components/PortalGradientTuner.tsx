@@ -18,6 +18,10 @@ export interface TunerState extends LiquidGradientParams {
   layerOpacity: number;
   /** Blend mode of the canvas layer. soft-light barely touches darks. */
   blendMode: string;
+  /** Strength of the fixed vignette that darkens the lower right. */
+  vignette: number;
+  /** Restores the original static radial gradient under the canvas. */
+  staticBase: boolean;
 }
 
 const STORAGE_KEY = "pncl:gradient-tuner";
@@ -27,6 +31,8 @@ export const TUNER_DEFAULTS: TunerState = {
   ...LIQUID_GRADIENT_PRESETS.pncl,
   layerOpacity: 0.55,
   blendMode: "soft-light",
+  vignette: 1,
+  staticBase: false,
 };
 
 type Field = {
@@ -39,6 +45,7 @@ type Field = {
 
 const FIELDS: Field[] = [
   { key: "layerOpacity", label: "Layer opacity", min: 0, max: 1, step: 0.01 },
+  { key: "vignette", label: "Vignette", min: 0, max: 1, step: 0.01 },
   { key: "speed", label: "Speed", min: 0, max: 1.5, step: 0.01 },
   { key: "scale", label: "Scale", min: 0.05, max: 1.5, step: 0.01 },
   { key: "seed", label: "Seed", min: 0, max: 64, step: 1 },
@@ -136,7 +143,7 @@ export function usePortalGradientTuner() {
     }
   }, []);
 
-  const { layerOpacity, blendMode, ...gradient } = values;
+  const { layerOpacity, blendMode, vignette, staticBase, ...gradient } = values;
 
   const panel = allowed && open ? (
     <TunerPanel
@@ -147,7 +154,7 @@ export function usePortalGradientTuner() {
     />
   ) : null;
 
-  return { gradient, layerOpacity, blendMode, panel, allowed };
+  return { gradient, layerOpacity, blendMode, vignette, staticBase, panel, allowed };
 }
 
 function TunerPanel({
@@ -164,7 +171,7 @@ function TunerPanel({
   const [copied, setCopied] = useState(false);
 
   const preset = useMemo(() => {
-    const { layerOpacity, blendMode, colors, ...rest } = values;
+    const { layerOpacity, blendMode, vignette, staticBase, colors, ...rest } = values;
     const body = Object.entries(rest)
       .map(([k, v]) => `    ${k}: ${typeof v === "string" ? `"${v}"` : v},`)
       .join("\n");
@@ -176,6 +183,7 @@ function TunerPanel({
       "  },",
       "",
       `// .portal-bento-canvas { opacity: ${layerOpacity}; mix-blend-mode: ${blendMode}; }`,
+      `// --vignette: ${vignette};  static base: ${staticBase}`,
     ].join("\n");
   }, [values]);
 
@@ -215,6 +223,27 @@ function TunerPanel({
             />
           </label>
         ))}
+
+        <label className="gtuner-row">
+          <span className="gtuner-label">Static base gradient</span>
+          <div className="gtuner-seg">
+            <button
+              type="button"
+              className={!values.staticBase ? "is-on" : ""}
+              onClick={() => onChange("staticBase", false as unknown as string)}
+            >
+              off
+            </button>
+            <button
+              type="button"
+              className={values.staticBase ? "is-on" : ""}
+              onClick={() => onChange("staticBase", true as unknown as string)}
+            >
+              on
+            </button>
+            <span />
+          </div>
+        </label>
 
         <label className="gtuner-row">
           <span className="gtuner-label">Blend mode</span>
