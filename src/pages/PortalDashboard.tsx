@@ -84,9 +84,8 @@ import PortalBrandAssetsList from "@/components/PortalBrandAssetsList";
 import PortalDashboardFilesList from "@/components/PortalDashboardFilesList";
 import PortalPrimaryNav from "@/components/PortalPrimaryNav";
 import PortalBentoStage from "@/components/PortalBentoStage";
-import LiquidGradientCanvas, {
-  LIQUID_GRADIENT_PRESETS,
-} from "@/components/ui/liquid-gradient";
+import LiquidGradientCanvas from "@/components/ui/liquid-gradient";
+import { usePortalGradientTuner } from "@/components/PortalGradientTuner";
 import PortalTile from "@/components/PortalBentoTile";
 import { usePortalIncentives } from "@/hooks/usePortalIncentives";
 import { usePortalBrandAssets } from "@/hooks/usePortalBrandAssets";
@@ -955,6 +954,9 @@ export default function PortalDashboard() {
     );
   });
 
+  // Hidden backdrop tuner. Cmd/Ctrl + Shift + G in dev.
+  const { gradient, layerOpacity, panel: tunerPanel } = usePortalGradientTuner();
+
   return (
     <div className="home2-page">
       <div className="grain" aria-hidden="true" />
@@ -963,9 +965,13 @@ export default function PortalDashboard() {
         {/* Living backdrop. Pauses itself offscreen, on a hidden tab, and under
             prefers-reduced-motion; the CSS gradient underneath is the fallback
             if WebGL2 is unavailable. */}
-        <div className="portal-bento-canvas" aria-hidden="true">
+        <div
+          className="portal-bento-canvas"
+          style={{ opacity: layerOpacity }}
+          aria-hidden="true"
+        >
           <LiquidGradientCanvas
-            {...LIQUID_GRADIENT_PRESETS.pncl}
+            {...gradient}
             fps={30}
             maxDpr={1}
             fallbackColor="transparent"
@@ -1105,6 +1111,8 @@ export default function PortalDashboard() {
           </>
         )}
       </main>
+
+      {tunerPanel}
     </div>
   );
 }
