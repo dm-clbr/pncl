@@ -669,3 +669,161 @@
   outline: 2px solid var(--portal-accent);
   outline-offset: 3px;
 }
+
+/* ── Hidden backdrop tuner (dev, or localStorage pncl:tuner = "1") ───────── */
+
+.gtuner {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 9999;
+  width: 264px;
+  max-height: calc(100vh - 32px);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(14, 14, 16, 0.94);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  color: rgba(255, 255, 255, 0.9);
+  font-family: var(--ff-sans, "Manrope", sans-serif);
+}
+
+.gtuner-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gtuner-title {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.gtuner-x {
+  display: inline-flex;
+  padding: 2px;
+  border: none;
+  background: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+}
+
+.gtuner-x:hover {
+  color: #fff;
+}
+
+.gtuner-body {
+  padding: 10px 14px 14px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gtuner-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gtuner-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.gtuner-value {
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.gtuner input[type="range"] {
+  width: 100%;
+  height: 2px;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.gtuner input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--portal-accent);
+  cursor: pointer;
+}
+
+.gtuner-seg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+}
+
+.gtuner-seg button {
+  padding: 5px 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  background: none;
+  color: rgba(255, 255, 255, 0.6);
+  font: inherit;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.gtuner-seg button.is-on {
+  border-color: var(--portal-accent);
+  color: var(--portal-accent);
+}
+
+.gtuner-colors {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.gtuner-colors input[type="color"] {
+  width: 30px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 5px;
+  background: none;
+  cursor: pointer;
+}
+
+.gtuner-foot {
+  display: flex;
+  gap: 6px;
+  padding: 10px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.gtuner-foot button {
+  flex: 1;
+  padding: 7px 0;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 7px;
+  background: none;
+  color: rgba(255, 255, 255, 0.8);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.gtuner-foot button:hover {
+  border-color: var(--portal-accent);
+  color: var(--portal-accent);
+}
