@@ -1,40 +1,44 @@
 /**
- * A single card in the portal bento grid.
+ * A card in the portal bento grid, and the menu it opens.
  *
- * Interiors follow a three-tier hierarchy. Tier 1 is the glance value, Tier 2
- * the scan row, Tier 3 the reveal. Tier 3 stays in the DOM at all times and is
- * marked inert while hidden, so its links leave the tab order without the
- * content being unmounted.
+ * Interaction contract: click, tap, Enter or Space opens the menu and it stays
+ * open. Escape, a click outside, or opening another card closes it. Hover is a
+ * preview only, so nothing depends on it; the dashboard has to behave the same
+ * on a phone as on a desktop.
  *
- * The tile face takes a translateZ from its grid row so rows separate under the
- * camera; its content node is registered with the stage, which counter-rotates
- * it each frame for parallax.
+ * The menu renders into a flat overlay outside the 3D stage rather than inside
+ * the card. A panel positioned inside a rotated preserve-3d scene is just
+ * another plane, and neighbouring card planes slice through it whatever its
+ * z-index or depth. Out here it stacks normally and can size itself to its
+ * content. It follows its card every frame so the camera can keep drifting
+ * underneath without the menu coming adrift.
  */
 import {
   useCallback,
   useEffect,
   useId,
-  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
+import { ChevronDown } from "lucide-react";
 import { usePortalCamera } from "@/components/PortalBentoStage";
 
 /** translateZ per grid row, so lower rows sit nearer the camera. */
 const ROW_DEPTH_PX = 12 / 3;
 
-/** Dwell before a hover opens the reveal, so crossing the grid does not flicker. */
-const HOVER_DWELL_MS = 120;
+/** Hover has to linger before it previews, so crossing the grid stays quiet. */
+const HOVER_DWELL_MS = 200;
 
-/**
- * Grace period before a hover closes it. The panel hangs outside the card, so
- * reaching an item in it can mean clipping a neighbouring card on the way. With
- * no grace the panel vanishes before the cursor arrives.
- */
-const HOVER_CLOSE_MS = 260;
+/** Grace on the way out, so the pointer can travel into the menu. */
+const HOVER_CLOSE_MS = 220;
+
+const MENU_GAP = 8;
+const MENU_MIN_WIDTH = 248;
+const MENU_EDGE_PAD = 12;
 
 export interface PortalTileStat {
   label: string;
@@ -50,29 +54,59 @@ export interface PortalTileProps {
   row: number;
   /** Reading-order position, used for the entry stagger. */
   order: number;
-  /** One short supporting line under the name. Everything else is a reveal. */
+  /** One short supporting line under the name. */
   meta?: ReactNode;
   /** Marks the meta line as needing action. */
   accent?: boolean;
-  /** Tier 3: hidden at rest. */
+  /** Menu contents. A card with none is a plain card, not a disclosure. */
   reveal?: ReactNode;
-  /** A small outline mark left of the title, so tiles are tellable apart. */
+  /** A small outline mark heading the name. */
   icon?: ReactNode;
-  /** Sits at the tile's top right. */
+  /** Sits at the card's top right. */
   headerAside?: ReactNode;
-  /** Count shown at the far right of an index tile's header. */
   headerCount?: ReactNode;
   urgent?: boolean;
   className?: string;
   ariaLabel?: string;
-  /** Called when the tile is pinned, so the page can close any other tile. */
-  onPin?: (pinned: boolean) => void;
-  /** Set by the page to force this tile closed when another pins. */
-  forceUnpinned?: boolean;
+  /** True while this card owns the open menu. */
+  open?: boolean;
+  /** Asks the page to open this card's menu, or close whichever is open. */
+  onOpenChange?: (open: boolean) => void;
 }
 
 function formatIndex(index: number): string {
   return String(index).padStart(2, "0");
+}
+
+interface MenuBox {
+  left: number;
+  top: number;
+  width: number;
+  maxHeight: number;
+  placement: "below" | "above";
+}
+
+/** Places the menu against its card, flipping and clamping to stay on screen. */
+function measure(card: HTMLElement, menuHeight: number): MenuBox {
+  const r = card.getBoundingClientRect();
+  const width = Math.max(r.width, MENU_MIN_WIDTH);
+  const roomBelow = window.innerHeight - r.bottom - MENU_GAP - MENU_EDGE_PAD;
+  const roomAbove = r.top - MENU_GAP - MENU_EDGE_PAD;
+
+  const below = menuHeight <= roomBelow || roomBelow >= roomAbove;
+  const maxHeight = Math.max(140, below ? roomBelow : roomAbove);
+
+  let left = r.left;
+  if (left + width > window.innerWidth - MENU_EDGE_PAD) {
+    left = window.innerWidth - MENU_EDGE_PAD - width;
+  }
+  left = Math.max(MENU_EDGE_PAD, left);
+
+  const top = below
+    ? r.bottom + MENU_GAP
+    : Math.max(MENU_EDGE_PAD, r.top - MENU_GAP - Math.min(menuHeight, maxHeight));
+
+  return { left, top, width, maxHeight, placement: below ? "below" : "above" };
 }
 
 export default function PortalTile({
@@ -89,129 +123,113 @@ export default function PortalTile({
   urgent = false,
   className = "",
   ariaLabel,
-  onPin,
-  forceUnpinned = false,
+  open = false,
+  onOpenChange,
 }: PortalTileProps) {
   const { registerContent } = usePortalCamera();
   const cardRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
-  const revealRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const dwell = useRef<number | null>(null);
   const closeTimer = useRef<number | null>(null);
 
-  const [hovered, setHovered] = useState(false);
-  const [pinned, setPinned] = useState(false);
-  const [flip, setFlip] = useState<"down" | "up">("down");
-  const revealId = useId();
+  const [box, setBox] = useState<MenuBox | null>(null);
+  const menuId = useId();
+  const hasMenu = Boolean(reveal);
 
   useEffect(() => registerContent(contentRef.current), [registerContent]);
 
-  useEffect(() => {
-    if (forceUnpinned && pinned) setPinned(false);
-  }, [forceUnpinned, pinned]);
-
-  const open = Boolean(reveal) && (pinned || hovered);
-
-  // The panel leaves the tile, so it has to choose a direction that stays on
-  // screen. Measured in a layout effect so it never paints the wrong way first.
-  useLayoutEffect(() => {
-    if (!open) return;
-    const card = cardRef.current;
-    const panel = revealRef.current;
-    if (!card || !panel) return;
-    const box = card.getBoundingClientRect();
-    const needed = panel.scrollHeight;
-    // The panel hangs off the card's edges, so room is measured from those
-    // edges, not from the card's top.
-    const roomBelow = window.innerHeight - box.bottom - 12;
-    const roomAbove = box.top - 12;
-    setFlip(needed > roomBelow && roomAbove > roomBelow ? "up" : "down");
-  }, [open]);
-
-  // The wheel is routed to the panel by hand. React attaches wheel passively, so
-  // the page would scroll underneath instead of the list moving, and the panel
-  // is small enough that the pointer is often over a child rather than it.
-  useEffect(() => {
-    const card = cardRef.current;
-    if (!card || !reveal) return;
-
-    const onWheel = (event: WheelEvent) => {
-      const panel = revealRef.current;
-      if (!panel || !open) return;
-      const max = panel.scrollHeight - panel.clientHeight;
-      if (max <= 0) return;
-
-      const next = Math.min(max, Math.max(0, panel.scrollTop + event.deltaY));
-      // Only swallow the event while the panel still has somewhere to go, so
-      // reaching either end hands scrolling back to the page.
-      if (next !== panel.scrollTop) {
-        panel.scrollTop = next;
-        event.preventDefault();
-      }
-    };
-
-    card.addEventListener("wheel", onWheel, { passive: false });
-    return () => card.removeEventListener("wheel", onWheel);
-  }, [open, reveal]);
-
-  // inert is not a React 18 prop, so it is set on the node directly. Keeping
-  // Tier 3 mounted preserves its state; inert removes it from the tab order.
-  useEffect(() => {
-    const node = revealRef.current;
-    if (!node) return;
-    if (pinned) node.removeAttribute("inert");
-    else node.setAttribute("inert", "");
-  }, [pinned]);
-
   const clearTimers = useCallback(() => {
-    if (dwell.current !== null) {
-      window.clearTimeout(dwell.current);
-      dwell.current = null;
-    }
-    if (closeTimer.current !== null) {
-      window.clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
+    if (dwell.current !== null) window.clearTimeout(dwell.current);
+    if (closeTimer.current !== null) window.clearTimeout(closeTimer.current);
+    dwell.current = null;
+    closeTimer.current = null;
   }, []);
 
   useEffect(() => clearTimers, [clearTimers]);
 
+  // The menu lives outside the stage, so it has to follow its card while the
+  // camera drifts. One rAF loop, only while this card's menu is open.
+  useEffect(() => {
+    if (!open) {
+      setBox(null);
+      return;
+    }
+    let frame = 0;
+    const sync = () => {
+      const card = cardRef.current;
+      if (card) {
+        const height = menuRef.current?.scrollHeight ?? 0;
+        const next = measure(card, height);
+        setBox((prev) =>
+          prev &&
+          Math.abs(prev.left - next.left) < 0.5 &&
+          Math.abs(prev.top - next.top) < 0.5 &&
+          prev.width === next.width &&
+          prev.placement === next.placement
+            ? prev
+            : next,
+        );
+      }
+      frame = requestAnimationFrame(sync);
+    };
+    frame = requestAnimationFrame(sync);
+    return () => cancelAnimationFrame(frame);
+  }, [open]);
+
+  // Escape closes and hands focus back; a pointer press outside closes.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      onOpenChange?.(false);
+      cardRef.current?.focus();
+    };
+    const onDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (cardRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      onOpenChange?.(false);
+    };
+    document.addEventListener("keydown", onKey, true);
+    document.addEventListener("pointerdown", onDown);
+    return () => {
+      document.removeEventListener("keydown", onKey, true);
+      document.removeEventListener("pointerdown", onDown);
+    };
+  }, [open, onOpenChange]);
+
   const handleEnter = useCallback(() => {
-    if (!reveal) return;
+    if (!hasMenu || open) return;
     clearTimers();
-    // Coming back before the grace period expires just cancels the close.
-    if (hovered) return;
-    dwell.current = window.setTimeout(() => setHovered(true), HOVER_DWELL_MS);
-  }, [reveal, clearTimers, hovered]);
+    dwell.current = window.setTimeout(() => onOpenChange?.(true), HOVER_DWELL_MS);
+  }, [hasMenu, open, clearTimers, onOpenChange]);
 
   const handleLeave = useCallback(() => {
+    if (!hasMenu) return;
     clearTimers();
-    closeTimer.current = window.setTimeout(() => setHovered(false), HOVER_CLOSE_MS);
-  }, [clearTimers]);
+    closeTimer.current = window.setTimeout(() => {
+      const overCard = cardRef.current?.matches(":hover");
+      const overMenu = menuRef.current?.matches(":hover");
+      if (!overCard && !overMenu) onOpenChange?.(false);
+    }, HOVER_CLOSE_MS);
+  }, [hasMenu, clearTimers, onOpenChange]);
 
-  const togglePin = useCallback(() => {
-    setPinned((was) => {
-      const next = !was;
-      onPin?.(next);
-      return next;
-    });
-  }, [onPin]);
+  const toggle = useCallback(() => {
+    if (!hasMenu) return;
+    clearTimers();
+    onOpenChange?.(!open);
+  }, [hasMenu, open, clearTimers, onOpenChange]);
 
-  const handleKeyDown = useCallback(
+  const onKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLDivElement>) => {
-      if (event.key === "Escape" && pinned) {
-        event.stopPropagation();
-        setPinned(false);
-        onPin?.(false);
-        return;
-      }
       if (event.target !== event.currentTarget) return;
       if (event.key === "Enter" || event.key === " ") {
         event.preventDefault();
-        togglePin();
+        toggle();
       }
     },
-    [pinned, onPin, togglePin],
+    [toggle],
   );
 
   const style = {
@@ -223,71 +241,95 @@ export default function PortalTile({
     "ptile",
     urgent ? "is-urgent" : "",
     open ? "is-open" : "",
-    open ? `opens-${flip}` : "",
-    pinned ? "is-pinned" : "",
-    reveal ? "is-actionable" : "",
+    hasMenu ? "is-actionable" : "",
     className,
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <div
-      ref={cardRef}
-      className={classes}
-      style={style}
-      onPointerEnter={handleEnter}
-      onPointerLeave={handleLeave}
-      onClick={reveal ? togglePin : undefined}
-      onKeyDown={handleKeyDown}
-      tabIndex={reveal ? 0 : -1}
-      role={reveal ? "button" : undefined}
-      aria-expanded={reveal ? pinned : undefined}
-      aria-controls={reveal ? revealId : undefined}
-      aria-label={ariaLabel}
-    >
-      <div className="ptile-inner" ref={contentRef}>
-        <div className="ptile-head">
-          <span className="ptile-index" aria-hidden="true">
-            {formatIndex(index)}
-          </span>
-          {headerCount !== undefined && (
-            <span className="ptile-head-count">{headerCount}</span>
-          )}
-          {headerAside && <span className="ptile-head-aside">{headerAside}</span>}
-        </div>
-
-        {/* The name is the anchor and stays put; only the line under it swaps. */}
-        <div className="ptile-rest">
-          {icon && (
-            <span className="ptile-icon" aria-hidden="true">
-              {icon}
+    <>
+      <div
+        ref={cardRef}
+        className={classes}
+        style={style}
+        onPointerEnter={handleEnter}
+        onPointerLeave={handleLeave}
+        onClick={toggle}
+        onKeyDown={onKeyDown}
+        tabIndex={hasMenu ? 0 : -1}
+        role={hasMenu ? "button" : undefined}
+        aria-expanded={hasMenu ? open : undefined}
+        aria-controls={hasMenu ? menuId : undefined}
+        aria-label={ariaLabel}
+      >
+        <div className="ptile-inner" ref={contentRef}>
+          <div className="ptile-head">
+            <span className="ptile-index" aria-hidden="true">
+              {formatIndex(index)}
             </span>
-          )}
-          <span className="ptile-name">{title}</span>
-        </div>
+            {headerCount !== undefined && (
+              <span className="ptile-head-count">{headerCount}</span>
+            )}
+            {headerAside && <span className="ptile-head-aside">{headerAside}</span>}
+          </div>
 
-        <div className="ptile-swap">
-          {meta && (
-            <span
-              className={`ptile-meta${accent ? " is-accent" : ""}`}
-              aria-hidden={open ? "true" : undefined}
-            >
-              {meta}
-            </span>
-          )}
-          {reveal && (
-            <div className="ptile-tier3" id={revealId} ref={revealRef}>
-              {reveal}
-            </div>
-          )}
+          <div className="ptile-rest">
+            {icon && (
+              <span className="ptile-icon" aria-hidden="true">
+                {icon}
+              </span>
+            )}
+            <span className="ptile-name">{title}</span>
+          </div>
+
+          <div className="ptile-swap">
+            {meta && (
+              <span className={`ptile-meta${accent ? " is-accent" : ""}`}>{meta}</span>
+            )}
+            {hasMenu && (
+              <span className="ptile-caret" aria-hidden="true">
+                <ChevronDown size={14} strokeWidth={2} />
+              </span>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+
+      {hasMenu &&
+        open &&
+        createPortal(
+          <div
+            ref={menuRef}
+            id={menuId}
+            className={`ptile-menu is-${box?.placement ?? "below"}`}
+            role="group"
+            aria-label={title}
+            onPointerEnter={clearTimers}
+            onPointerLeave={handleLeave}
+            style={{
+              left: box?.left ?? -9999,
+              top: box?.top ?? -9999,
+              width: box?.width,
+              maxHeight: box?.maxHeight,
+              visibility: box ? "visible" : "hidden",
+            }}
+          >
+            <div className="ptile-menu-head">
+              <span className="ptile-menu-title">{title}</span>
+              {headerCount !== undefined && (
+                <span className="ptile-menu-count">{headerCount}</span>
+              )}
+            </div>
+            <div className="ptile-menu-body">{reveal}</div>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
 
-/** Tier 2 footer stats, laid out on the tile's four-column internal grid. */
+/** Footer stats, laid out on the card's four-column internal grid. */
 export function PortalTileStats({ stats }: { stats: PortalTileStat[] }) {
   return (
     <div className="ptile-stats">
@@ -306,5 +348,3 @@ export function PortalTileStats({ stats }: { stats: PortalTileStat[] }) {
     </div>
   );
 }
-
-

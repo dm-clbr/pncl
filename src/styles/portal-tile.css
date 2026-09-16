@@ -190,16 +190,6 @@
   transition: margin 200ms var(--ease-out);
 }
 
-/* Opening lifts the name clear so the reveal has the body to itself. The name
-   stays on screen as the tile's anchor. */
-.ptile.is-open .ptile-rest {
-  margin-top: 0;
-}
-
-.ptile.is-open .ptile-icon {
-  display: none;
-}
-
 /* Holds the meta line at rest and the reveal when open. */
 .ptile-swap {
   position: relative;
@@ -207,15 +197,6 @@
   min-height: 0;
   margin-top: var(--u);
   transition: flex 200ms var(--ease-out);
-}
-
-.ptile.is-open .ptile-swap {
-  flex: 1 1 auto;
-}
-
-.ptile.is-open .ptile-meta {
-  opacity: 0;
-  pointer-events: none;
 }
 
 .ptile-name {
@@ -245,62 +226,6 @@
 }
 
 /* ── Tier 3, the reveal ─────────────────────────────────────────────────── */
-
-/* The reveal lives inside the card. A panel positioned outside it becomes its
-   own plane in a rotated preserve-3d scene, which neighbouring card planes cut
-   through no matter how its Z is set. Long lists scroll here instead. */
-.ptile-tier3 {
-  position: absolute;
-  inset: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
-  padding-bottom: calc(var(--u) * 3);
-  -webkit-mask-image: linear-gradient(
-    180deg,
-    #000 0,
-    #000 calc(100% - 22px),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    180deg,
-    #000 0,
-    #000 calc(100% - 22px),
-    transparent 100%
-  );
-  opacity: 0;
-  transform: translateY(6px);
-  pointer-events: none;
-  transition:
-    opacity 160ms var(--ease-out),
-    transform 160ms var(--ease-out);
-}
-
-.ptile.is-open .ptile-tier3 {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-
-.ptile-tier3::-webkit-scrollbar {
-  width: 3px;
-}
-
-.ptile-tier3::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.22);
-  border-radius: 2px;
-}
-
-.ptile-tier3::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.ptile.is-open .ptile-tier3 {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
 
 /* The reveal grows upward over the empty interval once the tile is open. */
 .ptile.is-open /* The panel reads as the card continuing, not as a tooltip floating near it. */
@@ -454,12 +379,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .ptile,
-    .ptile.is-open   .ptile-tier3 {
-    transform: none;
-  }
-
-  .ptile.is-open .ptile-tier3 {
-    transform: none;
+  .ptile-meta,
+  .ptile-caret {
+    transition: none !important;
   }
 }
 
@@ -558,11 +480,6 @@ button.ptile-action {
 }
 
 /* Embedded panels inherit the reveal's body type. */
-.ptile-tier3 .portal-referral-panel,
-.ptile-tier3 .portal-downline-panel {
-  font-size: var(--t-body);
-}
-
 /* External links carry a mark so the destination is obvious before clicking. */
 .ptile-link.is-external {
   display: flex;
@@ -590,4 +507,118 @@ button.ptile-action {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* ── Card caret ─────────────────────────────────────────────────────────── */
+
+.ptile-swap {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(var(--u) * 2);
+}
+
+.ptile-caret {
+  display: inline-flex;
+  align-self: center;
+  color: var(--c-t2-label);
+  flex-shrink: 0;
+  transition: transform 200ms var(--ease-out), color 200ms var(--ease-out);
+}
+
+.ptile.is-actionable:hover .ptile-caret {
+  color: var(--c-t1-value);
+}
+
+.ptile.is-open .ptile-caret {
+  transform: rotate(180deg);
+  color: var(--portal-accent);
+}
+
+/* ── Menu ───────────────────────────────────────────────────────────────── */
+
+.ptile-menu {
+  position: fixed;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: #16161a;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 18px 38px rgba(0, 0, 0, 0.55),
+    0 44px 72px rgba(0, 0, 0, 0.42);
+  overflow: hidden;
+  animation: ptile-menu-in 160ms var(--ease-out);
+  font-family: var(--ff-sans, "Manrope", sans-serif);
+}
+
+@keyframes ptile-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.ptile-menu.is-above {
+  animation-name: ptile-menu-in-up;
+}
+
+@keyframes ptile-menu-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+.ptile-menu-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(var(--u) * 2);
+  padding: 11px 14px 9px;
+  border-bottom: 1px solid var(--c-rule);
+  flex-shrink: 0;
+}
+
+.ptile-menu-title {
+  font-size: var(--t-label);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-t2-label);
+}
+
+.ptile-menu-count {
+  font-size: var(--t-label);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-t2-label);
+}
+
+.ptile-menu-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px 14px 12px;
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+.ptile-menu-body::-webkit-scrollbar {
+  width: 3px;
+}
+
+.ptile-menu-body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ptile-menu {
+    animation: none;
+  }
 }

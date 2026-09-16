@@ -219,8 +219,8 @@ export default function PortalDashboard() {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [completingTodoId, setCompletingTodoId] = useState<string | null>(null);
   const [checklistOpen, setChecklistOpen] = useState(false);
-  /** Only one tile is pinned at a time. */
-  const [pinnedTile, setPinnedTile] = useState<string | null>(null);
+  /** Only one card's menu is open at a time. */
+  const [openTile, setOpenTile] = useState<string | null>(null);
 
   const { incentives, loading: incentivesLoading } = usePortalIncentives();
   const { assets: brandAssets, loading: brandAssetsLoading } = usePortalBrandAssets();
@@ -460,10 +460,10 @@ export default function PortalDashboard() {
     setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
   }, []);
 
-  /** Pinning a tile unpins whichever tile was pinned before. */
-  const handlePin = useCallback(
-    (id: string) => (pinned: boolean) => {
-      setPinnedTile(pinned ? id : null);
+  /** Opening one card's menu closes whichever was open. */
+  const handleOpen = useCallback(
+    (id: string) => (next: boolean) => {
+      setOpenTile(next ? id : null);
       toggleSection(id);
     },
     [toggleSection],
@@ -536,9 +536,9 @@ export default function PortalDashboard() {
       order: position,
     };
   };
-  const pinProps = (id: string) => ({
-    onPin: handlePin(id),
-    forceUnpinned: pinnedTile !== null && pinnedTile !== id,
+  const menuProps = (id: string) => ({
+    open: openTile === id,
+    onOpenChange: handleOpen(id),
   });
 
   const indexTile = (
@@ -560,7 +560,7 @@ export default function PortalDashboard() {
         icon={icon}
         headerCount={pad(items.length)}
         ariaLabel={`${title}, ${items.length} items`}
-        {...pinProps(id)}
+        {...menuProps(id)}
         meta={items.length > 0 ? count(items.length, "item") : emptyCopy}
         reveal={<div className="ptile-reveal-body">{reveal}</div>}
       />
@@ -579,7 +579,7 @@ export default function PortalDashboard() {
         title="Agent Status"
         icon={<UserRound {...ICON} />}
         ariaLabel={`Agent status, current stage ${phaseLabel}`}
-        {...pinProps("agent")}
+        {...menuProps("agent")}
         headerAside={
           <span className="ptile-avatar" aria-hidden="true">
             {photoUrl ? <img src={photoUrl} alt="" /> : <span>{initials}</span>}
@@ -611,7 +611,7 @@ export default function PortalDashboard() {
         title="Onboarding Progress"
         icon={<TrendingUp {...ICON} />}
         ariaLabel={`Onboarding progress ${progressPercent} percent complete`}
-        {...pinProps("progress")}
+        {...menuProps("progress")}
         meta={`${progressPercent}% complete, ${phaseLabel}`}
         reveal={
           <>
@@ -653,7 +653,7 @@ export default function PortalDashboard() {
         icon={<FileSignature {...ICON} />}
         urgent={hasResignNotice || pendingRequiredForms}
         ariaLabel={`Required forms, ${outstandingRequired} outstanding`}
-        {...pinProps("forms")}
+        {...menuProps("forms")}
         accent={hasResignNotice || outstandingRequired > 0}
         meta={
           hasResignNotice
@@ -713,7 +713,7 @@ export default function PortalDashboard() {
         title="Carrier Appointments"
         icon={<Building2 {...ICON} />}
         ariaLabel={`${portalCarriers.length} carrier appointments`}
-        {...pinProps("carriers")}
+        {...menuProps("carriers")}
         meta={count(portalCarriers.length, "appointment")}
         reveal={
           <>
@@ -766,7 +766,7 @@ export default function PortalDashboard() {
         title="Team Progress"
         icon={<Users {...ICON} />}
         ariaLabel={`${teamActive} team members in progress`}
-        {...pinProps("team")}
+        {...menuProps("team")}
         meta={`${teamActive} of ${downlineMembers.length} in progress`}
         reveal={<PortalDownlinePanel embedded />}
       />,
@@ -786,7 +786,7 @@ export default function PortalDashboard() {
         title="Referral Links"
         icon={<Link2 {...ICON} />}
         ariaLabel={`${activeInvites.length} active referral links`}
-        {...pinProps("referrals")}
+        {...menuProps("referrals")}
         meta={count(activeInvites.length, "active link")}
         reveal={<PortalReferralPanel embedded />}
       />,
@@ -856,7 +856,7 @@ export default function PortalDashboard() {
         title="Calendar"
         icon={<CalendarDays {...ICON} />}
         ariaLabel="Calendar preview"
-        {...pinProps("calendar")}
+        {...menuProps("calendar")}
         meta={
           stateLine ??
           `${formatCalendarEventDate(nextEvent)}, ${formatCalendarEventTime(nextEvent)}`
@@ -921,7 +921,7 @@ export default function PortalDashboard() {
         title="State Map"
         icon={<MapPinned {...ICON} />}
         ariaLabel={`${licensedStates} licensed states`}
-        {...pinProps("state-map")}
+        {...menuProps("state-map")}
         meta={count(licensedStates, "licensed state")}
         reveal={
           <>
