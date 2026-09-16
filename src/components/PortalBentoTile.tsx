@@ -75,9 +75,11 @@ function formatIndex(index: number): string {
 
 interface MenuBox {
   left: number;
-  top: number;
+  /** Offset from the anchored edge: top when opening down, bottom when up. */
+  offset: number;
   width: number;
-  maxHeight: number;
+  /** Resolved height. The menu animates to this so its shadow grows with it. */
+  height: number;
   placement: "below" | "above";
 }
 
@@ -97,11 +99,14 @@ function measure(card: HTMLElement, menuHeight: number): MenuBox {
   }
   left = Math.max(MENU_EDGE_PAD, left);
 
-  const top = below
+  const height = Math.min(menuHeight, maxHeight);
+  // Opening upward anchors the bottom edge to the card, so growing the height
+  // travels up on its own. Anchoring the top would grow it downward instead.
+  const offset = below
     ? r.bottom + MENU_GAP
-    : Math.max(MENU_EDGE_PAD, r.top - MENU_GAP - Math.min(menuHeight, maxHeight));
+    : window.innerHeight - r.top + MENU_GAP;
 
-  return { left, top, width, maxHeight, placement: below ? "below" : "above" };
+  return { left, offset, width, height, placement: below ? "below" : "above" };
 }
 
 export default function PortalTile({
@@ -143,13 +148,19 @@ export default function PortalTile({
     const sync = () => {
       const card = cardRef.current;
       if (card) {
-        const height = menuRef.current?.scrollHeight ?? 0;
-        const next = measure(card, height);
+        const body = menuRef.current?.querySelector(".ptile-menu-body");
+        const head = menuRef.current?.querySelector(".ptile-menu-head");
+        const content =
+          (body ? body.scrollHeight : 0) +
+          (head ? head.getBoundingClientRect().height : 0) +
+          12;
+        const next = measure(card, content);
         setBox((prev) =>
           prev &&
           Math.abs(prev.left - next.left) < 0.5 &&
-          Math.abs(prev.top - next.top) < 0.5 &&
+          Math.abs(prev.offset - next.offset) < 0.5 &&
           prev.width === next.width &&
+          Math.abs(prev.height - next.height) < 0.5 &&
           prev.placement === next.placement
             ? prev
             : next,
@@ -269,15 +280,18 @@ export default function PortalTile({
             ref={menuRef}
             id={menuId}
             className={`ptile-menu is-${box?.placement ?? "below"}`}
+            data-ready={box ? "true" : undefined}
             role="group"
             aria-label={title}
-            style={{
-              left: box?.left ?? -9999,
-              top: box?.top ?? -9999,
-              width: box?.width,
-              maxHeight: box?.maxHeight,
-              visibility: box ? "visible" : "hidden",
-            }}
+            style={
+              {
+                left: box?.left ?? -9999,
+                [box?.placement === "above" ? "bottom" : "top"]: box?.offset ?? -9999,
+                width: box?.width,
+                "--menu-h": box ? `${box.height}px` : "0px",
+                visibility: box ? "visible" : "hidden",
+              } as CSSProperties
+            }
           >
             <div className="ptile-menu-head">
               <span className="ptile-menu-title">{title}</span>

@@ -573,7 +573,8 @@ button.ptile-action {
     0 18px 44px rgba(0, 0, 0, 0.42),
     0 40px 80px rgba(0, 0, 0, 0.28);
   /* Grows out of the card's edge rather than appearing next to it. */
-  animation: ptile-menu-in 320ms cubic-bezier(0.22, 1, 0.36, 1);
+  height: var(--menu-h);
+  overflow: hidden;
   font-family: var(--ff-sans, "Manrope", sans-serif);
 }
 
@@ -587,6 +588,10 @@ button.ptile-action {
   border-top-color: transparent;
   border-top-left-radius: 0;
   border-top-right-radius: 0;
+}
+
+.ptile-menu[data-ready] {
+  animation: ptile-menu-in 300ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .ptile-menu.is-above {
@@ -606,26 +611,30 @@ button.ptile-action {
 
 @keyframes ptile-menu-in {
   from {
-    clip-path: inset(0 0 100% 0);
-    opacity: 0.4;
+    height: 0;
+    opacity: 0.35;
   }
   to {
-    clip-path: inset(0 0 0 0);
+    height: var(--menu-h);
     opacity: 1;
   }
 }
 
-.ptile-menu.is-above {
+.ptile-menu.is-above[data-ready] {
   animation-name: ptile-menu-in-up;
 }
 
+/* Opening upward also has to travel: the top edge is fixed by placement, so
+   the box grows downward unless it is pulled back up as it goes. */
 @keyframes ptile-menu-in-up {
   from {
-    clip-path: inset(100% 0 0 0);
-    opacity: 0.4;
+    height: 0;
+    transform: translateY(var(--menu-h));
+    opacity: 0.35;
   }
   to {
-    clip-path: inset(0 0 0 0);
+    height: var(--menu-h);
+    transform: translateY(0);
     opacity: 1;
   }
 }
