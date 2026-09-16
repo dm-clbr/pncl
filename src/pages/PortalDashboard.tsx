@@ -780,7 +780,6 @@ export default function PortalDashboard() {
         }
       >
         <DotGrid mask={barMask([0.3, 0.55, 0.4, 0.8, 0.5, 0.35, 0.7, 0.45, 0.9, 0.6, 0.5, 0.75, 0.4, 0.85, 0.55, 0.65], 16)} className="pdot-inline" hideOff />
-        <p className="portal-tile-note">Downline onboarding</p>
       </PortalBentoExpandTile>,
     );
   }
