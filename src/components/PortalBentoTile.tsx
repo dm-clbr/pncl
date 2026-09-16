@@ -30,8 +30,9 @@ import { usePortalCamera } from "@/components/PortalBentoStage";
 /** translateZ per grid row, so lower rows sit nearer the camera. */
 const ROW_DEPTH_PX = 12 / 3;
 
-const MENU_GAP = 8;
-const MENU_MIN_WIDTH = 248;
+/** Flush: the menu is meant to read as the card continuing, not as a popover. */
+const MENU_GAP = 0;
+const MENU_MIN_WIDTH = 236;
 const MENU_EDGE_PAD = 12;
 
 export interface PortalTileStat {
@@ -207,6 +208,7 @@ export default function PortalTile({
     "ptile",
     urgent ? "is-urgent" : "",
     open ? "is-open" : "",
+    open ? `is-open-${box?.placement ?? "below"}` : "",
     hasMenu ? "is-actionable" : "",
     className,
   ]
