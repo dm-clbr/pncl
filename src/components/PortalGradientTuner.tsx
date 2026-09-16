@@ -16,6 +16,8 @@ import {
 export interface TunerState extends LiquidGradientParams {
   /** Opacity of the canvas layer, not a shader uniform. */
   layerOpacity: number;
+  /** Blend mode of the canvas layer. soft-light barely touches darks. */
+  blendMode: string;
 }
 
 const STORAGE_KEY = "pncl:gradient-tuner";
@@ -24,6 +26,7 @@ const ENABLE_KEY = "pncl:tuner";
 export const TUNER_DEFAULTS: TunerState = {
   ...LIQUID_GRADIENT_PRESETS.pncl,
   layerOpacity: 0.55,
+  blendMode: "soft-light",
 };
 
 type Field = {
@@ -47,12 +50,16 @@ const FIELDS: Field[] = [
   { key: "dither", label: "Dither amount", min: 0, max: 1, step: 0.01 },
   { key: "ditherAnim", label: "Dither motion", min: 0, max: 2, step: 0.01 },
   { key: "ditherSize", label: "Dither size", min: 1, max: 16, step: 1 },
+  { key: "ditherFlat", label: "Dither in darks", min: 0, max: 1, step: 0.01 },
   { key: "exposure", label: "Exposure", min: 0.5, max: 2, step: 0.01 },
   { key: "contrast", label: "Contrast", min: 0.5, max: 2, step: 0.01 },
   { key: "saturation", label: "Saturation", min: 0, max: 2, step: 0.01 },
 ];
 
 const DITHER_MODES: LiquidDitherMode[] = ["off", "smooth", "grain"];
+
+/** soft-light preserves darks; normal and overlay let grain through. */
+const BLEND_MODES = ["soft-light", "normal", "overlay", "screen"];
 
 const MAX_STOPS = 8;
 const MIN_STOPS = 2;
@@ -129,7 +136,7 @@ export function usePortalGradientTuner() {
     }
   }, []);
 
-  const { layerOpacity, ...gradient } = values;
+  const { layerOpacity, blendMode, ...gradient } = values;
 
   const panel = allowed && open ? (
     <TunerPanel
@@ -140,7 +147,7 @@ export function usePortalGradientTuner() {
     />
   ) : null;
 
-  return { gradient, layerOpacity, panel, allowed };
+  return { gradient, layerOpacity, blendMode, panel, allowed };
 }
 
 function TunerPanel({
@@ -157,7 +164,7 @@ function TunerPanel({
   const [copied, setCopied] = useState(false);
 
   const preset = useMemo(() => {
-    const { layerOpacity, colors, ...rest } = values;
+    const { layerOpacity, blendMode, colors, ...rest } = values;
     const body = Object.entries(rest)
       .map(([k, v]) => `    ${k}: ${typeof v === "string" ? `"${v}"` : v},`)
       .join("\n");
@@ -168,7 +175,7 @@ function TunerPanel({
       body,
       "  },",
       "",
-      `// .portal-bento-canvas { opacity: ${layerOpacity}; }`,
+      `// .portal-bento-canvas { opacity: ${layerOpacity}; mix-blend-mode: ${blendMode}; }`,
     ].join("\n");
   }, [values]);
 
@@ -208,6 +215,22 @@ function TunerPanel({
             />
           </label>
         ))}
+
+        <label className="gtuner-row">
+          <span className="gtuner-label">Blend mode</span>
+          <div className="gtuner-seg gtuner-seg-4">
+            {BLEND_MODES.map((mode) => (
+              <button
+                type="button"
+                key={mode}
+                className={values.blendMode === mode ? "is-on" : ""}
+                onClick={() => onChange("blendMode", mode)}
+              >
+                {mode === "soft-light" ? "soft" : mode}
+              </button>
+            ))}
+          </div>
+        </label>
 
         <label className="gtuner-row">
           <span className="gtuner-label">Dither mode</span>

@@ -931,7 +931,8 @@ export default function PortalDashboard() {
   });
 
   // Hidden backdrop tuner. Cmd/Ctrl + Shift + G in dev.
-  const { gradient, layerOpacity, panel: tunerPanel } = usePortalGradientTuner();
+  const { gradient, layerOpacity, blendMode, panel: tunerPanel } =
+    usePortalGradientTuner();
 
   return (
     <div className="home2-page">
@@ -943,7 +944,7 @@ export default function PortalDashboard() {
             if WebGL2 is unavailable. */}
         <div
           className="portal-bento-canvas"
-          style={{ opacity: layerOpacity }}
+          style={{ opacity: layerOpacity, mixBlendMode: blendMode as never }}
           aria-hidden="true"
         >
           <LiquidGradientCanvas
