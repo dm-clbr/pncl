@@ -50,6 +50,19 @@ export interface PortalProfile {
   updated_at: string;
 }
 
+export type RecoveryEmailDashboardNotice = "missing" | "pending" | "error" | null;
+
+export function getRecoveryEmailDashboardNotice(
+  profile: Pick<PortalProfile, "recovery_email" | "recovery_email_sync_status"> | null | undefined,
+  loading: boolean,
+): RecoveryEmailDashboardNotice {
+  if (loading) return null;
+  if (!profile?.recovery_email?.trim()) return "missing";
+  if (profile.recovery_email_sync_status === "error") return "error";
+  if (profile.recovery_email_sync_status === "synced") return null;
+  return "pending";
+}
+
 export interface PortalLicensingFormValues {
   npn: string;
   eoPolicyNumber: string;

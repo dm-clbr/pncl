@@ -49,6 +49,7 @@ import PortalPrimaryNav from "@/components/PortalPrimaryNav";
 import { usePortalIncentives } from "@/hooks/usePortalIncentives";
 import { usePortalBrandAssets } from "@/hooks/usePortalBrandAssets";
 import { usePortalProfile } from "@/hooks/usePortalProfile";
+import { getRecoveryEmailDashboardNotice } from "@/lib/portal-profile";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 import "@/styles/home2.css";
@@ -158,7 +159,13 @@ export default function PortalDashboard() {
   const { submitted: icaSubmitted } = usePortalIca();
   const { submitted: w9Submitted } = usePortalW9();
   const { submitted: directDepositSubmitted } = usePortalDirectDeposit();
-  const { profile, photoUrl, initials, displayName } = usePortalProfile(portalUser);
+  const {
+    profile,
+    photoUrl,
+    initials,
+    displayName,
+    loading: profileLoading,
+  } = usePortalProfile(portalUser);
 
   const resolvedTodos = useMemo(() => {
     const carrierApplicationsDescription = buildCarrierApplicationsDescription(portalCarriers);
@@ -197,6 +204,29 @@ export default function PortalDashboard() {
   const showW9ResignNotice = shouldShowW9ResignNotice(portalUser) && !w9Submitted;
   const showDirectDepositResignNotice =
     shouldShowDirectDepositResignNotice(portalUser) && !directDepositSubmitted;
+  const recoveryEmailNotice = getRecoveryEmailDashboardNotice(profile, profileLoading);
+  const recoveryEmailNoticeContent = recoveryEmailNotice === "missing"
+    ? {
+        title: "Add your personal recovery email",
+        description:
+          "Add a personal email so you can recover your PNCL Google account and receive your electronic 1099.",
+        action: "Add recovery email",
+      }
+    : recoveryEmailNotice === "error"
+      ? {
+          title: "Recovery email needs attention",
+          description:
+            "Your personal recovery email is saved, but Google Workspace could not be updated. Open your profile to retry the sync.",
+          action: "Retry in profile",
+        }
+      : recoveryEmailNotice === "pending"
+        ? {
+          title: "Finish syncing your recovery email",
+          description:
+              "Your personal recovery email is saved, but Google Workspace has not confirmed it yet. Open your profile and save your information to finish the sync.",
+            action: "Review and sync",
+          }
+        : null;
 
   const displaySections = useMemo((): PortalDashboardSection[] => {
     if (dashboardSections.length > 0) {
@@ -368,6 +398,25 @@ export default function PortalDashboard() {
                 <span style={{ width: `${progressPercent}%` }} />
               </div>
             </Link>
+          )}
+
+          {recoveryEmailNoticeContent && (
+            <div
+              className={`portal-notice-banner portal-recovery-email-notice portal-recovery-email-notice-${recoveryEmailNotice}`}
+              role={recoveryEmailNotice === "error" ? "alert" : "status"}
+            >
+              <span className="portal-notice-icon" aria-hidden="true">
+                <Shield size={20} strokeWidth={2.25} />
+              </span>
+              <div className="portal-notice-copy">
+                <strong>{recoveryEmailNoticeContent.title}</strong>
+                <p>{recoveryEmailNoticeContent.description}</p>
+                <Link to="/portal/profile?tab=details" className="portal-notice-link">
+                  {recoveryEmailNoticeContent.action}
+                  <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
+                </Link>
+              </div>
+            </div>
           )}
 
           {showIcaResignNotice && (
