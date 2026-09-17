@@ -42,7 +42,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: url("/rockTexture.png") center / cover no-repeat;
+  background: url("/rock-texture.webp") center / cover no-repeat;
   opacity: 0.35;
   mix-blend-mode: overlay;
 }

@@ -119,7 +119,7 @@ function ThriveVisual({ type, label }: { type: (typeof thriveItems)[number]["vis
   if (type === "portrait") {
     return (
       <div className="vis ph img-photo">
-        <img src="/PNCL BEACH.png" alt="PNCL agent working remotely at a resort" loading="lazy" />
+        <img src="/pncl-beach.webp" alt="PNCL agent working remotely at a resort" loading="lazy" />
         <span className="label">{label}</span>
       </div>
     );
@@ -127,7 +127,7 @@ function ThriveVisual({ type, label }: { type: (typeof thriveItems)[number]["vis
   if (type === "screen-masterclass") {
     return (
       <div className="vis ph img-macbook">
-        <img src="/MACBOOK PNCL.png" alt="PNCL agent onboarding on MacBook" loading="lazy" />
+        <img src="/macbook-pncl.webp" alt="PNCL agent onboarding on MacBook" loading="lazy" />
         <span className="label">{label}</span>
       </div>
     );
