@@ -38,12 +38,12 @@
   box-sizing: border-box;
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: var(--tile-radius);
-  /* Glass at rest as well as open. The card used to be an opaque gradient and
-     only became glass on click, and swapping material mid-interaction is the
-     jump. Same surface throughout; opening only adds to it. */
+  /* Glass at rest as well as open, so clicking never swaps material. The fill
+     is shared with the menu; the blur is not. Sixteen backdrop-filters halved
+     the frame rate at 2x DPR, and behind a card there is only a smooth
+     gradient, so blurring it returns the same gradient. The menu keeps its
+     blur because it crosses other cards, where there is real detail to soften. */
   background: rgba(24, 21, 20, 0.38);
-  -webkit-backdrop-filter: blur(40px) saturate(165%);
-  backdrop-filter: blur(40px) saturate(165%);
   color: inherit;
   font-family: var(--ff-sans, "Manrope", sans-serif);
   text-align: left;
