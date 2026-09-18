@@ -46,7 +46,15 @@
 
      What actually reads as frosted here is not the blur but the sheen: a pane
      of etched glass catches light across one corner and falls away. That is
-     static paint, so sixteen of them cost nothing per frame. */
+     static paint, so sixteen of them cost nothing per frame.
+
+     The fill is warmer than the menu's to stand in for the saturate() the menu
+     gets from its filter. Measured against a blurred build across all sixteen
+     cards, that filter shifts the composite by about (+1.6, +0.2, -1.1); at
+     this alpha that is the difference between rgb(24,21,20) and rgb(28,22,17).
+     Its blur contributed almost nothing, because the page grain sits above the
+     cards where a backdrop-filter cannot reach it. If the menu ever loses its
+     own filter, drop this back to the menu's colour or the two will diverge. */
   background:
     linear-gradient(
       152deg,
@@ -54,7 +62,7 @@
       rgba(255, 255, 255, 0.024) 34%,
       rgba(255, 255, 255, 0) 58%
     ),
-    rgba(24, 21, 20, 0.42);
+    rgba(28, 22, 17, 0.42);
   color: inherit;
   font-family: var(--ff-sans, "Manrope", sans-serif);
   text-align: left;
