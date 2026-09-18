@@ -21,10 +21,26 @@ import {
 } from "react";
 
 /* Spring rather than a plain lerp, so the camera carries momentum: it takes a
-   moment to get going, overshoots slightly, and settles. */
-const STIFFNESS = 0.0022;
-const DAMPING = 0.972;
-const SETTLE = 0.0002;
+   moment to get going, overshoots slightly, and settles.
+
+   Integrated on a fixed timestep rather than once per frame. Per-frame, the
+   spring ran at the display's refresh rate, so a 60Hz screen got exactly half
+   the steps and the camera took twice as long to do anything: 650ms to reach
+   the pointer instead of 325ms. The accumulator below makes the feel identical
+   everywhere.
+
+   Tuning: the previous constants overshot by 37% and took 396 steps to come to
+   rest, so any mouse movement left the loop running for seconds afterwards,
+   writing transforms and holding will-change on seventeen layers the whole
+   time. These reach 90% in 200ms and park in 558ms, still overshooting ~6% so
+   the weight is not lost. */
+const STEP_MS = 1000 / 120;
+/* Cap catch-up after a background tab or a stall, or the spring integrates a
+   huge backlog in one frame and snaps. */
+const MAX_CATCHUP_MS = 64;
+const STIFFNESS = 0.012;
+const DAMPING = 0.87;
+const SETTLE = 0.002;
 
 const ROTATE_Y_DEG = 2.2;
 const ROTATE_X_DEG = -1.5;
@@ -72,6 +88,10 @@ export default function PortalBentoStage({
   const current = useRef({ x: 0, y: 0 });
   const velocity = useRef({ x: 0, y: 0 });
   const frame = useRef<number | null>(null);
+  /* Fixed-timestep bookkeeping. `last` is zeroed whenever the loop parks so the
+     next start does not integrate the whole idle gap in one go. */
+  const accumulator = useRef(0);
+  const last = useRef(0);
   const primed = useRef(false);
   const enabled = useRef(false);
 
@@ -118,19 +138,25 @@ export default function PortalBentoStage({
       });
     };
 
-    const step = () => {
-      const dx = target.current.x - current.current.x;
-      const dy = target.current.y - current.current.y;
+    const step = (now: number) => {
+      if (last.current === 0) last.current = now;
+      accumulator.current += Math.min(now - last.current, MAX_CATCHUP_MS);
+      last.current = now;
 
-      velocity.current.x = (velocity.current.x + dx * STIFFNESS) * DAMPING;
-      velocity.current.y = (velocity.current.y + dy * STIFFNESS) * DAMPING;
-      current.current.x += velocity.current.x;
-      current.current.y += velocity.current.y;
+      while (accumulator.current >= STEP_MS) {
+        accumulator.current -= STEP_MS;
+        const dx = target.current.x - current.current.x;
+        const dy = target.current.y - current.current.y;
+        velocity.current.x = (velocity.current.x + dx * STIFFNESS) * DAMPING;
+        velocity.current.y = (velocity.current.y + dy * STIFFNESS) * DAMPING;
+        current.current.x += velocity.current.x;
+        current.current.y += velocity.current.y;
+      }
       write();
 
       const atRest =
-        Math.abs(dx) < SETTLE &&
-        Math.abs(dy) < SETTLE &&
+        Math.abs(target.current.x - current.current.x) < SETTLE &&
+        Math.abs(target.current.y - current.current.y) < SETTLE &&
         Math.abs(velocity.current.x) < SETTLE &&
         Math.abs(velocity.current.y) < SETTLE;
 
@@ -143,6 +169,8 @@ export default function PortalBentoStage({
         write();
         setWillChange(false);
         frame.current = null;
+        last.current = 0;
+        accumulator.current = 0;
         return;
       }
 
@@ -151,6 +179,8 @@ export default function PortalBentoStage({
 
     const start = () => {
       if (frame.current === null) {
+        last.current = 0;
+        accumulator.current = 0;
         setWillChange(true);
         frame.current = requestAnimationFrame(step);
       }
