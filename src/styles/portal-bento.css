@@ -10,8 +10,10 @@
   --tile-top: #141414;
   --tile-bottom: #0c0c0c;
   --tile-border: rgba(255, 255, 255, 0.05);
-  --tile-border-hot: rgba(255, 255, 255, 0.14);
-  --tile-inset: rgba(255, 255, 255, 0.09);
+  --tile-border-hot: rgba(255, 255, 255, 0.22);
+  /* The lit top edge of the pane. Faint enough before that the cards read as
+     flat panels rather than glass catching light. */
+  --tile-inset: rgba(255, 255, 255, 0.2);
 
   /* Text tones, all verified at 4.5:1 or better against #141414. */
   --t-primary: rgba(255, 255, 255, 0.92);
