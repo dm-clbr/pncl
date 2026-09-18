@@ -36,6 +36,18 @@ describe("buildCarrierApplicationsDescription", () => {
     ].join("\n"));
   });
 
+  it("places Mutual of Omaha in the section saved on the carrier sheet", () => {
+    const description = buildCarrierApplicationsDescription([
+      carrier("american-amicable", "American Amicable", "SureLC #1"),
+      carrier("mutual-of-omaha", "Mutual of Omaha", "SureLC #3"),
+      carrier("foresters", "Foresters", "SureLC #3"),
+    ]);
+
+    expect(description).toContain("• SureLC #1: American Amicable");
+    expect(description).toContain("• SureLC #3: Mutual of Omaha, Foresters");
+    expect(description).not.toContain("SureLC #1: American Amicable, Mutual of Omaha");
+  });
+
   it("keeps one section bullet if matching sections are not contiguous", () => {
     const description = buildCarrierApplicationsDescription([
       carrier("first", "First", "SureLC #1"),
