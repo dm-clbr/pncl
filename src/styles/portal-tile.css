@@ -599,6 +599,12 @@ button.ptile-action {
   border-bottom: none;
   border-radius: var(--tile-radius) var(--tile-radius) 0 0;
   padding: 6px 6px 4px;
+  /* Cast the shadow away from the card, not onto it. With the downward
+     offsets it pooled against the seam, drawing a dark band exactly where
+     the card and menu are meant to read as one surface. */
+  box-shadow:
+    0 -18px 44px rgba(0, 0, 0, 0.42),
+    0 -40px 80px rgba(0, 0, 0, 0.28);
 }
 
 /* Where the backdrop cannot be blurred, fall back to something solid enough
@@ -620,24 +626,9 @@ button.ptile-action {
   }
 }
 
-.ptile-menu.is-above[data-ready] {
-  animation-name: ptile-menu-in-up;
-}
-
-/* Opening upward also has to travel: the top edge is fixed by placement, so
-   the box grows downward unless it is pulled back up as it goes. */
-@keyframes ptile-menu-in-up {
-  from {
-    height: 0;
-    transform: translateY(var(--menu-h));
-    opacity: 0.35;
-  }
-  to {
-    height: var(--menu-h);
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
+/* Both directions share one keyframe. An upward menu is anchored by its
+   bottom edge, so growing the height already carries the top edge upward;
+   adding a counter-transform on top of that moved it twice as far. */
 
 .ptile-menu-head,
 .ptile-menu-body {
@@ -648,6 +639,20 @@ button.ptile-action {
   from {
     opacity: 0;
     transform: translateY(-4px);
+  }
+}
+
+/* Settle with the panel rather than against it: an upward menu's content
+   rises into place, a downward one's descends. */
+.ptile-menu.is-above .ptile-menu-head,
+.ptile-menu.is-above .ptile-menu-body {
+  animation-name: ptile-menu-content-up;
+}
+
+@keyframes ptile-menu-content-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
   }
 }
 
@@ -777,10 +782,16 @@ button.ptile-action {
   margin: 6px 10px 4px;
 }
 
+/* Each selector here has to match or beat the specificity of the rule it is
+   switching off. `.ptile-menu` alone loses to `.ptile-menu[data-ready]`, and a
+   bare `.ptile-menu-head` loses to the `.is-above` override, so a plain
+   three-selector reset silently left both animations running. */
 @media (prefers-reduced-motion: reduce) {
-  .ptile-menu,
-  .ptile-menu-head,
-  .ptile-menu-body {
+  .ptile-menu[data-ready],
+  .ptile-menu .ptile-menu-head,
+  .ptile-menu .ptile-menu-body,
+  .ptile-menu.is-above .ptile-menu-head,
+  .ptile-menu.is-above .ptile-menu-body {
     animation: none;
   }
 }
