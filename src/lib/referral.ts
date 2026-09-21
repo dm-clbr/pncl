@@ -7,7 +7,6 @@ export interface ReferralInviteInfo {
   inviteId: string;
   referrerId: string;
   referrerName: string;
-  compLevel: number;
 }
 
 export function buildReferralLink(inviteId: string): string {
@@ -69,6 +68,5 @@ export async function getReferralInviteInfo(inviteId: string): Promise<ReferralI
     inviteId: data.inviteId,
     referrerId: data.id,
     referrerName: data.name,
-    compLevel: data.compLevel,
   };
 }

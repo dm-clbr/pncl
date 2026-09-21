@@ -382,11 +382,6 @@ export default function PortalDashboard() {
                 <span className="portal-readiness-summary-count">
                   {completedTodoCount} of {resolvedTodos.length} steps complete
                 </span>
-                {profile?.comp_level != null && (
-                  <span className="portal-readiness-summary-tier">
-                    Compensation tier {profile.comp_level}
-                  </span>
-                )}
               </div>
               <div
                 className="portal-readiness-summary-bar"

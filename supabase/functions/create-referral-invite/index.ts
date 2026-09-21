@@ -25,7 +25,7 @@ function validatePayload(body: unknown): { compLevel: number; recipientLabel: st
     : Number.NaN;
 
   if (!isValidCompLevel(compLevel)) {
-    throw new Error("Select a valid comp level.");
+    throw new Error("Select a valid starting contract.");
   }
 
   const recipientLabel = typeof data.recipientLabel === "string"

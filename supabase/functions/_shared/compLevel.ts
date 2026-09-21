@@ -40,7 +40,7 @@ export function assertReferralCompAllowed(
 ): void {
   const allowed = getReferralCompOptions(referrerCompLevel);
   if (!allowed.includes(requestedCompLevel)) {
-    throw new Error("Selected comp level is not allowed for your account.");
+    throw new Error("Selected starting contract is not available for your account.");
   }
 }
 
@@ -73,7 +73,10 @@ export function assertAdminCompAllowed(
     throw new Error("Upline comp level must be set before assigning a comp level to this user.");
   }
 
-  assertReferralCompAllowed(referrerCompLevel, requestedCompLevel);
+  const allowed = getReferralCompOptions(referrerCompLevel);
+  if (!allowed.includes(requestedCompLevel)) {
+    throw new Error("Selected comp level is not allowed for this user.");
+  }
 }
 
 export function getReferralInviteExpiresAt(from = new Date()): string {

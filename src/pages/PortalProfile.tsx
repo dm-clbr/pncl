@@ -9,6 +9,7 @@ import PortalProfileDocumentsSection from "@/components/PortalProfileDocumentsSe
 import PortalSureLcLinks from "@/components/PortalSureLcLinks";
 import PortalTeamDashboard from "@/components/PortalTeamDashboard";
 import AgentBusinessCardDownload from "@/components/AgentBusinessCardDownload";
+import CompensationTierDisclosure from "@/components/CompensationTierDisclosure";
 import { isEmailConfirmed, useAuth } from "@/contexts/AuthContext";
 import { formatAgentPhoneInput } from "@/lib/agent-phone";
 import {
@@ -560,10 +561,7 @@ export default function PortalProfile() {
                 <span>Agent ID</span>
                 <strong>{agentNumber ?? "Pending assignment"}</strong>
               </div>
-              <div>
-                <span>Compensation tier</span>
-                <strong>{profileRow?.comp_level != null ? `Tier ${profileRow.comp_level}` : "Not assigned"}</strong>
-              </div>
+              <CompensationTierDisclosure tier={profileRow?.comp_level} />
               {todoTotal > 0 && (
                 <div>
                   <span>Current progress</span>

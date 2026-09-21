@@ -106,7 +106,7 @@ export async function loadReferrerCompLevel(
     .maybeSingle();
 
   if (error) {
-    throw new Error("Unable to load comp level");
+    throw new Error("Unable to load account settings");
   }
 
   const compLevel = data?.comp_level;
@@ -192,12 +192,12 @@ export async function createReferralInvite(
   recipientLabel: string,
 ): Promise<ReferralInviteRow> {
   if (!isValidCompLevel(compLevel)) {
-    throw new Error("Invalid comp level.");
+    throw new Error("Invalid starting contract.");
   }
 
   const referrerCompLevel = await loadReferrerCompLevel(supabase, referrerUserId);
   if (referrerCompLevel == null) {
-    throw new Error("Your comp level must be set before you can create referral links.");
+    throw new Error("Referral links are not available for your account yet. Contact PNCL support for help.");
   }
 
   assertReferralCompAllowed(referrerCompLevel, compLevel);
@@ -414,7 +414,7 @@ export async function upsertPortalProfileCompLevel(
       .eq("user_id", userId);
 
     if (error) {
-      throw new Error("Unable to save comp level on profile");
+      throw new Error("Unable to save profile settings");
     }
     return;
   }
@@ -429,7 +429,7 @@ export async function upsertPortalProfileCompLevel(
     });
 
   if (error) {
-    throw new Error("Unable to create profile with comp level");
+    throw new Error("Unable to create profile");
   }
 }
 

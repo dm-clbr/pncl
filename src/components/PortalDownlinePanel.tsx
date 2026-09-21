@@ -73,7 +73,6 @@ function DownlineMemberRow({ member }: { member: DownlineMember }) {
         <strong>{displayLabel}</strong>
         {showInviteAlias && <span className="portal-downline-alias">{member.name}</span>}
         <span>
-          {member.invitedCompLevel != null ? `Comp ${member.invitedCompLevel} · ` : ""}
           Joined {formatJoinedDate(member.joinedAt)}
         </span>
       </div>

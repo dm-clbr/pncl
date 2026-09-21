@@ -629,7 +629,7 @@ export default function AgentOnboarding({
           <h2 className="h3">This referral link can’t be used.</h2>
           <p className="lead">{referralError}</p>
           <p className="onboarding-help-text">
-            Ask your PNCL upline for a new personal referral link so attribution and compensation are recorded correctly.
+            Ask your PNCL upline for a new personal referral link so your application is connected to the right team.
           </p>
           <button
             type="button"

@@ -1,7 +1,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Copy, Link2 } from "lucide-react";
-import { formatCompLevel } from "@/lib/comp-level";
 import {
   formatReferralInviteStatus,
   isReferralInviteCopyable,
@@ -53,7 +52,7 @@ export default function PortalReferralPanel({ embedded = false }: PortalReferral
     event.preventDefault();
 
     if (effectiveCompLevel === "" || typeof effectiveCompLevel !== "number") {
-      toast.error("Select a comp level.");
+      toast.error("Select a starting contract.");
       return;
     }
 
@@ -85,7 +84,7 @@ export default function PortalReferralPanel({ embedded = false }: PortalReferral
         <div className="portal-referral-item-copy">
           <strong>{label}</strong>
           <span>
-            Comp {invite.compLevel} · {formatReferralInviteStatus(invite.status)}
+            {invite.compLevel}% starting contract · {formatReferralInviteStatus(invite.status)}
             {invite.sharedFromPartner ? " · Business partner link" : ""}
             {invite.status === "pending" ? ` · Expires ${formatInviteDate(invite.expiresAt)}` : ""}
             {invite.consumedAt ? ` · Used ${formatInviteDate(invite.consumedAt)}` : ""}
@@ -116,19 +115,17 @@ export default function PortalReferralPanel({ embedded = false }: PortalReferral
         <p className="portal-panel-note">Loading referral links…</p>
       ) : compLevel == null ? (
         <p className="portal-panel-note">
-          Your comp level has not been set yet. Contact PNCL support before creating referral links.
+          Referral links are not available for your account yet. Contact PNCL support for help.
         </p>
       ) : compOptions.length === 0 ? (
         <p className="portal-panel-note">
-          Your comp level is {formatCompLevel(compLevel)}. You cannot assign a lower comp level, so new
-          referral links are unavailable.
+          New referral links are not available for your account. Contact PNCL support for help.
         </p>
       ) : (
         <>
           <p className="portal-panel-note">
-            Create a unique link for each recruit. Each link can only be used once and assigns the comp
-            level you choose. Your comp level: {formatCompLevel(compLevel)}. If you have a linked
-            business partner, you share the same referral link list.
+            Create a unique, single-use link for each recruit and choose their starting contract. If
+            you have a linked business partner, you share the same referral link list.
           </p>
 
           <form className="portal-referral-form" onSubmit={(event) => void handleCreate(event)}>
@@ -149,7 +146,7 @@ export default function PortalReferralPanel({ embedded = false }: PortalReferral
             </label>
 
             <label className="portal-field">
-              <span>Comp level</span>
+              <span>Starting contract</span>
               <select
                 value={effectiveCompLevel}
                 onChange={(event) => {
@@ -160,7 +157,7 @@ export default function PortalReferralPanel({ embedded = false }: PortalReferral
               >
                 {compOptions.map((level) => (
                   <option key={level} value={level}>
-                    {level}
+                    {level}%
                   </option>
                 ))}
               </select>

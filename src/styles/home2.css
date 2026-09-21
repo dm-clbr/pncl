@@ -1240,8 +1240,7 @@
 }
 
 .home2-page .portal-readiness-summary-label,
-.home2-page .portal-readiness-summary-count,
-.home2-page .portal-readiness-summary-tier {
+.home2-page .portal-readiness-summary-count {
   font-family: var(--ff-mono);
   font-size: 10px;
   letter-spacing: .08em;
@@ -1253,8 +1252,7 @@
   font-weight: 700;
 }
 
-.home2-page .portal-readiness-summary-count,
-.home2-page .portal-readiness-summary-tier {
+.home2-page .portal-readiness-summary-count {
   color: var(--steel);
 }
 
@@ -1302,6 +1300,41 @@
 .home2-page .portal-profile-readiness strong {
   color: var(--bone);
   font-size: .86rem;
+}
+
+.home2-page .portal-profile-tier-disclosure {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.home2-page .portal-profile-tier-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 4px 8px;
+  border: 1px solid rgba(240, 237, 228, .18);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--bone);
+  cursor: pointer;
+  font: inherit;
+}
+
+.home2-page .portal-profile-tier-toggle:hover {
+  border-color: rgba(245, 176, 65, .7);
+  color: var(--accent-bright);
+}
+
+.home2-page .portal-profile-tier-toggle:focus-visible {
+  outline: 2px solid var(--accent-bright);
+  outline-offset: 2px;
+}
+
+.home2-page .portal-profile-tier-toggle span {
+  color: inherit;
+  font-size: 9px;
 }
 
 @media (max-width: 640px) {
