@@ -61,10 +61,14 @@ describe("PortalDisclosures", () => {
 
     fireEvent.click(facade);
 
-    expect(screen.getByTitle("Day 1: Welcome video")).toHaveAttribute(
+    const frame = screen.getByTitle("Day 1: Welcome video");
+    expect(frame).toHaveAttribute(
       "src",
       "https://www.youtube-nocookie.com/embed/pd2a8WCC8cs?autoplay=1&playsinline=1",
     );
+    // The three parts one tap needs: autoplay delegated to the frame, the
+    // player asked to start, and inline playback so iOS does not take over.
+    expect(frame.getAttribute("allow")).toContain("autoplay");
   });
 
   it("records the exact content version when the module is acknowledged", async () => {
