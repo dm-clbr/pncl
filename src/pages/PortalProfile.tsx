@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, ArrowUpRight, Camera } from "lucide-react";
-import PNCLLogo from "@/components/PNCLLogo";
+import { ArrowUpRight, Camera, LogOut, Shield } from "lucide-react";
 import ProfilePhotoCropModal from "@/components/ProfilePhotoCropModal";
+import BottomNav from "@/components/portal/BottomNav";
+import Chip from "@/components/portal/Chip";
+import Field from "@/components/portal/Field";
+import Pane from "@/components/portal/Pane";
+import PortalHeader from "@/components/portal/PortalHeader";
+import PortalSubpageHeader from "@/components/portal/PortalSubpageHeader";
+import Segmented from "@/components/portal/Segmented";
 import PortalCarrierCredentials from "@/components/PortalCarrierCredentials";
 import PortalLicensingSection from "@/components/PortalLicensingSection";
 import PortalProfileDocumentsSection from "@/components/PortalProfileDocumentsSection";
@@ -29,6 +35,7 @@ import {
   type PortalProfileFormValues,
 } from "@/lib/portal-profile";
 import { syncPortalRecoveryEmail } from "@/lib/portal-recovery-email";
+import { hasAdminConsoleAccess, isAdminAssist, isGenesisAdmin } from "@/lib/roles";
 import { getDirectDepositPdfUrl } from "@/lib/portal-direct-deposit";
 import { fetchPortalW9Document, getW9PdfUrl } from "@/lib/portal-w9";
 import { fetchPortalIcaDocument } from "@/lib/portal-ica";
@@ -48,6 +55,8 @@ import {
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 import "@/styles/home2.css";
+import "@/styles/portal-bento.css";
+import "@/styles/portal-profile.css";
 
 type ProfileTab = "details" | "team" | "licensing" | "documents" | "carriers";
 
@@ -58,6 +67,34 @@ const PROFILE_TABS: { id: ProfileTab; label: string }[] = [
   { id: "documents", label: "Documents" },
   { id: "carriers", label: "Carrier logins" },
 ];
+
+const TAB_ITEMS = PROFILE_TABS.map((tab) => ({
+  value: tab.id,
+  label: tab.label,
+  id: `profile-tab-${tab.id}`,
+  controls: `profile-panel-${tab.id}`,
+}));
+
+const PORTAL_SOCIAL_LINKS = [
+  {
+    id: "facebook",
+    label: "Facebook",
+    href: "https://www.facebook.com/profile.php?id=61588062292202",
+    iconSrc: "/fb.svg",
+  },
+  {
+    id: "instagram",
+    label: "Instagram",
+    href: "https://www.instagram.com/thepncl_/",
+    iconSrc: "/insta.svg",
+  },
+  {
+    id: "linkedin",
+    label: "LinkedIn",
+    href: "https://www.linkedin.com/company/the-pncl/?viewAsMember=true",
+    iconSrc: "/linkedin.svg",
+  },
+] as const;
 
 const EMPTY_FORM: PortalProfileFormValues = {
   firstName: "",
@@ -76,20 +113,25 @@ const EMPTY_FORM: PortalProfileFormValues = {
 };
 
 function SizeSelect({
+  id,
   label,
   value,
   options,
   onChange,
 }: {
+  id: string;
   label: string;
   value: string;
   options: readonly string[];
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="admin-field">
-      <span>{label}</span>
-      <select value={value} onChange={(event) => onChange(event.target.value)}>
+    <Field label={label} id={id}>
+      <select
+        className="portal-select"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      >
         <option value="">Select size</option>
         {options.map((option) => (
           <option key={option} value={option}>
@@ -97,12 +139,12 @@ function SizeSelect({
           </option>
         ))}
       </select>
-    </label>
+    </Field>
   );
 }
 
 export default function PortalProfile() {
-  const { user, session } = useAuth();
+  const { user, session, signOut } = useAuth();
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get("tab");
   const tabFromUrl = PROFILE_TABS.some((tab) => tab.id === initialTab)
@@ -361,6 +403,30 @@ export default function PortalProfile() {
   const initials = getProfileInitials(form.firstName, form.lastName);
   const agentEmail = user?.email ?? "";
   const agentNumber = formatAgentNumber(profileRow?.agent_number);
+  const displayName = [form.firstName, form.lastName].filter(Boolean).join(" ") || agentEmail;
+  // ponytail: dirty is the form measured against the values it was seeded
+  // from, through the same two helpers the load effect uses. No form library
+  // and no second copy of the form in state.
+  const savedValues = useMemo(
+    () => (profileRow ? profileToFormValues(profileRow) : getDefaultProfileValues(user)),
+    [profileRow, user],
+  );
+  const dirty =
+    pendingPhotoFile !== null ||
+    (Object.keys(savedValues) as (keyof PortalProfileFormValues)[]).some(
+      (key) => form[key] !== savedValues[key],
+    );
+  const showAdminLink = hasAdminConsoleAccess(user);
+  const adminLink = isGenesisAdmin(user)
+    ? "/portal/admin/genesis"
+    : isAdminAssist(user)
+      ? "/portal/admin/hierarchy"
+      : "/portal/admin";
+  const adminLinkLabel = isGenesisAdmin(user)
+    ? "Genesis admin"
+    : isAdminAssist(user)
+      ? "Admin assist"
+      : "Admin console";
 
   const updateField = <K extends keyof PortalProfileFormValues>(key: K, value: PortalProfileFormValues[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -474,30 +540,32 @@ export default function PortalProfile() {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to sign out");
+    }
+  };
+
   return (
     <div className="home2-page">
       <div className="grain" aria-hidden="true" />
 
       <main className="portal-dash dark carrier-sheet-dash portal-profile-dash">
         <div className="wrap carrier-sheet-wrap">
-          <header className="carrier-sheet-header">
-            <Link to="/" className="portal-hero-logo" aria-label="PNCL home">
-              <PNCLLogo height={40} />
-            </Link>
-            <div className="carrier-sheet-header-copy">
-              <p className="portal-welcome">My profile</p>
-              {agentEmail && (
-                <p className="portal-meta">
-                  {agentEmail}
-                  {agentNumber ? ` · Agent ID ${agentNumber}` : ""}
-                </p>
-              )}
-            </div>
-            <Link to="/portal" className="admin-back-link">
-              <ArrowLeft size={16} aria-hidden="true" />
-              Back to portal
-            </Link>
-          </header>
+          <PortalHeader
+            name={displayName}
+            email={agentEmail}
+            initials={initials}
+            photoUrl={displayPhotoUrl}
+            stage={!todosLoading && todoTotal > 0 ? PORTAL_PHASE_LABELS[currentPhase] : undefined}
+          />
+
+          <PortalSubpageHeader
+            title="My profile"
+            aside={agentNumber ? <Chip>Agent ID {agentNumber}</Chip> : undefined}
+          />
 
           {!todosLoading && todoTotal > 0 && (
             <div className="portal-profile-progress" aria-label="Onboarding progress">
@@ -521,69 +589,24 @@ export default function PortalProfile() {
             </div>
           )}
 
-          <div className="carrier-sheet-tabs" role="tablist" aria-label="Profile sections">
-            {PROFILE_TABS.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                id={`profile-tab-${tab.id}`}
-                aria-selected={activeTab === tab.id}
-                aria-controls={`profile-panel-${tab.id}`}
-                className={`carrier-sheet-tab${activeTab === tab.id ? " active" : ""}`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            items={TAB_ITEMS}
+            value={activeTab}
+            onChange={(value) => setActiveTab(value as ProfileTab)}
+            label="Profile sections"
+          />
 
           <div
             role="tabpanel"
-            className="portal-profile-tabpanel"
+            className="portal-profile-tabpanel portal-profile-details"
             id="profile-panel-details"
             aria-labelledby="profile-tab-details"
             hidden={activeTab !== "details"}
           >
-            <div className="carrier-sheet-panel portal-profile-panel">
-            <div className="carrier-sheet-panel-head">
-              <div>
-                <h1>Profile details</h1>
-                <p>
-                  Keep your name, home address, apparel sizes, and profile photo up to date.
-                  Your county is determined automatically from your ZIP code.
-                </p>
-              </div>
-            </div>
-
-            <div className="portal-profile-readiness" aria-label="Agent profile summary">
-              <div>
-                <span>Agent ID</span>
-                <strong>{agentNumber ?? "Pending assignment"}</strong>
-              </div>
-              <CompensationTierDisclosure tier={profileRow?.comp_level} />
-              {todoTotal > 0 && (
-                <div>
-                  <span>Current progress</span>
-                  <strong>{PORTAL_PHASE_LABELS[currentPhase]}</strong>
-                </div>
-              )}
-            </div>
-
-            {!loading && (
-              <AgentBusinessCardDownload
-                userId={user?.id ?? ""}
-                firstName={profileRow?.first_name ?? form.firstName}
-                lastName={profileRow?.last_name ?? form.lastName}
-                workEmail={agentEmail}
-                workEmailVerified={isEmailConfirmed(user)}
-                phoneNumber={profileRow?.phone_number}
-                npn={profileRow?.npn}
-                profilePhotoPath={profileRow?.profile_photo_path}
-                profilePhotoUrl={savedPhotoUrl}
-                profileUpdatedAt={profileRow?.updated_at}
-              />
-            )}
+            <p className="portal-profile-lede">
+              Keep your name, home address, apparel sizes, and profile photo up to date. Your
+              county is determined automatically from your ZIP code.
+            </p>
 
             {loading ? (
               <div className="portal-incentives-loading">
@@ -591,134 +614,149 @@ export default function PortalProfile() {
                 <span>Loading profile...</span>
               </div>
             ) : (
-              <form className="admin-form portal-profile-form" onSubmit={(event) => void handleSubmit(event)}>
-                <div className="portal-profile-photo-section">
-                  <div className="portal-profile-photo-wrap">
-                    {displayPhotoUrl ? (
-                      <img
-                        src={displayPhotoUrl}
-                        alt=""
-                        className="portal-profile-photo-image"
+              <>
+                <Pane title="Profile photo">
+                  <div className="portal-profile-identity">
+                    <div className="portal-profile-photo-frame">
+                      {displayPhotoUrl ? (
+                        <img src={displayPhotoUrl} alt="" />
+                      ) : (
+                        <span aria-hidden="true">{initials}</span>
+                      )}
+                    </div>
+                    <div className="portal-profile-identity-copy">
+                      <p>Choose a photo, crop it, and we&apos;ll compress it to 300 KB before upload.</p>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="portal-profile-photo-input"
+                        onChange={handlePhotoChange}
                       />
-                    ) : (
-                      <span className="portal-profile-photo-initials" aria-hidden="true">
-                        {initials}
-                      </span>
+                      <button
+                        type="button"
+                        className="portal-profile-btn"
+                        onClick={() => fileInputRef.current?.click()}
+                      >
+                        <Camera size={16} aria-hidden="true" />
+                        {displayPhotoUrl ? "Change photo" : "Upload photo"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="portal-profile-meta">
+                    <div>
+                      <span>Agent ID</span>
+                      <strong>{agentNumber ?? "Pending assignment"}</strong>
+                    </div>
+                    <CompensationTierDisclosure tier={profileRow?.comp_level} />
+                    {todoTotal > 0 && (
+                      <div>
+                        <span>Current progress</span>
+                        <strong>{PORTAL_PHASE_LABELS[currentPhase]}</strong>
+                      </div>
                     )}
                   </div>
-                  <div className="portal-profile-photo-copy">
-                    <strong>Profile photo</strong>
-                    <p>Choose a photo, crop it, and we&apos;ll compress it to 300 KB before upload.</p>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      className="portal-profile-photo-input"
-                      onChange={handlePhotoChange}
-                    />
-                    <button
-                      type="button"
-                      className="portal-panel-btn portal-profile-photo-btn"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <Camera size={16} aria-hidden="true" />
-                      {displayPhotoUrl ? "Change photo" : "Upload photo"}
-                    </button>
-                  </div>
-                </div>
+                </Pane>
 
-                <div className="portal-profile-form-grid">
-                  <label className="admin-field">
-                    <span>First name</span>
-                    <input
+                <AgentBusinessCardDownload
+                  userId={user?.id ?? ""}
+                  firstName={profileRow?.first_name ?? form.firstName}
+                  lastName={profileRow?.last_name ?? form.lastName}
+                  workEmail={agentEmail}
+                  workEmailVerified={isEmailConfirmed(user)}
+                  phoneNumber={profileRow?.phone_number}
+                  npn={profileRow?.npn}
+                  profilePhotoPath={profileRow?.profile_photo_path}
+                  profilePhotoUrl={savedPhotoUrl}
+                  profileUpdatedAt={profileRow?.updated_at}
+                />
+
+                <form
+                  className="portal-profile-form"
+                  onSubmit={(event) => void handleSubmit(event)}
+                >
+                  <Pane title="Contact">
+                    <Field
+                      label="First name"
+                      id="profile-first-name"
                       type="text"
                       value={form.firstName}
                       onChange={(event) => updateField("firstName", event.target.value)}
-                      required
                       autoComplete="given-name"
+                      required
                     />
-                  </label>
 
-                  <label className="admin-field">
-                    <span>Last name</span>
-                    <input
+                    <Field
+                      label="Last name"
+                      id="profile-last-name"
                       type="text"
                       value={form.lastName}
                       onChange={(event) => updateField("lastName", event.target.value)}
-                      required
                       autoComplete="family-name"
+                      required
                     />
-                  </label>
-                </div>
 
-                <div className="portal-profile-form-grid">
-                  <label className="admin-field">
-                    <span>Phone number</span>
-                    <input
+                    <Field
+                      label="Phone number"
+                      id="profile-phone"
+                      hint="Pre-filled from your onboarding record when available. Required to complete your profile and generate your PDF business card."
                       type="tel"
                       inputMode="tel"
                       value={form.phoneNumber}
-                      onChange={(event) => updateField("phoneNumber", formatAgentPhoneInput(event.target.value))}
+                      onChange={(event) =>
+                        updateField("phoneNumber", formatAgentPhoneInput(event.target.value))
+                      }
                       placeholder="555-555-0100"
                       autoComplete="tel"
                       required
                       pattern="\d{3}-\d{3}-\d{4}"
                       title="Enter a 10-digit phone number"
-                      aria-describedby="profile-phone-help"
                     />
-                    <small id="profile-phone-help" className="portal-profile-field-help">
-                      Pre-filled from your onboarding record when available. Required to complete
-                      your profile and generate your PDF business card.
-                    </small>
-                  </label>
-                  <div className="admin-field">
-                    <span>Verified PNCL work email</span>
-                    <p className="portal-profile-derived-value">{agentEmail || "Not available"}</p>
-                  </div>
-                </div>
 
-                <div className="portal-profile-form-grid">
-                  <label className="admin-field">
-                    <span>Personal recovery email</span>
-                    <input
+                    <div className="portal-profile-readonly">
+                      <span className="portal-field-label">Verified PNCL work email</span>
+                      <p>{agentEmail || "Not available"}</p>
+                    </div>
+
+                    <Field
+                      label="Personal recovery email"
+                      id="profile-recovery-email"
+                      hint="Required. This personal address helps you recover your PNCL Google account. Do not use your @thepncl.com email."
                       type="email"
                       value={form.recoveryEmail}
                       onChange={(event) => updateField("recoveryEmail", event.target.value)}
                       placeholder="you@example.com"
                       autoComplete="email"
                       required
-                      aria-describedby="profile-recovery-email-help"
                     />
-                    <small id="profile-recovery-email-help" className="portal-profile-field-help">
-                      Required. This personal address helps you recover your PNCL Google account. Do not use your @thepncl.com email.
-                    </small>
-                  </label>
-                  <div className="admin-field">
-                    <span>Google recovery status</span>
-                    <p className="portal-profile-derived-value">
-                      {profileRow?.recovery_email_sync_status === "synced"
-                        ? "Synced"
-                        : profileRow?.recovery_email_sync_status === "error"
-                          ? "Needs attention"
-                          : "Sync pending"}
-                    </p>
-                    {profileRow?.recovery_email_sync_status === "error" && (
-                      <button
-                        type="button"
-                        className="portal-panel-btn"
-                        onClick={() => void handleRecoveryRetry()}
-                        disabled={syncingRecoveryEmail}
-                      >
-                        {syncingRecoveryEmail ? "Syncing…" : "Retry Google sync"}
-                      </button>
-                    )}
-                  </div>
-                </div>
 
-                <div className="portal-profile-form-grid">
-                  <label className="admin-field">
-                    <span>Street address</span>
-                    <input
+                    <div className="portal-profile-readonly">
+                      <span className="portal-field-label">Google recovery status</span>
+                      {profileRow?.recovery_email_sync_status === "synced" ? (
+                        <Chip variant="active">Synced</Chip>
+                      ) : profileRow?.recovery_email_sync_status === "error" ? (
+                        <Chip variant="inactive">Needs attention</Chip>
+                      ) : (
+                        <Chip variant="pending">Sync pending</Chip>
+                      )}
+                      {profileRow?.recovery_email_sync_status === "error" && (
+                        <button
+                          type="button"
+                          className="portal-profile-btn"
+                          onClick={() => void handleRecoveryRetry()}
+                          disabled={syncingRecoveryEmail}
+                        >
+                          {syncingRecoveryEmail ? "Syncing..." : "Retry Google sync"}
+                        </button>
+                      )}
+                    </div>
+                  </Pane>
+
+                  <Pane title="Address">
+                    <Field
+                      label="Street address"
+                      id="profile-address-line1"
                       type="text"
                       value={form.addressLine1}
                       onChange={(event) => updateField("addressLine1", event.target.value)}
@@ -726,11 +764,10 @@ export default function PortalProfile() {
                       autoComplete="address-line1"
                       required
                     />
-                  </label>
 
-                  <label className="admin-field">
-                    <span>City</span>
-                    <input
+                    <Field
+                      label="City"
+                      id="profile-address-city"
                       type="text"
                       value={form.addressCity}
                       onChange={(event) => updateField("addressCity", event.target.value)}
@@ -738,30 +775,26 @@ export default function PortalProfile() {
                       autoComplete="address-level2"
                       required
                     />
-                  </label>
-                </div>
 
-                <div className="portal-profile-form-grid">
-                  <label className="admin-field">
-                    <span>State</span>
-                    <select
-                      value={form.addressState}
-                      onChange={(event) => updateField("addressState", event.target.value)}
-                      autoComplete="address-level1"
-                      required
-                    >
-                      <option value="">Select state</option>
-                      {US_STATES.map((state) => (
-                        <option key={state} value={state}>
-                          {state}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                    <Field label="State" id="profile-address-state" required>
+                      <select
+                        className="portal-select"
+                        value={form.addressState}
+                        onChange={(event) => updateField("addressState", event.target.value)}
+                        autoComplete="address-level1"
+                      >
+                        <option value="">Select state</option>
+                        {US_STATES.map((state) => (
+                          <option key={state} value={state}>
+                            {state}
+                          </option>
+                        ))}
+                      </select>
+                    </Field>
 
-                  <label className="admin-field">
-                    <span>ZIP code</span>
-                    <input
+                    <Field
+                      label="ZIP code"
+                      id="profile-address-zip"
                       type="text"
                       inputMode="numeric"
                       value={form.addressZip}
@@ -774,64 +807,73 @@ export default function PortalProfile() {
                       pattern="\d{5}"
                       title="Enter a 5-digit ZIP code"
                     />
-                  </label>
-                </div>
 
-                <div className="admin-field">
-                  <span>County</span>
-                  <p className="portal-profile-derived-value">
-                    {resolvedCounty ??
-                      (form.addressZip.length === 5
-                        ? "County not found for this ZIP code"
-                        : "Enter your ZIP code to see county")}
-                  </p>
-                </div>
+                    <div className="portal-profile-readonly">
+                      <span className="portal-field-label">County</span>
+                      <Chip>
+                        {resolvedCounty ??
+                          (form.addressZip.length === 5
+                            ? "County not found for this ZIP code"
+                            : "Enter your ZIP code to see county")}
+                      </Chip>
+                    </div>
+                  </Pane>
 
-                <div className="portal-profile-form-grid">
-                  <SizeSelect
-                    label="Shirt size"
-                    value={form.shirtSize}
-                    options={CLOTHING_SIZES}
-                    onChange={(value) => updateField("shirtSize", value)}
-                  />
-                  <SizeSelect
-                    label="Polo shirt size"
-                    value={form.poloShirtSize}
-                    options={CLOTHING_SIZES}
-                    onChange={(value) => updateField("poloShirtSize", value)}
-                  />
-                </div>
+                  <Pane title="Apparel">
+                    <div className="portal-profile-sizes">
+                      <SizeSelect
+                        id="profile-shirt-size"
+                        label="Shirt size"
+                        value={form.shirtSize}
+                        options={CLOTHING_SIZES}
+                        onChange={(value) => updateField("shirtSize", value)}
+                      />
+                      <SizeSelect
+                        id="profile-polo-size"
+                        label="Polo shirt size"
+                        value={form.poloShirtSize}
+                        options={CLOTHING_SIZES}
+                        onChange={(value) => updateField("poloShirtSize", value)}
+                      />
+                      <SizeSelect
+                        id="profile-hoodie-size"
+                        label="Hoodie size"
+                        value={form.hoodieSize}
+                        options={CLOTHING_SIZES}
+                        onChange={(value) => updateField("hoodieSize", value)}
+                      />
+                      <SizeSelect
+                        id="profile-waist-size"
+                        label="Waist size"
+                        value={form.waistSize}
+                        options={WAIST_SIZES}
+                        onChange={(value) => updateField("waistSize", value)}
+                      />
+                      <SizeSelect
+                        id="profile-shoe-size"
+                        label="Shoe size"
+                        value={form.shoeSize}
+                        options={SHOE_SIZES}
+                        onChange={(value) => updateField("shoeSize", value)}
+                      />
+                    </div>
+                  </Pane>
 
-                <div className="portal-profile-form-grid">
-                  <SizeSelect
-                    label="Hoodie size"
-                    value={form.hoodieSize}
-                    options={CLOTHING_SIZES}
-                    onChange={(value) => updateField("hoodieSize", value)}
-                  />
-                  <SizeSelect
-                    label="Waist size"
-                    value={form.waistSize}
-                    options={WAIST_SIZES}
-                    onChange={(value) => updateField("waistSize", value)}
-                  />
-                </div>
-
-                <SizeSelect
-                  label="Shoe size"
-                  value={form.shoeSize}
-                  options={SHOE_SIZES}
-                  onChange={(value) => updateField("shoeSize", value)}
-                />
-
-                <div className="admin-form-actions">
-                  <button type="submit" className="admin-primary-btn" disabled={submitting}>
-                    {submitting ? "Saving..." : "Save profile"}
-                  </button>
-                </div>
-              </form>
+                  <div className="portal-profile-savebar">
+                    <p className="portal-profile-savebar-note">
+                      {dirty ? "Unsaved changes" : "All changes saved"}
+                    </p>
+                    <button
+                      type="submit"
+                      className="portal-profile-save"
+                      disabled={submitting || !dirty}
+                    >
+                      {submitting ? "Saving..." : "Save profile"}
+                    </button>
+                  </div>
+                </form>
+              </>
             )}
-          </div>
           </div>
 
           <div
@@ -1049,8 +1091,54 @@ export default function PortalProfile() {
             <PortalSureLcLinks todos={resolvedTodos} />
             <PortalCarrierCredentials />
           </div>
+
+          {/* The portal footer, same markup and classes as the dashboard's.
+              Sign out lives here at every width, never in the tab bar: an
+              agent hits that bar with a thumb by accident. */}
+          <div className="portal-bento-footer portal-profile-foot">
+            {showAdminLink && (
+              <Link to={adminLink} className="portal-bento-footer-link">
+                <Shield size={15} strokeWidth={2} aria-hidden="true" />
+                <span>{adminLinkLabel}</span>
+              </Link>
+            )}
+
+            <button
+              type="button"
+              className="portal-bento-footer-link"
+              onClick={() => void handleSignOut()}
+            >
+              <LogOut size={15} strokeWidth={2} aria-hidden="true" />
+              Sign out
+            </button>
+
+            <div className="portal-bento-socials">
+              {PORTAL_SOCIAL_LINKS.map((link) => (
+                <a
+                  key={link.id}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="portal-bento-social"
+                  aria-label={link.label}
+                >
+                  <span
+                    style={{
+                      WebkitMaskImage: `url(${link.iconSrc})`,
+                      maskImage: `url(${link.iconSrc})`,
+                    }}
+                    aria-hidden="true"
+                  />
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
       </main>
+
+      {/* Outside <main>, a direct child of the page, which is what
+          .home2-page:has(> .portal-bottom-nav) > main pads for. */}
+      <BottomNav />
 
       {cropImageSrc && (
         <ProfilePhotoCropModal

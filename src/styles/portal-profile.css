@@ -1,0 +1,259 @@
+/* ==========================================================================
+   Profile page. Only what the Details tab adds on top of the primitives:
+   the photo and meta block, the read-only rows, the apparel grid, the sticky
+   save bar and the page footer. Tokens live in portal-tokens.css; the panes,
+   fields and chips come from portal-primitives.css.
+   ========================================================================== */
+
+/* The save bar is sticky, and .home2-page carries overflow-x: hidden, which
+   computes overflow-y to auto and makes it a scrollport that never scrolls,
+   so a sticky descendant never sticks. clip gives the same horizontal
+   containment without the scroll container (ruling R26, portal-shell.css
+   carries the same fix for the sub-page header). */
+.home2-page:has(.portal-profile-savebar) {
+  overflow-x: clip;
+}
+
+/* Single column always, on a measure a form can be read at. The wrap runs to
+   1400px, which would otherwise stretch every control across the viewport. */
+.home2-page .portal-profile-details {
+  max-width: 680px;
+}
+
+.home2-page .portal-profile-details .portal-pane > * + * {
+  margin-top: var(--portal-gap);
+}
+
+.home2-page .portal-profile-lede {
+  max-width: 60ch;
+  margin: 0;
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+}
+
+.home2-page .portal-profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--portal-gap);
+}
+
+/* ── Photo and agent meta ───────────────────────────────────────────────── */
+
+.home2-page .portal-profile-identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.home2-page .portal-profile-photo-frame {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  overflow: hidden;
+  border: 1px solid var(--portal-border);
+  border-radius: 50%;
+  /* The initials sit on their own fill, not on the pane. */
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--portal-text-strong);
+  font-size: var(--portal-t-large);
+  font-weight: 600;
+}
+
+.home2-page .portal-profile-photo-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home2-page .portal-profile-identity-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.home2-page .portal-profile-identity-copy p {
+  margin: 0;
+  color: var(--portal-text);
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+}
+
+/* Secondary action: 44px on the same near-black fill the controls use. */
+.home2-page .portal-profile-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 120ms var(--portal-ease-out);
+}
+
+.home2-page .portal-profile-btn:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.home2-page .portal-profile-btn:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.home2-page .portal-profile-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--portal-rule);
+}
+
+.home2-page .portal-profile-meta > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.home2-page .portal-profile-meta span {
+  color: var(--portal-text-faint);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-label);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.home2-page .portal-profile-meta strong {
+  color: var(--portal-text-strong);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The tier toggle ships inside CompensationTierDisclosure at 28px, under the
+   44px floor. Raised here rather than in that component, which other pages
+   still render in their own layout. */
+.home2-page .portal-profile-meta .portal-profile-tier-disclosure {
+  gap: 8px;
+}
+
+.home2-page .portal-profile-meta .portal-profile-tier-toggle {
+  min-height: 44px;
+  border-radius: 10px;
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+}
+
+/* ── Read-only rows ─────────────────────────────────────────────────────── */
+
+/* A value the agent cannot type: same label as a Field, then a chip or a line
+   of text instead of a control. */
+.home2-page .portal-profile-readonly {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.home2-page .portal-profile-readonly p {
+  margin: 0;
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  font-size: 16px;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+/* ── Apparel ────────────────────────────────────────────────────────────── */
+
+/* Two native selects per row at every width: a size picker is short, and the
+   single-column rule is about typed fields. */
+.home2-page .portal-profile-sizes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* ── Sticky save bar ────────────────────────────────────────────────────── */
+
+/* Bars sit over scrolling content, so this takes the solid bar fill, not the
+   translucent pane fill: white 0.95 reads 16.20:1 on it, 13.36:1 under the
+   sheen's maximum. */
+.home2-page .portal-profile-savebar {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  box-shadow: var(--portal-pane-shadow);
+}
+
+.home2-page .portal-profile-savebar-note {
+  margin: 0;
+  color: var(--portal-text-faint);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-micro);
+}
+
+.home2-page .portal-profile-save {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #161616;
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.home2-page .portal-profile-save:disabled {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--portal-text-faint);
+  cursor: not-allowed;
+}
+
+.home2-page .portal-profile-save:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+@media (max-width: 620px) {
+  /* Above the fixed tab bar, which already pads the safe area. */
+  .home2-page .portal-profile-savebar {
+    bottom: calc(56px + env(safe-area-inset-bottom));
+    padding-bottom: 12px;
+  }
+}
+
+/* ── Page footer ────────────────────────────────────────────────────────── */
+
+/* The dashboard's footer markup and classes. The colour is declared on the
+   container because .home2-page a { color: inherit } is 0-1-1 and outranks
+   .portal-bento-footer-link, so the admin link renders whatever this resolves
+   to. White 0.62 on the page's --ink (#161616) reads 7.47:1 (R27: measured
+   against this surface, not against the pane). */
+.home2-page .portal-profile-foot {
+  margin-top: 24px;
+  color: rgba(255, 255, 255, 0.62);
+}
