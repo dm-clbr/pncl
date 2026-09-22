@@ -58,9 +58,25 @@ Measured with the workspace's contrast.mjs: the shipped pncl preset's brightest 
 | Field | `src/components/portal/Field.tsx` | One labelled control: label above at 13/600, control 44px tall at 16px so iOS Safari does not zoom on focus, 12px of horizontal padding, error under it. `label`, `id`, `hint`, `error` and `required`; with no `children` the remaining props spread onto an `<input>` (type, inputMode, autoComplete, value, onChange, placeholder), and with `children` the same `id`, `aria-describedby`, `aria-invalid` and `required` are handed to that control instead, so a native `<select>` or `<textarea>` keeps its own picker. The error carries `role="alert"`. `.portal-input`, `.portal-select` and `.portal-textarea` give the same look to markup that is not wrapped in a Field. Controls sit on their own near-black fill: white 0.95 reads 8.88:1 on it and the placeholder's 0.60 reads 4.66:1. Focusing the first error on submit is the form's job. |
 | Segmented | `src/components/portal/Segmented.tsx` | Horizontal tabs for the profile, the ICA and W-9 section jumps and the map filters. Items are 44px tall and 8px apart on a recessed track that scrolls sideways on a phone with no scrollbar, fading whichever edge has content behind it and keeping the active item in view. Tab mode is a roving tablist: `role="tab"`, `aria-selected`, one tab in the tab order and Left, Right, Home and End. `linkTo(value)` turns the items into router links that keep `?tab=` in the URL, dropping the tab roles for `aria-current="page"`. Active item white 0.95 on a white 0.12 pill, the rest white 0.60, which the darker track holds at 4.66:1. The weight does not change between states: rebolding would re-measure the labels and shift the track. |
 
-BottomNav follows in the shell branch.
-
 In a tile reveal `portal-tile.css` drives `.portal-row` from the same rules as the `.ptile-link` it replaced, so the 44px floor, the full width and the concentric radius apply on a page but not in a card menu.
+
+## Shell
+One header, one nav, one sub-page header. The 620px line is the only breakpoint: above it the nav is text links in the masthead, below it a fixed tab bar in the thumb zone.
+
+| Surface | File | Above 620px | 620px and below |
+|---|---|---|---|
+| Header | `src/components/portal/PortalHeader.tsx` | Logo, "Employee Portal", stage badge, profile chip right (name, email, avatar) | 56px bar: logo left, avatar right. The h1 stays in the DOM for assistive tech, the stage moves to the progress strip under it, the name and the email to the profile page. Props only, no hooks. |
+| Primary nav | `src/components/PortalPrimaryNav.tsx` | Dashboard, Calendar, State Map text links | Hidden. |
+| Bottom nav | `src/components/portal/BottomNav.tsx` | Hidden. | `position: fixed` tab bar: Dashboard, Calendar, State Map, Profile. 56px plus `env(safe-area-inset-bottom)`, items 44px minimum with a 20px icon over an 11px label, active white 0.95 and `aria-current="page"`, rest white 0.52. |
+| Sub-page header | `src/components/portal/PortalSubpageHeader.tsx` | Breadcrumb back link over the title, `aside` slot right | 44px sticky bar: back chevron, title, aside. The back label stays in the DOM, hidden visually. |
+| Footer | the page | Admin console, sign out, socials | Same, above the bar. Never in the bottom nav: a bar you tap by accident is no place for sign out. |
+
+`--portal-bar-fill` (`rgb(28, 22, 17)`, the pane fill colour made solid) backs the two bars. A fixed or sticky bar sits over scrolling content, so the translucent pane fill would let whatever scrolled under it set the contrast. On the solid fill white 0.95 reads 16.2:1 and the tab bar's white 0.52 label 5.58:1, 4.51:1 at the sheen's brightest corner.
+
+The bars are `position: fixed` and `position: sticky`, so where they mount matters:
+- Mount BottomNav outside `PortalBentoStage` and outside the page's `<main>`. `preserve-3d` is a containing block for `position: fixed`, and `.portal-bento > *` would pull the bar into the page's stacking context.
+- A page carrying the bar ends above it: `padding-bottom: calc(56px + env(safe-area-inset-bottom) + 16px)` at 620px and below, applied through `.home2-page:has(> .portal-bottom-nav) > main`.
+- `.home2-page` carries `overflow-x: hidden`, which computes `overflow-y` to `auto` and makes it a scrollport that never scrolls, so a sticky descendant never sticks. A page with a sub-page header switches it to `overflow-x: clip`, same horizontal containment without the scroll container.
 
 ## Mobile rules
 | Rule | Number |

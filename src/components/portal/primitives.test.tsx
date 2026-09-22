@@ -1,11 +1,14 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeAll, describe, expect, it, vi } from "vitest";
+import BottomNav from "@/components/portal/BottomNav";
 import Chip from "@/components/portal/Chip";
 import EmptyState from "@/components/portal/EmptyState";
 import Field from "@/components/portal/Field";
 import ListRow from "@/components/portal/ListRow";
 import Pane from "@/components/portal/Pane";
+import PortalHeader from "@/components/portal/PortalHeader";
+import PortalSubpageHeader from "@/components/portal/PortalSubpageHeader";
 import Segmented, { nextIndex } from "@/components/portal/Segmented";
 import Sheet from "@/components/portal/Sheet";
 import Skeleton from "@/components/portal/Skeleton";
@@ -381,5 +384,114 @@ describe("Segmented", () => {
     scrollTo(600, 300, 300);
     expect(track.dataset.fadeStart).toBe("true");
     expect(track.dataset.fadeEnd).toBe("false");
+  });
+});
+
+describe("PortalHeader", () => {
+  it("shows the photo when there is one and the initials when there is not", () => {
+    const { rerender } = render(
+      <MemoryRouter>
+        <PortalHeader name="Porter Gerlach" email="porter@thepncl.com" initials="PG" stage="Licensing" />
+      </MemoryRouter>,
+    );
+
+    // The avatar is decorative, so the initials are the only proof it fell back.
+    expect(screen.getByText("PG")).toBeInTheDocument();
+    expect(document.querySelector(".portal-header-avatar img")).toBeNull();
+    expect(screen.getByRole("heading", { level: 1, name: "Employee Portal" })).toBeInTheDocument();
+    expect(screen.getByText("Licensing")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "View profile" })).toHaveAttribute(
+      "href",
+      "/portal/profile",
+    );
+
+    rerender(
+      <MemoryRouter>
+        <PortalHeader name="Porter Gerlach" initials="PG" photoUrl="/photo.jpg" />
+      </MemoryRouter>,
+    );
+    expect(document.querySelector(".portal-header-avatar img")).toHaveAttribute(
+      "src",
+      "/photo.jpg",
+    );
+    expect(screen.queryByText("PG")).not.toBeInTheDocument();
+    // No stage and no email means no empty badge and no empty line.
+    expect(document.querySelector(".portal-header-stage")).toBeNull();
+    expect(document.querySelector(".portal-header-mail")).toBeNull();
+  });
+});
+
+describe("BottomNav", () => {
+  it("marks only the current tab and never carries a sign out", () => {
+    render(
+      <MemoryRouter initialEntries={["/portal/calendar"]}>
+        <BottomNav />
+      </MemoryRouter>,
+    );
+
+    const links = within(screen.getByRole("navigation", { name: "Portal sections" })).getAllByRole(
+      "link",
+    );
+    expect(links.map((link) => link.textContent)).toEqual([
+      "Dashboard",
+      "Calendar",
+      "State Map",
+      "Profile",
+    ]);
+    expect(links.map((link) => link.getAttribute("href"))).toEqual([
+      "/portal",
+      "/portal/calendar",
+      "/portal/state-map",
+      "/portal/profile",
+    ]);
+    expect(links[1]).toHaveAttribute("aria-current", "page");
+    expect(links[1].className).toContain("active");
+    expect(links.filter((link) => link.hasAttribute("aria-current"))).toHaveLength(1);
+    expect(screen.queryByText(/sign out/i)).not.toBeInTheDocument();
+  });
+
+  it("keeps Dashboard exact so a sub-route does not light it up", () => {
+    render(
+      <MemoryRouter initialEntries={["/portal/state-map"]}>
+        <BottomNav />
+      </MemoryRouter>,
+    );
+
+    const links = screen.getAllByRole("link");
+    expect(links[0]).not.toHaveAttribute("aria-current");
+    expect(links[2]).toHaveAttribute("aria-current", "page");
+  });
+});
+
+describe("PortalSubpageHeader", () => {
+  it("defaults the back link to the portal and takes an override", () => {
+    const { rerender } = render(
+      <MemoryRouter>
+        <PortalSubpageHeader title="Pay & Commissions" />
+      </MemoryRouter>,
+    );
+
+    const back = screen.getByRole("link", { name: "Back to portal" });
+    expect(back).toHaveAttribute("href", "/portal");
+    expect(screen.getByRole("heading", { level: 1, name: "Pay & Commissions" })).toBeInTheDocument();
+    expect(document.querySelector(".portal-subhead-aside")).toBeNull();
+
+    rerender(
+      <MemoryRouter>
+        <PortalSubpageHeader
+          title="Carriers"
+          backTo="/portal/resources"
+          backLabel="Back to resources"
+          aside={<Chip variant="active">Live</Chip>}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("link", { name: "Back to resources" })).toHaveAttribute(
+      "href",
+      "/portal/resources",
+    );
+    // The label stays in the DOM at every width; only CSS hides it on a phone.
+    expect(screen.getByText("Back to resources")).toBeInTheDocument();
+    expect(within(document.querySelector(".portal-subhead-aside")!).getByText("Live")).toBeInTheDocument();
   });
 });

@@ -1,0 +1,347 @@
+/* ==========================================================================
+   Portal shell: masthead, bottom tab bar, sub-page header.
+   Tokens live in portal-tokens.css. Nothing here is scoped to a page, and the
+   620px line is the one breakpoint: above it the nav is text links in the
+   masthead, below it a fixed tab bar in the thumb zone.
+   ========================================================================== */
+
+:root {
+  /* Fixed and sticky bars sit over scrolling content, so they cannot take the
+     translucent pane fill: whatever scrolled under them would set the
+     contrast. Same colour as --portal-pane-fill, solid. Measured on it:
+     white 0.95 = 16.2:1, the tab bar's white 0.52 label = 5.58:1 (4.51:1 at
+     the sheen's brightest corner), so the quiet tab still clears 4.5:1. */
+  --portal-bar-fill: rgb(28, 22, 17);
+}
+
+/* ── Masthead ───────────────────────────────────────────────────────────── */
+
+.portal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.portal-header-brand {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.portal-header-logo {
+  display: inline-flex;
+  color: var(--portal-text-strong);
+}
+
+.portal-header-title {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--portal-text-faint);
+}
+
+.portal-header-stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: var(--portal-t-body);
+  letter-spacing: 0.04em;
+  color: var(--portal-text);
+}
+
+/* The accent is a 6px spark on the badge, never the badge's field. */
+.portal-header-stage::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--portal-accent);
+  flex-shrink: 0;
+}
+
+.portal-header-profile {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 44px;
+  padding: 7px 7px 7px 14px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 999px;
+  background: var(--portal-pane-fill);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.2s var(--portal-ease-out);
+}
+
+.portal-header-profile:hover {
+  border-color: var(--portal-border);
+}
+
+.portal-header-profile:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.portal-header-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: right;
+  min-width: 0;
+}
+
+.portal-header-name {
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--portal-text-strong);
+}
+
+.portal-header-mail {
+  font-size: var(--portal-t-label);
+  letter-spacing: 0.06em;
+  color: var(--portal-text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 190px;
+}
+
+.portal-header-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--portal-border);
+}
+
+.portal-header-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.portal-header-avatar span {
+  font-size: var(--portal-t-micro);
+  color: var(--portal-text);
+}
+
+@media (max-width: 620px) {
+  .portal-header {
+    align-items: center;
+    height: 56px;
+    margin-bottom: 8px;
+  }
+
+  .portal-header-brand {
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+  }
+
+  .portal-header-logo svg {
+    height: 28px;
+    width: auto;
+  }
+
+  /* Kept in the DOM, not display: none, so a phone still reaches the page's
+     h1. The bar is only wide enough for the logo and the avatar. */
+  .portal-header-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* The progress strip directly under the header carries the stage on a
+     phone, and the profile page carries the name and the email. */
+  .portal-header-stage,
+  .portal-header-identity {
+    display: none;
+  }
+
+  .portal-header-profile {
+    min-width: 44px;
+    padding: 0;
+    justify-content: center;
+    border-color: transparent;
+    background: none;
+  }
+}
+
+/* ── Bottom tab bar ─────────────────────────────────────────────────────── */
+
+/* Four destinations in the thumb zone, phone only. Sign out and the socials
+   stay in the page footer: a bar you tap by accident is no place for either. */
+.portal-bottom-nav {
+  display: none;
+}
+
+.portal-bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 56px;
+  min-width: 44px;
+  padding: 6px 4px;
+  color: rgba(255, 255, 255, 0.52);
+  font-size: var(--portal-t-micro);
+  letter-spacing: 0.01em;
+  text-align: center;
+  text-decoration: none;
+}
+
+.portal-bottom-nav-item.active {
+  color: var(--portal-text-strong);
+}
+
+.portal-bottom-nav-item:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: -3px;
+}
+
+@media (max-width: 620px) {
+  .portal-bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top: 1px solid var(--portal-border);
+    /* No backdrop-filter: this is a bar over scrolling content, and the blur
+       already lives on the gradient source. */
+    background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  }
+
+  /* The bar is fixed, so the page under it has to stop above it. */
+  .home2-page:has(> .portal-bottom-nav) > main {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom) + 16px);
+  }
+}
+
+/* ── Sub-page header ────────────────────────────────────────────────────── */
+
+.portal-subhead {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 16px;
+  margin-bottom: 20px;
+}
+
+.portal-subhead-back {
+  grid-column: 1 / -1;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  margin-left: -4px;
+  color: var(--portal-text-faint);
+  font-size: var(--portal-t-micro);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.portal-subhead-back:hover {
+  color: var(--portal-text);
+}
+
+.portal-subhead-back:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.portal-subhead-title {
+  margin: 0;
+  font-size: var(--portal-t-large);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--portal-text-strong);
+}
+
+.portal-subhead-aside {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 620px) {
+  /* .home2-page carries overflow-x: hidden, which computes overflow-y to auto
+     and makes it a scrollport that never scrolls, so a sticky descendant
+     never sticks. clip gives the same horizontal containment without the
+     scroll container. Scoped to pages that carry this header. */
+  .home2-page:has(.portal-subhead) {
+    overflow-x: clip;
+  }
+
+  .portal-subhead {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 44px;
+    /* Bleed to the viewport edges through the page wrap's own gutter. */
+    margin-inline: calc(var(--pad, 0px) * -1);
+    margin-bottom: 12px;
+    padding-inline: max(calc(var(--pad, 0px) - 8px), 4px);
+    border-bottom: 1px solid var(--portal-rule);
+    background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  }
+
+  .portal-subhead-back {
+    grid-column: auto;
+    min-width: 44px;
+    margin-left: 0;
+    justify-content: center;
+  }
+
+  .portal-subhead-back-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .portal-subhead-title {
+    font-size: var(--portal-t-mid);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .portal-subhead-aside {
+    margin-left: auto;
+  }
+}
