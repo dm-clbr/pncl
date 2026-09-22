@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import PortalStateMap from "@/pages/PortalStateMap";
-import { US_STATES } from "@/lib/us-states";
+import { US_STATES, type UsStateCode } from "@/lib/us-states";
 
 const availability = US_STATES.map((state) => ({
   stateCode: state.code,
@@ -107,5 +107,39 @@ describe("portal state map", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(reload).toHaveBeenCalledOnce();
+  });
+
+  it("gives the map a single-pointer zoom alternative to pinch", async () => {
+    // The page mocks the canvas module, so the real one comes in through
+    // importActual. WebGL is unavailable under jsdom: the controls sit outside
+    // that failure path, which is the point of the assertion. The stub keeps
+    // jsdom's not-implemented trace out of the run.
+    const getContext = vi
+      .spyOn(HTMLCanvasElement.prototype, "getContext")
+      .mockReturnValue(null);
+    const { default: StateAvailabilityCanvas } = await vi.importActual<
+      typeof import("@/components/StateAvailabilityCanvas")
+    >("@/components/StateAvailabilityCanvas");
+
+    render(
+      <StateAvailabilityCanvas
+        states={availability}
+        licensedStates={new Set<UsStateCode>(["DC"])}
+        selectedState="DC"
+        onHover={() => {}}
+        onSelect={() => {}}
+      />,
+    );
+
+    const zoomIn = screen.getByRole("button", { name: "Zoom in" });
+    expect(zoomIn).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Zoom out" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Reset zoom" })).toBeDisabled();
+
+    fireEvent.click(zoomIn);
+    expect(screen.getByRole("button", { name: "Zoom out" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Reset zoom" })).toBeEnabled();
+
+    getContext.mockRestore();
   });
 });

@@ -60,6 +60,35 @@ Measured with the workspace's contrast.mjs: the shipped pncl preset's brightest 
 
 In a tile reveal `portal-tile.css` drives `.portal-row` from the same rules as the `.ptile-link` it replaced, so the 44px floor, the full width and the 8px radius apply on a page but not in a card menu.
 
+## State map canvas
+`src/components/StateAvailabilityCanvas.tsx` paints the Three.js map. It keeps
+its own three fills rather than the swatches in `STATE_AVAILABILITY_META`, which
+sit at 1.48:1 between Active and Pending and 2.31:1 between Active and Inactive:
+a viewer with red-green colour blindness reads those as one colour. Each fill
+here clears 3:1 against the other two, and a second channel repeats the meaning.
+
+| Encoding | Value | Measured |
+|---|---|---|
+| Active fill | `#27865a` | 3.32:1 against Inactive |
+| Pending fill | `#fbdf9d` under a diagonal hatch in `#7a5c14` | 3.48:1 against Active; the hatch 4.79:1 on its own fill |
+| Inactive fill | `#212730` | 11.55:1 against Pending |
+| Licensed | a cream ring inside a near-black halo at the state centre | the cream ring alone reads 1.14:1 on the Pending fill, the halo 14.31:1 |
+| Edge | `#171a20` at 0.85 on a bright fill, `#f4f0df` at 0.55 on a dark one | 3.30:1 on Active, 5.02:1 on Inactive |
+
+One ring colour and one edge colour cannot serve all three fills. The fills sit
+more than 3:1 apart, so any single tone lands inside 3:1 of one of them. The ring
+carries two bands and the edge colour follows the fill it draws.
+
+Interaction: `pointerdown` selects on any pointer type, and the hover highlight
+runs under `(pointer: fine)` alone. The +/- and reset buttons are the
+single-pointer alternative to a pinch (WCAG 2.5.1), 44px, top right of the canvas
+and bottom right at 640px and below, which is this page's own breakpoint. Zoom is
+one orthographic number from 1 to 4 in 1.4 steps; a zoomed camera centres on the
+selected state and stops at the map's edge, which is why the map needs no drag.
+Nothing runs on a loop: each frame is asked for, an off-screen canvas
+(IntersectionObserver) or a hidden document drops the ask and replays it once on
+return, and the pixel ratio is 1 under `(pointer: coarse)`.
+
 ## Shell
 The portal carries one header, one nav and one sub-page header. 620px is the only breakpoint: above it the nav is text links in the masthead, below it a fixed tab bar in the thumb zone.
 

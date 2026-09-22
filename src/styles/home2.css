@@ -6377,6 +6377,50 @@ button.portal-todo-link {
   height: 100%;
 }
 
+/* Single-pointer zoom (WCAG 2.5.1). The near-black fill is the shell bar's,
+   where a white 0.95 glyph reads 16.20:1; the white 0.38 border is the chip's,
+   and one of the two edges clears 3:1 against the panel and against all three
+   map fills (border on the panel 3.30:1, fill on Active 3.85:1, border on
+   Inactive 3.07:1). */
+.home2-page .state-map-zoom {
+  position: absolute;
+  inset: 12px 12px auto auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home2-page .state-map-zoom button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .38);
+  border-radius: 8px;
+  background: var(--portal-bar-fill);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .45);
+  color: rgba(255, 255, 255, .95);
+  cursor: pointer;
+  transition: border-color var(--portal-duration) var(--portal-ease-out);
+}
+
+.home2-page .state-map-zoom button:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, .7);
+}
+
+.home2-page .state-map-zoom button:disabled {
+  border-color: rgba(255, 255, 255, .18);
+  color: rgba(255, 255, 255, .45);
+  cursor: default;
+}
+
+.home2-page .state-map-zoom button:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
 .home2-page .state-map-canvas-placeholder,
 .home2-page .state-map-loading {
   display: flex;
@@ -6701,6 +6745,12 @@ button.portal-todo-link {
 
   .home2-page .state-map-legend {
     gap: 8px 12px;
+  }
+
+  /* Thumb zone, and the top right corner of a phone-sized map is New England.
+     Reuses this page's existing 640px line rather than inventing a third. */
+  .home2-page .state-map-zoom {
+    inset: auto 12px 12px auto;
   }
 
   .home2-page .state-map-state-grid {
