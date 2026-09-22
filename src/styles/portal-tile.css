@@ -5,26 +5,18 @@
    ========================================================================== */
 
 .portal-bento {
-  /* Type scale. These seven steps are the only sizes used inside a tile. */
-  --t-display: 34px;
-  --t-large: 22px;
-  --t-mid: 20px;
-  --t-body: 13px;
-  --t-label: 10px;
-  --t-micro: 11px;
-
-  /* Contrast ladder on the #141414 tile fill. */
-  --c-t1-value: rgba(255, 255, 255, 0.95);
-  --c-t1-label: rgba(255, 255, 255, 0.58);
-  --c-t2-value: rgba(255, 255, 255, 0.8);
-  --c-t2-label: rgba(255, 255, 255, 0.52);
-  --c-t3-body: rgba(255, 255, 255, 0.66);
-  --c-index: rgba(255, 255, 255, 0.52);
-  --c-title: rgba(255, 255, 255, 0.6);
-  --c-rule: rgba(255, 255, 255, 0.08);
+  /* Type scale, aliased onto portal-tokens.css; the compact-viewport steps
+     below are the bento's own. Text colours read the --portal-text-* ladder
+     directly, and the tokens file carries the contrast numbers. */
+  --t-display: var(--portal-t-display);
+  --t-large: var(--portal-t-large);
+  --t-mid: var(--portal-t-mid);
+  --t-body: var(--portal-t-body);
+  --t-label: var(--portal-t-label);
+  --t-micro: var(--portal-t-micro);
 
   /* 4px baseline unit. Every margin and padding is a multiple. */
-  --u: 4px;
+  --u: var(--portal-unit);
 }
 
 /* ── Tile shell ─────────────────────────────────────────────────────────── */
@@ -36,7 +28,7 @@
   height: 100%;
   padding: 0;
   box-sizing: border-box;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--portal-border);
   border-radius: var(--tile-radius);
   /* Glass at rest as well as open, so clicking never swaps material. The fill
      is shared with the menu; the blur is not. Sixteen backdrop-filters halved
@@ -49,43 +41,18 @@
      light across one corner and falls away. That is static paint, so sixteen
      of them cost nothing per frame.
 
-     Alpha 0.8 is the contrast gate, not taste. Composited over the shipped
-     pncl preset's brightest stop (#e8cdb0) plus the sheen's 0.075 white, the
-     0.66 body tier has to hold 4.5:1 and the 0.52 index tier 3:1. Measured
-     with contrast.mjs in the plan workspace: 0.42 gave 2.35 and 2.00, 0.64
-     gave 3.52 and 2.80, 0.76 gave 4.4993, 0.8 gives 4.89 and 3.70. The menu
-     and the banner (.pbanner) carry the same alpha so all three stay one pane.
-
-     The fill is warmer than the menu's to stand in for the saturate() the menu
-     gets from its filter. Measured at alpha 0.42 against a blurred build, that
-     filter shifted the composite by about (+1.6, +0.2, -1.1), the difference
-     between rgb(24,21,20) and rgb(28,22,17); the same hue offset is kept at
-     0.8. If the menu ever loses its own filter, drop this back to the menu's
-     colour or the two will diverge. */
-  background:
-    linear-gradient(
-      152deg,
-      rgba(255, 255, 255, 0.075) 0%,
-      rgba(255, 255, 255, 0.024) 34%,
-      rgba(255, 255, 255, 0) 58%
-    ),
-    rgba(28, 22, 17, 0.8);
+     Fill, sheen and shadow are the pane tokens in portal-tokens.css, shared
+     with the menu and the banner (.pbanner) so all three stay one pane. The
+     fill alpha is ruling R19 and the text ladder is lifted to pass on it;
+     the numbers sit with the tokens. */
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
   color: inherit;
   font-family: var(--ff-sans, "Manrope", sans-serif);
   text-align: left;
   overflow: hidden;
   min-height: 0;
   transform-style: preserve-3d;
-
-  /* Kept tight on purpose. Against a backdrop this dark a black shadow has
-     only about a dozen 8-bit values to travel through, so spreading it over
-     80px drew a visible band every seven pixels. The same levels compressed
-     into ~20px land roughly one per pixel and read as a smooth falloff.
-     The inner line along the bottom gives the pane its thickness. */
-  box-shadow:
-    inset 0 -16px 24px -20px rgba(0, 0, 0, 0.85),
-    0 2px 5px rgba(0, 0, 0, 0.5),
-    0 7px 18px rgba(0, 0, 0, 0.34);
+  box-shadow: var(--portal-pane-shadow);
 
   transform: translateZ(var(--tile-depth, 0px));
   transition:
@@ -166,7 +133,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--c-t1-label);
+  color: var(--portal-text);
   flex-shrink: 0;
   margin-bottom: calc(var(--u) * 1.5);
 }
@@ -181,7 +148,7 @@
   letter-spacing: 0.16em;
   line-height: 1;
   font-variant-numeric: tabular-nums lining-nums;
-  color: var(--c-index);
+  color: var(--portal-text-faint);
   flex-shrink: 0;
 }
 
@@ -191,7 +158,7 @@
   letter-spacing: 0.16em;
   line-height: 1;
   text-transform: uppercase;
-  color: var(--c-title);
+  color: var(--portal-text-faint);
   min-width: 0;
 }
 
@@ -202,7 +169,7 @@
   letter-spacing: 0.16em;
   line-height: 1;
   font-variant-numeric: tabular-nums lining-nums;
-  color: var(--c-t2-label);
+  color: var(--portal-text-faint);
   flex-shrink: 0;
 }
 
@@ -241,7 +208,7 @@
   font-weight: 600;
   letter-spacing: -0.015em;
   line-height: 1.2;
-  color: var(--c-t1-value);
+  color: var(--portal-text-strong);
   max-width: 100%;
 }
 
@@ -251,7 +218,7 @@
   letter-spacing: 0;
   line-height: 1.4;
   font-variant-numeric: tabular-nums lining-nums;
-  color: var(--c-t1-label);
+  color: var(--portal-text);
   max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
@@ -274,7 +241,7 @@
   font-size: var(--t-body);
   font-weight: 400;
   line-height: 1.5;
-  color: var(--c-t3-body);
+  color: var(--portal-text);
 }
 
 .ptile-reveal-body p {
@@ -285,7 +252,7 @@
   font-size: var(--t-body);
   font-weight: 600;
   line-height: 1.45;
-  color: var(--c-t1-value);
+  color: var(--portal-text-strong);
 }
 
 .ptile-reveal-label {
@@ -294,7 +261,7 @@
   letter-spacing: 0.16em;
   line-height: 1;
   text-transform: uppercase;
-  color: var(--c-t2-label);
+  color: var(--portal-text-faint);
   margin: 0 0 var(--u);
 }
 
@@ -308,13 +275,13 @@
 
 /* Rows are separated by hairlines so a long list stays readable. */
 .ptile-reveal-list li + li {
-  border-top: 1px solid var(--c-rule);
+  border-top: 1px solid var(--portal-rule);
 }
 
 .ptile-reveal-list li {
   font-size: var(--t-body);
   line-height: 1.45;
-  color: var(--c-t3-body);
+  color: var(--portal-text);
   padding: calc(var(--u) * 1.5) 0;
 }
 
@@ -324,7 +291,7 @@
   font-size: var(--t-body);
   font-weight: 500;
   line-height: 1.45;
-  color: var(--c-t1-value);
+  color: var(--portal-text-strong);
   text-decoration: none;
   transition: color 140ms var(--ease-out);
 }
@@ -376,17 +343,17 @@
   padding: calc(var(--u) * 1.5) 0;
   font-size: var(--t-body);
   line-height: 1.45;
-  color: var(--c-t3-body);
+  color: var(--portal-text);
 }
 
 .ptile-row + .ptile-row {
-  border-top: 1px solid var(--c-rule);
+  border-top: 1px solid var(--portal-rule);
 }
 
 .ptile-row-count {
   font-weight: 600;
   font-variant-numeric: tabular-nums lining-nums;
-  color: var(--c-t1-value);
+  color: var(--portal-text-strong);
   flex-shrink: 0;
 }
 
@@ -405,7 +372,7 @@
 }
 
 .ptile-track-seg.is-on {
-  background: var(--c-t2-value);
+  background: var(--portal-text);
 }
 
 .ptile-track-seg.is-accent {
@@ -466,13 +433,13 @@
   font-size: var(--t-body);
   font-weight: 400;
   line-height: 1.5;
-  color: var(--c-t3-body);
+  color: var(--portal-text);
 }
 
 .ptile-row-count {
   font-weight: 600;
   font-variant-numeric: tabular-nums lining-nums;
-  color: var(--c-t1-value);
+  color: var(--portal-text-strong);
   flex-shrink: 0;
 }
 
@@ -480,7 +447,7 @@
   font-size: var(--t-body);
   font-weight: 400;
   line-height: 1.5;
-  color: var(--c-t3-body);
+  color: var(--portal-text);
   padding: calc(var(--u) * 1.5) 0;
 }
 
@@ -507,7 +474,7 @@
   font-size: var(--t-label);
   font-weight: 600;
   letter-spacing: 0.06em;
-  color: var(--c-t2-label);
+  color: var(--portal-text-faint);
 }
 
 button.ptile-action {
@@ -538,14 +505,14 @@ button.ptile-action {
 .ptile-chip {
   flex-shrink: 0;
   padding: 3px 5px 2px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--portal-border);
   border-radius: 4px;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.08em;
   line-height: 1;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--portal-text-faint);
 }
 
 .ptile-sr {
@@ -572,13 +539,13 @@ button.ptile-action {
 .ptile-caret {
   display: inline-flex;
   align-self: center;
-  color: var(--c-t2-label);
+  color: var(--portal-text-faint);
   flex-shrink: 0;
   transition: transform 200ms var(--ease-out), color 200ms var(--ease-out);
 }
 
 .ptile.is-actionable:hover .ptile-caret {
-  color: var(--c-t1-value);
+  color: var(--portal-text-strong);
 }
 
 .ptile.is-open .ptile-caret {
@@ -594,15 +561,11 @@ button.ptile-action {
 .ptile-menu {
   /* Portaled out of .portal-bento (into .home2-page), so it inherits none of
      its variables. These are the tokens the menu actually uses. */
-  --u: 4px;
-  --tile-radius: 22px;
-  --t-label: 10px;
-  --t-body: 13px;
-  --c-rule: rgba(255, 255, 255, 0.08);
-  --c-t1-value: rgba(255, 255, 255, 0.95);
-  --c-t2-label: rgba(255, 255, 255, 0.52);
-  --c-t3-body: rgba(255, 255, 255, 0.66);
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --u: var(--portal-unit);
+  --tile-radius: var(--portal-radius);
+  --t-label: var(--portal-t-label);
+  --t-body: var(--portal-t-body);
+  --ease-out: var(--portal-ease-out);
 
   position: fixed;
   z-index: 200;
@@ -613,16 +576,8 @@ button.ptile-action {
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-top: none;
   border-radius: 0 0 var(--tile-radius) var(--tile-radius);
-  /* Same sheen and the same alpha as the card, so the two keep reading as one
-     pane of glass; .ptile's comment has the contrast numbers behind 0.8. */
-  background:
-    linear-gradient(
-      152deg,
-      rgba(255, 255, 255, 0.075) 0%,
-      rgba(255, 255, 255, 0.024) 34%,
-      rgba(255, 255, 255, 0) 58%
-    ),
-    rgba(24, 21, 20, 0.8);
+  /* The card's pane tokens, so the two keep reading as one pane of glass. */
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
   -webkit-backdrop-filter: blur(40px) saturate(165%);
   backdrop-filter: blur(40px) saturate(165%);
   /* Tight for the same reason as the card's: a wide ramp bands on this backdrop. */
@@ -727,7 +682,7 @@ button.ptile-action {
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.52);
+  color: var(--portal-text-faint);
 }
 
 .ptile-menu-count {
@@ -735,7 +690,7 @@ button.ptile-action {
   font-weight: 600;
   letter-spacing: 0.1em;
   font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--portal-text-faint);
 }
 
 .ptile-menu-body {
@@ -806,14 +761,14 @@ button.ptile-action {
   border: none;
   background: none;
   box-shadow: none;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--portal-text);
 }
 
 .ptile-menu .ptile-reveal-body > p,
 .ptile-menu .ptile-micro {
   padding: 4px 10px 8px;
   margin: 0;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--portal-text);
 }
 
 .ptile-menu .ptile-reveal-strong {
@@ -917,7 +872,7 @@ button.ptile-action {
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--portal-text-faint);
 }
 
 .ptile-menu .portal-incentive-row-icon {
@@ -943,13 +898,5 @@ button.ptile-action {
   .ptile-menu.is-above .ptile-menu-head,
   .ptile-menu.is-above .ptile-menu-body {
     animation: none;
-  }
-}
-
-/* The card radius drops on small screens, so the menu's has to follow or the
-   corners stop matching there. */
-@media (max-width: 620px) {
-  .ptile-menu {
-    --tile-radius: 16px;
   }
 }

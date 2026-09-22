@@ -1,0 +1,79 @@
+/* ==========================================================================
+   Portal design tokens
+   One source for every portal surface. The bento CSS reads these through its
+   scoped aliases; every later page and primitive reads them directly.
+   Namespaced --portal-* because home2.css owns the generic names on :root.
+   ========================================================================== */
+
+:root {
+  /* Type. Manrope only; weight does hierarchy, not colour. Every count sets
+     font-variant-numeric: tabular-nums. */
+  --portal-font: "Manrope", sans-serif;
+  --portal-t-display: 34px;
+  --portal-t-large: 22px;
+  --portal-t-mid: 20px;
+  --portal-t-body: 13px;
+  --portal-t-micro: 11px;
+  --portal-t-label: 10px;
+
+  /* Colour ladder, white on the pane. Alphas measured with the workspace's
+     contrast.mjs at the pane fill below, under the shipped pncl preset's
+     brightest stop plus the sheen (ruling R15): text 0.80 holds 4.76:1 for
+     body, meta and titles; faint 0.60 holds 3.45:1 for index numerals,
+     uppercase labels and counts (UI class, 3:1). The plan's 0.66 / 0.60 /
+     0.52 rungs sat at 3.81 / 3.45 / 3.00 at this fill, so the body rungs
+     merged up into 0.80 and the index rungs into 0.60 (ruling R19).
+     --portal-accent and --portal-success live in index.css: urgent only. */
+  --portal-text-strong: rgba(255, 255, 255, 0.95);
+  --portal-text: rgba(255, 255, 255, 0.8);
+  --portal-text-faint: rgba(255, 255, 255, 0.6);
+  --portal-rule: rgba(255, 255, 255, 0.08);
+  --portal-border: rgba(255, 255, 255, 0.15);
+
+  /* Surface: one pane of glass, shared by tile, menu, banner and sheet.
+     Fill alpha is ruling R19 (glass back, lift text). The sheen is static
+     paint, so any number of panes cost nothing per frame. */
+  --portal-pane-fill: rgba(28, 22, 17, 0.68);
+  --portal-pane-sheen: linear-gradient(
+    152deg,
+    rgba(255, 255, 255, 0.075) 0%,
+    rgba(255, 255, 255, 0.024) 34%,
+    rgba(255, 255, 255, 0) 58%
+  );
+  /* Inner bottom line gives the pane its thickness; the two outer shadows
+     stay tight because a long black ramp bands on this backdrop. */
+  --portal-pane-shadow:
+    inset 0 -16px 24px -20px rgba(0, 0, 0, 0.85),
+    0 2px 5px rgba(0, 0, 0, 0.5),
+    0 7px 18px rgba(0, 0, 0, 0.34);
+  --portal-radius: 22px;
+  --portal-inset: 12px;
+  /* Concentric corners: an inner radius is the outer minus the padding. */
+  --portal-radius-inner: calc(var(--portal-radius) - var(--portal-inset));
+
+  /* Spacing: 4px unit. */
+  --portal-unit: 4px;
+  --portal-gap: 14px;
+
+  /* Motion. The duration drops to zero under reduced motion, so anything
+     that uses it needs no second rule. */
+  --portal-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --portal-duration: 360ms;
+
+  /* Focus: keyboard only, through :focus-visible. */
+  --portal-focus-ring: 2px solid rgba(255, 255, 255, 0.8);
+  --portal-focus-offset: 2px;
+}
+
+@media (max-width: 620px) {
+  :root {
+    --portal-radius: 16px;
+    --portal-gap: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --portal-duration: 0ms;
+  }
+}

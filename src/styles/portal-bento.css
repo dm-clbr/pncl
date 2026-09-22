@@ -24,10 +24,11 @@
   --dot-on: rgba(255, 255, 255, 0.85);
   --dot-off: rgba(94, 94, 94, 0.35);
 
-  --tile-radius: 22px;
-  --grid-gap: 14px;
+  /* Aliases onto the shared tokens in portal-tokens.css. */
+  --tile-radius: var(--portal-radius);
+  --grid-gap: var(--portal-gap);
 
-  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out: var(--portal-ease-out);
 
   position: relative;
   /* The canvas below is scaled past this box so its blurred edge stays out
@@ -261,11 +262,9 @@
 /* ── Notice banners ─────────────────────────────────────────────────────── */
 
 /* Re-sign notices and the recovery-email notice, between the nav and the grid.
-   Same pane of glass as the tiles: the .ptile sheen over the same warm fill at
-   the same alpha, so banner, tiles and menu read as one material. The alpha
-   is set by the tiles' contrast gate; the comment above .ptile has the
-   numbers. Body copy here is 0.80 white, above the 0.66 tier that gate holds
-   at 4.5:1, so it clears with room. */
+   Same pane of glass as the tiles and the menu: the pane tokens in
+   portal-tokens.css carry the fill, sheen and shadow, so the three never
+   drift. Body copy is the 0.80 text tier, which the tokens file gates. */
 .pbanner {
   display: flex;
   align-items: center;
@@ -275,21 +274,11 @@
   margin-top: 14px;
   padding: 12px 16px;
   box-sizing: border-box;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--portal-border);
   border-radius: var(--tile-radius);
-  background:
-    linear-gradient(
-      152deg,
-      rgba(255, 255, 255, 0.075) 0%,
-      rgba(255, 255, 255, 0.024) 34%,
-      rgba(255, 255, 255, 0) 58%
-    ),
-    rgba(28, 22, 17, 0.8);
-  box-shadow:
-    inset 0 -16px 24px -20px rgba(0, 0, 0, 0.85),
-    0 2px 5px rgba(0, 0, 0, 0.5),
-    0 7px 18px rgba(0, 0, 0, 0.34);
-  color: rgba(255, 255, 255, 0.8);
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
+  box-shadow: var(--portal-pane-shadow);
+  color: var(--portal-text);
 }
 
 .pbanner + .pbanner {
@@ -410,7 +399,6 @@
 
 @media (max-width: 620px) {
   .pbanner {
-    --tile-radius: 16px;
     flex-wrap: wrap;
     padding: 12px 14px;
   }
@@ -620,11 +608,6 @@
     --cols: 2;
     --rows: 5;
     --tile-min: 168px;
-    --grid-gap: 10px;
-  }
-
-  .portal-tile-card {
-    --tile-radius: 16px;
   }
 
   .portal-tile-content {
