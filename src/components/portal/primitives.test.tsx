@@ -357,4 +357,29 @@ describe("Segmented", () => {
     expect(links[1]).toHaveAttribute("aria-current", "page");
     expect(links[0]).not.toHaveAttribute("aria-current");
   });
+
+  it("fades only the edges that have content behind them", () => {
+    render(<Segmented items={TABS} value="team" onChange={() => {}} label="Profile sections" />);
+    const track = screen.getByRole("tablist");
+
+    // jsdom has no layout, so every scroll metric reads 0: the test supplies them.
+    const scrollTo = (scrollWidth: number, clientWidth: number, scrollLeft: number) => {
+      Object.defineProperty(track, "scrollWidth", { value: scrollWidth, configurable: true });
+      Object.defineProperty(track, "clientWidth", { value: clientWidth, configurable: true });
+      Object.defineProperty(track, "scrollLeft", { value: scrollLeft, configurable: true });
+      fireEvent.scroll(track);
+    };
+
+    scrollTo(300, 300, 0);
+    expect(track.dataset.fadeStart).toBe("false");
+    expect(track.dataset.fadeEnd).toBe("false");
+
+    scrollTo(600, 300, 0);
+    expect(track.dataset.fadeStart).toBe("false");
+    expect(track.dataset.fadeEnd).toBe("true");
+
+    scrollTo(600, 300, 300);
+    expect(track.dataset.fadeStart).toBe("true");
+    expect(track.dataset.fadeEnd).toBe("false");
+  });
 });
