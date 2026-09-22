@@ -222,6 +222,13 @@ export default function PortalDashboard() {
   const [checklistOpen, setChecklistOpen] = useState(false);
   /** Only one card's menu is open at a time. */
   const [openTile, setOpenTile] = useState<string | null>(null);
+  // Read once: the pointer type does not change while the page is open. Coarse
+  // pointers get the backdrop canvas at 20fps and half resolution; the CSS blur
+  // on .portal-bento-canvas hides the upscale, so it reads the same for a
+  // quarter of the pixels.
+  const [coarsePointer] = useState(
+    () => typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches,
+  );
 
   const { incentives, loading: incentivesLoading } = usePortalIncentives();
   const { assets: brandAssets, loading: brandAssetsLoading } = usePortalBrandAssets();
@@ -989,8 +996,8 @@ export default function PortalDashboard() {
         >
           <LiquidGradientCanvas
             {...gradient}
-            fps={30}
-            maxDpr={1}
+            fps={coarsePointer ? 20 : 30}
+            maxDpr={coarsePointer ? 0.5 : 1}
             fallbackColor="transparent"
           />
         </div>

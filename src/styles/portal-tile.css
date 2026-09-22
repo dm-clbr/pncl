@@ -40,21 +40,28 @@
   border-radius: var(--tile-radius);
   /* Glass at rest as well as open, so clicking never swaps material. The fill
      is shared with the menu; the blur is not. Sixteen backdrop-filters halved
-     the frame rate at 2x DPR, and behind a card there is only a smooth
-     gradient, so blurring it returns the same gradient. The menu keeps its
-     blur because it crosses other cards, where there is real detail to soften.
+     the frame rate at 2x DPR (commit 5fd1687), so the blur moved to the
+     source: one filter on .portal-bento-canvas softens the gradient for every
+     card at once. The menu keeps its own blur because it crosses other cards,
+     where there is real detail to soften.
 
-     What actually reads as frosted here is not the blur but the sheen: a pane
-     of etched glass catches light across one corner and falls away. That is
-     static paint, so sixteen of them cost nothing per frame.
+     What reads as frosted here is the sheen: a pane of etched glass catches
+     light across one corner and falls away. That is static paint, so sixteen
+     of them cost nothing per frame.
+
+     Alpha 0.8 is the contrast gate, not taste. Composited over the shipped
+     pncl preset's brightest stop (#e8cdb0) plus the sheen's 0.075 white, the
+     0.66 body tier has to hold 4.5:1 and the 0.52 index tier 3:1. Measured
+     with contrast.mjs in the plan workspace: 0.42 gave 2.35 and 2.00, 0.64
+     gave 3.52 and 2.80, 0.76 gave 4.4993, 0.8 gives 4.89 and 3.70. The menu
+     and the banner (.pbanner) carry the same alpha so all three stay one pane.
 
      The fill is warmer than the menu's to stand in for the saturate() the menu
-     gets from its filter. Measured against a blurred build across all sixteen
-     cards, that filter shifts the composite by about (+1.6, +0.2, -1.1); at
-     this alpha that is the difference between rgb(24,21,20) and rgb(28,22,17).
-     Its blur contributed almost nothing, because the page grain sits above the
-     cards where a backdrop-filter cannot reach it. If the menu ever loses its
-     own filter, drop this back to the menu's colour or the two will diverge. */
+     gets from its filter. Measured at alpha 0.42 against a blurred build, that
+     filter shifted the composite by about (+1.6, +0.2, -1.1), the difference
+     between rgb(24,21,20) and rgb(28,22,17); the same hue offset is kept at
+     0.8. If the menu ever loses its own filter, drop this back to the menu's
+     colour or the two will diverge. */
   background:
     linear-gradient(
       152deg,
@@ -62,7 +69,7 @@
       rgba(255, 255, 255, 0.024) 34%,
       rgba(255, 255, 255, 0) 58%
     ),
-    rgba(28, 22, 17, 0.42);
+    rgba(28, 22, 17, 0.8);
   color: inherit;
   font-family: var(--ff-sans, "Manrope", sans-serif);
   text-align: left;
@@ -592,7 +599,8 @@ button.ptile-action {
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-top: none;
   border-radius: 0 0 var(--tile-radius) var(--tile-radius);
-  /* Same sheen as the card, so the two keep reading as one pane of glass. */
+  /* Same sheen and the same alpha as the card, so the two keep reading as one
+     pane of glass; .ptile's comment has the contrast numbers behind 0.8. */
   background:
     linear-gradient(
       152deg,
@@ -600,7 +608,7 @@ button.ptile-action {
       rgba(255, 255, 255, 0.024) 34%,
       rgba(255, 255, 255, 0) 58%
     ),
-    rgba(24, 21, 20, 0.42);
+    rgba(24, 21, 20, 0.8);
   -webkit-backdrop-filter: blur(40px) saturate(165%);
   backdrop-filter: blur(40px) saturate(165%);
   /* Tight for the same reason as the card's: a wide ramp bands on this backdrop. */

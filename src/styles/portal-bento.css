@@ -30,6 +30,10 @@
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
   position: relative;
+  /* The canvas below is scaled past this box so its blurred edge stays out
+     of view; clip here so the overhang cannot widen the document. clip, not
+     hidden, so this never becomes a scroll container. */
+  overflow: clip;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -83,16 +87,47 @@
 }
 
 /* Sits above the static gradient and below the vignette, so the wall light
-   drifts without the page losing its shape. */
+   drifts without the page losing its shape.
+
+   The blur lives here, on the source, not on the sixteen cards over it: one
+   filter on one compositor layer per frame instead of sixteen backdrop
+   filters (commit 5fd1687 removed those for frame rate). The scale pushes
+   the filter's soft edge outside .portal-bento, which clips it: a blur
+   fades over about two sigma, so the overhang has to be 64px on a 900px
+   tall page and 32px on a 390px wide one (16px blur there). 1.16 gives 72
+   and 31; 1.08 left a measurable 20 to 30 percent dip in the edge pixels. */
 .portal-bento-canvas {
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   opacity: 1;
+  filter: blur(32px);
+  transform: scale(1.16);
 }
 
+/* Layer promotion only in the animated mode. The tuner's static base is the
+   comparison view, and under reduced motion the canvas draws one frame and
+   holds, so neither needs it. Same selector in both rules or the media block
+   loses on specificity. */
+.portal-bento:not(.has-static-base) .portal-bento-canvas {
+  will-change: transform;
+}
 
+@media (prefers-reduced-motion: reduce) {
+  .portal-bento:not(.has-static-base) .portal-bento-canvas {
+    will-change: auto;
+  }
+}
+
+/* Phones and touch devices: half the blur radius for a smaller GPU pass. The
+   page also drops the canvas to 20fps at 0.5 dpr on coarse pointers, and the
+   upscale from half resolution supplies the softness the radius gives up. */
+@media (pointer: coarse), (max-width: 620px) {
+  .portal-bento-canvas {
+    filter: blur(16px);
+  }
+}
 
 .portal-bento-wrap {
   width: 100%;
@@ -226,11 +261,11 @@
 /* ── Notice banners ─────────────────────────────────────────────────────── */
 
 /* Re-sign notices and the recovery-email notice, between the nav and the grid.
-   Same pane of glass as the tiles: the .ptile sheen over the warm translucent
-   fill. The fill is more opaque than .ptile's 0.42 because body copy at 0.80
-   has to hold 4.5:1 with the brightest gradient stop (#00ffaa) directly behind
-   it: 2.55:1 at 0.42, 4.66:1 at 0.68. When the tile fill is raised, set this
-   alpha to the same value so the two stay one material. */
+   Same pane of glass as the tiles: the .ptile sheen over the same warm fill at
+   the same alpha, so banner, tiles and menu read as one material. The alpha
+   is set by the tiles' contrast gate; the comment above .ptile has the
+   numbers. Body copy here is 0.80 white, above the 0.66 tier that gate holds
+   at 4.5:1, so it clears with room. */
 .pbanner {
   display: flex;
   align-items: center;
@@ -249,7 +284,7 @@
       rgba(255, 255, 255, 0.024) 34%,
       rgba(255, 255, 255, 0) 58%
     ),
-    rgba(28, 22, 17, 0.68);
+    rgba(28, 22, 17, 0.8);
   box-shadow:
     inset 0 -16px 24px -20px rgba(0, 0, 0, 0.85),
     0 2px 5px rgba(0, 0, 0, 0.5),
