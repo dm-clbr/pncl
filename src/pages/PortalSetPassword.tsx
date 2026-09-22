@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import OnboardingLayout from "@/components/OnboardingLayout";
+import PortalAuthLayout from "@/components/portal/PortalAuthLayout";
+import Chip from "@/components/portal/Chip";
+import Field from "@/components/portal/Field";
+import Skeleton from "@/components/portal/Skeleton";
 import { useAuth, isEmailConfirmed, mustChangePassword } from "@/contexts/AuthContext";
 import { getSupabaseClient, isSupabaseAuthConfigured } from "@/lib/supabase";
 import { trackPageView } from "@/lib/analytics";
@@ -53,18 +56,23 @@ export default function PortalSetPassword() {
 
   if (!configured) {
     return (
-      <OnboardingLayout>
-        <h2 className="h3" style={{ margin: "1rem 0" }}>Portal is not configured.</h2>
-        <p className="lead">Contact PNCL support for help.</p>
-      </OnboardingLayout>
+      <PortalAuthLayout>
+        <h1 className="pauth-title">Portal is not configured.</h1>
+        <p className="pauth-lede">Contact PNCL support for help.</p>
+      </PortalAuthLayout>
     );
   }
 
   if (loading) {
     return (
-      <OnboardingLayout>
-        <div className="onboarding-spinner" aria-label="Loading" />
-      </OnboardingLayout>
+      <PortalAuthLayout>
+        <div className="pauth-loading" role="status" aria-busy="true" aria-label="Loading">
+          <Skeleton variant="text" width="40%" />
+          <Skeleton variant="text" width="70%" />
+          <Skeleton variant="row" />
+          <Skeleton variant="row" />
+        </div>
+      </PortalAuthLayout>
     );
   }
 
@@ -81,47 +89,48 @@ export default function PortalSetPassword() {
   }
 
   return (
-    <OnboardingLayout>
-      <span className="onboarding-status-badge tone-ready">Employee Portal</span>
-      <h2 className="h3" style={{ margin: "1rem 0" }}>Set your portal password</h2>
-      <p className="lead">
+    <PortalAuthLayout>
+      <Chip>Employee Portal</Chip>
+      <h1 className="pauth-title">Set your portal password</h1>
+      <p className="pauth-lede">
         Your account uses a temporary password. Choose a new password before continuing.
       </p>
       {user.email && (
-        <div className="onboarding-email-block">
-          <span className="onboarding-email-label">Portal email</span>
-          <strong>{user.email}</strong>
+        <div className="pauth-note">
+          <span className="pauth-note-label">Portal email</span>
+          <strong className="pauth-note-value">{user.email}</strong>
         </div>
       )}
-      <form onSubmit={handleSubmit} className="portal-login-form" style={{ marginTop: "1rem" }}>
-        <div className="onboarding-field">
-          <label htmlFor="set-password">New password</label>
-          <input
-            id="set-password"
-            type="password"
-            autoComplete="new-password"
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <div className="onboarding-field">
-          <label htmlFor="set-password-confirm">Confirm password</label>
-          <input
-            id="set-password-confirm"
-            type="password"
-            autoComplete="new-password"
-            minLength={8}
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
-        </div>
-        <button type="submit" className="btn btn-accent" disabled={submitting}>
-          {submitting ? "Saving…" : <>Save password <span className="arr">→</span></>}
+      <form onSubmit={handleSubmit} className="pauth-form">
+        {/* ponytail: Chrome and every password manager want a username beside a
+            new password, and say so in the console. The address is already on
+            screen above, so this copy of it is hidden. */}
+        <input type="text" name="username" autoComplete="username" value={user.email ?? ""} readOnly hidden />
+        <Field
+          label="New password"
+          id="set-password"
+          hint="At least 8 characters."
+          type="password"
+          autoComplete="new-password"
+          minLength={8}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <Field
+          label="Confirm password"
+          id="set-password-confirm"
+          type="password"
+          autoComplete="new-password"
+          minLength={8}
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          required
+        />
+        <button type="submit" className="pauth-btn is-primary" disabled={submitting}>
+          {submitting ? "Saving…" : "Save password"}
         </button>
       </form>
-    </OnboardingLayout>
+    </PortalAuthLayout>
   );
 }

@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-import OnboardingLayout from "@/components/OnboardingLayout";
+import PortalAuthLayout from "@/components/portal/PortalAuthLayout";
+import Chip from "@/components/portal/Chip";
+import Skeleton from "@/components/portal/Skeleton";
 import { useAuth, isEmailConfirmed } from "@/contexts/AuthContext";
 import { isSupabaseAuthConfigured } from "@/lib/supabase";
 import { consumePortalOAuthReturn, isPendingPortalEnrollment } from "@/lib/portal-auth";
@@ -45,30 +47,38 @@ export default function PortalLogin() {
 
   if (loading) {
     return (
-      <OnboardingLayout>
-        <div className="onboarding-spinner" aria-label="Loading" />
-      </OnboardingLayout>
+      <PortalAuthLayout>
+        <div className="pauth-loading" role="status" aria-busy="true" aria-label="Loading">
+          <Skeleton variant="text" width="40%" />
+          <Skeleton variant="text" width="62%" />
+          <Skeleton variant="text" width="88%" />
+          <Skeleton variant="row" />
+        </div>
+      </PortalAuthLayout>
     );
   }
 
   return (
-    <OnboardingLayout>
-      <span className="onboarding-status-badge tone-neutral">Employee Portal</span>
-      <h2 className="h3" style={{ margin: "1rem 0" }}>Welcome back</h2>
-      <p className="lead">
+    <PortalAuthLayout>
+      <Chip>Employee Portal</Chip>
+      <h1 className="pauth-title">Welcome back</h1>
+      <p className="pauth-lede">
         Sign in with your @thepncl.com Google account.
       </p>
 
       {!configured ? (
-        <p className="onboarding-error-block">
-          Portal authentication is not configured. Set <code>VITE_SUPABASE_URL</code> and{" "}
-          <code>VITE_SUPABASE_ANON_KEY</code> in your environment.
-        </p>
+        <div className="pauth-banner" role="alert">
+          <p className="pauth-banner-title">Portal authentication is not configured.</p>
+          <p>
+            Set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in your
+            environment.
+          </p>
+        </div>
       ) : (
-        <div className="onboarding-actions" style={{ marginTop: "1.5rem" }}>
+        <div className="pauth-actions">
           <button
             type="button"
-            className="btn btn-accent"
+            className="pauth-btn is-primary"
             disabled={signingInWithGoogle}
             onClick={() => void handleGoogleSignIn()}
           >
@@ -76,6 +86,6 @@ export default function PortalLogin() {
           </button>
         </div>
       )}
-    </OnboardingLayout>
+    </PortalAuthLayout>
   );
 }

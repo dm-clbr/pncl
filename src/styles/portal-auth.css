@@ -1,0 +1,353 @@
+/* ==========================================================================
+   Auth screens
+   Five routes an agent reaches without a session: login, set password,
+   confirm email, activate, onboarding handoff. One centred Pane on the
+   gradient, the logo inside it, at most two Fields and one filled action.
+   Nothing sits on the bare backdrop: white reads 1.49:1 on the preset's
+   brightest stop, so the logo, the copy and the help link all live on the
+   pane's fill (docs/DESIGN.md, Contrast).
+   Every colour-bearing rule on a link sits two classes deep. home2.css
+   declares `.home2-page a { color: inherit }` at 0-1-1, which outranks a
+   bare class on an anchor (docs/DESIGN.md, Shell).
+   ========================================================================== */
+
+.portal-auth {
+  min-height: 100svh;
+  background: var(--ink);
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+}
+
+/* The dashboard's backdrop layer, same blur and overscale so the canvas never
+   shows an edge. Fixed rather than absolute: the handoff screen scrolls past
+   one viewport and the gradient should not scroll with it. The values repeat
+   .portal-bento-canvas instead of importing the bento sheet for one rule. */
+.portal-auth-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  filter: blur(32px);
+  transform: scale(1.16);
+}
+
+/* Half the blur radius on phones and touch devices: the canvas already runs at
+   0.5 dpr there and the upscale supplies the softness the radius gives up. */
+@media (pointer: coarse), (max-width: 620px) {
+  .portal-auth-canvas {
+    filter: blur(16px);
+  }
+}
+
+.portal-auth-main {
+  position: relative;
+  z-index: 1;
+  box-sizing: border-box;
+  min-height: 100svh;
+  width: 100%;
+  max-width: calc(440px + 32px);
+  margin: 0 auto;
+  padding: 32px 16px calc(32px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ── Pane furniture ──────────────────────────────────────────────────────── */
+
+.portal-auth .pauth-logo {
+  display: flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: 44px;
+  margin-bottom: calc(var(--portal-unit) * 2);
+  color: var(--portal-text-strong);
+}
+
+.portal-auth .pauth-logo:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.portal-auth .pauth-title {
+  margin: calc(var(--portal-unit) * 3) 0 0;
+  font-size: var(--portal-t-large);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  text-wrap: balance;
+  color: var(--portal-text-strong);
+}
+
+.portal-auth .pauth-lede {
+  margin: calc(var(--portal-unit) * 2) 0 0;
+  font-size: var(--portal-t-body);
+  line-height: 1.55;
+  color: var(--portal-text);
+}
+
+.portal-auth .pauth-help {
+  margin: calc(var(--portal-unit) * 5) 0 0;
+  padding-top: calc(var(--portal-unit) * 3);
+  border-top: 1px solid var(--portal-rule);
+  font-size: var(--portal-t-body);
+}
+
+.portal-auth .pauth-help a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--portal-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.portal-auth .pauth-help a:hover {
+  color: var(--portal-text-strong);
+}
+
+/* ── Actions ─────────────────────────────────────────────────────────────── */
+
+/* Buttons are full width in a 440px pane, 8px apart, and every one clears
+   44px. Same shape as .pcal-btn and .ptr-btn on this branch. */
+.portal-auth .pauth-actions {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--portal-unit) * 2);
+  margin-top: calc(var(--portal-unit) * 5);
+}
+
+.portal-auth .pauth-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--portal-unit) * 2);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 calc(var(--portal-unit) * 4);
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  color: var(--portal-text-strong);
+  transition:
+    background var(--portal-duration) var(--portal-ease-out),
+    border-color var(--portal-duration) var(--portal-ease-out);
+}
+
+.portal-auth .pauth-btn:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.portal-auth .pauth-btn:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.portal-auth .pauth-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* The filled button is the action that moves the agent forward. The handoff
+   screen carries two, because copying the password and opening Gmail are two
+   steps of one instruction, not a choice between them. */
+.portal-auth .pauth-btn.is-primary {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.95);
+  color: rgb(20, 16, 12);
+}
+
+.portal-auth .pauth-btn.is-primary:hover:not(:disabled) {
+  border-color: transparent;
+  background: #fff;
+}
+
+/* ── Form ────────────────────────────────────────────────────────────────── */
+
+.portal-auth .pauth-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--portal-gap);
+  margin-top: calc(var(--portal-unit) * 5);
+}
+
+/* ── Value blocks ────────────────────────────────────────────────────────── */
+
+/* The agent's email and the temporary password. Near-black fill, the same one
+   the inputs sit on: white 0.95 reads 8.88:1 there and the 0.60 label 4.66:1. */
+.portal-auth .pauth-note {
+  margin-top: calc(var(--portal-unit) * 4);
+  padding: calc(var(--portal-unit) * 3);
+  border: 1px solid var(--portal-rule);
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.28);
+}
+
+.portal-auth .pauth-note-label {
+  display: block;
+  font-size: var(--portal-t-label);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--portal-text-faint);
+}
+
+.portal-auth .pauth-note-value {
+  display: block;
+  margin-top: calc(var(--portal-unit) * 1.5);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  color: var(--portal-text-strong);
+}
+
+/* ponytail: the one place the portal leaves Manrope. A temporary password is
+   read and retyped character by character, and Manrope renders 0/O and 1/l
+   too close for that. */
+.portal-auth .pauth-note-value.is-secret {
+  font-family: var(--ff-mono);
+  font-size: 17px;
+  letter-spacing: 0.02em;
+  user-select: all;
+}
+
+.portal-auth .pauth-note-hint {
+  display: block;
+  margin-top: calc(var(--portal-unit) * 1.5);
+  font-size: var(--portal-t-micro);
+  line-height: 1.45;
+  color: var(--portal-text);
+}
+
+/* ── Notes, lists and banners ────────────────────────────────────────────── */
+
+/* Block flow, not flex: a flex item is not a list item, so the numerals and
+   the bullets stop rendering and a procedure loses its order. Tailwind's
+   preflight also clears list-style on every ol and ul, so the markers are
+   declared here rather than assumed. */
+.portal-auth .pauth-steps {
+  margin: calc(var(--portal-unit) * 4) 0 0;
+  padding-left: 20px;
+  list-style: decimal;
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+  color: var(--portal-text);
+}
+
+.portal-auth .pauth-steps li + li,
+.portal-auth .pauth-details li + li {
+  margin-top: calc(var(--portal-unit) * 1.5);
+}
+
+.portal-auth .pauth-note-text {
+  margin: calc(var(--portal-unit) * 3) 0 0;
+  font-size: var(--portal-t-micro);
+  line-height: 1.45;
+  color: var(--portal-text);
+}
+
+/* Anything that went wrong: an unconfigured portal, a poll failure, the DEV
+   diagnostic block. The wording carries the state, so the block needs no
+   colour beyond its own fill. */
+.portal-auth .pauth-banner {
+  margin-top: calc(var(--portal-unit) * 4);
+  padding: calc(var(--portal-unit) * 3);
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.28);
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+  color: var(--portal-text-strong);
+}
+
+.portal-auth .pauth-banner p {
+  margin: calc(var(--portal-unit) * 1.5) 0 0;
+  color: var(--portal-text);
+}
+
+.portal-auth .pauth-banner code {
+  font-family: var(--ff-mono);
+  font-size: 0.92em;
+}
+
+.portal-auth .pauth-banner.is-diagnostic {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--ff-mono);
+  font-size: var(--portal-t-micro);
+  color: var(--portal-text);
+}
+
+.portal-auth .pauth-banner-title {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* ── Troubleshooting ─────────────────────────────────────────────────────── */
+
+.portal-auth .pauth-details {
+  margin-top: calc(var(--portal-unit) * 4);
+  border-top: 1px solid var(--portal-rule);
+}
+
+.portal-auth .pauth-details > summary {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--portal-text-strong);
+}
+
+.portal-auth .pauth-details > summary:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.portal-auth .pauth-details ul {
+  margin: 0 0 calc(var(--portal-unit) * 3);
+  padding-left: 20px;
+  list-style: disc;
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+  color: var(--portal-text);
+}
+
+/* ── Second step of the handoff ──────────────────────────────────────────── */
+
+.portal-auth .pauth-next {
+  margin-top: calc(var(--portal-unit) * 5);
+  padding-top: calc(var(--portal-unit) * 4);
+  border-top: 1px solid var(--portal-rule);
+}
+
+.portal-auth .pauth-subtitle {
+  margin: calc(var(--portal-unit) * 3) 0 0;
+  font-size: var(--portal-t-mid);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: var(--portal-text-strong);
+}
+
+/* ── Loading ─────────────────────────────────────────────────────────────── */
+
+/* Mirrors the shape the screen takes once the session resolves: eyebrow,
+   heading, two lines of lede, one action. */
+.portal-auth .pauth-loading {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--portal-unit) * 3);
+  margin-top: calc(var(--portal-unit) * 3);
+}

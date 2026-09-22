@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
-import OnboardingLayout from "@/components/OnboardingLayout";
+import PortalAuthLayout from "@/components/portal/PortalAuthLayout";
+import Chip from "@/components/portal/Chip";
 import { trackPageView } from "@/lib/analytics";
 import { useAuth } from "@/contexts/AuthContext";
 import { getSupabaseClient, getSupabaseConfig } from "@/lib/supabase";
@@ -39,20 +40,22 @@ export default function OnboardingActivate() {
   }
 
   return (
-    <OnboardingLayout>
-      <span className="onboarding-status-badge tone-pending">One final step</span>
-      <h2 className="h3" style={{ margin: "1rem 0" }}>Activate your PNCL portal</h2>
-      <p className="lead">
+    <PortalAuthLayout>
+      <Chip variant="pending">One final step</Chip>
+      <h1 className="pauth-title">Activate your PNCL portal</h1>
+      <p className="pauth-lede">
         Your Gmail setup happens on the previous screen. When you&apos;ve finished it, continue to the
         PNCL portal sign-in and choose your new @thepncl.com Google account. We&apos;ll then verify the
         Google sign-in before opening the portal.
       </p>
-      <Link to="/portal/login" className="btn btn-accent" style={{ marginTop: "1rem" }}>
-        Continue to PNCL sign-in <span className="arr">→</span>
-      </Link>
-      {user && <button type="button" className="btn btn-ghost" onClick={() => void verifyGoogleSignIn()} disabled={checking} style={{ marginTop: "0.75rem" }}>
-        {checking ? "Checking Google…" : "I signed in to Gmail — continue"}
-      </button>}
-    </OnboardingLayout>
+      <div className="pauth-actions">
+        <Link to="/portal/login" className="pauth-btn is-primary">
+          Continue to PNCL sign-in
+        </Link>
+        {user && <button type="button" className="pauth-btn" onClick={() => void verifyGoogleSignIn()} disabled={checking}>
+          {checking ? "Checking Google…" : "I signed in to Gmail — continue"}
+        </button>}
+      </div>
+    </PortalAuthLayout>
   );
 }

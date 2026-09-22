@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import OnboardingLayout from "@/components/OnboardingLayout";
+import PortalAuthLayout from "@/components/portal/PortalAuthLayout";
+import Chip from "@/components/portal/Chip";
+import Skeleton from "@/components/portal/Skeleton";
 import {
   buildGmailUrl,
   getOnboardingStatus,
@@ -207,67 +209,76 @@ export default function OnboardingSuccess() {
 
   if ((!onboardingId || !token) && !isGmailPreview) {
     return (
-      <OnboardingLayout>
+      <PortalAuthLayout>
         <StatusBadge tone="error">Invalid Link</StatusBadge>
-        <h2 className="h3" style={{ margin: "1rem 0" }}>This onboarding link is incomplete.</h2>
-        <p className="lead">Please return to the onboarding form or contact PNCL support.</p>
-        <Link to="/onboarding" className="btn btn-accent" style={{ marginTop: "1.5rem" }}>
-          Back to Onboarding <span className="arr">→</span>
-        </Link>
-      </OnboardingLayout>
+        <h1 className="pauth-title">This onboarding link is incomplete.</h1>
+        <p className="pauth-lede">Please return to the onboarding form or contact PNCL support.</p>
+        <div className="pauth-actions">
+          <Link to="/onboarding" className="pauth-btn is-primary">
+            Back to Onboarding
+          </Link>
+        </div>
+      </PortalAuthLayout>
     );
   }
 
   return (
-    <OnboardingLayout>
-      <div className="onboarding-step">
+    <PortalAuthLayout>
       {viewState === "loading" && (
         <>
           <StatusBadge tone="pending">Loading</StatusBadge>
-          <h2 className="h3" style={{ margin: "1rem 0" }}>Checking your PNCL account…</h2>
-          <p className="lead">Please wait while we load your onboarding status.</p>
+          <h1 className="pauth-title">Checking your PNCL account…</h1>
+          <p className="pauth-lede">Please wait while we load your onboarding status.</p>
+          <div className="pauth-loading" role="status" aria-busy="true" aria-label="Loading">
+            <Skeleton variant="text" width="72%" />
+            <Skeleton variant="row" />
+          </div>
         </>
       )}
 
       {viewState === "creating" && (
         <>
           <StatusBadge tone="pending">Creating Email</StatusBadge>
-          <h2 className="h3" style={{ margin: "1rem 0" }}>Creating your PNCL email…</h2>
-          <p className="lead">We&apos;re setting up your company email and portal account now.</p>
-          <div className="onboarding-spinner" aria-hidden="true" />
+          <h1 className="pauth-title">Creating your PNCL email…</h1>
+          <p className="pauth-lede">We&apos;re setting up your company email and portal account now.</p>
+          <div className="pauth-loading" role="status" aria-busy="true" aria-label="Creating your PNCL email">
+            <Skeleton variant="text" width="64%" />
+            <Skeleton variant="row" />
+          </div>
         </>
       )}
 
       {viewState === "ready" && (
         <>
           <StatusBadge tone="ready">Email Ready</StatusBadge>
-          <h2 className="h3" style={{ margin: "1rem 0" }}>Set up your PNCL Gmail account</h2>
+          <h1 className="pauth-title">Set up your PNCL Gmail account</h1>
           {email && (
-            <div className="onboarding-email-block">
-              <span className="onboarding-email-label">Your new PNCL email</span>
-              <strong>{email}</strong>
+            <div className="pauth-note">
+              <span className="pauth-note-label">Your new PNCL email</span>
+              <strong className="pauth-note-value">{email}</strong>
             </div>
           )}
-          <p className="lead">
+          <p className="pauth-lede">
             Start with Gmail. You&apos;ll use the temporary password once, then Google will ask you to
             create your own password. The PNCL portal uses <strong>Sign in with Google</strong>, so there
             is no separate portal password.
           </p>
-          <ol className="onboarding-steps">
+          <ol className="pauth-steps">
             <li>Show and copy your temporary Gmail password</li>
             <li>Open Gmail and create your permanent Google password</li>
             <li>Return to the PNCL portal and choose Sign in with Google</li>
           </ol>
-          <button
-            type="button"
-            className="btn btn-accent"
-            onClick={handleReveal}
-            disabled={revealing}
-            style={{ marginTop: "0.5rem" }}
-          >
-            {revealing ? "Loading…" : <>Show Temporary Gmail Password <span className="arr">→</span></>}
-          </button>
-          <p className="onboarding-help-text">
+          <div className="pauth-actions">
+            <button
+              type="button"
+              className="pauth-btn is-primary"
+              onClick={handleReveal}
+              disabled={revealing}
+            >
+              {revealing ? "Loading…" : "Show Temporary Gmail Password"}
+            </button>
+          </div>
+          <p className="pauth-note-text">
             This secure link is available for 24 hours. You can reopen it and show the temporary
             password again until Gmail setup is complete.
           </p>
@@ -277,74 +288,76 @@ export default function OnboardingSuccess() {
       {showCredentials && (
         <>
           <StatusBadge tone="ready">Step 1 of 2</StatusBadge>
-          <h2 className="h3" style={{ margin: "1rem 0" }}>Set up Gmail first</h2>
-          <p className="lead">
+          <h1 className="pauth-title">Set up Gmail first</h1>
+          <p className="pauth-lede">
             Use these details on Google&apos;s sign-in page. This is not a separate PNCL portal password.
           </p>
           {email && (
-            <div className="onboarding-email-block">
-              <span className="onboarding-email-label">PNCL Gmail address</span>
-              <strong>{email}</strong>
+            <div className="pauth-note">
+              <span className="pauth-note-label">PNCL Gmail address</span>
+              <strong className="pauth-note-value">{email}</strong>
             </div>
           )}
           {revealed && (
             <>
-              <div className="onboarding-email-block onboarding-password-block" aria-live="polite">
-                <span className="onboarding-email-label">Temporary Gmail password</span>
-                <strong className="onboarding-password">{revealed.temporaryPassword}</strong>
-                <span className="onboarding-field-hint">Paste it exactly as shown. Google will ask you to replace it.</span>
+              <div className="pauth-note" aria-live="polite">
+                <span className="pauth-note-label">Temporary Gmail password</span>
+                <strong className="pauth-note-value is-secret">{revealed.temporaryPassword}</strong>
+                <span className="pauth-note-hint">Paste it exactly as shown. Google will ask you to replace it.</span>
               </div>
-              <div className="onboarding-action-row">
-                <button type="button" className="btn btn-ghost" onClick={() => copyText(revealed.email, "Email")}>
-                  Copy Email
-                </button>
+              <div className="pauth-actions">
                 <button
                   type="button"
-                  className="btn btn-accent"
+                  className="pauth-btn is-primary"
                   onClick={() => copyText(revealed.temporaryPassword, "Temporary password")}
                 >
                   Copy Temporary Password
+                </button>
+                <button type="button" className="pauth-btn" onClick={() => copyText(revealed.email, "Email")}>
+                  Copy Email
                 </button>
               </div>
             </>
           )}
           {viewState === "viewed" && !revealed && credentialsAvailable && (
-            <div className="onboarding-reveal-again">
-              <strong>Need the password again?</strong>
+            <div className="pauth-banner">
+              <p className="pauth-banner-title">Need the password again?</p>
               <p>This secure link can show it again until you finish signing in to Gmail.</p>
-              <button
-                type="button"
-                className="btn btn-accent"
-                onClick={handleReveal}
-                disabled={revealing}
-              >
-                {revealing ? "Loading…" : <>Show Temporary Password <span className="arr">→</span></>}
-              </button>
+              <div className="pauth-actions">
+                <button
+                  type="button"
+                  className="pauth-btn is-primary"
+                  onClick={handleReveal}
+                  disabled={revealing}
+                >
+                  {revealing ? "Loading…" : "Show Temporary Password"}
+                </button>
+              </div>
             </div>
           )}
           {viewState === "viewed" && !revealed && !credentialsAvailable && (
-            <div className="onboarding-reveal-again tone-error">
-              <strong>The temporary password is no longer available from this link.</strong>
+            <div className="pauth-banner" role="alert">
+              <p className="pauth-banner-title">The temporary password is no longer available from this link.</p>
               <p>Contact PNCL support for a new one. If an admin already issued a new password, use the newest password only.</p>
             </div>
           )}
-          <ol className="onboarding-steps">
+          <ol className="pauth-steps">
             <li>Copy the email and temporary password above</li>
             <li>Open Gmail and sign in with those exact details</li>
             <li>Create your permanent Google password when prompted</li>
           </ol>
-          <div className="onboarding-action-row" style={{ marginTop: "0.75rem" }}>
+          <div className="pauth-actions">
             <a
               href={revealed?.gmailUrl ?? gmailUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="btn btn-accent"
+              className="pauth-btn is-primary"
             >
-              Open Gmail <span className="arr">→</span>
+              Open Gmail
             </a>
           </div>
 
-          <details className="onboarding-troubleshooting">
+          <details className="pauth-details">
             <summary>Temporary password not working?</summary>
             <ul>
               <li>Use the copy button so no extra spaces are added.</li>
@@ -354,17 +367,17 @@ export default function OnboardingSuccess() {
             </ul>
           </details>
 
-          <div className="onboarding-next-step">
+          <div className="pauth-next">
             <StatusBadge tone="neutral">Step 2 of 2</StatusBadge>
-            <h3>After Gmail accepts your new password</h3>
-            <p>Return to the PNCL portal and choose <strong>Sign in with Google</strong> using your PNCL email.</p>
-            <div className="onboarding-action-row">
-              <Link to="/portal/login" className="btn btn-ghost">
-                Continue to PNCL Portal <span className="arr">→</span>
+            <h2 className="pauth-subtitle">After Gmail accepts your new password</h2>
+            <p className="pauth-lede">Return to the PNCL portal and choose <strong>Sign in with Google</strong> using your PNCL email.</p>
+            <div className="pauth-actions">
+              <Link to="/portal/login" className="pauth-btn">
+                Continue to PNCL Portal
               </Link>
               <button
                 type="button"
-                className="btn btn-ghost"
+                className="pauth-btn"
                 onClick={handleResendInvite}
                 disabled={resendingInvite}
               >
@@ -382,62 +395,70 @@ export default function OnboardingSuccess() {
       {viewState === "failed" && (
         <>
           <StatusBadge tone="error">Setup Failed</StatusBadge>
-          <h2 className="h3" style={{ margin: "1rem 0" }}>We couldn&apos;t finish creating your PNCL email.</h2>
-          <p className="lead">
+          <h1 className="pauth-title">We couldn&apos;t finish creating your PNCL email.</h1>
+          <p className="pauth-lede">
             {statusData?.message ?? "Your progress is saved. Retry the failed step or contact PNCL support."}
           </p>
           {statusData?.failedStep && (
-            <p className="onboarding-help-text">
+            <p className="pauth-note-text">
               Step needing attention: <strong>{statusData.failedStep.replace(/_/g, " ")}</strong>
             </p>
           )}
-          {statusData?.retryable && (
-            <button
-              type="button"
-              className="btn btn-accent"
-              disabled={retrying}
-              onClick={() => void handleRetry()}
-              style={{ marginTop: "1rem" }}
-            >
-              {retrying ? "Retrying…" : <>Retry saved enrollment <span className="arr">→</span></>}
-            </button>
-          )}
+          <div className="pauth-actions">
+            {statusData?.retryable && (
+              <button
+                type="button"
+                className="pauth-btn is-primary"
+                disabled={retrying}
+                onClick={() => void handleRetry()}
+              >
+                {retrying ? "Retrying…" : "Retry saved enrollment"}
+              </button>
+            )}
+            <Link to="/contact" className="pauth-btn">
+              Contact Support
+            </Link>
+          </div>
           {import.meta.env.DEV && (statusData?.error || statusData?.email || onboardingId) && (
-            <p
-              className="onboarding-error"
-              style={{ marginTop: "1rem", textAlign: "left", fontSize: "0.85rem", whiteSpace: "pre-wrap" }}
-            >
+            <p className="pauth-banner is-diagnostic">
               {onboardingId && <>Onboarding ID: {onboardingId}{"\n"}</>}
               {statusData?.email && <>Email: {statusData.email}{"\n"}</>}
               {statusData?.error && <>Error: {statusData.error}</>}
             </p>
           )}
-          <Link to="/contact" className="btn btn-ghost" style={{ marginTop: "1rem" }}>
-            Contact Support <span className="arr">→</span>
-          </Link>
         </>
       )}
 
       {viewState === "expired" && (
         <>
           <StatusBadge tone="error">Link Expired</StatusBadge>
-          <h2 className="h3" style={{ margin: "1rem 0" }}>This sign-in link has expired.</h2>
-          <p className="lead">
+          <h1 className="pauth-title">This sign-in link has expired.</h1>
+          <p className="pauth-lede">
             Please contact PNCL support or an admin to get a new temporary password.
           </p>
-          <Link to="/contact" className="btn btn-accent" style={{ marginTop: "1rem" }}>
-            Contact Support <span className="arr">→</span>
-          </Link>
+          <div className="pauth-actions">
+            <Link to="/contact" className="pauth-btn is-primary">
+              Contact Support
+            </Link>
+          </div>
         </>
       )}
 
       {pollError && viewState !== "failed" && viewState !== "expired" && (
-        <p className="onboarding-error" style={{ marginTop: "1rem" }}>{pollError}</p>
+        <p className="pauth-banner" role="alert">{pollError}</p>
       )}
-      </div>
-    </OnboardingLayout>
+    </PortalAuthLayout>
   );
 }
+
+/** The tone still names the state; Chip turns it into a glyph, so colour never
+    carries the meaning on its own (docs/DESIGN.md, Chip). */
+const BADGE_VARIANT = {
+  pending: "pending",
+  ready: "active",
+  error: "inactive",
+  neutral: "neutral",
+} as const;
 
 function StatusBadge({
   children,
@@ -446,5 +467,5 @@ function StatusBadge({
   children: React.ReactNode;
   tone: "pending" | "ready" | "error" | "neutral";
 }) {
-  return <span className={`onboarding-status-badge tone-${tone}`}>{children}</span>;
+  return <Chip variant={BADGE_VARIANT[tone]}>{children}</Chip>;
 }
