@@ -61,7 +61,7 @@ Measured with the workspace's contrast.mjs: the shipped pncl preset's brightest 
 In a tile reveal `portal-tile.css` drives `.portal-row` from the same rules as the `.ptile-link` it replaced, so the 44px floor, the full width and the concentric radius apply on a page but not in a card menu.
 
 ## Shell
-One header, one nav, one sub-page header. The 620px line is the only breakpoint: above it the nav is text links in the masthead, below it a fixed tab bar in the thumb zone.
+The portal carries one header, one nav and one sub-page header. 620px is the only breakpoint: above it the nav is text links in the masthead, below it a fixed tab bar in the thumb zone.
 
 | Surface | File | Above 620px | 620px and below |
 |---|---|---|---|
@@ -69,11 +69,13 @@ One header, one nav, one sub-page header. The 620px line is the only breakpoint:
 | Primary nav | `src/components/PortalPrimaryNav.tsx` | Dashboard, Calendar, State Map text links | Hidden. |
 | Bottom nav | `src/components/portal/BottomNav.tsx` | Hidden. | `position: fixed` tab bar: Dashboard, Calendar, State Map, Profile. 56px plus `env(safe-area-inset-bottom)`, items 44px minimum with a 20px icon over an 11px label, active white 0.95 and `aria-current="page"`, rest white 0.52. |
 | Sub-page header | `src/components/portal/PortalSubpageHeader.tsx` | Breadcrumb back link over the title, `aside` slot right | 44px sticky bar: back chevron, title, aside. The back label stays in the DOM, hidden visually. |
-| Footer | the page | Admin console, sign out, socials | Same, above the bar. Never in the bottom nav: a bar you tap by accident is no place for sign out. |
+| Footer | the page | Admin console, sign out, socials | Same, above the bar. Never in the bottom nav. An agent hits that bar with a thumb by accident, and sign out costs them the session. |
 
-`--portal-bar-fill` (`rgb(28, 22, 17)`, the pane fill colour made solid) backs the two bars. A fixed or sticky bar sits over scrolling content, so the translucent pane fill would let whatever scrolled under it set the contrast. On the solid fill white 0.95 reads 16.20:1 and the tab bar's white 0.52 label 5.58:1; under the sheen's maximum they are 13.36:1 and 5.08:1, so the quiet tab clears 4.5:1 across the whole bar.
+`--portal-bar-fill` (`rgb(28, 22, 17)`, the pane fill colour made solid) backs all three shell surfaces. A fixed or sticky bar sits over scrolling content, so the translucent pane fill would let whatever scrolled under it set the contrast. On the solid fill white 0.95 reads 16.20:1 and the tab bar's white 0.52 label 5.58:1; under the sheen's maximum they are 13.36:1 and 5.08:1, so the quiet tab clears 4.5:1 across the whole bar.
 
-The bars are `position: fixed` and `position: sticky`, so where they mount matters:
+The masthead takes the same fill. It scrolls rather than sticks, but it sits over the gradient's brightest region: the wall light is anchored at 16% 4%, top left, under the logo and the title. Measured on the bare backdrop (pncl brightest stop `rgb(232, 205, 176)`) white reads 1.49:1 at 0.95, 1.41:1 at 0.80 and 1.30:1 at 0.60, all three below every threshold. On `--portal-bar-fill` under the sheen the same tiers read 13.36:1, 9.90:1 and 6.25:1. Padding is 12px 16px, matching the `.pbanner` that sits directly under it.
+
+Where the two bars mount decides whether they hold position at all:
 - Mount BottomNav outside `PortalBentoStage` and outside the page's `<main>`. `preserve-3d` is a containing block for `position: fixed`, and `.portal-bento > *` would pull the bar into the page's stacking context.
 - A page carrying the bar ends above it: `padding-bottom: calc(56px + env(safe-area-inset-bottom) + 16px)` at 620px and below, applied through `.home2-page:has(> .portal-bottom-nav) > main`.
 - `.home2-page` carries `overflow-x: hidden`, which computes `overflow-y` to `auto` and makes it a scrollport that never scrolls, so a sticky descendant never sticks. A page with a sub-page header switches it to `overflow-x: clip`, same horizontal containment without the scroll container.
