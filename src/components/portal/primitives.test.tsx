@@ -56,16 +56,28 @@ describe("Sheet", () => {
     );
     expect(onClose).toHaveBeenCalledTimes(1);
 
-    // Backdrop: a click whose target is the dialog element itself.
+    // Backdrop and bare surface both report the dialog element as the target;
+    // only a point outside the dialog's box may close it. jsdom lays out
+    // nothing, so the open sheet is given a box: a 390px-wide bottom sheet
+    // from y 400 to 844.
     rerender(
       <Sheet open onClose={onClose} title="Onboarding checklist">
         <p>Body</p>
       </Sheet>,
     );
     expect(dialog).toHaveAttribute("open");
-    fireEvent.click(screen.getByText("Body"));
+    dialog.getBoundingClientRect = () =>
+      ({ left: 0, top: 400, right: 390, bottom: 844, x: 0, y: 400, width: 390, height: 444 }) as DOMRect;
+    fireEvent.click(screen.getByText("Body"), { clientX: 195, clientY: 600 });
     expect(onClose).toHaveBeenCalledTimes(1);
-    fireEvent.click(dialog);
+    // Top edge of the dialog: the 8px strip above the drag handle.
+    fireEvent.click(dialog, { clientX: 195, clientY: 400 });
+    expect(onClose).toHaveBeenCalledTimes(1);
+    // Beside the 36px pill, inside the handle strip.
+    fireEvent.click(dialog, { clientX: 40, clientY: 406 });
+    expect(onClose).toHaveBeenCalledTimes(1);
+    // Backdrop above the sheet.
+    fireEvent.click(dialog, { clientX: 195, clientY: 399 });
     expect(onClose).toHaveBeenCalledTimes(2);
   });
 });

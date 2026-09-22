@@ -35,8 +35,13 @@ export default function Sheet({ open, onClose, title, children, id }: SheetProps
   // dialog; its close event is the one path back to the owner's state.
   const close = () => dialogRef.current?.close();
   const onBackdropClick = (event: MouseEvent<HTMLDialogElement>) => {
-    // Only the backdrop reports the dialog itself as the target.
-    if (event.target === event.currentTarget) close();
+    // The backdrop reports the dialog itself as the target, but so does the
+    // dialog's own bare surface (the strip around the drag handle), so close
+    // only when the pointer lands outside the dialog's box.
+    if (event.target !== event.currentTarget) return;
+    const { left, top, right, bottom } = event.currentTarget.getBoundingClientRect();
+    const { clientX: x, clientY: y } = event;
+    if (x < left || x > right || y < top || y > bottom) close();
   };
 
   return (
