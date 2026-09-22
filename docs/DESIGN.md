@@ -71,7 +71,7 @@ One header, one nav, one sub-page header. The 620px line is the only breakpoint:
 | Sub-page header | `src/components/portal/PortalSubpageHeader.tsx` | Breadcrumb back link over the title, `aside` slot right | 44px sticky bar: back chevron, title, aside. The back label stays in the DOM, hidden visually. |
 | Footer | the page | Admin console, sign out, socials | Same, above the bar. Never in the bottom nav: a bar you tap by accident is no place for sign out. |
 
-`--portal-bar-fill` (`rgb(28, 22, 17)`, the pane fill colour made solid) backs the two bars. A fixed or sticky bar sits over scrolling content, so the translucent pane fill would let whatever scrolled under it set the contrast. On the solid fill white 0.95 reads 16.2:1 and the tab bar's white 0.52 label 5.58:1, 4.51:1 at the sheen's brightest corner.
+`--portal-bar-fill` (`rgb(28, 22, 17)`, the pane fill colour made solid) backs the two bars. A fixed or sticky bar sits over scrolling content, so the translucent pane fill would let whatever scrolled under it set the contrast. On the solid fill white 0.95 reads 16.20:1 and the tab bar's white 0.52 label 5.58:1; under the sheen's maximum they are 13.36:1 and 5.08:1, so the quiet tab clears 4.5:1 across the whole bar.
 
 The bars are `position: fixed` and `position: sticky`, so where they mount matters:
 - Mount BottomNav outside `PortalBentoStage` and outside the page's `<main>`. `preserve-3d` is a containing block for `position: fixed`, and `.portal-bento > *` would pull the bar into the page's stacking context.

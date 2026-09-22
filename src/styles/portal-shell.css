@@ -8,9 +8,10 @@
 :root {
   /* Fixed and sticky bars sit over scrolling content, so they cannot take the
      translucent pane fill: whatever scrolled under them would set the
-     contrast. Same colour as --portal-pane-fill, solid. Measured on it:
-     white 0.95 = 16.2:1, the tab bar's white 0.52 label = 5.58:1 (4.51:1 at
-     the sheen's brightest corner), so the quiet tab still clears 4.5:1. */
+     contrast. Same colour as --portal-pane-fill, solid. Measured with the
+     workspace's contrast maths: white 0.95 = 16.20:1 and the tab bar's white
+     0.52 label = 5.58:1, and under the sheen's maximum 13.36:1 and 5.08:1,
+     so the quiet tab clears 4.5:1 across the whole bar. */
   --portal-bar-fill: rgb(28, 22, 17);
 }
 
