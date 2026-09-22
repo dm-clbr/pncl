@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/portal/BottomNav";
 import ListRow from "@/components/portal/ListRow";
@@ -34,6 +34,27 @@ const STAGES = ["Script", "Form", "Review"] as const;
 const FORM_SECTION = "Pinnacle form";
 const ERROR_ID = "intake-error";
 
+/** Above the mobile breakpoint a screen carries up to three questions; at 620px
+    and below it stays one per screen. */
+const DESKTOP_QUERY = "(min-width: 621px)";
+const DESKTOP_GROUP = 3;
+
+/** The gate that used to be the canAdvance memo, now per step so a screen with
+    several questions can ask the same question of each one. Same rules. */
+function stepIsAnswered(
+  step: ClientIntakeStep,
+  value: string,
+  secondary: string,
+  error: string | null,
+): boolean {
+  if (step.type === "dual") {
+    return (!step.required || (!!value.trim() && !!secondary.trim())) && !error;
+  }
+  if (step.type === "yesno" || step.type === "select") return !!value;
+  if (step.required) return !!value.trim() && !error;
+  return !error;
+}
+
 export default function PortalClientIntake() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -44,17 +65,61 @@ export default function PortalClientIntake() {
   const [transitioning, setTransitioning] = useState(false);
   const [loading, setLoading] = useState(false);
   const [returnToReview, setReturnToReview] = useState(false);
-  /* ponytail: one key, not a flag per control. It resets itself when the step
-     changes, because the new step carries a different key. */
-  const [touchedKey, setTouchedKey] = useState<string | null>(null);
+  /* ponytail: one list of keys for the screen, cleared whenever the screen
+     changes, instead of a touched flag per control. */
+  const [touchedKeys, setTouchedKeys] = useState<string[]>([]);
+  const [groupSize, setGroupSize] = useState(1);
+  /* Group starts, so Back returns to the screen the agent actually saw. A
+     branch answer can change how many questions the previous screen held. */
+  const backStack = useRef<number[]>([]);
+
+  /* ponytail: matchMedia, not a resize listener. Mobile is the default, so the
+     first paint is one question per screen everywhere. */
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia(DESKTOP_QUERY);
+    const sync = () => setGroupSize(mq.matches ? DESKTOP_GROUP : 1);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   const activeSteps = useMemo(() => getActiveIntakeSteps(data), [data]);
   const totalSteps = activeSteps.length + 1;
   const isReviewStep = started && currentStep >= activeSteps.length;
-  const step = isReviewStep ? null : activeSteps[currentStep] ?? null;
   const progress = started ? ((currentStep + 1) / totalSteps) * 100 : 0;
-  const currentValue = step ? getStepValue(step, data) : "";
-  const secondaryValue = step ? getSecondaryStepValue(step, data) : "";
+
+  /** The questions on this screen. A yes/no or select answer can reveal or hide
+      later questions, so it always ends the screen it sits on. */
+  const groupSteps = useMemo(() => {
+    if (isReviewStep) return [] as ClientIntakeStep[];
+    const group: ClientIntakeStep[] = [];
+    for (let i = currentStep; i < activeSteps.length && group.length < groupSize; i += 1) {
+      const next = activeSteps[i];
+      group.push(next);
+      if (next.type === "yesno" || next.type === "select") break;
+    }
+    return group;
+  }, [activeSteps, currentStep, groupSize, isReviewStep]);
+
+  const groupState = useMemo(
+    () =>
+      groupSteps.map((groupStep) => {
+        const value = getStepValue(groupStep, data);
+        const secondary = getSecondaryStepValue(groupStep, data);
+        const error = validateIntakeStep(groupStep, data);
+        return {
+          step: groupStep,
+          value,
+          secondary,
+          error,
+          answered: stepIsAnswered(groupStep, value, secondary, error),
+        };
+      }),
+    [groupSteps, data],
+  );
+
+  const canAdvance = groupState.length > 0 && groupState.every((entry) => entry.answered);
 
   useEffect(() => {
     if (currentStep >= activeSteps.length && !isReviewStep && started) {
@@ -62,28 +127,16 @@ export default function PortalClientIntake() {
     }
   }, [activeSteps.length, currentStep, isReviewStep, started]);
 
-  const validationError = useMemo(() => {
-    if (!step) return null;
-    return validateIntakeStep(step, data);
-  }, [step, data]);
+  /* A new screen starts pristine: nothing is an error until it is touched. */
+  useEffect(() => {
+    setTouchedKeys([]);
+  }, [currentStep]);
 
-  const canAdvance = useMemo(() => {
-    if (!step) return false;
-    if (step.type === "dual") {
-      return (
-        (!step.required || (currentValue.trim() && secondaryValue.trim()))
-        && !validationError
-      );
-    }
-    if (step.type === "yesno" || step.type === "select") return !!currentValue;
-    if (step.required) return !!currentValue.trim() && !validationError;
-    return !validationError;
-  }, [step, currentValue, secondaryValue, validationError]);
-
-  const advance = () => {
+  const advance = (by: number) => {
+    backStack.current.push(currentStep);
     setTransitioning(true);
     setTimeout(() => {
-      setCurrentStep((index) => Math.min(index + 1, activeSteps.length));
+      setCurrentStep((index) => Math.min(index + by, activeSteps.length));
       setTransitioning(false);
     }, 350);
   };
@@ -97,81 +150,82 @@ export default function PortalClientIntake() {
     }, 350);
   };
 
+  const goBack = () => {
+    const previous = backStack.current.pop();
+    setCurrentStep((index) => (previous ?? Math.max(index - 1, 0)));
+  };
+
   const finishStep = () => {
     if (returnToReview) {
       setReturnToReview(false);
       goToStep(activeSteps.length);
       return;
     }
-    advance();
+    advance(Math.max(groupSteps.length, 1));
   };
 
-  const handleYesNo = (value: string) => {
-    if (!step) return;
-    setData((prev) => setStepValue(step, value, prev));
+  const handleYesNo = (target: ClientIntakeStep, value: string) => {
+    setData((prev) => setStepValue(target, value, prev));
     setTimeout(finishStep, 200);
   };
 
-  const handleSelect = (value: string) => {
-    if (!step) return;
-    setData((prev) => setStepValue(step, value, prev));
+  const handleSelect = (target: ClientIntakeStep, value: string) => {
+    setData((prev) => setStepValue(target, value, prev));
     setTimeout(finishStep, 200);
   };
 
-  const handleInputChange = (raw: string) => {
-    if (!step) return;
-    setTouchedKey(String(step.key));
-    setData((prev) => setStepValue(step, raw, prev));
+  const touch = (target: ClientIntakeStep) => {
+    const key = String(target.key);
+    setTouchedKeys((prev) => (prev.includes(key) ? prev : [...prev, key]));
   };
 
-  const handleSecondaryInputChange = (raw: string) => {
-    if (!step) return;
-    setTouchedKey(String(step.key));
-    setData((prev) => setSecondaryStepValue(step, raw, prev));
+  const handleInputChange = (target: ClientIntakeStep, raw: string) => {
+    touch(target);
+    setData((prev) => setStepValue(target, raw, prev));
+  };
+
+  const handleSecondaryInputChange = (target: ClientIntakeStep, raw: string) => {
+    touch(target);
+    setData((prev) => setSecondaryStepValue(target, raw, prev));
   };
 
   const handleSubmit = () => {
-    if (!step || !canAdvance) return;
-    if (currentStep < activeSteps.length - 1 || returnToReview) {
-      finishStep();
-      return;
-    }
-    advance();
+    if (!canAdvance) return;
+    finishStep();
   };
 
-  /* ponytail: one DOM query beats a ref per control. One question is on screen
-     at a time, so the first control inside it is the first error. */
+  /* ponytail: index into the rendered controls beats a ref per field. Each
+     question owns one .pintake-control, in screen order. */
   const focusFirstError = () => {
-    document
-      .querySelector<HTMLElement>(".pintake-control input, .pintake-control select,"
-        + " .pintake-control textarea, .pintake-control button")
-      ?.focus();
+    const controls = document.querySelectorAll<HTMLElement>(".pintake-control");
+    const firstBad = groupState.findIndex((entry) => !entry.answered);
+    const scope = controls[firstBad >= 0 ? firstBad : 0];
+    scope?.querySelector<HTMLElement>("input, select, textarea, button")?.focus();
   };
 
-  /** The advance button stays clickable while the step is invalid, so the
+  /** The advance button stays clickable while the screen is invalid, so the
       "focus the first error on submit" rule has a path. Validation itself is
-      unchanged: handleSubmit still refuses to move on an invalid step. */
+      unchanged: handleSubmit still refuses to move on an invalid screen. */
   const handleAdvanceClick = () => {
     if (!canAdvance) {
-      if (step) setTouchedKey(String(step.key));
+      setTouchedKeys(groupSteps.map((groupStep) => String(groupStep.key)));
       focusFirstError();
       return;
     }
     handleSubmit();
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent, target: ClientIntakeStep) => {
     if (
       e.key === "Enter"
-      && step
-      && step.type !== "yesno"
-      && step.type !== "select"
-      && step.type !== "textarea"
-      && step.type !== "dual"
+      && target.type !== "yesno"
+      && target.type !== "select"
+      && target.type !== "textarea"
+      && target.type !== "dual"
     ) {
       e.preventDefault();
       if (!canAdvance) {
-        setTouchedKey(String(step.key));
+        setTouchedKeys(groupSteps.map((groupStep) => String(groupStep.key)));
         focusFirstError();
         return;
       }
@@ -198,7 +252,7 @@ export default function PortalClientIntake() {
     trackPageView("portal_client_intake");
   }, []);
 
-  const stage = isReviewStep ? 3 : step?.section === FORM_SECTION ? 2 : 1;
+  const stage = isReviewStep ? 3 : groupSteps[0]?.section === FORM_SECTION ? 2 : 1;
 
   /** Review answers in wizard order, grouped by the section they came from.
       The index is the one goToStep needs, so the group keeps it. */
@@ -215,30 +269,9 @@ export default function PortalClientIntake() {
 
   const advanceLabel = returnToReview
     ? "Save and return"
-    : currentStep === activeSteps.length - 1
+    : currentStep + groupSteps.length >= activeSteps.length
       ? "Review form"
       : "Continue";
-
-  /* A pristine required question is not an error yet: announce it only once the
-     agent has typed in it or tried to advance past it. */
-  const showError = !!validationError && !!step && touchedKey === String(step.key);
-
-  const errorProps = showError
-    ? { "aria-invalid": true as const, "aria-describedby": ERROR_ID }
-    : {};
-
-  /** Dual steps hold two fields behind one message. Flag the empty one, or both
-      when the message is about the pair rather than a blank. */
-  const dualErrorProps = (value: string) =>
-    showError && (!value.trim() || (!!currentValue.trim() && !!secondaryValue.trim()))
-      ? errorProps
-      : {};
-
-  const stepError = showError && (
-    <p className="portal-field-error" id={ERROR_ID} role="alert">
-      {validationError}
-    </p>
-  );
 
   return (
     <div className="home2-page ptools-page pintake-page">
@@ -341,146 +374,172 @@ export default function PortalClientIntake() {
             </div>
           )}
 
-          {started && !isReviewStep && step && (
+          {started && !isReviewStep && groupState.length > 0 && (
             <div className={`ptools-stack pintake-screen${transitioning ? " out" : ""}`}>
-              <p className="pintake-eyebrow">
-                {step.scriptQuestion
-                  ? `Question ${step.scriptQuestion}`
-                  : step.section ?? "Intake"}
-              </p>
+              {groupState.map(({ step, value, secondary, error }, offset) => {
+                /* A pristine required question is not an error yet: announce it
+                   only once the agent has typed in it or tried to advance. */
+                const showError = !!error && touchedKeys.includes(String(step.key));
+                const errorId = `${ERROR_ID}-${offset}`;
+                const errorProps = showError
+                  ? { "aria-invalid": true as const, "aria-describedby": errorId }
+                  : {};
+                /* Dual steps hold two fields behind one message. Flag the empty
+                   one, or both when the message is about the pair. */
+                const dualErrorProps = (field: string) =>
+                  showError && (!field.trim() || (!!value.trim() && !!secondary.trim()))
+                    ? errorProps
+                    : {};
+                const stepError = showError && (
+                  <p className="portal-field-error" id={errorId} role="alert">
+                    {error}
+                  </p>
+                );
+                const stepId = `intake-${offset}`;
 
-              <Pane
-                title={step.question}
-                aside={
-                  <span className="pintake-count">
-                    Step {currentStep + 1} of {totalSteps}
-                  </span>
-                }
-              >
-                {step.subtitle && <p className="pintake-lede">{step.subtitle}</p>}
+                return (
+                  <div key={`${String(step.key)}-${currentStep + offset}`}>
+                    <p className="pintake-eyebrow">
+                      {step.scriptQuestion
+                        ? `Question ${step.scriptQuestion}`
+                        : step.section ?? "Intake"}
+                    </p>
 
-                <div className="pintake-control">
-                  {step.type === "yesno" && (
-                    <div className="pintake-options">
-                      {step.options!.map((opt) => (
-                        <button
-                          key={opt}
-                          type="button"
-                          className={`pintake-option${currentValue === opt ? " selected" : ""}`}
-                          aria-pressed={currentValue === opt}
-                          onClick={() => handleYesNo(opt)}
-                          disabled={loading}
-                        >
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                    <Pane
+                      title={step.question}
+                      aside={
+                        <span className="pintake-count">
+                          Step {currentStep + offset + 1} of {totalSteps}
+                        </span>
+                      }
+                    >
+                      {step.subtitle && <p className="pintake-lede">{step.subtitle}</p>}
 
-                  {step.type === "select" && (
-                    <>
-                      <label htmlFor="intake-select" className="portal-sr">{step.question}</label>
-                      <select
-                        id="intake-select"
-                        className="portal-select"
-                        value={currentValue}
-                        onChange={(e) => handleSelect(e.target.value)}
-                        autoFocus
-                        {...errorProps}
-                      >
-                        <option value="" disabled>
-                          Choose an option
-                        </option>
-                        {step.options!.map((option) => (
-                          <option key={option} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                      {stepError}
-                    </>
-                  )}
+                      <div className="pintake-control">
+                        {step.type === "yesno" && (
+                          <div className="pintake-options">
+                            {step.options!.map((opt) => (
+                              <button
+                                key={opt}
+                                type="button"
+                                className={`pintake-option${value === opt ? " selected" : ""}`}
+                                aria-pressed={value === opt}
+                                onClick={() => handleYesNo(step, opt)}
+                                disabled={loading}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        )}
 
-                  {step.type === "dual" && (
-                    <div className="pintake-dual">
-                      <label htmlFor="intake-height" className="portal-sr">Height</label>
-                      <input
-                        id="intake-height"
-                        className="portal-input"
-                        type="text"
-                        placeholder={step.placeholder ?? "Height"}
-                        value={currentValue}
-                        onChange={(e) => handleInputChange(e.target.value)}
-                        autoFocus
-                        autoComplete="off"
-                        {...dualErrorProps(currentValue)}
-                      />
-                      <label htmlFor="intake-weight" className="portal-sr">Weight</label>
-                      <input
-                        id="intake-weight"
-                        className="portal-input"
-                        type="text"
-                        placeholder={step.secondaryPlaceholder ?? "Weight"}
-                        value={secondaryValue}
-                        onChange={(e) => handleSecondaryInputChange(e.target.value)}
-                        autoComplete="off"
-                        {...dualErrorProps(secondaryValue)}
-                      />
-                      {stepError}
-                    </div>
-                  )}
+                        {step.type === "select" && (
+                          <>
+                            <label htmlFor={stepId} className="portal-sr">{step.question}</label>
+                            <select
+                              id={stepId}
+                              className="portal-select"
+                              value={value}
+                              onChange={(e) => handleSelect(step, e.target.value)}
+                              autoFocus={offset === 0}
+                              {...errorProps}
+                            >
+                              <option value="" disabled>
+                                Choose an option
+                              </option>
+                              {step.options!.map((option) => (
+                                <option key={option} value={option}>
+                                  {option}
+                                </option>
+                              ))}
+                            </select>
+                            {stepError}
+                          </>
+                        )}
 
-                  {(step.type === "text" || step.type === "tel") && (
-                    <>
-                      <label htmlFor="intake-input" className="portal-sr">{step.question}</label>
-                      <input
-                        id="intake-input"
-                        key={String(step.key)}
-                        className="portal-input"
-                        type={
-                          step.key === "primarySsn" || step.key === "spouseSsn"
-                            ? "password"
-                            : "text"
-                        }
-                        inputMode={
-                          step.type === "tel"
-                            || step.key === "primaryDob"
-                            || step.key === "spouseDob"
-                            || step.key === "dateMet"
-                            || step.key === "effDate"
-                            ? "numeric"
-                            : undefined
-                        }
-                        placeholder={step.placeholder}
-                        value={currentValue}
-                        onChange={(e) => handleInputChange(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        autoFocus
-                        autoComplete="off"
-                        {...errorProps}
-                      />
-                      {stepError}
-                    </>
-                  )}
+                        {step.type === "dual" && (
+                          <div className="pintake-dual">
+                            <label htmlFor={`${stepId}-a`} className="portal-sr">Height</label>
+                            <input
+                              id={`${stepId}-a`}
+                              className="portal-input"
+                              type="text"
+                              placeholder={step.placeholder ?? "Height"}
+                              value={value}
+                              onChange={(e) => handleInputChange(step, e.target.value)}
+                              autoFocus={offset === 0}
+                              autoComplete="off"
+                              {...dualErrorProps(value)}
+                            />
+                            <label htmlFor={`${stepId}-b`} className="portal-sr">Weight</label>
+                            <input
+                              id={`${stepId}-b`}
+                              className="portal-input"
+                              type="text"
+                              placeholder={step.secondaryPlaceholder ?? "Weight"}
+                              value={secondary}
+                              onChange={(e) => handleSecondaryInputChange(step, e.target.value)}
+                              autoComplete="off"
+                              {...dualErrorProps(secondary)}
+                            />
+                            {stepError}
+                          </div>
+                        )}
 
-                  {step.type === "textarea" && (
-                    <>
-                      <label htmlFor="intake-textarea" className="portal-sr">{step.question}</label>
-                      <textarea
-                        id="intake-textarea"
-                        key={String(step.key)}
-                        className="portal-textarea"
-                        placeholder={step.placeholder}
-                        value={currentValue}
-                        onChange={(e) => handleInputChange(e.target.value)}
-                        autoFocus
-                        {...errorProps}
-                      />
-                      {stepError}
-                    </>
-                  )}
-                </div>
-              </Pane>
+                        {(step.type === "text" || step.type === "tel") && (
+                          <>
+                            <label htmlFor={stepId} className="portal-sr">{step.question}</label>
+                            <input
+                              id={stepId}
+                              key={String(step.key)}
+                              className="portal-input"
+                              type={
+                                step.key === "primarySsn" || step.key === "spouseSsn"
+                                  ? "password"
+                                  : "text"
+                              }
+                              inputMode={
+                                step.type === "tel"
+                                  || step.key === "primaryDob"
+                                  || step.key === "spouseDob"
+                                  || step.key === "dateMet"
+                                  || step.key === "effDate"
+                                  ? "numeric"
+                                  : undefined
+                              }
+                              placeholder={step.placeholder}
+                              value={value}
+                              onChange={(e) => handleInputChange(step, e.target.value)}
+                              onKeyDown={(e) => handleKeyDown(e, step)}
+                              autoFocus={offset === 0}
+                              autoComplete="off"
+                              {...errorProps}
+                            />
+                            {stepError}
+                          </>
+                        )}
+
+                        {step.type === "textarea" && (
+                          <>
+                            <label htmlFor={stepId} className="portal-sr">{step.question}</label>
+                            <textarea
+                              id={stepId}
+                              key={String(step.key)}
+                              className="portal-textarea"
+                              placeholder={step.placeholder}
+                              value={value}
+                              onChange={(e) => handleInputChange(step, e.target.value)}
+                              autoFocus={offset === 0}
+                              {...errorProps}
+                            />
+                            {stepError}
+                          </>
+                        )}
+                      </div>
+                    </Pane>
+                  </div>
+                );
+              })}
 
               <div className="pintake-bar">
                 {(currentStep > 0 || returnToReview) && (
@@ -492,7 +551,7 @@ export default function PortalClientIntake() {
                         setReturnToReview(false);
                         goToStep(activeSteps.length);
                       } else {
-                        setCurrentStep((index) => Math.max(index - 1, 0));
+                        goBack();
                       }
                     }}
                   >

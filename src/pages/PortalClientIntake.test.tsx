@@ -69,7 +69,7 @@ const answerEveryStep = () => {
       fireEvent.change(weight, { target: { value: "148" } });
     } else {
       const field = screen.queryAllByRole("textbox")[0]
-        ?? document.querySelector<HTMLInputElement>("#intake-input")!;
+        ?? document.querySelector<HTMLInputElement>('[id^="intake-"]')!;
       fireEvent.change(field, { target: { value: answerFor(String(step.key)) } });
     }
     fireEvent.click(screen.getByRole("button", { name: /^(Continue|Review form)$/ }));
@@ -138,6 +138,54 @@ describe("PortalClientIntake", () => {
     expect(input).toHaveAttribute("aria-invalid", "true");
     expect(input).toHaveAttribute("aria-describedby", alert.id);
     expect(screen.getByText(/^Step 1 of /)).toBeInTheDocument();
+  });
+
+  it("puts three questions on one desktop screen and advances past all of them", () => {
+    const desktop = (query: string) => ({
+      matches: query === "(min-width: 621px)",
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    });
+    const original = window.matchMedia;
+    Object.defineProperty(window, "matchMedia", { writable: true, value: desktop });
+    try {
+      renderPage();
+      fireEvent.click(screen.getByRole("button", { name: "Start intake" }));
+
+      // Three questions, three counters, one action bar.
+      const fields = screen.getAllByRole("textbox");
+      expect(fields).toHaveLength(3);
+      expect(screen.getByText(/^Step 1 of /)).toBeInTheDocument();
+      expect(screen.getByText(/^Step 3 of /)).toBeInTheDocument();
+      expect(screen.getAllByRole("button", { name: /^(Continue|Review form)$/ })).toHaveLength(1);
+
+      // Continue stays gated until every question on the screen is answered.
+      fireEvent.change(fields[0], { target: { value: "Dana Whitfield" } });
+      expect(screen.getByRole("button", { name: "Continue" }))
+        .toHaveAttribute("aria-disabled", "true");
+      fireEvent.change(fields[1], { target: { value: "45" } });
+      fireEvent.change(fields[2], { target: { value: "01021990" } });
+      expect(screen.getByRole("button", { name: "Continue" }))
+        .toHaveAttribute("aria-disabled", "false");
+
+      // One advance clears all three: the next screen starts at step 4.
+      fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+      act(() => void vi.advanceTimersByTime(400));
+      expect(screen.getByText(/^Step 4 of /)).toBeInTheDocument();
+
+      // Back returns to the screen that held steps 1 to 3.
+      fireEvent.click(screen.getByRole("button", { name: "Back" }));
+      act(() => void vi.advanceTimersByTime(400));
+      expect(screen.getByText(/^Step 1 of /)).toBeInTheDocument();
+      expect(screen.getByText(/^Step 3 of /)).toBeInTheDocument();
+    } finally {
+      Object.defineProperty(window, "matchMedia", { writable: true, value: original });
+    }
   });
 
   it("reaches the review screen, groups the answers and edits one", () => {
