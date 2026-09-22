@@ -285,7 +285,8 @@
   padding: calc(var(--u) * 1.5) 0;
 }
 
-.ptile-link {
+.ptile-link,
+.ptile-reveal-list .portal-row {
   display: block;
   padding: calc(var(--u) * 1.5) 0;
   font-size: var(--t-body);
@@ -296,15 +297,30 @@
   transition: color 140ms var(--ease-out);
 }
 
-.ptile-reveal-list li:has(.ptile-link) {
+.ptile-reveal-list li:has(.ptile-link),
+.ptile-reveal-list li:has(.portal-row) {
   padding: 0;
 }
 
-.ptile-link:hover {
+/* The primitive's standalone metrics (44px floor, concentric radius, full
+   width) belong to a page, not to a reveal row: here the row is itself a flex
+   item of the li and sizes to its content, so the trailing chip stays beside
+   the title instead of being pushed to the edge. Everything else it inherits
+   from .ptile-link. */
+.ptile-reveal-list .portal-row {
+  min-height: 0;
+  width: auto;
+  border-radius: 0;
+}
+
+.ptile-link:hover,
+.ptile-reveal-list .portal-row:hover {
+  background: none;
   color: var(--portal-accent);
 }
 
-.ptile-link:focus-visible {
+.ptile-link:focus-visible,
+.ptile-reveal-list .portal-row:focus-visible {
   outline: 2px solid var(--portal-accent);
   outline-offset: 2px;
 }
@@ -492,12 +508,14 @@ button.ptile-action {
   gap: calc(var(--u) * 2);
 }
 
-.ptile-link.is-external svg {
+.ptile-link.is-external svg,
+.ptile-reveal-list .portal-row-trail svg {
   flex-shrink: 0;
   opacity: 0.5;
 }
 
-.ptile-link.is-external:hover svg {
+.ptile-link.is-external:hover svg,
+.ptile-reveal-list .portal-row:hover .portal-row-trail svg {
   opacity: 1;
 }
 
@@ -744,6 +762,7 @@ button.ptile-action {
 }
 
 .ptile-menu .ptile-link,
+.ptile-menu .portal-row,
 .ptile-menu .ptile-reveal-list li {
   display: flex;
   align-items: center;
@@ -758,12 +777,14 @@ button.ptile-action {
   transition: background 120ms var(--ease-out), color 120ms var(--ease-out);
 }
 
-.ptile-menu .ptile-link:hover {
+.ptile-menu .ptile-link:hover,
+.ptile-menu .portal-row:hover {
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
 }
 
-.ptile-menu .ptile-link:focus-visible {
+.ptile-menu .ptile-link:focus-visible,
+.ptile-menu .portal-row:focus-visible {
   outline: 2px solid var(--portal-accent);
   outline-offset: -2px;
 }

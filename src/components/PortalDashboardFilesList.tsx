@@ -1,3 +1,4 @@
+import ListRow from "@/components/portal/ListRow";
 import { assetTypeLabel } from "@/lib/portal-brand-assets";
 import type { PortalDashboardFile } from "@/lib/portal-dashboard-tabs";
 
@@ -7,10 +8,12 @@ export default function PortalDashboardFilesList({ items }: { items: PortalDashb
     <ul className="ptile-reveal-list">
       {items.map((item) => (
         <li key={item.id}>
-          <a className="ptile-link" href={item.url} download={item.fileName}>
-            {item.title}
-            <span className="ptile-chip">{assetTypeLabel(item.contentType)}</span>
-          </a>
+          <ListRow
+            label={item.title}
+            href={item.url}
+            download={item.fileName}
+            trailing={<span className="ptile-chip">{assetTypeLabel(item.contentType)}</span>}
+          />
         </li>
       ))}
     </ul>

@@ -298,3 +298,307 @@ button.portal-step-inner:hover .portal-step-num {
 .portal-step.is-current .portal-step-label {
   color: var(--portal-text-strong);
 }
+
+/* ── Pane ────────────────────────────────────────────────────────────────── */
+
+/* The glass card. No backdrop-filter: the blur lives on the gradient source,
+   and a pane can appear many times on a page. */
+.portal-pane {
+  display: block;
+  box-sizing: border-box;
+  padding: var(--portal-inset);
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
+  box-shadow: var(--portal-pane-shadow);
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+}
+
+@media (min-width: 621px) {
+  .portal-pane {
+    padding: calc(var(--portal-unit) * 5);
+  }
+}
+
+.portal-pane-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(var(--portal-unit) * 3);
+  margin-bottom: calc(var(--portal-unit) * 3);
+}
+
+.portal-pane-title {
+  margin: 0;
+  font-size: var(--portal-t-mid);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  text-wrap: balance;
+  color: var(--portal-text-strong);
+}
+
+.portal-pane-aside {
+  flex-shrink: 0;
+  font-size: var(--portal-t-micro);
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--portal-text-faint);
+}
+
+/* ── ListRow ─────────────────────────────────────────────────────────────── */
+
+.portal-row {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--portal-unit) * 3);
+  width: 100%;
+  /* 44px floor is the tap target; adjacent rows are therefore 8px apart at
+     their centres of gravity without a spacer. */
+  min-height: 44px;
+  margin: 0;
+  padding: calc(var(--portal-unit) * 1.5) calc(var(--portal-unit) * 2.5);
+  border: 0;
+  border-radius: var(--portal-radius-inner);
+  background: none;
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: left;
+  text-decoration: none;
+  transition: background-color 120ms var(--portal-ease-out);
+}
+
+a.portal-row,
+button.portal-row {
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a.portal-row:hover,
+button.portal-row:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.portal-row:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.portal-row-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: var(--portal-text-faint);
+}
+
+.portal-row-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.portal-row-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.portal-row-label {
+  overflow-wrap: anywhere;
+}
+
+.portal-row-secondary {
+  font-size: var(--portal-t-micro);
+  font-weight: 400;
+  line-height: 1.35;
+  color: var(--portal-text-faint);
+}
+
+.portal-row-trail {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--portal-unit) * 2);
+  flex-shrink: 0;
+  color: var(--portal-text-faint);
+}
+
+a.portal-row:hover .portal-row-trail,
+button.portal-row:hover .portal-row-trail {
+  color: var(--portal-text);
+}
+
+/* ── Chip ────────────────────────────────────────────────────────────────── */
+
+/* One near-black fill for every variant: 3.06:1 against the pane composite
+   (brightest pncl stop, fill 0.68, sheen), measured with the workspace's
+   chip contrast gate. Colour never carries the meaning on its own, so the
+   border, the text and a leading glyph vary and the fill does not. */
+.portal-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--portal-unit) * 1.5);
+  padding: 3px 6px 2px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.86);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-label);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+  color: var(--portal-text);
+}
+
+/* Glyphs, so the variant is readable without colour. */
+.portal-chip.is-active::before,
+.portal-chip.is-licensed::before,
+.portal-chip.is-inactive::before {
+  content: "";
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.portal-chip.is-active {
+  border-color: rgba(59, 214, 107, 0.7);
+  color: #8be7a8;
+}
+
+.portal-chip.is-active::before {
+  background: currentColor;
+}
+
+/* Dotted left edge, not a dot: pending must not read as active at a glance. */
+.portal-chip.is-pending {
+  padding-left: 5px;
+  border-color: rgba(245, 201, 120, 0.7);
+  border-left: 3px dotted currentColor;
+  color: #f5c978;
+}
+
+.portal-chip.is-licensed {
+  border-color: rgba(156, 205, 245, 0.7);
+  color: #9ccdf5;
+}
+
+.portal-chip.is-licensed::before {
+  border: 1.5px solid currentColor;
+}
+
+.portal-chip.is-inactive {
+  color: var(--portal-text-faint);
+}
+
+.portal-chip.is-inactive::before {
+  width: 8px;
+  height: 1.5px;
+  border-radius: 0;
+  background: currentColor;
+}
+
+.portal-chip.is-pdf {
+  color: var(--portal-text-faint);
+}
+
+/* ── EmptyState ──────────────────────────────────────────────────────────── */
+
+.portal-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--portal-unit) * 2);
+  max-width: 36ch;
+  margin: 0 auto;
+  padding: calc(var(--portal-unit) * 6) 0;
+  font-family: var(--portal-font);
+  text-align: center;
+  text-wrap: balance;
+}
+
+.portal-empty-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-bottom: calc(var(--portal-unit) * 0.5);
+  color: var(--portal-text-faint);
+}
+
+.portal-empty-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.portal-empty-title {
+  margin: 0;
+  font-size: var(--portal-t-mid);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  color: var(--portal-text-strong);
+}
+
+.portal-empty-body {
+  margin: 0;
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+  color: var(--portal-text);
+}
+
+.portal-empty-action {
+  margin-top: calc(var(--portal-unit) * 2);
+}
+
+/* ── Skeleton ────────────────────────────────────────────────────────────── */
+
+.portal-skeleton {
+  display: block;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  animation: portal-skeleton-pulse 1.2s var(--portal-ease-out) infinite;
+}
+
+.portal-skeleton.is-text {
+  width: 100%;
+  height: 11px;
+}
+
+.portal-skeleton.is-row {
+  width: 100%;
+  height: 44px;
+  border-radius: var(--portal-radius-inner);
+}
+
+.portal-skeleton.is-tile {
+  width: 100%;
+  height: 132px;
+  border-radius: var(--portal-radius);
+}
+
+@keyframes portal-skeleton-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* Still a placeholder without the pulse: the block stays, the motion goes. */
+@media (prefers-reduced-motion: reduce) {
+  .portal-skeleton {
+    animation: none;
+  }
+}
