@@ -205,9 +205,18 @@
 /* ── Bottom tab bar ─────────────────────────────────────────────────────── */
 
 /* Four destinations in the thumb zone, phone only. Sign out and the socials
-   stay in the page footer: a bar you tap by accident is no place for either. */
+   stay in the page footer: a bar you tap by accident is no place for either.
+
+   The quiet tab colour sits on the bar, not on the item. Every portal page is
+   wrapped in .home2-page, whose `a { color: inherit }` (home2.css) is 0-1-1 and
+   outranks a bare .portal-bottom-nav-item at 0-1-0, so an item's own colour
+   never lands and it inherits the page's instead: --ink on the dashboard, which
+   is black text on a black bar. Declaring it on the container makes that
+   `inherit` resolve to the value we want. The active tab is 0-2-0 and still
+   wins outright. */
 .portal-bottom-nav {
   display: none;
+  color: rgba(255, 255, 255, 0.52);
 }
 
 .portal-bottom-nav-item {
@@ -219,7 +228,6 @@
   min-height: 56px;
   min-width: 44px;
   padding: 6px 4px;
-  color: rgba(255, 255, 255, 0.52);
   font-size: var(--portal-t-micro);
   letter-spacing: 0.01em;
   text-align: center;
