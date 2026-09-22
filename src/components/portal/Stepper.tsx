@@ -3,6 +3,9 @@ type StepperProps = {
   steps: readonly string[];
   /** 1-based number of the step in progress. Earlier steps read as done. */
   current: number;
+  /** 1-based numbers that are complete, when completion is not sequential.
+      Without it every step before `current` reads as done. */
+  done?: readonly number[];
   /** With a handler every step becomes a 44px button; without one the list is static. */
   onSelect?: (step: number) => void;
   label?: string;
@@ -10,12 +13,13 @@ type StepperProps = {
 
 /** Stage progress as an ordered list. Styles under .portal-stepper in
     src/styles/portal-primitives.css. */
-export default function Stepper({ steps, current, onSelect, label = "Progress" }: StepperProps) {
+export default function Stepper({ steps, current, done, onSelect, label = "Progress" }: StepperProps) {
   return (
     <ol className="portal-stepper" aria-label={label}>
       {steps.map((name, index) => {
         const step = index + 1;
-        const state = step < current ? "done" : step === current ? "current" : "todo";
+        const complete = done ? done.includes(step) : step < current;
+        const state = complete ? "done" : step === current ? "current" : "todo";
         const content = (
           <>
             <span className="portal-step-num" aria-hidden="true">

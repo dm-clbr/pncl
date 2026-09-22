@@ -1,0 +1,252 @@
+/* ==========================================================================
+   PNCL Training
+   Seven modules, each a pane. A 16:9 poster facade stands in for the player
+   until it is tapped: seven live YouTube iframes on a phone is the failure
+   this page had. Everything below is scoped to .ptr, and every colour-bearing
+   rule sits two classes deep, because home2.css declares
+   `.home2-page a { color: inherit }` at 0-1-1 and a bare class loses to it
+   (docs/DESIGN.md, Shell).
+   ========================================================================== */
+
+/* A column of video panes has no business at the marketing pages' 1320px.
+   Three classes deep to clear `.home2-page .wrap`, which may load first. */
+.home2-page .wrap.portal-training-wrap {
+  max-width: 880px;
+}
+
+.ptr {
+  display: flex;
+  flex-direction: column;
+  gap: var(--portal-gap);
+  font-family: var(--portal-font);
+}
+
+/* ── Progress ────────────────────────────────────────────────────────────── */
+
+.ptr .ptr-count {
+  margin: calc(var(--portal-unit) * 4) 0 0;
+  font-size: var(--portal-t-micro);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--portal-text-faint);
+}
+
+/* Seven module titles cannot read at 10px in a 40px column. Above the phone
+   they clamp to two lines; at 620px and below the numbered badges carry the
+   order on their own and the label stays for assistive tech only. */
+.ptr .portal-step-label {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+@media (max-width: 620px) {
+  .ptr .portal-step-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+}
+
+/* ── Module ──────────────────────────────────────────────────────────────── */
+
+.ptr .ptr-module {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--portal-unit) * 3);
+}
+
+.ptr .ptr-tag {
+  white-space: nowrap;
+  font-size: var(--portal-t-micro);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--portal-text-faint);
+}
+
+.ptr .ptr-desc {
+  margin: 0;
+  font-size: var(--portal-t-body);
+  line-height: 1.55;
+  color: var(--portal-text);
+}
+
+.ptr .ptr-soon {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--portal-unit) * 2);
+  margin: 0;
+  padding: calc(var(--portal-unit) * 3);
+  border: 1px dashed var(--portal-border);
+  border-radius: 8px;
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+  color: var(--portal-text);
+}
+
+.ptr .ptr-soon svg {
+  flex: 0 0 auto;
+  color: var(--portal-text-faint);
+}
+
+/* ── Facade and player ───────────────────────────────────────────────────── */
+
+/* Both boxes are the same 16:9 well, so the swap moves nothing on the page. */
+.ptr .ptr-facade,
+.ptr .ptr-video {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--portal-border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.ptr .ptr-facade {
+  padding: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ptr .ptr-facade:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+/* hqdefault is 480x360 with the 16:9 frame letterboxed inside it; cover crops
+   the bars back off. */
+.ptr .ptr-poster {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--portal-duration) var(--portal-ease-out);
+}
+
+.ptr .ptr-facade:hover .ptr-poster {
+  transform: scale(1.02);
+}
+
+/* The duration token is already 0ms here, so without this the scale would
+   snap rather than animate. */
+@media (prefers-reduced-motion: reduce) {
+  .ptr .ptr-facade:hover .ptr-poster {
+    transform: none;
+  }
+}
+
+.ptr .ptr-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 50%;
+  /* The glyph sits on its own near-black disc, so a bright thumbnail behind
+     it never sets the contrast (docs/DESIGN.md, blur is not separation). */
+  background: rgba(18, 14, 10, 0.78);
+  color: rgba(255, 255, 255, 0.95);
+  transition:
+    background var(--portal-duration) var(--portal-ease-out),
+    border-color var(--portal-duration) var(--portal-ease-out);
+}
+
+/* The triangle reads centred when it is nudged off centre by its own bearing. */
+.ptr .ptr-play svg {
+  margin-left: 2px;
+}
+
+.ptr .ptr-facade:hover .ptr-play {
+  border-color: rgba(255, 255, 255, 0.5);
+  background: rgb(18, 14, 10);
+}
+
+.ptr .ptr-video iframe,
+.ptr .ptr-video video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+/* ── Completion ──────────────────────────────────────────────────────────── */
+
+.ptr .ptr-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 calc(var(--portal-unit) * 4);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  color: rgb(20, 16, 12);
+  transition: background var(--portal-duration) var(--portal-ease-out);
+}
+
+.ptr .ptr-btn:hover:not(:disabled) {
+  background: #fff;
+}
+
+.ptr .ptr-btn:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.ptr .ptr-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Where the button was, so the pane keeps its rhythm once the module is done. */
+.ptr .ptr-done {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  margin: 0;
+}
+
+/* ── Loading and error ───────────────────────────────────────────────────── */
+
+.ptr .ptr-loading {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--portal-unit) * 3);
+}
+
+/* The accent is a spark for the urgent case, never a field (docs/DESIGN.md). */
+.ptr .ptr-error {
+  margin: 0;
+  padding: calc(var(--portal-unit) * 3);
+  border: 1px solid var(--portal-border);
+  border-left: 2px solid var(--portal-accent);
+  border-radius: 8px;
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+  color: var(--portal-text-strong);
+}
