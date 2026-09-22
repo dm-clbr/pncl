@@ -44,6 +44,9 @@ export default function PortalClientIntake() {
   const [transitioning, setTransitioning] = useState(false);
   const [loading, setLoading] = useState(false);
   const [returnToReview, setReturnToReview] = useState(false);
+  /* ponytail: one key, not a flag per control. It resets itself when the step
+     changes, because the new step carries a different key. */
+  const [touchedKey, setTouchedKey] = useState<string | null>(null);
 
   const activeSteps = useMemo(() => getActiveIntakeSteps(data), [data]);
   const totalSteps = activeSteps.length + 1;
@@ -117,11 +120,13 @@ export default function PortalClientIntake() {
 
   const handleInputChange = (raw: string) => {
     if (!step) return;
+    setTouchedKey(String(step.key));
     setData((prev) => setStepValue(step, raw, prev));
   };
 
   const handleSecondaryInputChange = (raw: string) => {
     if (!step) return;
+    setTouchedKey(String(step.key));
     setData((prev) => setSecondaryStepValue(step, raw, prev));
   };
 
@@ -135,9 +140,24 @@ export default function PortalClientIntake() {
   };
 
   /* ponytail: one DOM query beats a ref per control. One question is on screen
-     at a time, so the first aria-invalid element is the first error. */
+     at a time, so the first control inside it is the first error. */
   const focusFirstError = () => {
-    document.querySelector<HTMLElement>('.pintake-control [aria-invalid="true"]')?.focus();
+    document
+      .querySelector<HTMLElement>(".pintake-control input, .pintake-control select,"
+        + " .pintake-control textarea, .pintake-control button")
+      ?.focus();
+  };
+
+  /** The advance button stays clickable while the step is invalid, so the
+      "focus the first error on submit" rule has a path. Validation itself is
+      unchanged: handleSubmit still refuses to move on an invalid step. */
+  const handleAdvanceClick = () => {
+    if (!canAdvance) {
+      if (step) setTouchedKey(String(step.key));
+      focusFirstError();
+      return;
+    }
+    handleSubmit();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -151,6 +171,7 @@ export default function PortalClientIntake() {
     ) {
       e.preventDefault();
       if (!canAdvance) {
+        setTouchedKey(String(step.key));
         focusFirstError();
         return;
       }
@@ -198,11 +219,22 @@ export default function PortalClientIntake() {
       ? "Review form"
       : "Continue";
 
-  const errorProps = validationError
+  /* A pristine required question is not an error yet: announce it only once the
+     agent has typed in it or tried to advance past it. */
+  const showError = !!validationError && !!step && touchedKey === String(step.key);
+
+  const errorProps = showError
     ? { "aria-invalid": true as const, "aria-describedby": ERROR_ID }
     : {};
 
-  const stepError = validationError && (
+  /** Dual steps hold two fields behind one message. Flag the empty one, or both
+      when the message is about the pair rather than a blank. */
+  const dualErrorProps = (value: string) =>
+    showError && (!value.trim() || (!!currentValue.trim() && !!secondaryValue.trim()))
+      ? errorProps
+      : {};
+
+  const stepError = showError && (
     <p className="portal-field-error" id={ERROR_ID} role="alert">
       {validationError}
     </p>
@@ -381,7 +413,7 @@ export default function PortalClientIntake() {
                         onChange={(e) => handleInputChange(e.target.value)}
                         autoFocus
                         autoComplete="off"
-                        {...errorProps}
+                        {...dualErrorProps(currentValue)}
                       />
                       <label htmlFor="intake-weight" className="portal-sr">Weight</label>
                       <input
@@ -392,7 +424,7 @@ export default function PortalClientIntake() {
                         value={secondaryValue}
                         onChange={(e) => handleSecondaryInputChange(e.target.value)}
                         autoComplete="off"
-                        {...errorProps}
+                        {...dualErrorProps(secondaryValue)}
                       />
                       {stepError}
                     </div>
@@ -437,7 +469,7 @@ export default function PortalClientIntake() {
                       <textarea
                         id="intake-textarea"
                         key={String(step.key)}
-                        className="portal-textarea client-intake-textarea"
+                        className="portal-textarea"
                         placeholder={step.placeholder}
                         value={currentValue}
                         onChange={(e) => handleInputChange(e.target.value)}
@@ -470,8 +502,9 @@ export default function PortalClientIntake() {
                 <button
                   type="button"
                   className="ptools-cta pintake-next"
-                  onClick={handleSubmit}
-                  disabled={!canAdvance || loading}
+                  onClick={handleAdvanceClick}
+                  aria-disabled={!canAdvance}
+                  disabled={loading}
                 >
                   {advanceLabel}
                 </button>

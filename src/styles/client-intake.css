@@ -93,18 +93,6 @@
   word-break: break-word;
 }
 
-.home2-page .client-intake-textarea {
-  width: 100%;
-  min-height: 120px;
-  resize: vertical;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  color: inherit;
-  padding: 0.75rem 1rem;
-  font: inherit;
-}
-
 .home2-page .client-detail-panel {
   display: grid;
   gap: 1.5rem;
@@ -318,6 +306,24 @@
 
 .pintake-page .pintake-back {
   margin-right: auto;
+}
+
+/* The wizard's textareas are the long-answer steps, so they open taller than
+   the primitive's default. Everything else (16px text, border, fill) stays the
+   primitive's, which is what keeps iOS Safari from zooming on focus. */
+.pintake-page .portal-textarea {
+  min-height: 120px;
+}
+
+/* The advance button stays clickable while the step is invalid so focus can be
+   sent to the error; it still has to read as unavailable. */
+.pintake-page .ptools-cta[aria-disabled="true"] {
+  color: var(--portal-text-faint);
+  cursor: not-allowed;
+}
+
+.pintake-page .ptools-cta[aria-disabled="true"]:hover {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 @media (max-width: 620px) {
