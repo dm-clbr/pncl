@@ -40,7 +40,7 @@ Weight does hierarchy, not colour. Three text tiers, six sizes. Every count sets
 Measured with the workspace's contrast.mjs: the shipped pncl preset's brightest stop, then the pane fill, then the sheen, then the text. At fill 0.68 the 0.80 tier holds 4.76:1 and the 0.60 tier 3.45:1. Blur never counts as separation; text always sits on a fill.
 
 ## Motion
-300 to 420ms on `--portal-ease-out`. Tilt, gradient drift and reveal wipes are off on coarse pointers and under `prefers-reduced-motion`; `--portal-duration` drops to 0ms there, so anything on the token needs no second rule.
+300 to 420ms on `--portal-ease-out`. Tilt is off on coarse pointers and under `prefers-reduced-motion`; gradient drift and reveal wipes stop under `prefers-reduced-motion` (coarse pointers run the canvas at 20fps, 0.5 dpr). `--portal-duration` drops to 0ms under `prefers-reduced-motion`, so anything on the token needs no second rule.
 
 ## Focus
 `:focus-visible` only: `outline: var(--portal-focus-ring); outline-offset: var(--portal-focus-offset)`. Never remove an outline without replacing it.
