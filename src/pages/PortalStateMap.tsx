@@ -3,6 +3,7 @@ import { CheckCircle2, MapPinned, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import PNCLLogo from "@/components/PNCLLogo";
 import PortalPrimaryNav from "@/components/PortalPrimaryNav";
+import BottomNav from "@/components/portal/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortalProfile } from "@/hooks/usePortalProfile";
 import { useStateAvailability } from "@/hooks/useStateAvailability";
@@ -264,6 +265,10 @@ export default function PortalStateMap() {
           )}
         </div>
       </main>
+
+      {/* Outside <main> so the fixed bar never inherits a page containing
+          block. It replaces the primary nav at 620px and below. */}
+      <BottomNav />
     </div>
   );
 }

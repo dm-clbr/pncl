@@ -6218,6 +6218,15 @@ button.portal-todo-link {
   }
 }
 
+/* The portal's bottom tab bar replaces these text links on a phone. Same
+   specificity as the .home2-page .portal-primary-nav rule above, so this has
+   to come after it. */
+@media (max-width: 620px) {
+  .home2-page .portal-primary-nav {
+    display: none;
+  }
+}
+
 .home2-page .portal-map-wrap {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;

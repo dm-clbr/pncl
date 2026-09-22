@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, ChevronDown } from "lucide-react";
-import PNCLLogo from "@/components/PNCLLogo";
+import { ChevronDown } from "lucide-react";
+import PortalSubpageHeader from "@/components/portal/PortalSubpageHeader";
 import { fetchPayPolicyEntries, type PayPolicyEntry } from "@/lib/portal-pay-policy";
 import { trackPageView } from "@/lib/analytics";
 import "@/styles/home2.css";
@@ -50,19 +49,7 @@ export default function PortalPayPolicy() {
 
       <main className="portal-dash dark carrier-sheet-dash">
         <div className="wrap carrier-sheet-wrap">
-          <header className="carrier-sheet-header">
-            <Link to="/" className="portal-hero-logo" aria-label="PNCL home">
-              <PNCLLogo height={40} />
-            </Link>
-            <div className="carrier-sheet-header-copy">
-              <p className="portal-welcome">Pay &amp; Commissions</p>
-              <p className="portal-meta">How you get paid: policies, examples, and answers.</p>
-            </div>
-            <Link to="/portal" className="admin-back-link">
-              <ArrowLeft size={16} aria-hidden="true" />
-              Back to portal
-            </Link>
-          </header>
+          <PortalSubpageHeader title="Pay & Commissions" />
 
           {loading ? (
             <div className="portal-incentives-loading">
@@ -84,7 +71,6 @@ export default function PortalPayPolicy() {
                 <div className="carrier-sheet-panel portal-profile-panel">
                   <div className="carrier-sheet-panel-head">
                     <div>
-                      <h1>Pay policies</h1>
                       <p>The rules PNCL pays by. Questions? Open a support ticket.</p>
                     </div>
                   </div>

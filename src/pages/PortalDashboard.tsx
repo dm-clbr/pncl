@@ -39,7 +39,6 @@ function sectionIcon(id: string, title: string) {
   if (key.includes("tool") || key.includes("sales")) return <Wrench {...ICON} />;
   return <Link2 {...ICON} />;
 }
-import PNCLLogo from "@/components/PNCLLogo";
 import PortalOnboardingChecklist from "@/components/PortalOnboardingChecklist";
 import Sheet from "@/components/portal/Sheet";
 import Stepper from "@/components/portal/Stepper";
@@ -80,6 +79,8 @@ import PortalIncentivesList from "@/components/PortalIncentivesList";
 import PortalBrandAssetsList from "@/components/PortalBrandAssetsList";
 import PortalDashboardFilesList from "@/components/PortalDashboardFilesList";
 import PortalPrimaryNav from "@/components/PortalPrimaryNav";
+import PortalHeader from "@/components/portal/PortalHeader";
+import BottomNav from "@/components/portal/BottomNav";
 import PortalBentoStage from "@/components/PortalBentoStage";
 import PortalNoticeBanner from "@/components/PortalNoticeBanner";
 import LiquidGradientCanvas from "@/components/ui/liquid-gradient";
@@ -577,31 +578,13 @@ export default function PortalDashboard() {
         </div>
 
         <div className="portal-bento-wrap">
-          <header className="portal-bento-head">
-            <div className="portal-bento-brand">
-              <Link to="/" className="portal-bento-logo" aria-label="PNCL home">
-                <PNCLLogo height={44} />
-              </Link>
-              <h1 className="portal-bento-title">Employee Portal</h1>
-              <span className="portal-bento-status">{phaseLabel}</span>
-            </div>
-
-            <Link
-              to="/portal/profile"
-              className="portal-bento-profile"
-              aria-label="View profile"
-            >
-              <span className="portal-bento-profile-copy">
-                <span className="portal-bento-profile-name">{displayName}</span>
-                {agentEmail && (
-                  <span className="portal-bento-profile-mail">{agentEmail}</span>
-                )}
-              </span>
-              <span className="portal-bento-avatar" aria-hidden="true">
-                {photoUrl ? <img src={photoUrl} alt="" /> : <span>{initials}</span>}
-              </span>
-            </Link>
-          </header>
+          <PortalHeader
+            name={displayName}
+            email={agentEmail}
+            initials={initials}
+            photoUrl={photoUrl}
+            stage={phaseLabel}
+          />
 
           <PortalPrimaryNav />
 
@@ -701,7 +684,10 @@ export default function PortalDashboard() {
       </main>
 
       {/* Outside <main>: .portal-bento > * would set position: relative on the
-          dialog, and the Sheet must sit outside the tilted stage anyway. */}
+          bar and on the dialog, and both must sit outside the tilted stage
+          (preserve-3d is a containing block for position: fixed). */}
+      <BottomNav />
+
       {totalTodos > 0 && (
         <Sheet
           open={checklistOpen}

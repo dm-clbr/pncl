@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import PNCLLogo from "@/components/PNCLLogo";
 import PortalCalendarPreview from "@/components/PortalCalendarPreview";
 import PortalPrimaryNav from "@/components/PortalPrimaryNav";
+import BottomNav from "@/components/portal/BottomNav";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortalGoogleCalendar } from "@/hooks/usePortalGoogleCalendar";
 import { usePortalProfile } from "@/hooks/usePortalProfile";
@@ -126,6 +127,10 @@ export default function PortalCalendar() {
           />
         </div>
       </main>
+
+      {/* Outside <main> so the fixed bar never inherits a page containing
+          block. It replaces the primary nav at 620px and below. */}
+      <BottomNav />
     </div>
   );
 }
