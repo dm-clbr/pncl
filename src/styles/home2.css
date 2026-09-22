@@ -2647,13 +2647,18 @@ button.portal-todo-link {
   gap: 12px;
 }
 
-.home2-page .portal-field {
+/* Legacy portal form field: a <label class="portal-field"> wrapping bare
+   controls, used by PortalReferralPanel. Scoped to the label because the
+   Field primitive renders a <div class="portal-field"> under the same name,
+   and these rules at 0-2-1 would otherwise beat .portal-input and
+   .portal-select and drop both the 16px control text and the select arrow. */
+.home2-page label.portal-field {
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
 
-.home2-page .portal-field span {
+.home2-page label.portal-field span {
   font-family: var(--ff-mono);
   font-size: 10px;
   letter-spacing: .12em;
@@ -2661,7 +2666,7 @@ button.portal-todo-link {
   color: var(--steel);
 }
 
-.home2-page .portal-field-hint {
+.home2-page label.portal-field .portal-field-hint {
   font-family: var(--ff-sans);
   font-size: .72rem;
   line-height: 1.4;
@@ -2670,8 +2675,8 @@ button.portal-todo-link {
   color: var(--steel);
 }
 
-.home2-page .portal-field input,
-.home2-page .portal-field select {
+.home2-page label.portal-field input,
+.home2-page label.portal-field select {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid rgba(240, 237, 228, .12);
