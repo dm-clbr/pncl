@@ -359,6 +359,20 @@ describe("Segmented", () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it("keeps index 0 in the tab order when the value matches no item", () => {
+    // A stale ?tab= in a bookmarked URL: without a fallback every tab is -1 and
+    // the group leaves the tab order with no keyboard way back in.
+    render(<Segmented items={TABS} value="archived" onChange={() => {}} label="Profile sections" />);
+
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs.map((tab) => tab.getAttribute("tabindex"))).toEqual(["0", "-1", "-1"]);
+    expect(tabs.map((tab) => tab.getAttribute("aria-selected"))).toEqual([
+      "false",
+      "false",
+      "false",
+    ]);
+  });
+
   it("becomes router links with aria-current when linkTo is given", () => {
     render(
       <MemoryRouter>

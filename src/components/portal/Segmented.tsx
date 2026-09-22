@@ -38,6 +38,14 @@ export function nextIndex(key: string, index: number, count: number): number | n
     `linkTo` turns the items into router links that keep ?tab= in the URL. */
 export default function Segmented({ items, value, onChange, label, linkTo }: SegmentedProps) {
   const trackRef = useRef<HTMLDivElement>(null);
+  // Roving tabindex needs one tab in the tab order at all times. A stale ?tab=
+  // in a bookmarked URL matches nothing, and -1 on every tab would drop the
+  // whole group out of the tab order with no keyboard way back in, so index 0
+  // holds it.
+  const activeIndex = Math.max(
+    0,
+    items.findIndex((item) => item.value === value),
+  );
 
   // 0px of fade means no fade, so each edge only softens once it has content
   // behind it. Written straight to the DOM: scrolling must not re-render.
@@ -96,7 +104,7 @@ export default function Segmented({ items, value, onChange, label, linkTo }: Seg
             role="tab"
             aria-selected={active}
             aria-controls={item.controls}
-            tabIndex={active ? 0 : -1}
+            tabIndex={index === activeIndex ? 0 : -1}
             data-active={active}
             onClick={() => onChange?.(item.value)}
             onKeyDown={(event) => onKeyDown(event, index)}
