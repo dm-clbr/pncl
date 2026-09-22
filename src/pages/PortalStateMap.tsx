@@ -10,7 +10,7 @@ import Field from "@/components/portal/Field";
 import ListRow from "@/components/portal/ListRow";
 import Pane from "@/components/portal/Pane";
 import Sheet from "@/components/portal/Sheet";
-import type { StateMapFilter } from "@/components/StateAvailabilityCanvas";
+import { matchesFilter, type StateMapFilter } from "@/components/portal/state-map-filter";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortalProfile } from "@/hooks/usePortalProfile";
 import { useStateAvailability } from "@/hooks/useStateAvailability";
@@ -78,9 +78,7 @@ export default function PortalStateMap() {
   const term = search.trim().toLowerCase();
   const matches = useMemo(
     () => displayStates.filter((state) => {
-      const kept = filter === null || (filter === "Licensed"
-        ? licensedStates.has(state.stateCode)
-        : state.status === filter);
+      const kept = matchesFilter(filter, state.status, licensedStates.has(state.stateCode));
       return kept && (term === ""
         || state.stateName.toLowerCase().includes(term)
         || state.stateCode.toLowerCase().startsWith(term));

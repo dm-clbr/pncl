@@ -40,6 +40,8 @@ beforeAll(() => {
     this.open = false;
     this.dispatchEvent(new Event("close"));
   };
+  // jsdom has no pointer capture; the drag only needs the call not to throw.
+  Element.prototype.setPointerCapture = () => {};
 });
 
 describe("Sheet", () => {
@@ -90,6 +92,44 @@ describe("Sheet", () => {
     // Backdrop above the sheet.
     fireEvent.click(dialog, { clientX: 195, clientY: 399 });
     expect(onClose).toHaveBeenCalledTimes(2);
+  });
+
+  it("dismisses on a swipe down over the handle and ignores a short drag", () => {
+    const onClose = vi.fn();
+    const { container } = render(
+      <Sheet open onClose={onClose} title="Alabama" size="half">
+        <p>Body</p>
+      </Sheet>,
+    );
+
+    const dialog = screen.getByRole("dialog", { name: "Alabama" });
+    const handle = container.querySelector(".portal-sheet-handle") as HTMLElement;
+    expect(dialog.className).toContain("is-half");
+
+    // jsdom's PointerEvent drops clientY, so the pointer events are dispatched
+    // as MouseEvents of the same type; React dispatches on the type.
+    const drag = (type: string, clientY: number) =>
+      fireEvent(handle, new MouseEvent(type, { bubbles: true, clientY }));
+
+    // A 40px nudge is under the 56px threshold: the sheet stays open.
+    drag("pointerdown", 500);
+    drag("pointermove", 540);
+    drag("pointerup", 540);
+    expect(dialog).toHaveAttribute("open");
+    expect(onClose).not.toHaveBeenCalled();
+
+    // Past the threshold, and the transform used while dragging is cleared.
+    drag("pointerdown", 500);
+    drag("pointermove", 620);
+    expect(dialog.style.transform).toBe("translateY(120px)");
+    drag("pointerup", 620);
+    expect(dialog.style.transform).toBe("");
+    expect(dialog).not.toHaveAttribute("open");
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    // A pointerup with no drag behind it never closes it.
+    drag("pointerup", 300);
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -15,6 +15,7 @@ import {
   type StateAvailabilityStatus,
 } from "@/lib/portal-state-availability";
 import { US_STATE_BY_FIPS, type UsStateCode } from "@/lib/us-states";
+import { matchesFilter, type StateMapFilter } from "@/components/portal/state-map-filter";
 
 interface StateVisual {
   group: THREE.Group;
@@ -27,7 +28,7 @@ interface StateVisual {
 }
 
 /** One status, or the agent's own licences. Null shows every state. */
-export type StateMapFilter = StateAvailabilityStatus | "Licensed";
+export type { StateMapFilter };
 
 interface StateAvailabilityCanvasProps {
   states: StateAvailability[];
@@ -200,9 +201,7 @@ export default function StateAvailabilityCanvas({
   const refreshHighlights = () => {
     const active = filterRef.current;
     for (const [code, visual] of visualsRef.current) {
-      const kept = active === null
-        || (active === "Licensed" ? visual.licensed : visual.status === active);
-      const fade = kept ? 1 : DIM_OPACITY;
+      const fade = matchesFilter(active, visual.status, visual.licensed) ? 1 : DIM_OPACITY;
       const highlighted = code === selectedRef.current || code === hoveredRef.current;
       visual.group.position.z = highlighted ? 5 : 0;
       for (const material of visual.faceMaterials) material.opacity = fade;

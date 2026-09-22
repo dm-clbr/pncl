@@ -131,10 +131,12 @@
   list-style: none;
 }
 
-/* 18px is the icon slot's width; a two-letter code needs the room. */
+/* 18px is the icon slot's width; a two-letter code needs the room. The code is
+   meaningful text, not a glyph, so it holds the 4.5:1 body rung (--portal-text
+   is 4.76:1 on the pane) rather than the 0.60 UI rung the slot defaults to. */
 .home2-page .state-map-list .portal-row-icon {
   width: 26px;
-  color: var(--portal-text-faint);
+  color: var(--portal-text);
   font-family: var(--ff-mono);
   font-size: var(--portal-t-micro);
   font-weight: 700;
@@ -171,8 +173,49 @@
   }
 }
 
-/* The canvas box keeps home2.css's 975/610 aspect ratio on a phone: the
-   orthographic camera fits the atlas to the narrower axis, so a taller box
-   letterboxes the map instead of enlarging it. At 390px that puts the whole
-   map card inside the top 60% of the viewport, which is the half sheet's
-   other side of the 40/60 split. */
+/* Requirement 7.4: the canvas keeps 60% of the viewport against the 40% half
+   sheet. The box is sized in dvh rather than by home2.css's 975/610 ratio, so
+   the split holds at 390x844 (506px map, 338px sheet) instead of the 211px the
+   ratio gave. The orthographic camera fits the atlas to the narrower axis, so
+   the extra height letterboxes the map rather than enlarging it; the trade is
+   worth it because the box is also pinned. Pinned: the directory sits below
+   the map, so without sticky a pick made from the list opened the sheet with
+   the map scrolled off screen. */
+@media (max-width: 620px) {
+  /* While the half sheet is open the page cannot scroll, so the hero and the
+     lede would hold the top of the viewport and leave the map a sliver. They
+     are the one block on the page the open detail makes redundant. */
+  body:has(dialog.portal-sheet[open]) .home2-page .state-map-intro {
+    display: none;
+  }
+
+  /* home2.css gives .home2-page overflow-x: hidden, which makes it a scroll
+     container that never scrolls, and a sticky child of one of those never
+     sticks. clip stops the sideways overflow without the scroll container.
+     Scoped to this page by :has so no other home2 page changes. */
+  .home2-page:has(.portal-state-map-page) {
+    overflow-x: clip;
+  }
+
+  .home2-page .state-map-board > .state-map-layout {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  .home2-page .state-map-visual-panel {
+    display: flex;
+    height: 60dvh;
+    /* Opaque while pinned: the pane's own 0.68 fill let the directory rows
+       scrolling under the map read straight through it. Same hue, alpha 1. */
+    background-image: var(--portal-pane-sheen);
+    background-color: rgb(28, 22, 17);
+  }
+
+  .home2-page .state-map-canvas-shell,
+  .home2-page .state-map-canvas-placeholder {
+    aspect-ratio: auto;
+    min-height: 0;
+    height: 100%;
+  }
+}

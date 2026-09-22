@@ -48,7 +48,7 @@ Measured with the workspace's contrast.mjs: the shipped pncl preset's brightest 
 ## Primitives
 | Primitive | File | Notes |
 |---|---|---|
-| Sheet | `src/components/portal/Sheet.tsx` | Native `<dialog>` via showModal(). Bottom sheet to 620px (85vh, drag-handle affordance, safe-area padding), 420px right panel from 621px. Closes on Esc, backdrop and a 44px Close. Focus lands on the title. Mount outside PortalBentoStage. `size="half"` holds the bottom sheet to 40dvh, leaving the surface it explains the other 60%; the default `full` keeps 85vh, and from 621px the side panel ignores both. |
+| Sheet | `src/components/portal/Sheet.tsx` | Native `<dialog>` via showModal(). Bottom sheet to 620px (85vh, drag-handle affordance, safe-area padding), 420px right panel from 621px. Closes on Esc, backdrop, a 44px Close and a swipe down over the drag handle (past 56px; the live offset is skipped under `prefers-reduced-motion`). Focus lands on the title. Mount outside PortalBentoStage. `size="half"` holds the bottom sheet to 40dvh, leaving the surface it explains the other 60%; the default `full` keeps 85vh, and from 621px the side panel ignores both. |
 | Stepper | `src/components/portal/Stepper.tsx` | `<ol>` of 5 steps, done / current / todo, `aria-current="step"`, tabular numerals. Static by default; pass `onSelect` for 44px buttons. |
 | Pane | `src/components/portal/Pane.tsx` | The glass card, non-interactive. Wraps a page section. `title` and `aside` render the optional header (20/600 title, quiet aside for a count or a Chip); `as` picks section (default), aside or div; `id` for a skip link. With a title the pane carries `aria-labelledby` and reads as a region. Padding is 16px to 620px and 20px above. Concentric corners apply to a child flush against the pane's inner edge, whose radius is the pane's outer radius minus that padding. They do not apply to interior elements: rows, row skeletons, hover and active backgrounds and focus outlines carry their own 8px radius, because the flush figure at 620px is 16px minus 16px = 0, which renders those rows as squares inside a rounded pane. The pane does not publish an inherited `--portal-radius-inner`, since a custom property reaches every descendant rather than only the flush ones. |
 | ListRow | `src/components/portal/ListRow.tsx` | One 44px row for tile reveals, carrier sheets, script lists and client lists. `label`, optional `secondary` line (body text, so it sits on `--portal-text`, not the 0.60 UI rung) and an 18px `icon` slot. The destination picks the element: `href` on the site renders a router Link, an offsite `href` a new-tab anchor that says so to a screen reader, `download` a same-tab anchor, `onClick` a button, nothing a div. `trailing` defaults to a chevron or an outbound glyph; pass a node to replace it or `null` to drop it. `current` puts `aria-current="true"` on whichever element the row renders, for the one row the rest of the view is showing. |
@@ -88,10 +88,14 @@ prop and filters the directory at the same time, so the map is never the only
 place the filter shows. Pressed is a white ring, because the four chips already
 differ by colour. The detail is a right Pane from 621px and a `size="half"`
 Sheet below it, opened by a pick and never by the selection the page makes on
-load. The canvas box keeps its 975/610 ratio on a phone: the camera fits the
-atlas to the narrower axis, so a taller box letterboxes the map rather than
-enlarging it, and at 390px the whole card sits inside the 60% the half sheet
-leaves.
+load. On a phone the canvas box is 60dvh and pinned to the top of the board,
+and the page intro is hidden while the sheet is open, so the 60/40 split holds
+wherever the directory was scrolled to when the pick was made. The camera fits
+the atlas to the narrower axis, so the taller box letterboxes the map rather
+than enlarging it, and the pinned card is opaque so the rows cannot read
+through it. `matchesFilter` in `src/components/portal/state-map-filter.ts` is
+the single predicate behind the canvas dim and the directory list; it lives
+outside the canvas module because that module is lazy-loaded.
 
 Interaction: `pointerdown` selects on any pointer type, and the hover highlight
 runs under `(pointer: fine)` alone. The +/- and reset buttons are the

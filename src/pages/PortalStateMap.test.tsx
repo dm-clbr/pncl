@@ -254,6 +254,16 @@ describe("portal state map", () => {
     expect(canDrawFrame(false, false)).toBe(false);
     expect(canDrawFrame(true, true)).toBe(false);
 
+    // The filter predicate the canvas dim and the directory both read.
+    const { matchesFilter } = await vi.importActual<
+      typeof import("@/components/portal/state-map-filter")
+    >("@/components/portal/state-map-filter");
+    expect(matchesFilter(null, "Inactive", false)).toBe(true);
+    expect(matchesFilter("Active", "Active", false)).toBe(true);
+    expect(matchesFilter("Active", "Pending", true)).toBe(false);
+    expect(matchesFilter("Licensed", "Inactive", true)).toBe(true);
+    expect(matchesFilter("Licensed", "Active", false)).toBe(false);
+
     // Touch renders at dpr 1 whatever the screen claims.
     expect(rendererPixelRatio(true, 3)).toBe(1);
     expect(rendererPixelRatio(false, 3)).toBe(2);

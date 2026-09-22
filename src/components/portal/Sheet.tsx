@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 import { X } from "lucide-react";
 
 type SheetProps = {
@@ -48,6 +48,33 @@ export default function Sheet({ open, onClose, title, children, id, size = "full
     if (x < left || x > right || y < top || y > bottom) close();
   };
 
+  // Swipe down on the handle dismisses the bottom sheet (the handle is hidden
+  // from 621px, where the sheet is a side panel). Esc, the backdrop and the
+  // 44px Close stay the non-dragging paths, so WCAG 2.5.7 holds.
+  const dragFrom = useRef<number | null>(null);
+  const followPointer = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const offsetBy = (dy: number) => {
+    if (!followPointer) return;
+    dialogRef.current?.style.setProperty("transform", `translateY(${dy}px)`);
+  };
+  const onHandleDown = (event: PointerEvent<HTMLSpanElement>) => {
+    dragFrom.current = event.clientY;
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const onHandleMove = (event: PointerEvent<HTMLSpanElement>) => {
+    if (dragFrom.current === null) return;
+    offsetBy(Math.max(0, event.clientY - dragFrom.current));
+  };
+  const onHandleUp = (event: PointerEvent<HTMLSpanElement>) => {
+    const from = dragFrom.current;
+    if (from === null) return;
+    dragFrom.current = null;
+    dialogRef.current?.style.removeProperty("transform");
+    // ponytail: one fixed threshold, no velocity tracking. 56px is past the
+    // handle's own row, so a tap or a scroll nudge never closes the sheet.
+    if (event.clientY - from > 56) close();
+  };
+
   return (
     <dialog
       ref={dialogRef}
@@ -57,7 +84,14 @@ export default function Sheet({ open, onClose, title, children, id, size = "full
       onClose={onClose}
       onClick={onBackdropClick}
     >
-      <span className="portal-sheet-handle" aria-hidden="true" />
+      <span
+        className="portal-sheet-handle"
+        aria-hidden="true"
+        onPointerDown={onHandleDown}
+        onPointerMove={onHandleMove}
+        onPointerUp={onHandleUp}
+        onPointerCancel={onHandleUp}
+      />
       <div className="portal-sheet-head">
         <h2 ref={titleRef} id={titleId} className="portal-sheet-title" tabIndex={-1}>
           {title}
