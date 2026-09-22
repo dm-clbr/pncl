@@ -1,8 +1,17 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, LifeBuoy } from "lucide-react";
-import PNCLLogo from "@/components/PNCLLogo";
+import { Inbox, LifeBuoy } from "lucide-react";
+import BottomNav from "@/components/portal/BottomNav";
+import Chip, { type ChipVariant } from "@/components/portal/Chip";
+import EmptyState from "@/components/portal/EmptyState";
+import Field from "@/components/portal/Field";
+import ListRow from "@/components/portal/ListRow";
+import Pane from "@/components/portal/Pane";
+import PortalHeader from "@/components/portal/PortalHeader";
+import PortalSubpageHeader from "@/components/portal/PortalSubpageHeader";
+import Segmented from "@/components/portal/Segmented";
+import Skeleton from "@/components/portal/Skeleton";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePortalProfile } from "@/hooks/usePortalProfile";
 import {
   fetchPortalTickets,
   submitPortalTicket,
@@ -15,6 +24,23 @@ import {
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 import "@/styles/home2.css";
+import "@/styles/portal-tools.css";
+
+const TYPE_LABEL = "What is this about?";
+
+/** Four options, so the select becomes a Segmented control. The short labels
+    are the ones the ticket rows already use, so one ticket reads the same in
+    both places. */
+const TYPE_ITEMS = TICKET_TYPE_OPTIONS.map((option) => ({
+  value: option.value,
+  label: TICKET_TYPE_LABELS[option.value],
+}));
+
+const STATUS_VARIANTS: Record<PortalTicket["status"], ChipVariant> = {
+  open: "neutral",
+  in_progress: "pending",
+  resolved: "active",
+};
 
 function formatDate(value: string): string {
   return new Date(value).toLocaleDateString(undefined, {
@@ -24,14 +50,9 @@ function formatDate(value: string): string {
   });
 }
 
-function statusClass(status: PortalTicket["status"]): string {
-  if (status === "resolved") return "admin-status active";
-  if (status === "in_progress") return "admin-status";
-  return "admin-status error";
-}
-
 export default function PortalSupport() {
-  const { session } = useAuth();
+  const { session, user } = useAuth();
+  const { photoUrl, initials, displayName } = usePortalProfile(user);
   const [tickets, setTickets] = useState<PortalTicket[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,128 +115,117 @@ export default function PortalSupport() {
   };
 
   return (
-    <div className="home2-page">
+    <div className="home2-page ptools-page">
       <div className="grain" aria-hidden="true" />
 
       <main className="portal-dash dark carrier-sheet-dash">
         <div className="wrap carrier-sheet-wrap">
-          <header className="carrier-sheet-header">
-            <Link to="/" className="portal-hero-logo" aria-label="PNCL home">
-              <PNCLLogo height={40} />
-            </Link>
-            <div className="carrier-sheet-header-copy">
-              <p className="portal-welcome">Support tickets</p>
-              <p className="portal-meta">
-                Request hierarchy changes, dispute commissions, or ask PNCL anything.
-              </p>
-            </div>
-            <Link to="/portal" className="admin-back-link">
-              <ArrowLeft size={16} aria-hidden="true" />
-              Back to portal
-            </Link>
-          </header>
+          <PortalHeader
+            name={displayName}
+            email={user?.email}
+            initials={initials}
+            photoUrl={photoUrl}
+          />
 
-          <div className="carrier-sheet-panel portal-profile-panel">
-            <div className="carrier-sheet-panel-head">
-              <div>
-                <h1>Open a ticket</h1>
-                <p>
-                  Tell us what you need. PNCL admins are notified right away and will follow up by
-                  email.
-                </p>
-              </div>
-            </div>
+          <PortalSubpageHeader title="Support" />
 
-            <form className="admin-form portal-profile-form" onSubmit={(event) => void handleSubmit(event)}>
-              <div className="portal-profile-form-grid">
-                <label className="admin-field">
-                  <span>What is this about?</span>
-                  <select
+          <p className="portal-panel-note">
+            Request hierarchy changes, dispute commissions, or ask PNCL anything.
+          </p>
+
+          <div className="ptools-stack">
+            <Pane title="Open a ticket">
+              <form
+                className="ptools-form"
+                onSubmit={(event) => void handleSubmit(event)}
+              >
+                <div className="ptools-group">
+                  <span className="ptools-group-label">
+                    {TYPE_LABEL}
+                  </span>
+                  <Segmented
+                    items={TYPE_ITEMS}
                     value={type}
-                    onChange={(event) => setType(event.target.value as PortalTicketType)}
-                  >
-                    {TICKET_TYPE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="admin-field">
-                  <span>Subject</span>
-                  <input
-                    type="text"
-                    value={subject}
-                    maxLength={200}
-                    required
-                    placeholder="Short summary"
-                    onChange={(event) => setSubject(event.target.value)}
+                    onChange={(value) => setType(value as PortalTicketType)}
+                    label={TYPE_LABEL}
                   />
-                </label>
-              </div>
+                </div>
 
-              <label className="admin-field">
-                <span>Details</span>
-                <textarea
-                  value={description}
-                  rows={5}
-                  maxLength={5000}
+                <Field
+                  label="Subject"
+                  id="ticket-subject"
                   required
-                  placeholder="Include policy numbers, names, dates — anything that helps us resolve this quickly."
-                  onChange={(event) => setDescription(event.target.value)}
+                  maxLength={200}
+                  placeholder="Short summary"
+                  value={subject}
+                  onChange={(event) => setSubject(event.target.value)}
                 />
-              </label>
 
-              <div className="admin-form-actions">
-                <button type="submit" className="admin-primary-btn" disabled={submitting}>
-                  <LifeBuoy size={15} aria-hidden="true" />
-                  {submitting ? "Submitting..." : "Submit ticket"}
-                </button>
-              </div>
-            </form>
-          </div>
+                <Field
+                  label="Details"
+                  id="ticket-details"
+                  required
+                  hint="Policy numbers, names and dates all help us resolve it faster."
+                  value={description}
+                  onChange={(event) => setDescription(event.target.value)}
+                >
+                  <textarea className="portal-textarea" rows={5} maxLength={5000} />
+                </Field>
 
-          <div className="carrier-sheet-panel portal-profile-panel">
-            <div className="carrier-sheet-panel-head">
-              <div>
-                <h2>Your tickets</h2>
-                <p>Status updates and resolutions appear here.</p>
-              </div>
-            </div>
+                <div>
+                  <button type="submit" className="ptools-cta" disabled={submitting}>
+                    <LifeBuoy size={15} aria-hidden="true" />
+                    {submitting ? "Submitting..." : "Submit ticket"}
+                  </button>
+                </div>
+              </form>
+            </Pane>
 
-            {loading ? (
-              <div className="portal-incentives-loading">
-                <span className="onboarding-spinner" aria-hidden="true" />
-                <span>Loading tickets...</span>
-              </div>
-            ) : error ? (
-              <p className="admin-error">{error}</p>
-            ) : tickets.length === 0 ? (
-              <p className="portal-panel-note">You haven&apos;t submitted any tickets yet.</p>
-            ) : (
-              <ul className="portal-documents-list">
-                {tickets.map((ticket) => (
-                  <li key={ticket.id} className="portal-documents-item portal-ticket-item">
-                    <div className="portal-documents-copy">
-                      <strong>{ticket.subject}</strong>
-                      <span>
-                        {TICKET_TYPE_LABELS[ticket.type]} · Submitted {formatDate(ticket.createdAt)}
-                      </span>
+            <Pane title="Your tickets" aside={loading || error ? undefined : `${tickets.length}`}>
+              {loading && (
+                <div className="ptools-rows" aria-busy="true" aria-label="Loading tickets">
+                  <Skeleton variant="row" />
+                  <Skeleton variant="row" />
+                </div>
+              )}
+
+              {!loading && error && <p className="ptools-error">{error}</p>}
+
+              {!loading && !error && tickets.length === 0 && (
+                <EmptyState
+                  icon={<Inbox aria-hidden="true" />}
+                  title="No tickets yet"
+                  body="Send one above and its status shows up here."
+                />
+              )}
+
+              {!loading && !error && tickets.length > 0 && (
+                <ul className="ptools-rows">
+                  {tickets.map((ticket) => (
+                    <li key={ticket.id}>
+                      <ListRow
+                        label={ticket.subject}
+                        secondary={`${TICKET_TYPE_LABELS[ticket.type]} · Submitted ${formatDate(ticket.createdAt)}`}
+                        trailing={
+                          <Chip variant={STATUS_VARIANTS[ticket.status]}>
+                            {TICKET_STATUS_LABELS[ticket.status]}
+                          </Chip>
+                        }
+                      />
                       {ticket.resolution && (
-                        <p className="portal-ticket-resolution">PNCL: {ticket.resolution}</p>
+                        <p className="ptools-note">PNCL: {ticket.resolution}</p>
                       )}
-                    </div>
-                    <span className={statusClass(ticket.status)}>
-                      {TICKET_STATUS_LABELS[ticket.status]}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Pane>
           </div>
         </div>
       </main>
+
+      {/* Outside <main> so the fixed bar never inherits a page containing block. */}
+      <BottomNav />
     </div>
   );
 }
