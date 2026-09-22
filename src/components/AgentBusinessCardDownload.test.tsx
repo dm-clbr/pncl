@@ -63,6 +63,7 @@ describe("AgentBusinessCardDownload", () => {
       />,
     );
 
+    expect(screen.getByRole("region", { name: "PDF business card" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Download PDF business card for Avery Rivera" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Share PDF business card for Avery Rivera" })).toBeDisabled();
     expect(screen.getByRole("status")).toHaveTextContent(/add a valid phone number below and save your profile/i);

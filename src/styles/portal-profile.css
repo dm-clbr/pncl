@@ -16,11 +16,13 @@
 
 /* Single column always, on a measure a form can be read at. The wrap runs to
    1400px, which would otherwise stretch every control across the viewport. */
-.home2-page .portal-profile-details {
+.home2-page .portal-profile-details,
+.home2-page .portal-profile-team {
   max-width: 680px;
 }
 
-.home2-page .portal-profile-details .portal-pane > * + * {
+.home2-page .portal-profile-details .portal-pane > * + *,
+.home2-page .portal-profile-team .portal-pane > * + * {
   margin-top: var(--portal-gap);
 }
 
@@ -184,6 +186,169 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+/* ── PDF business card ──────────────────────────────────────────────────── */
+
+/* The preview stands in for the printed card, so it keeps its 3.5:2 ratio and
+   the .portal-business-card-* internals from home2.css. Capped because the
+   pane's 680px measure would otherwise print a 388px-tall card. */
+.home2-page .portal-profile-card {
+  max-width: 420px;
+}
+
+/* Two equal 44px targets, 8px apart, side by side at every width: the card is
+   one action pair, not a stack, and 175px each still fits "Creating PDF..."
+   inside a 390px viewport. */
+.home2-page .portal-profile-card-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.home2-page .portal-profile-card-btn {
+  justify-content: center;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.home2-page .portal-profile-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* The lock glyph carries the state, not a colour: --portal-accent is a spark
+   for urgent work, and this is a precondition, not an error. */
+.home2-page .portal-profile-card-locked {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  line-height: 1.45;
+}
+
+.home2-page .portal-profile-card-locked svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--portal-text-faint);
+}
+
+.home2-page .portal-profile-card-note {
+  margin: 0;
+  color: var(--portal-text-faint);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-micro);
+  line-height: 1.45;
+}
+
+/* ── Team tab ───────────────────────────────────────────────────────────── */
+
+.home2-page .portal-profile-team {
+  display: flex;
+  flex-direction: column;
+  gap: var(--portal-gap);
+}
+
+/* Rows carry the 44px floor themselves, so the list needs no spacer; a
+   hairline is what keeps a long list readable. */
+.home2-page .portal-profile-rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home2-page .portal-profile-rows > li + li {
+  border-top: 1px solid var(--portal-rule);
+}
+
+/* Skeletons carry no hairline of their own, so without a spacer three 44px
+   blocks read as one tall block instead of three rows. */
+.home2-page .portal-profile-rows[aria-busy="true"] {
+  gap: 8px;
+}
+
+.home2-page .portal-profile-invites {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home2-page .portal-profile-subhead {
+  margin: 0;
+  color: var(--portal-text-faint);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-label);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* The referral URL under its row. Manrope, not a mono face: the design system
+   ships one family. user-select: all makes one tap grab the whole link when
+   the clipboard write is blocked. */
+.home2-page .portal-profile-invite-url {
+  display: block;
+  margin: 0 10px 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--portal-border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  line-height: 1.4;
+  word-break: break-all;
+  user-select: all;
+}
+
+.home2-page .portal-profile-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--portal-text-strong);
+  cursor: pointer;
+  transition: border-color 120ms var(--portal-ease-out);
+}
+
+.home2-page .portal-profile-copy:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.home2-page .portal-profile-copy:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.home2-page .portal-profile-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.home2-page .portal-profile-error p {
+  margin: 0;
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+}
+
+/* A form's own submit sits at its natural width; the flex column would
+   otherwise stretch it edge to edge. */
+.home2-page .portal-profile-form > .portal-profile-btn {
+  align-self: flex-start;
 }
 
 /* ── Sticky save bar ────────────────────────────────────────────────────── */

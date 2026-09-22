@@ -159,4 +159,11 @@ describe("portal profile details tab", () => {
     expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Portal sections" })).toBeInTheDocument();
   });
+
+  it("opens the team tab panel", async () => {
+    renderProfile();
+
+    fireEvent.click(await screen.findByRole("tab", { name: "Team" }));
+    expect(screen.getByRole("tabpanel", { name: "Team" })).toBeInTheDocument();
+  });
 });
