@@ -84,6 +84,7 @@ import PortalBrandAssetsList from "@/components/PortalBrandAssetsList";
 import PortalDashboardFilesList from "@/components/PortalDashboardFilesList";
 import PortalPrimaryNav from "@/components/PortalPrimaryNav";
 import PortalBentoStage from "@/components/PortalBentoStage";
+import PortalNoticeBanner from "@/components/PortalNoticeBanner";
 import LiquidGradientCanvas from "@/components/ui/liquid-gradient";
 import { usePortalGradientTuner } from "@/components/PortalGradientTuner";
 import PortalTile from "@/components/PortalBentoTile";
@@ -96,25 +97,6 @@ import { toast } from "sonner";
 import "@/styles/home2.css";
 import "@/styles/portal-bento.css";
 import "@/styles/portal-tile.css";
-
-/** Dismissals live in sessionStorage on purpose: a permanent dismiss would hide
-    an account-recovery problem. Storage can be blocked, so both calls swallow
-    the failure and the dismiss then lasts for this page only. */
-function isNoticeDismissed(key: string) {
-  try {
-    return window.sessionStorage.getItem(key) === "1";
-  } catch {
-    return false;
-  }
-}
-
-function rememberNoticeDismissed(key: string) {
-  try {
-    window.sessionStorage.setItem(key, "1");
-  } catch {
-    // Storage blocked; component state still hides the banner until the next load.
-  }
-}
 
 const PORTAL_SOCIAL_LINKS = [
   {
@@ -256,7 +238,6 @@ export default function PortalDashboard() {
     displayName,
     loading: profileLoading,
   } = usePortalProfile(portalUser);
-  const [dismissedNoticeKey, setDismissedNoticeKey] = useState<string | null>(null);
   const calendar = usePortalGoogleCalendar();
   const { members: downlineMembers } = usePortalDownline();
   const { invites: referralInvites } = usePortalReferrals();
@@ -324,15 +305,6 @@ export default function PortalDashboard() {
             action: "Review and sync",
           }
         : null;
-  // ponytail: reads sessionStorage during render. Only the dismiss button below
-  // writes the flag, and its state update re-renders this component.
-  const recoveryDismissKey = `portal-notice-dismissed:recovery-${recoveryEmailNotice}`;
-  const recoveryDismissed =
-    dismissedNoticeKey === recoveryDismissKey || isNoticeDismissed(recoveryDismissKey);
-  const dismissRecoveryNotice = () => {
-    rememberNoticeDismissed(recoveryDismissKey);
-    setDismissedNoticeKey(recoveryDismissKey);
-  };
 
   /** Completed-of-total per phase, for the progress tile's reveal. */
   const phaseBreakdown = useMemo(() => {
@@ -1053,50 +1025,27 @@ export default function PortalDashboard() {
           <PortalPrimaryNav />
 
           {resignNotices.map((notice) => (
-            <div key={notice.href} className="pbanner" role="alert">
-              <span className="pbanner-icon" aria-hidden="true">
-                <FileSignature size={20} strokeWidth={2.25} />
-              </span>
-              <div className="pbanner-copy">
-                <strong>{notice.title}</strong>
-                <p>{notice.body}</p>
-              </div>
-              <div className="pbanner-actions">
-                <Link to={notice.href} className="pbanner-link">
-                  {notice.cta}
-                  <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
-                </Link>
-              </div>
-            </div>
+            <PortalNoticeBanner
+              key={notice.href}
+              role="alert"
+              icon={<FileSignature size={20} strokeWidth={2.25} />}
+              title={notice.title}
+              body={notice.body}
+              href={notice.href}
+              cta={notice.cta}
+            />
           ))}
 
-          {recoveryEmailNoticeContent && !recoveryDismissed && (
-            <div
-              className="pbanner"
+          {recoveryEmailNoticeContent && (
+            <PortalNoticeBanner
               role={recoveryEmailNotice === "error" ? "alert" : "status"}
-            >
-              <span className="pbanner-icon" aria-hidden="true">
-                <Shield size={20} strokeWidth={2.25} />
-              </span>
-              <div className="pbanner-copy">
-                <strong>{recoveryEmailNoticeContent.title}</strong>
-                <p>{recoveryEmailNoticeContent.description}</p>
-              </div>
-              <div className="pbanner-actions">
-                <Link to="/portal/profile?tab=details" className="pbanner-link">
-                  {recoveryEmailNoticeContent.action}
-                  <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
-                </Link>
-                <button
-                  type="button"
-                  className="pbanner-dismiss"
-                  onClick={dismissRecoveryNotice}
-                  aria-label="Dismiss"
-                >
-                  <X size={16} strokeWidth={2.25} aria-hidden="true" />
-                </button>
-              </div>
-            </div>
+              icon={<Shield size={20} strokeWidth={2.25} />}
+              title={recoveryEmailNoticeContent.title}
+              body={recoveryEmailNoticeContent.description}
+              href="/portal/profile?tab=details"
+              cta={recoveryEmailNoticeContent.action}
+              dismissKey={`portal-notice-dismissed:recovery-${recoveryEmailNotice}`}
+            />
           )}
 
           <PortalBentoStage>

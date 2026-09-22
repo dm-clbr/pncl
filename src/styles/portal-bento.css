@@ -388,6 +388,13 @@
     /* Icon 20px + gap 14px, minus the link's 4px side padding. */
     padding-left: 30px;
   }
+
+  /* Pane padding is 14px here, so the desktop -14px would put the button flush
+     with the border and its focus ring across it. -12px keeps the X glyph 16px
+     from the pane edge, the same inset as desktop. */
+  .pbanner-dismiss {
+    margin-right: -12px;
+  }
 }
 
 /* ── Stage and camera ───────────────────────────────────────────────────── */
