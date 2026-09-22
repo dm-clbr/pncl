@@ -26,6 +26,7 @@ import {
 import { createPortal } from "react-dom";
 import { ChevronDown } from "lucide-react";
 import { usePortalCamera } from "@/components/PortalBentoStage";
+import { portalRoot } from "@/components/portal-tile-helpers";
 
 /** translateZ per grid row, so lower rows sit nearer the camera. */
 const ROW_DEPTH_PX = 12 / 3;
@@ -184,6 +185,9 @@ export default function PortalTile({
     const onDown = (event: PointerEvent) => {
       const target = event.target as Node;
       if (cardRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      // A dialog opened from the menu (the incentive lightbox) portals out of
+      // it, so a press inside that dialog is not a press outside the menu.
+      if (target instanceof Element && target.closest('[role="dialog"]')) return;
       onOpenChange?.(false);
     };
     document.addEventListener("keydown", onKey, true);
@@ -273,6 +277,8 @@ export default function PortalTile({
         </div>
       </div>
 
+      {/* Into .home2-page, not body: the reveal content (incentive rows, brand
+          assets, the referral panel) is styled under that scope. */}
       {hasMenu &&
         open &&
         createPortal(
@@ -301,7 +307,7 @@ export default function PortalTile({
             </div>
             <div className="ptile-menu-body">{reveal}</div>
           </div>,
-          document.body,
+          portalRoot(),
         )}
     </>
   );

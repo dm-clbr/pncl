@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { ArrowUpRight, X } from "lucide-react";
 import PortalIncentiveMedia from "@/components/PortalIncentiveMedia";
+import { portalRoot } from "@/components/portal-tile-helpers";
 import type { PortalIncentive } from "@/lib/portal-incentives";
 
-function PortalIncentiveLightbox({
+export function PortalIncentiveLightbox({
   item,
   onClose,
 }: {
@@ -23,7 +25,9 @@ function PortalIncentiveLightbox({
     };
   }, [onClose]);
 
-  return (
+  // Out of whatever opened it: inside the bento menu, the menu's backdrop-filter
+  // would make it the containing block for this fixed dialog and clip it.
+  return createPortal(
     <div className="portal-incentive-lightbox" role="dialog" aria-modal="true" aria-label={item.title}>
       <button
         type="button"
@@ -52,7 +56,8 @@ function PortalIncentiveLightbox({
           </a>
         )}
       </div>
-    </div>
+    </div>,
+    portalRoot(),
   );
 }
 

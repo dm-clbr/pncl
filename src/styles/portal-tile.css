@@ -592,8 +592,8 @@ button.ptile-action {
    The blur is what makes it read as a layer of glass over the page rather than
    a grey box sitting on top of it. */
 .ptile-menu {
-  /* Portaled to document.body, so it sits outside .portal-bento and inherits
-     none of its variables. These are the tokens the menu actually uses. */
+  /* Portaled out of .portal-bento (into .home2-page), so it inherits none of
+     its variables. These are the tokens the menu actually uses. */
   --u: 4px;
   --tile-radius: 22px;
   --t-label: 10px;
@@ -839,12 +839,16 @@ button.ptile-action {
   margin: 6px 10px 4px;
 }
 
-/* Incentive rows render inside the body-portaled menu, out of .home2-page's
-   reach, so their menu styling lives here: poster thumbnail, title, kind. */
-.ptile-menu .portal-incentives-list {
+/* Incentive and brand-asset rows carry home2.css's boxed row style (square
+   corners, ink fill, mono uppercase titles). In the menu they read like the
+   link rows instead: flat, rounded, sans. Same specificity as home2's rules,
+   so these win on source order; portal-tile.css loads after home2.css. */
+.ptile-menu .portal-incentives-list,
+.ptile-menu .portal-brand-assets-list {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  padding: 0;
 }
 
 .ptile-menu .portal-incentive-row {
@@ -878,6 +882,7 @@ button.ptile-action {
   aspect-ratio: 2 / 3;
   overflow: hidden;
   border-radius: 6px;
+  border: none;
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -898,9 +903,13 @@ button.ptile-action {
 }
 
 .ptile-menu .portal-incentive-row-copy strong {
+  font-family: inherit;
   font-size: var(--t-body);
   font-weight: 500;
   line-height: 1.35;
+  letter-spacing: normal;
+  text-transform: none;
+  color: inherit;
 }
 
 .ptile-menu .portal-incentive-row-copy span {
@@ -913,7 +922,14 @@ button.ptile-action {
 
 .ptile-menu .portal-incentive-row-icon {
   flex-shrink: 0;
+  color: inherit;
   opacity: 0.5;
+}
+
+.ptile-menu .portal-incentive-row:hover .portal-incentive-row-icon {
+  color: inherit;
+  transform: none;
+  opacity: 1;
 }
 
 /* Each selector here has to match or beat the specificity of the rule it is

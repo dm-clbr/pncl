@@ -42,6 +42,7 @@ import {
 } from "@/lib/portal-dashboard-section-types";
 import type { PortalDashboardSection } from "@/lib/portal-dashboard-tabs";
 import PortalReferralPanel from "@/components/PortalReferralPanel";
+import { isOutbound, useSlowLoading } from "@/components/portal-tile-helpers";
 import { hasAdminConsoleAccess, isAdminAssist, isGenesisAdmin } from "@/lib/roles";
 import {
   completePortalTodo,
@@ -113,11 +114,6 @@ function pad(value: number): string {
 /** "1 item", "7 items". */
 function count(n: number, noun: string): string {
   return `${n} ${noun}${n === 1 ? "" : "s"}`;
-}
-
-/** Offsite when the href is absolute http(s) and not this origin. */
-function isOutbound(href: string): boolean {
-  return /^https?:\/\//i.test(href) && !href.startsWith(window.location.origin);
 }
 
 /** Tier 3 list for a section, with its existing empty and loading copy kept. */
@@ -242,15 +238,7 @@ export default function PortalDashboard() {
   } = usePortalProfile(portalUser);
   // UI only: after 10 s of loading, the Brand assets reveal says so instead of
   // showing "Loading" forever. The hook is untouched; nothing falls back silently.
-  const [brandAssetsSlow, setBrandAssetsSlow] = useState(false);
-  useEffect(() => {
-    if (!brandAssetsLoading) {
-      setBrandAssetsSlow(false);
-      return;
-    }
-    const timer = window.setTimeout(() => setBrandAssetsSlow(true), 10_000);
-    return () => window.clearTimeout(timer);
-  }, [brandAssetsLoading]);
+  const brandAssetsSlow = useSlowLoading(brandAssetsLoading);
 
   const resolvedTodos = useMemo(() => {
     const carrierApplicationsDescription =
@@ -501,7 +489,14 @@ export default function PortalDashboard() {
         title="Referral links"
         icon={<Link2 {...ICON} />}
         {...menuProps("referrals")}
-        reveal={<PortalReferralPanel embedded />}
+        reveal={
+          <div className="ptile-reveal-body">
+            <PortalReferralPanel embedded />
+            <Link className="ptile-link" to="/portal/profile?tab=team">
+              Open team dashboard
+            </Link>
+          </div>
+        }
       />,
     );
   }
