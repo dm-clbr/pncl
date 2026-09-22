@@ -3,19 +3,15 @@ import { Link } from "react-router-dom";
 import {
   ArrowUpRight,
   Award,
-  Building2,
-  CalendarDays,
   ClipboardList,
   FileSignature,
   GraduationCap,
   Link2,
   LogOut,
-  MapPinned,
   Palette,
   Shield,
   TrendingUp,
   UserRound,
-  Users,
   Wrench,
   X,
 } from "lucide-react";
@@ -46,12 +42,10 @@ import {
 } from "@/lib/portal-dashboard-section-types";
 import type { PortalDashboardSection } from "@/lib/portal-dashboard-tabs";
 import PortalReferralPanel from "@/components/PortalReferralPanel";
-import PortalDownlinePanel from "@/components/PortalDownlinePanel";
 import { hasAdminConsoleAccess, isAdminAssist, isGenesisAdmin } from "@/lib/roles";
 import {
   completePortalTodo,
   derivePortalPhase,
-  isRequiredFormTodo,
   isTodoCompleted,
   PORTAL_PHASE_LABELS,
 } from "@/lib/portal-todos";
@@ -64,15 +58,6 @@ import {
 import { usePortalW9 } from "@/hooks/usePortalW9";
 import { usePortalDirectDeposit } from "@/hooks/usePortalDirectDeposit";
 import { usePortalIca } from "@/hooks/usePortalIca";
-import { usePortalGoogleCalendar } from "@/hooks/usePortalGoogleCalendar";
-import { usePortalDownline } from "@/hooks/usePortalDownline";
-import { usePortalReferrals } from "@/hooks/usePortalReferrals";
-import { isReferralInviteCopyable } from "@/lib/portal-referrals";
-import {
-  calendarEventSortValue,
-  formatCalendarEventDate,
-  formatCalendarEventTime,
-} from "@/lib/portal-google-calendar";
 import {
   refreshPortalUser,
   shouldShowDirectDepositResignNotice,
@@ -119,9 +104,7 @@ const PORTAL_SOCIAL_LINKS = [
   },
 ] as const;
 
-const SALES_TOOLS_ID = "sales-tools";
-const RESOURCE_SECTION_IDS = ["training", "account", "pncl"];
-const GRID_COLUMNS = 4;
+const GRID_COLUMNS = 3;
 
 function pad(value: number): string {
   return String(value).padStart(2, "0");
@@ -132,10 +115,9 @@ function count(n: number, noun: string): string {
   return `${n} ${noun}${n === 1 ? "" : "s"}`;
 }
 
-function sectionItems(section: PortalDashboardSection): string[] {
-  if (isLinksDashboardSection(section)) return section.links.map((l) => l.title);
-  if (isDownloadsDashboardSection(section)) return section.files.map((f) => f.title);
-  return [];
+/** Offsite when the href is absolute http(s) and not this origin. */
+function isOutbound(href: string): boolean {
+  return /^https?:\/\//i.test(href) && !href.startsWith(window.location.origin);
 }
 
 /** Tier 3 list for a section, with its existing empty and loading copy kept. */
@@ -145,12 +127,14 @@ function SectionReveal({
   incentivesLoading,
   brandAssets,
   brandAssetsLoading,
+  brandAssetsSlow,
 }: {
   section: PortalDashboardSection;
   incentives: ReturnType<typeof usePortalIncentives>["incentives"];
   incentivesLoading: boolean;
   brandAssets: ReturnType<typeof usePortalBrandAssets>["assets"];
   brandAssetsLoading: boolean;
+  brandAssetsSlow: boolean;
 }) {
   if (isLinksDashboardSection(section)) {
     if (section.links.length === 0) {
@@ -158,26 +142,29 @@ function SectionReveal({
     }
     return (
       <ul className="ptile-reveal-list">
-        {section.links.map((link) => (
-          <li key={link.id}>
-            {link.external ? (
-              <a
-                className="ptile-link is-external"
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {link.title}
-                <ArrowUpRight size={13} strokeWidth={2} aria-hidden="true" />
-                <span className="ptile-sr">opens in a new tab</span>
-              </a>
-            ) : (
-              <Link className="ptile-link" to={link.href}>
-                {link.title}
-              </Link>
-            )}
-          </li>
-        ))}
+        {section.links.map((link) => {
+          const outbound = isOutbound(link.href);
+          return (
+            <li key={link.id}>
+              {link.external ? (
+                <a
+                  className={`ptile-link${outbound ? " is-external" : ""}`}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {link.title}
+                  {outbound && <ArrowUpRight size={14} strokeWidth={1.75} aria-hidden="true" />}
+                  <span className="ptile-sr">opens in a new tab</span>
+                </a>
+              ) : (
+                <Link className="ptile-link" to={link.href}>
+                  {link.title}
+                </Link>
+              )}
+            </li>
+          );
+        })}
       </ul>
     );
   }
@@ -199,7 +186,15 @@ function SectionReveal({
     );
   }
 
-  if (brandAssetsLoading) return <p className="ptile-micro">Loading brand assets...</p>;
+  if (brandAssetsLoading) {
+    return (
+      <p className="ptile-micro">
+        {brandAssetsSlow
+          ? "Brand assets are taking longer than usual to load. Refresh the page if this continues."
+          : "Loading brand assets..."}
+      </p>
+    );
+  }
 
   return brandAssets.length > 0 ? (
     <>
@@ -245,9 +240,17 @@ export default function PortalDashboard() {
     displayName,
     loading: profileLoading,
   } = usePortalProfile(portalUser);
-  const calendar = usePortalGoogleCalendar();
-  const { members: downlineMembers } = usePortalDownline();
-  const { invites: referralInvites } = usePortalReferrals();
+  // UI only: after 10 s of loading, the Brand assets reveal says so instead of
+  // showing "Loading" forever. The hook is untouched; nothing falls back silently.
+  const [brandAssetsSlow, setBrandAssetsSlow] = useState(false);
+  useEffect(() => {
+    if (!brandAssetsLoading) {
+      setBrandAssetsSlow(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setBrandAssetsSlow(true), 10_000);
+    return () => window.clearTimeout(timer);
+  }, [brandAssetsLoading]);
 
   const resolvedTodos = useMemo(() => {
     const carrierApplicationsDescription =
@@ -280,11 +283,6 @@ export default function PortalDashboard() {
   );
   const completedTodoCount = resolvedTodos.length - pendingTodos.length;
   const currentPhase = derivePortalPhase(resolvedTodos);
-  const progressPercent =
-    resolvedTodos.length === 0
-      ? 0
-      : Math.round((completedTodoCount / resolvedTodos.length) * 100);
-  const pendingRequiredForms = pendingTodos.some((todo) => isRequiredFormTodo(todo.id));
   const showIcaResignNotice = shouldShowIcaResignNotice(portalUser) && !icaSubmitted;
   const showW9ResignNotice = shouldShowW9ResignNotice(portalUser) && !w9Submitted;
   const showDirectDepositResignNotice =
@@ -312,22 +310,6 @@ export default function PortalDashboard() {
             action: "Review and sync",
           }
         : null;
-
-  /** Completed-of-total per phase, for the progress tile's reveal. */
-  const phaseBreakdown = useMemo(() => {
-    const byPhase = new Map<string, { done: number; total: number }>();
-    for (const todo of resolvedTodos) {
-      const entry = byPhase.get(todo.phase) ?? { done: 0, total: 0 };
-      entry.total += 1;
-      if (todo.completed) entry.done += 1;
-      byPhase.set(todo.phase, entry);
-    }
-    return [...byPhase.entries()].map(([phase, counts]) => ({
-      phase,
-      label: PORTAL_PHASE_LABELS[phase as keyof typeof PORTAL_PHASE_LABELS] ?? phase,
-      ...counts,
-    }));
-  }, [resolvedTodos]);
 
   const displaySections = useMemo((): PortalDashboardSection[] => {
     if (dashboardSections.length > 0) {
@@ -370,72 +352,6 @@ export default function PortalDashboard() {
       },
     ];
   }, [dashboardSections]);
-
-  const sectionBuckets = useMemo(() => {
-    const salesTools = displaySections.find((s) => s.id === SALES_TOOLS_ID);
-    const incentivesSection = displaySections.find((s) => s.sectionType === "incentives");
-    const brandSection = displaySections.find((s) => s.sectionType === "brand_assets");
-    const resources = displaySections.filter(
-      (s) => RESOURCE_SECTION_IDS.includes(s.id) || isDownloadsDashboardSection(s),
-    );
-
-    const claimed = new Set<string>();
-    [salesTools, incentivesSection, brandSection, ...resources].forEach((s) => {
-      if (s) claimed.add(s.id);
-    });
-    const extras = displaySections.filter((s) => !claimed.has(s.id));
-
-    return { salesTools, incentivesSection, brandSection, resources, extras };
-  }, [displaySections]);
-
-  const resourceItems = useMemo(
-    () => sectionBuckets.resources.flatMap(sectionItems),
-    [sectionBuckets.resources],
-  );
-
-  /**
-   * Carriers carry no status field, only `section`. The codebase already treats
-   * "automatic" as the no-action group, so that is the split shown.
-   */
-  const carrierSplit = useMemo(() => {
-    let automatic = 0;
-    for (const carrier of portalCarriers) {
-      if (carrier.section.trim().toLowerCase() === "automatic") automatic += 1;
-    }
-    return { automatic, action: portalCarriers.length - automatic };
-  }, [portalCarriers]);
-
-  const teamActive = useMemo(
-    () =>
-      downlineMembers.filter((member) => {
-        if (member.onboardingStatus === "expired") return false;
-        if (member.portalPhase === "complete") return false;
-        if (member.todoProgress) {
-          return (
-            member.todoProgress.completedCount < member.todoProgress.totalCount ||
-            !member.hasPortalAccount
-          );
-        }
-        return true;
-      }).length,
-    [downlineMembers],
-  );
-
-  const activeInvites = useMemo(
-    () => referralInvites.filter((invite) => isReferralInviteCopyable(invite)),
-    [referralInvites],
-  );
-
-  const sortedEvents = useMemo(() => {
-    const events = calendar.data?.events ?? [];
-    return [...events].sort((a, b) => calendarEventSortValue(a) - calendarEventSortValue(b));
-  }, [calendar.data]);
-  const nextEvent = sortedEvents[0] ?? null;
-
-  const licensedStates = profile?.state_licenses?.length ?? 0;
-  const outstandingRequired = [icaSubmitted, w9Submitted, directDepositSubmitted].filter(
-    (done) => !done,
-  ).length;
 
   useEffect(() => {
     setPortalUser(authUser);
@@ -539,7 +455,6 @@ export default function PortalDashboard() {
       cta: "Complete direct deposit form",
     },
   ].filter(Boolean) as Array<{ title: string; body: string; href: string; cta: string }>;
-  const hasResignNotice = resignNotices.length > 0;
 
   const tiles: ReactNode[] = [];
   const slot = () => {
@@ -555,14 +470,7 @@ export default function PortalDashboard() {
     onOpenChange: handleOpen(id),
   });
 
-  const indexTile = (
-    id: string,
-    title: string,
-    items: string[],
-    reveal: ReactNode,
-    emptyCopy: string,
-  ) => {
-    const icon = sectionIcon(id, title);
+  const indexTile = (id: string, title: string, itemCount: number, reveal: ReactNode) => {
     const spot = slot();
     return (
       <PortalTile
@@ -571,399 +479,55 @@ export default function PortalDashboard() {
         row={spot.row}
         order={spot.order}
         title={title}
-        icon={icon}
-        headerCount={pad(items.length)}
-        ariaLabel={`${title}, ${items.length} items`}
+        icon={sectionIcon(id, title)}
+        headerCount={pad(itemCount)}
+        ariaLabel={`${title}, ${count(itemCount, "item")}`}
         {...menuProps(id)}
-        meta={items.length > 0 ? count(items.length, "item") : emptyCopy}
+        meta={count(itemCount, "item")}
         reveal={<div className="ptile-reveal-body">{reveal}</div>}
       />
     );
   };
 
-  // 01 Agent status
+  // 01 Referral links. No count; the panel owns the copy and the team dashboard link.
   {
     const spot = slot();
-    tiles.push(
-      <PortalTile
-        key="agent"
-        index={spot.index}
-        row={spot.row}
-        order={spot.order}
-        title="Agent Status"
-        icon={<UserRound {...ICON} />}
-        ariaLabel={`Agent status, current stage ${phaseLabel}`}
-        {...menuProps("agent")}
-        headerAside={
-          <span className="ptile-avatar" aria-hidden="true">
-            {photoUrl ? <img src={photoUrl} alt="" /> : <span>{initials}</span>}
-          </span>
-        }
-        meta={`${completedTodoCount} of ${resolvedTodos.length} steps complete`}
-        reveal={
-          <>
-            <span className="ptile-reveal-strong">{displayName}</span>
-            {agentEmail && <p>{agentEmail}</p>}
-            <Link className="ptile-link" to="/portal/profile">
-              View profile
-            </Link>
-          </>
-        }
-      />,
-    );
-  }
-
-  // 02 Onboarding progress
-  {
-    const spot = slot();
-    tiles.push(
-      <PortalTile
-        key="progress"
-        index={spot.index}
-        row={spot.row}
-        order={spot.order}
-        title="Onboarding Progress"
-        icon={<TrendingUp {...ICON} />}
-        ariaLabel={`Onboarding progress ${progressPercent} percent complete`}
-        {...menuProps("progress")}
-        meta={`${progressPercent}% complete, ${phaseLabel}`}
-        reveal={
-          <>
-            {phaseBreakdown.map((phase) => (
-              <div className="ptile-row" key={phase.phase}>
-                <span>{phase.label}</span>
-                <span className="ptile-row-count">
-                  {phase.done}/{phase.total}
-                </span>
-              </div>
-            ))}
-            <button
-              type="button"
-              className="ptile-action"
-              onClick={(event) => {
-                event.stopPropagation();
-                setChecklistOpen(true);
-              }}
-            >
-              Open checklist
-            </button>
-          </>
-        }
-      />,
-    );
-  }
-
-  // 03 Required forms
-  {
-    const spot = slot();
-    const allSigned = outstandingRequired === 0;
-    tiles.push(
-      <PortalTile
-        key="forms"
-        index={spot.index}
-        row={spot.row}
-        order={spot.order}
-        title="Required Forms"
-        icon={<FileSignature {...ICON} />}
-        urgent={hasResignNotice || pendingRequiredForms}
-        ariaLabel={`Required forms, ${outstandingRequired} outstanding`}
-        {...menuProps("forms")}
-        accent={hasResignNotice || outstandingRequired > 0}
-        meta={
-          hasResignNotice
-            ? "Action needed"
-            : outstandingRequired === 0
-              ? "All signed"
-              : `${outstandingRequired} outstanding`
-        }
-        reveal={
-          hasResignNotice ? (
-            <>
-              {resignNotices.map((notice) => (
-                <div key={notice.href}>
-                  <span className="ptile-reveal-strong">{notice.title}</span>
-                  <p>{notice.body}</p>
-                  <Link className="ptile-action" to={notice.href}>
-                    {notice.cta}
-                  </Link>
-                </div>
-              ))}
-            </>
-          ) : allSigned ? (
-            <p>All required forms are on file.</p>
-          ) : (
-            <>
-              {!icaSubmitted && (
-                <Link className="ptile-link" to="/portal/ica">
-                  Sign your ICA
-                </Link>
-              )}
-              {!w9Submitted && (
-                <Link className="ptile-link" to="/portal/w9">
-                  Submit your W-9
-                </Link>
-              )}
-              {!directDepositSubmitted && (
-                <Link className="ptile-link" to="/portal/direct-deposit">
-                  Set up direct deposit
-                </Link>
-              )}
-            </>
-          )
-        }
-      />,
-    );
-  }
-
-  // 04 Carrier appointments
-  {
-    const spot = slot();
-    tiles.push(
-      <PortalTile
-        key="carriers"
-        index={spot.index}
-        row={spot.row}
-        order={spot.order}
-        title="Carrier Appointments"
-        icon={<Building2 {...ICON} />}
-        ariaLabel={`${portalCarriers.length} carrier appointments`}
-        {...menuProps("carriers")}
-        meta={count(portalCarriers.length, "appointment")}
-        reveal={
-          <>
-            {portalCarriers.length === 0 ? (
-              <p>No carriers published yet.</p>
-            ) : (
-              <ul className="ptile-reveal-list">
-                {portalCarriers.slice(0, 8).map((carrier) => (
-                  <li key={carrier.id}>{carrier.carrier}</li>
-                ))}
-              </ul>
-            )}
-            <Link className="ptile-link" to="/portal/carriers">
-              Open carrier sheet
-            </Link>
-          </>
-        }
-      />,
-    );
-  }
-
-  // 05 Sales tools
-  if (sectionBuckets.salesTools) {
-    tiles.push(
-      indexTile(
-        "sales-tools",
-        "Sales Tools",
-        sectionItems(sectionBuckets.salesTools),
-        <SectionReveal
-          section={sectionBuckets.salesTools}
-          incentives={incentives}
-          incentivesLoading={incentivesLoading}
-          brandAssets={brandAssets}
-          brandAssetsLoading={brandAssetsLoading}
-        />,
-        "No tools published yet.",
-      ),
-    );
-  }
-
-  // 06 Team progress
-  {
-    const spot = slot();
-    tiles.push(
-      <PortalTile
-        key="team"
-        index={spot.index}
-        row={spot.row}
-        order={spot.order}
-        title="Team Progress"
-        icon={<Users {...ICON} />}
-        ariaLabel={`${teamActive} team members in progress`}
-        {...menuProps("team")}
-        meta={`${teamActive} of ${downlineMembers.length} in progress`}
-        reveal={<PortalDownlinePanel embedded />}
-      />,
-    );
-  }
-
-  // 07 Referral links
-  {
-    const spot = slot();
-    const latest = referralInvites[0];
     tiles.push(
       <PortalTile
         key="referrals"
         index={spot.index}
         row={spot.row}
         order={spot.order}
-        title="Referral Links"
+        title="Referral links"
         icon={<Link2 {...ICON} />}
-        ariaLabel={`${activeInvites.length} active referral links`}
         {...menuProps("referrals")}
-        meta={count(activeInvites.length, "active link")}
         reveal={<PortalReferralPanel embedded />}
       />,
     );
   }
 
-  // 08 Incentives
-  if (sectionBuckets.incentivesSection) {
-    tiles.push(
-      indexTile(
-        "incentives",
-        "Incentives",
-        incentives.map((item) => item.title),
-        <SectionReveal
-          section={sectionBuckets.incentivesSection}
-          incentives={incentives}
-          incentivesLoading={incentivesLoading}
-          brandAssets={brandAssets}
-          brandAssetsLoading={brandAssetsLoading}
-        />,
-        incentivesLoading ? "Loading incentives..." : "No incentives published yet.",
-      ),
-    );
-  }
-
-  // 09 Brand assets
-  if (sectionBuckets.brandSection) {
-    tiles.push(
-      indexTile(
-        "brand-assets",
-        "Brand Assets",
-        brandAssets.map((item) => item.title),
-        <SectionReveal
-          section={sectionBuckets.brandSection}
-          incentives={incentives}
-          incentivesLoading={incentivesLoading}
-          brandAssets={brandAssets}
-          brandAssetsLoading={brandAssetsLoading}
-        />,
-        brandAssetsLoading ? "Loading brand assets..." : "No brand assets published yet.",
-      ),
-    );
-  }
-
-  // 10 Calendar
-  {
-    const spot = slot();
-    const connection = calendar.data?.connection;
-    const stateLine = calendar.loading
-      ? "Loading your calendar"
-      : calendar.error
-        ? "Calendar preview is unavailable"
-        : !connection
-          ? "Google Calendar is not connected"
-          : connection.status === "reauthorization_required"
-            ? "Calendar authorization expired"
-            : !nextEvent
-              ? "No upcoming events"
-              : null;
-
-    tiles.push(
-      <PortalTile
-        key="calendar"
-        index={spot.index}
-        row={spot.row}
-        order={spot.order}
-        title="Calendar"
-        icon={<CalendarDays {...ICON} />}
-        ariaLabel="Calendar preview"
-        {...menuProps("calendar")}
-        meta={
-          stateLine ??
-          `${formatCalendarEventDate(nextEvent)}, ${formatCalendarEventTime(nextEvent)}`
-        }
-        reveal={
-          <>
-            {sortedEvents.length > 0 ? (
-              <ul className="ptile-reveal-list">
-                {sortedEvents.slice(0, 3).map((event) => (
-                  <li key={event.id}>
-                    {formatCalendarEventDate(event)} · {event.title}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p>Your primary calendar is clear for the next 14 days.</p>
-            )}
-            <Link className="ptile-link" to="/portal/calendar">
-              Open calendar
-            </Link>
-          </>
-        }
-      />,
-    );
-  }
-
-  // 11 Training and resources
-  if (sectionBuckets.resources.length > 0) {
-    tiles.push(
-      indexTile(
-        "resources",
-        "Training and Resources",
-        resourceItems,
-        <>
-          {sectionBuckets.resources.map((section) => (
-            <div key={section.id}>
-              <p className="ptile-reveal-label">{section.title}</p>
-              <SectionReveal
-                section={section}
-                incentives={incentives}
-                incentivesLoading={incentivesLoading}
-                brandAssets={brandAssets}
-                brandAssetsLoading={brandAssetsLoading}
-              />
-            </div>
-          ))}
-        </>,
-        "No resources published yet.",
-      ),
-    );
-  }
-
-  // 12 State map
-  {
-    const spot = slot();
-    tiles.push(
-      <PortalTile
-        key="state-map"
-        index={spot.index}
-        row={spot.row}
-        order={spot.order}
-        title="State Map"
-        icon={<MapPinned {...ICON} />}
-        ariaLabel={`${licensedStates} licensed states`}
-        {...menuProps("state-map")}
-        meta={count(licensedStates, "licensed state")}
-        reveal={
-          <>
-            <p>State availability and your licence numbers.</p>
-            <Link className="ptile-link" to="/portal/state-map">
-              Open state map
-            </Link>
-          </>
-        }
-      />,
-    );
-  }
-
-  // Anything the server returns that no named tile claimed.
-  sectionBuckets.extras.forEach((section) => {
+  // 02 onward: one card per dashboard section, in the order the server sends them.
+  displaySections.forEach((section) => {
+    const itemCount = isLinksDashboardSection(section)
+      ? section.links.length
+      : isDownloadsDashboardSection(section)
+        ? section.files.length
+        : section.sectionType === "incentives"
+          ? incentives.length
+          : brandAssets.length;
     tiles.push(
       indexTile(
         section.id,
         section.title,
-        sectionItems(section),
+        itemCount,
         <SectionReveal
           section={section}
           incentives={incentives}
           incentivesLoading={incentivesLoading}
           brandAssets={brandAssets}
           brandAssetsLoading={brandAssetsLoading}
+          brandAssetsSlow={brandAssetsSlow}
         />,
-        "Nothing published yet.",
       ),
     );
   });

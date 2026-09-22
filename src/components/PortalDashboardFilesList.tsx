@@ -1,29 +1,18 @@
-import { ArrowDownToLine, FileText } from "lucide-react";
 import { assetTypeLabel } from "@/lib/portal-brand-assets";
 import type { PortalDashboardFile } from "@/lib/portal-dashboard-tabs";
 
+/** Download rows in a card menu: the title, then a small file type chip. */
 export default function PortalDashboardFilesList({ items }: { items: PortalDashboardFile[] }) {
   return (
-    <div className="portal-brand-assets-list">
+    <ul className="ptile-reveal-list">
       {items.map((item) => (
-        <a
-          key={item.id}
-          href={item.url}
-          download={item.fileName}
-          className="portal-incentive-row portal-brand-asset-row"
-        >
-          <span className="portal-incentive-row-thumb">
-            <span className="portal-brand-asset-row-file" aria-hidden="true">
-              <FileText size={20} strokeWidth={1.75} />
-            </span>
-          </span>
-          <span className="portal-incentive-row-copy">
-            <strong>{item.title}</strong>
-            <span>{assetTypeLabel(item.contentType)}</span>
-          </span>
-          <ArrowDownToLine size={18} className="portal-incentive-row-icon" aria-hidden="true" />
-        </a>
+        <li key={item.id}>
+          <a className="ptile-link" href={item.url} download={item.fileName}>
+            {item.title}
+            <span className="ptile-chip">{assetTypeLabel(item.contentType)}</span>
+          </a>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }
