@@ -1,9 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import BottomNav from "@/components/portal/BottomNav";
+import ListRow from "@/components/portal/ListRow";
+import Pane from "@/components/portal/Pane";
+import PortalHeader from "@/components/portal/PortalHeader";
+import PortalSubpageHeader from "@/components/portal/PortalSubpageHeader";
+import Stepper from "@/components/portal/Stepper";
 import PinnacleFormPreview from "@/components/PinnacleFormPreview";
-import PNCLLogo from "@/components/PNCLLogo";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePortalProfile } from "@/hooks/usePortalProfile";
 import {
   EMPTY_CLIENT_INTAKE,
   getActiveIntakeSteps,
@@ -15,16 +20,24 @@ import {
   validateIntakeStep,
   formatReviewValue,
   type ClientIntakeFormData,
+  type ClientIntakeStep,
 } from "@/lib/client-intake";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 import "@/styles/home2.css";
-import "@/styles/onboarding.css";
+import "@/styles/portal-tools.css";
 import "@/styles/client-intake.css";
+
+/** Three stages, not 100 steps: the script, the rest of the Pinnacle form, the
+    review. Section names come from the step table in lib/client-intake. */
+const STAGES = ["Script", "Form", "Review"] as const;
+const FORM_SECTION = "Pinnacle form";
+const ERROR_ID = "intake-error";
 
 export default function PortalClientIntake() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { photoUrl, initials, displayName } = usePortalProfile(user);
   const [started, setStarted] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [data, setData] = useState<ClientIntakeFormData>(EMPTY_CLIENT_INTAKE);
@@ -121,6 +134,12 @@ export default function PortalClientIntake() {
     advance();
   };
 
+  /* ponytail: one DOM query beats a ref per control. One question is on screen
+     at a time, so the first aria-invalid element is the first error. */
+  const focusFirstError = () => {
+    document.querySelector<HTMLElement>('.pintake-control [aria-invalid="true"]')?.focus();
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (
       e.key === "Enter"
@@ -131,6 +150,10 @@ export default function PortalClientIntake() {
       && step.type !== "dual"
     ) {
       e.preventDefault();
+      if (!canAdvance) {
+        focusFirstError();
+        return;
+      }
       handleSubmit();
     }
   };
@@ -154,288 +177,311 @@ export default function PortalClientIntake() {
     trackPageView("portal_client_intake");
   }, []);
 
+  const stage = isReviewStep ? 3 : step?.section === FORM_SECTION ? 2 : 1;
+
+  /** Review answers in wizard order, grouped by the section they came from.
+      The index is the one goToStep needs, so the group keeps it. */
+  const reviewGroups = useMemo(() => {
+    const groups: { title: string; items: { step: ClientIntakeStep; index: number }[] }[] = [];
+    activeSteps.forEach((reviewStep, index) => {
+      const title = reviewStep.section ?? "Intake";
+      const last = groups[groups.length - 1];
+      if (last && last.title === title) last.items.push({ step: reviewStep, index });
+      else groups.push({ title, items: [{ step: reviewStep, index }] });
+    });
+    return groups;
+  }, [activeSteps]);
+
+  const advanceLabel = returnToReview
+    ? "Save and return"
+    : currentStep === activeSteps.length - 1
+      ? "Review form"
+      : "Continue";
+
+  const errorProps = validationError
+    ? { "aria-invalid": true as const, "aria-describedby": ERROR_ID }
+    : {};
+
+  const stepError = validationError && (
+    <p className="portal-field-error" id={ERROR_ID} role="alert">
+      {validationError}
+    </p>
+  );
+
   return (
-    <div className="home2-page onboarding-page">
+    <div className="home2-page ptools-page pintake-page">
       <div className="grain" aria-hidden="true" />
 
-      <header className="nav scrolled">
-        <div className="bar">
-          <Link to="/portal" className="lockup" aria-label="PNCL portal">
-            <PNCLLogo height={24} />
-          </Link>
-          <Link to="/portal/clients" className="btn btn-ghost">
-            <ArrowLeft size={16} aria-hidden="true" />
-            My clients
-          </Link>
-        </div>
-      </header>
+      <main className="portal-dash dark">
+        <div className={`wrap pintake-wrap${isReviewStep ? " pintake-wrap-wide" : ""}`}>
+          <PortalHeader
+            name={displayName}
+            email={user?.email}
+            initials={initials}
+            photoUrl={photoUrl}
+          />
 
-      {started && progress > 0 && (
-        <div className="onboarding-progress" aria-hidden="true">
-          <div className="onboarding-progress-fill" style={{ width: `${progress}%` }} />
-        </div>
-      )}
+          <PortalSubpageHeader
+            title="Client intake"
+            backTo="/portal/clients"
+            backLabel="My clients"
+          />
 
-      <main className="onboarding-main">
-        <div className={`onboarding-panel${isReviewStep ? " onboarding-panel-wide" : ""}`}>
+          <Stepper steps={STAGES} current={stage} label="Intake stages" />
+
+          {started && progress > 0 && (
+            <div className="pintake-progress" aria-hidden="true">
+              <div className="pintake-progress-fill" style={{ width: `${progress}%` }} />
+            </div>
+          )}
+
           {!started && (
-            <div className="onboarding-step">
-              <span className="eyebrow">Financial inventory</span>
-              <h2 className="h2">Client intake form</h2>
-              <p className="lead">
-                Walk through the Utah financial inventory script (questions 1–16) with your client.
-                After the script, fill in the remaining Pinnacle form fields, then review the completed
-                form before saving.
-              </p>
-              <button type="button" className="btn btn-accent btn-lg" onClick={() => setStarted(true)}>
-                Start intake <span className="arr">→</span>
-              </button>
+            <div className="ptools-stack">
+              <Pane title="Client intake form">
+                <p className="pintake-lede">
+                  Walk through the Utah financial inventory script (questions 1 to 16) with your
+                  client. After the script, fill in the remaining Pinnacle form fields, then review
+                  the completed form before saving.
+                </p>
+                <button
+                  type="button"
+                  className="ptools-cta pintake-start"
+                  onClick={() => setStarted(true)}
+                >
+                  Start intake
+                </button>
+              </Pane>
             </div>
           )}
 
           {started && isReviewStep && (
-            <div className={`onboarding-step ${transitioning ? "out" : ""}`}>
-              <span className="eyebrow">Review</span>
-              <h2 className="h3">Pinnacle form preview</h2>
-              <p className="lead">
-                Confirm everything looks correct on the form below. You can edit individual answers
-                before submitting.
-              </p>
+            <div className={`ptools-stack pintake-screen${transitioning ? " out" : ""}`}>
+              <Pane title="Pinnacle form preview">
+                <p className="pintake-lede">
+                  Confirm everything looks correct on the form below. Edit any answer and you come
+                  straight back here.
+                </p>
+                <PinnacleFormPreview data={data} />
+              </Pane>
 
-              <PinnacleFormPreview data={data} />
+              <Pane
+                title="Answers"
+                aside={<span className="pintake-count">{activeSteps.length} questions</span>}
+              >
+                {reviewGroups.map((group) => (
+                  <details key={group.title} className="pintake-answers">
+                    <summary className="pintake-answers-summary">
+                      <span>{group.title}</span>
+                      <span className="pintake-count">{group.items.length}</span>
+                    </summary>
+                    <div className="ptools-rows">
+                      {group.items.map(({ step: reviewStep, index }) => (
+                        <ListRow
+                          key={`${String(reviewStep.key)}-${index}`}
+                          label={reviewStep.question}
+                          secondary={formatReviewValue(reviewStep, data)}
+                          onClick={() => goToStep(index, true)}
+                          trailing={<span className="pintake-edit">Edit</span>}
+                        />
+                      ))}
+                    </div>
+                  </details>
+                ))}
+              </Pane>
 
-              <details className="onboarding-review-details" style={{ marginTop: "1.5rem" }}>
-                <summary>Edit individual answers</summary>
-                <ul className="onboarding-review-list" style={{ marginTop: "1rem" }}>
-                  {activeSteps.map((reviewStep, index) => (
-                    <li key={`${String(reviewStep.key)}-${index}`} className="onboarding-review-row">
-                      <div className="onboarding-review-content">
-                        <span className="onboarding-review-label">{reviewStep.question}</span>
-                        <span className="onboarding-review-value">
-                          {formatReviewValue(reviewStep, data)}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        className="onboarding-review-edit"
-                        onClick={() => goToStep(index, true)}
-                      >
-                        Edit
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </details>
-
-              <div className="onboarding-actions">
+              <div className="pintake-bar">
                 <button
                   type="button"
-                  className="btn btn-accent"
+                  className="ptools-cta pintake-back"
+                  onClick={() => goToStep(activeSteps.length - 1)}
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  className="ptools-cta pintake-next"
                   onClick={() => void performSubmit()}
                   disabled={loading}
                 >
-                  {loading ? "Saving…" : <>Save client <span className="arr">→</span></>}
+                  {loading ? "Saving..." : "Save client"}
                 </button>
               </div>
-
-              <button
-                type="button"
-                className="onboarding-back"
-                onClick={() => goToStep(activeSteps.length - 1)}
-              >
-                ← Back
-              </button>
             </div>
           )}
 
           {started && !isReviewStep && step && (
-            <div className={`onboarding-step ${transitioning ? "out" : ""}`}>
-              <span className="eyebrow">
+            <div className={`ptools-stack pintake-screen${transitioning ? " out" : ""}`}>
+              <p className="pintake-eyebrow">
                 {step.scriptQuestion
                   ? `Question ${step.scriptQuestion}`
                   : step.section ?? "Intake"}
-                {" · "}
-                Step {currentStep + 1} of {totalSteps}
-              </span>
-              <h2 className="h3">{step.question}</h2>
-              {step.subtitle && <p className="lead">{step.subtitle}</p>}
+              </p>
 
-              {step.type === "yesno" && (
-                <div className="onboarding-options">
-                  {step.options!.map((opt) => (
-                    <button
-                      key={opt}
-                      type="button"
-                      className={`onboarding-option ${currentValue === opt ? "selected" : ""}`}
-                      onClick={() => handleYesNo(opt)}
-                      disabled={loading}
-                    >
-                      {opt}
-                    </button>
-                  ))}
+              <Pane
+                title={step.question}
+                aside={
+                  <span className="pintake-count">
+                    Step {currentStep + 1} of {totalSteps}
+                  </span>
+                }
+              >
+                {step.subtitle && <p className="pintake-lede">{step.subtitle}</p>}
+
+                <div className="pintake-control">
+                  {step.type === "yesno" && (
+                    <div className="pintake-options">
+                      {step.options!.map((opt) => (
+                        <button
+                          key={opt}
+                          type="button"
+                          className={`pintake-option${currentValue === opt ? " selected" : ""}`}
+                          aria-pressed={currentValue === opt}
+                          onClick={() => handleYesNo(opt)}
+                          disabled={loading}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {step.type === "select" && (
+                    <>
+                      <label htmlFor="intake-select" className="portal-sr">{step.question}</label>
+                      <select
+                        id="intake-select"
+                        className="portal-select"
+                        value={currentValue}
+                        onChange={(e) => handleSelect(e.target.value)}
+                        autoFocus
+                        {...errorProps}
+                      >
+                        <option value="" disabled>
+                          Choose an option
+                        </option>
+                        {step.options!.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                      {stepError}
+                    </>
+                  )}
+
+                  {step.type === "dual" && (
+                    <div className="pintake-dual">
+                      <label htmlFor="intake-height" className="portal-sr">Height</label>
+                      <input
+                        id="intake-height"
+                        className="portal-input"
+                        type="text"
+                        placeholder={step.placeholder ?? "Height"}
+                        value={currentValue}
+                        onChange={(e) => handleInputChange(e.target.value)}
+                        autoFocus
+                        autoComplete="off"
+                        {...errorProps}
+                      />
+                      <label htmlFor="intake-weight" className="portal-sr">Weight</label>
+                      <input
+                        id="intake-weight"
+                        className="portal-input"
+                        type="text"
+                        placeholder={step.secondaryPlaceholder ?? "Weight"}
+                        value={secondaryValue}
+                        onChange={(e) => handleSecondaryInputChange(e.target.value)}
+                        autoComplete="off"
+                        {...errorProps}
+                      />
+                      {stepError}
+                    </div>
+                  )}
+
+                  {(step.type === "text" || step.type === "tel") && (
+                    <>
+                      <label htmlFor="intake-input" className="portal-sr">{step.question}</label>
+                      <input
+                        id="intake-input"
+                        key={String(step.key)}
+                        className="portal-input"
+                        type={
+                          step.key === "primarySsn" || step.key === "spouseSsn"
+                            ? "password"
+                            : "text"
+                        }
+                        inputMode={
+                          step.type === "tel"
+                            || step.key === "primaryDob"
+                            || step.key === "spouseDob"
+                            || step.key === "dateMet"
+                            || step.key === "effDate"
+                            ? "numeric"
+                            : undefined
+                        }
+                        placeholder={step.placeholder}
+                        value={currentValue}
+                        onChange={(e) => handleInputChange(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        autoFocus
+                        autoComplete="off"
+                        {...errorProps}
+                      />
+                      {stepError}
+                    </>
+                  )}
+
+                  {step.type === "textarea" && (
+                    <>
+                      <label htmlFor="intake-textarea" className="portal-sr">{step.question}</label>
+                      <textarea
+                        id="intake-textarea"
+                        key={String(step.key)}
+                        className="portal-textarea client-intake-textarea"
+                        placeholder={step.placeholder}
+                        value={currentValue}
+                        onChange={(e) => handleInputChange(e.target.value)}
+                        autoFocus
+                        {...errorProps}
+                      />
+                      {stepError}
+                    </>
+                  )}
                 </div>
-              )}
+              </Pane>
 
-              {step.type === "select" && (
-                <div className="onboarding-field">
-                  <label htmlFor="intake-select" className="sr-only">{step.question}</label>
-                  <select
-                    id="intake-select"
-                    value={currentValue}
-                    onChange={(e) => handleSelect(e.target.value)}
-                    autoFocus
-                  >
-                    <option value="" disabled>
-                      Choose an option
-                    </option>
-                    {step.options!.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {step.type === "dual" && (
-                <div className="onboarding-actions">
-                  <div className="onboarding-field" style={{ width: "100%" }}>
-                    <label htmlFor="intake-height" className="sr-only">Height</label>
-                    <input
-                      id="intake-height"
-                      type="text"
-                      placeholder={step.placeholder ?? "Height"}
-                      value={currentValue}
-                      onChange={(e) => handleInputChange(e.target.value)}
-                      autoFocus
-                      autoComplete="off"
-                    />
-                  </div>
-                  <div className="onboarding-field" style={{ width: "100%" }}>
-                    <label htmlFor="intake-weight" className="sr-only">Weight</label>
-                    <input
-                      id="intake-weight"
-                      type="text"
-                      placeholder={step.secondaryPlaceholder ?? "Weight"}
-                      value={secondaryValue}
-                      onChange={(e) => handleSecondaryInputChange(e.target.value)}
-                      autoComplete="off"
-                    />
-                    {validationError && <p className="onboarding-error">{validationError}</p>}
-                  </div>
+              <div className="pintake-bar">
+                {(currentStep > 0 || returnToReview) && (
                   <button
                     type="button"
-                    className="btn btn-accent"
-                    onClick={handleSubmit}
-                    disabled={!canAdvance || loading}
-                    style={{ opacity: canAdvance && !loading ? 1 : 0.4 }}
-                  >
-                    {returnToReview
-                      ? <>Save & return <span className="arr">→</span></>
-                      : currentStep === activeSteps.length - 1
-                        ? <>Review form <span className="arr">→</span></>
-                        : <>Continue <span className="arr">→</span></>}
-                  </button>
-                </div>
-              )}
-
-              {(step.type === "text" || step.type === "tel") && (
-                <div className="onboarding-actions">
-                  <div className="onboarding-field" style={{ width: "100%" }}>
-                    <label htmlFor="intake-input" className="sr-only">{step.question}</label>
-                    <input
-                      id="intake-input"
-                      key={String(step.key)}
-                      type={
-                        step.key === "primarySsn" || step.key === "spouseSsn"
-                          ? "password"
-                          : "text"
+                    className="ptools-cta pintake-back"
+                    onClick={() => {
+                      if (returnToReview) {
+                        setReturnToReview(false);
+                        goToStep(activeSteps.length);
+                      } else {
+                        setCurrentStep((index) => Math.max(index - 1, 0));
                       }
-                      inputMode={
-                        step.type === "tel"
-                          || step.key === "primaryDob"
-                          || step.key === "spouseDob"
-                          || step.key === "dateMet"
-                          || step.key === "effDate"
-                          ? "numeric"
-                          : undefined
-                      }
-                      placeholder={step.placeholder}
-                      value={currentValue}
-                      onChange={(e) => handleInputChange(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      autoFocus
-                      autoComplete="off"
-                    />
-                    {validationError && <p className="onboarding-error">{validationError}</p>}
-                  </div>
-                  <button
-                    type="button"
-                    className="btn btn-accent"
-                    onClick={handleSubmit}
-                    disabled={!canAdvance || loading}
-                    style={{ opacity: canAdvance && !loading ? 1 : 0.4 }}
+                    }}
                   >
-                    {returnToReview
-                      ? <>Save & return <span className="arr">→</span></>
-                      : currentStep === activeSteps.length - 1
-                        ? <>Review form <span className="arr">→</span></>
-                        : <>Continue <span className="arr">→</span></>}
+                    {returnToReview ? "Back to review" : "Back"}
                   </button>
-                </div>
-              )}
-
-              {step.type === "textarea" && (
-                <div className="onboarding-actions">
-                  <div className="onboarding-field" style={{ width: "100%" }}>
-                    <label htmlFor="intake-textarea" className="sr-only">{step.question}</label>
-                    <textarea
-                      id="intake-textarea"
-                      key={String(step.key)}
-                      className="client-intake-textarea"
-                      placeholder={step.placeholder}
-                      value={currentValue}
-                      onChange={(e) => handleInputChange(e.target.value)}
-                      autoFocus
-                    />
-                    {validationError && <p className="onboarding-error">{validationError}</p>}
-                  </div>
-                  <button
-                    type="button"
-                    className="btn btn-accent"
-                    onClick={handleSubmit}
-                    disabled={!canAdvance || loading}
-                    style={{ opacity: canAdvance && !loading ? 1 : 0.4 }}
-                  >
-                    {returnToReview
-                      ? <>Save & return <span className="arr">→</span></>
-                      : currentStep === activeSteps.length - 1
-                        ? <>Review form <span className="arr">→</span></>
-                        : <>Continue <span className="arr">→</span></>}
-                  </button>
-                </div>
-              )}
-
-              {(currentStep > 0 || returnToReview) && (
+                )}
                 <button
                   type="button"
-                  className="onboarding-back"
-                  onClick={() => {
-                    if (returnToReview) {
-                      setReturnToReview(false);
-                      goToStep(activeSteps.length);
-                    } else {
-                      setCurrentStep((index) => Math.max(index - 1, 0));
-                    }
-                  }}
+                  className="ptools-cta pintake-next"
+                  onClick={handleSubmit}
+                  disabled={!canAdvance || loading}
                 >
-                  ← {returnToReview ? "Back to review" : "Back"}
+                  {advanceLabel}
                 </button>
-              )}
+              </div>
             </div>
           )}
         </div>
       </main>
+
+      <BottomNav />
     </div>
   );
 }

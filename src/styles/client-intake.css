@@ -124,3 +124,232 @@
   text-align: center;
   color: rgba(255, 255, 255, 0.65);
 }
+
+/* ==========================================================================
+   Client intake wizard (task 6b)
+   Scoped to .pintake-page, the third class on the intake route. The page also
+   carries .ptools-page, so the tools cluster's CTA, row-link colour and stack
+   rules in portal-tools.css apply here without being restated.
+   ========================================================================== */
+
+.pintake-page .pintake-wrap {
+  max-width: 720px;
+  margin: 0 auto;
+  padding-bottom: 48px;
+}
+
+/* The review screen carries the full Pinnacle form, which needs the width. */
+.pintake-page .pintake-wrap-wide {
+  max-width: min(1100px, 100%);
+}
+
+.pintake-page .portal-stepper {
+  margin: calc(var(--portal-unit) * 5) 0 calc(var(--portal-unit) * 3);
+}
+
+.pintake-page .pintake-progress {
+  height: 3px;
+  margin-bottom: var(--portal-gap);
+  border-radius: 999px;
+  background: var(--portal-rule);
+  overflow: hidden;
+}
+
+.pintake-page .pintake-progress-fill {
+  height: 100%;
+  background: var(--portal-text-faint);
+  transition: width var(--portal-duration) var(--portal-ease-out);
+}
+
+.pintake-page .pintake-eyebrow {
+  margin: 0 0 calc(var(--portal-unit) * 2);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-label);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--portal-text-faint);
+}
+
+.pintake-page .pintake-lede {
+  margin: 0 0 var(--portal-gap);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  line-height: 1.55;
+  color: var(--portal-text);
+}
+
+.pintake-page .pintake-count {
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-micro);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--portal-text-faint);
+}
+
+/* The wizard's own fade between questions. --portal-duration is 0ms under
+   prefers-reduced-motion, so no second rule is needed. */
+.pintake-page .pintake-screen {
+  transition: opacity var(--portal-duration) var(--portal-ease-out);
+}
+
+.pintake-page .pintake-screen.out {
+  opacity: 0;
+}
+
+.pintake-page .pintake-control,
+.pintake-page .pintake-dual {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--portal-unit) * 2);
+}
+
+.pintake-page .pintake-start {
+  align-self: flex-start;
+}
+
+/* Yes / No: two 44px targets, 8px apart, side by side once there is room. */
+.pintake-page .pintake-options {
+  display: grid;
+  gap: calc(var(--portal-unit) * 2);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.pintake-page .pintake-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 calc(var(--portal-unit) * 4);
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 120ms var(--portal-ease-out);
+}
+
+.pintake-page .pintake-option:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* The fill is not the only signal: the pressed state is announced, and the
+   text moves to the strong tier. */
+.pintake-page .pintake-option[aria-pressed="true"] {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.32);
+  color: var(--portal-text-strong);
+}
+
+.pintake-page .pintake-option:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.pintake-page .pintake-option:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Answer groups on the review screen: native <details>, one per section. */
+.pintake-page .pintake-answers + .pintake-answers {
+  margin-top: calc(var(--portal-unit) * 2);
+}
+
+.pintake-page .pintake-answers-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--portal-unit) * 2);
+  min-height: 44px;
+  padding: 0 calc(var(--portal-unit) * 2);
+  border-radius: 8px;
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+  cursor: pointer;
+  list-style-position: inside;
+}
+
+.pintake-page .pintake-answers-summary:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.pintake-page .pintake-answers-summary:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.pintake-page .pintake-answers[open] .pintake-answers-summary {
+  margin-bottom: calc(var(--portal-unit) * 2);
+}
+
+.pintake-page .pintake-edit {
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-micro);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--portal-text-faint);
+}
+
+.pintake-page a.portal-row .pintake-edit,
+.pintake-page button.portal-row:hover .pintake-edit {
+  color: var(--portal-text-strong);
+}
+
+/* Next / Back. Inline at the end of the screen on a desktop, a sticky bar in
+   the thumb zone at 620px and below, clearing the bottom nav and the safe
+   area. .home2-page:has(.portal-subhead) already swaps overflow-x to clip at
+   this width (portal-shell.css), so the sticky holds. */
+.pintake-page .pintake-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--portal-unit) * 2);
+  justify-content: flex-end;
+  margin-top: var(--portal-gap);
+}
+
+.pintake-page .pintake-back {
+  margin-right: auto;
+}
+
+@media (max-width: 620px) {
+  .pintake-page .pintake-bar {
+    position: sticky;
+    bottom: calc(56px + env(safe-area-inset-bottom) + 8px);
+    z-index: 5;
+    flex-wrap: nowrap;
+    padding: calc(var(--portal-unit) * 2);
+    border: 1px solid var(--portal-border);
+    border-radius: 14px;
+    background: var(--portal-bar-fill);
+  }
+
+  .pintake-page .pintake-bar .ptools-cta {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .pintake-page .pintake-back {
+    margin-right: 0;
+  }
+}
+
+/* The Pinnacle preview keeps its paper look, but three columns of form fields
+   do not fit a 390px screen. Collapse them; the component is untouched. */
+@media (max-width: 620px) {
+  .home2-page .pinnacle-grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home2-page .pinnacle-grid-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
