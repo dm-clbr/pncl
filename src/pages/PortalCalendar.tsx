@@ -1,11 +1,11 @@
 import { useEffect } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { CalendarDays } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import PNCLLogo from "@/components/PNCLLogo";
 import PortalCalendarPreview from "@/components/PortalCalendarPreview";
 import PortalPrimaryNav from "@/components/PortalPrimaryNav";
 import BottomNav from "@/components/portal/BottomNav";
+import PortalHeader from "@/components/portal/PortalHeader";
+import PortalSubpageHeader from "@/components/portal/PortalSubpageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortalGoogleCalendar } from "@/hooks/usePortalGoogleCalendar";
 import { usePortalProfile } from "@/hooks/usePortalProfile";
@@ -79,39 +79,22 @@ export default function PortalCalendar() {
   return (
     <div className="home2-page">
       <div className="grain" aria-hidden="true" />
-      <main className="portal-dash dark portal-calendar-page">
+      <main className="portal-dash dark">
         <div className="wrap portal-calendar-wrap">
-          <header className="portal-hero portal-calendar-hero">
-            <Link to="/" className="portal-hero-logo" aria-label="PNCL home">
-              <PNCLLogo height={44} />
-            </Link>
-            <Link to="/portal/profile" className="portal-hero-profile" aria-label="View profile">
-              <span className="portal-hero-profile-avatar" aria-hidden="true">
-                {photoUrl ? (
-                  <img src={photoUrl} alt="" className="portal-hero-profile-photo" />
-                ) : (
-                  <span className="portal-hero-profile-initials">{initials}</span>
-                )}
-              </span>
-              <span className="portal-hero-profile-copy">
-                <span className="portal-welcome">Welcome, {displayName}</span>
-                {user?.email && <span className="portal-meta">{user.email}</span>}
-              </span>
-            </Link>
-          </header>
+          <PortalHeader
+            name={displayName}
+            email={user?.email}
+            initials={initials}
+            photoUrl={photoUrl}
+          />
 
           <PortalPrimaryNav />
 
-          <section className="portal-calendar-intro" aria-labelledby="portal-calendar-title">
-            <span className="portal-calendar-intro-icon" aria-hidden="true">
-              <CalendarDays size={25} />
-            </span>
-            <div>
-              <p className="portal-calendar-eyebrow">Your schedule</p>
-              <h1 id="portal-calendar-title">Google Calendar</h1>
-              <p>A concise view of what is next, available only to your signed-in portal account.</p>
-            </div>
-          </section>
+          <PortalSubpageHeader title="Calendar" />
+
+          <p className="portal-panel-note">
+            A read-only preview of what is next, visible only to your signed-in portal account.
+          </p>
 
           <PortalCalendarPreview
             data={calendar.data}

@@ -1,0 +1,360 @@
+/* ==========================================================================
+   Calendar
+   The backend returns at most 10 events over the next 14 days, title and time
+   only, so this is an agenda and never a grid: a next-up hero, a list grouped
+   by day with sticky day headers, then the connection controls.
+   Every colour-bearing rule sits two classes deep. home2.css declares
+   `.home2-page a { color: inherit }` at 0-1-1, which outranks a bare class on
+   an anchor, so a single-class rule on the Join link would never render
+   (docs/DESIGN.md, Shell).
+   ========================================================================== */
+
+/* An agenda has no business at the marketing pages' 1320px. Three classes
+   deep to clear `.home2-page .wrap`, which this file may load before. */
+.home2-page .wrap.portal-calendar-wrap {
+  max-width: 880px;
+}
+
+.pcal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--portal-gap);
+  font-family: var(--portal-font);
+}
+
+/* .home2-page carries overflow-x: hidden, which computes overflow-y to auto
+   and makes it a scrollport that never scrolls, so a sticky descendant never
+   sticks. clip gives the same horizontal containment without the scroll
+   container. The day headers stick at every width, so this is not scoped to
+   a breakpoint. */
+.home2-page:has(.pcal-day-head) {
+  overflow-x: clip;
+}
+
+/* ── Next up ─────────────────────────────────────────────────────────────── */
+
+.pcal .pcal-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(var(--portal-unit) * 2);
+}
+
+/* Intl.RelativeTimeFormat returns lower case ("in 2 hours"); the label case
+   this rung already carries takes care of it. */
+.pcal .pcal-when {
+  margin: 0;
+  font-size: var(--portal-t-micro);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--portal-text-faint);
+}
+
+.pcal .pcal-hero-title {
+  margin: 0;
+  font-size: var(--portal-t-large);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  color: var(--portal-text-strong);
+}
+
+.pcal .pcal-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 calc(var(--portal-unit) * 2);
+  margin: 0;
+  font-size: var(--portal-t-body);
+  font-variant-numeric: tabular-nums;
+  color: var(--portal-text);
+}
+
+.pcal .pcal-meta span + span::before {
+  content: "\00b7";
+  margin-right: calc(var(--portal-unit) * 2);
+  color: var(--portal-text-faint);
+}
+
+.pcal .pcal-hero .pcal-btn {
+  margin-top: calc(var(--portal-unit) * 2);
+}
+
+/* ── Agenda ──────────────────────────────────────────────────────────────── */
+
+.pcal .pcal-day + .pcal-day {
+  margin-top: calc(var(--portal-unit) * 4);
+}
+
+/* Bleeds to the pane's padding edge so the fill covers the rows it scrolls
+   over: blur is never separation, the text needs a fill under it. */
+.pcal .pcal-day-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0 -16px calc(var(--portal-unit) * 2);
+  padding: calc(var(--portal-unit) * 2) 16px;
+  font-size: var(--portal-t-micro);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--portal-text-faint);
+  background: var(--portal-bar-fill);
+}
+
+.pcal .pcal-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pcal .pcal-item {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: calc(var(--portal-unit) * 3);
+  min-height: 44px;
+  padding: calc(var(--portal-unit) * 2) 0;
+}
+
+.pcal .pcal-item + .pcal-item {
+  border-top: 1px solid var(--portal-rule);
+}
+
+.pcal .pcal-item-time {
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--portal-text-strong);
+}
+
+.pcal .pcal-item-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pcal .pcal-item-title {
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  color: var(--portal-text-strong);
+}
+
+.pcal .pcal-item-context {
+  font-size: var(--portal-t-micro);
+  color: var(--portal-text-faint);
+}
+
+/* ── Connection ──────────────────────────────────────────────────────────── */
+
+.pcal .pcal-synced {
+  margin: 0;
+  font-size: var(--portal-t-body);
+  color: var(--portal-text);
+}
+
+.pcal .pcal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--portal-unit) * 2);
+  margin-top: calc(var(--portal-unit) * 3);
+}
+
+.pcal .pcal-note {
+  margin: calc(var(--portal-unit) * 3) 0 0;
+  padding: calc(var(--portal-unit) * 3);
+  border: 1px solid var(--portal-border);
+  border-left: 2px solid var(--portal-accent);
+  border-radius: 8px;
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+  color: var(--portal-text);
+}
+
+.pcal .pcal-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--portal-unit) * 2);
+  margin-top: calc(var(--portal-unit) * 3);
+  padding: calc(var(--portal-unit) * 3);
+  border: 1px solid var(--portal-border);
+  border-left: 2px solid var(--portal-accent);
+  border-radius: 8px;
+}
+
+.pcal .pcal-confirm p {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+  color: var(--portal-text);
+}
+
+.pcal .pcal-details {
+  margin-top: calc(var(--portal-unit) * 4);
+  padding-top: calc(var(--portal-unit) * 2);
+  border-top: 1px solid var(--portal-rule);
+}
+
+.pcal .pcal-details summary {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--portal-unit) * 2);
+  min-height: 44px;
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--portal-text-strong);
+}
+
+/* display: flex drops the native marker, so the chevron is the affordance. */
+.pcal .pcal-details summary svg {
+  flex: 0 0 auto;
+  color: var(--portal-text-faint);
+  transition: transform var(--portal-duration) var(--portal-ease-out);
+}
+
+.pcal .pcal-details[open] summary svg {
+  transform: rotate(180deg);
+}
+
+.pcal .pcal-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.pcal .pcal-details summary:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.pcal .pcal-details p {
+  margin: 0 0 calc(var(--portal-unit) * 2);
+  font-size: var(--portal-t-body);
+  line-height: 1.55;
+  color: var(--portal-text);
+}
+
+/* ── Buttons and links ───────────────────────────────────────────────────── */
+
+.pcal .pcal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--portal-unit) * 2);
+  min-height: 44px;
+  padding: 0 calc(var(--portal-unit) * 4);
+  border: 1px solid var(--portal-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  color: var(--portal-text-strong);
+  transition:
+    background var(--portal-duration) var(--portal-ease-out),
+    border-color var(--portal-duration) var(--portal-ease-out);
+}
+
+.pcal .pcal-btn:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.pcal .pcal-btn:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.pcal .pcal-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* One filled action per view: Join on the hero, Connect on the empty state. */
+.pcal .pcal-btn.is-primary {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.95);
+  color: rgb(20, 16, 12);
+}
+
+.pcal .pcal-btn.is-primary:hover:not(:disabled) {
+  border-color: transparent;
+  background: #fff;
+}
+
+.pcal .pcal-link {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--portal-unit) * 1.5);
+  min-height: 44px;
+  font-size: var(--portal-t-body);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  color: var(--portal-text);
+}
+
+.pcal .pcal-link:hover {
+  color: var(--portal-text-strong);
+}
+
+.pcal .pcal-link:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.pcal .pcal-stack {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--portal-unit) * 3);
+}
+
+.pcal .is-spinning {
+  animation: pcal-spin 0.8s linear infinite;
+}
+
+@keyframes pcal-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pcal .is-spinning {
+    animation: none;
+  }
+}
+
+@media (min-width: 621px) {
+  .pcal .pcal-day-head {
+    margin-inline: -20px;
+    padding-inline: 20px;
+  }
+}
+
+@media (max-width: 620px) {
+  /* Clears the 44px sticky sub-page bar. */
+  .pcal .pcal-day-head {
+    top: 44px;
+  }
+
+  /* The time reads above the title once the row runs out of width. */
+  .pcal .pcal-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: calc(var(--portal-unit) * 1) calc(var(--portal-unit) * 3);
+  }
+
+  .pcal .pcal-item-time {
+    grid-column: 1 / -1;
+  }
+}
