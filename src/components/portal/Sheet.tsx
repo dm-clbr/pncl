@@ -7,6 +7,10 @@ type SheetProps = {
   title: string;
   children: ReactNode;
   id?: string;
+  /** half holds the bottom sheet to 40% of the viewport, so the surface behind
+      it keeps the other 60%. Default full keeps every existing caller at 85vh,
+      and from 621px the sheet is a side panel where neither applies. */
+  size?: "full" | "half";
 };
 
 /** Native <dialog> opened with showModal(): bottom sheet up to 620px, right
@@ -15,7 +19,7 @@ type SheetProps = {
     mount it outside PortalBentoStage anyway so the closed element never sits
     inside the tilted tree. Focus lands on the title on open; the native
     dialog returns focus to the opener on close. */
-export default function Sheet({ open, onClose, title, children, id }: SheetProps) {
+export default function Sheet({ open, onClose, title, children, id, size = "full" }: SheetProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
   const titleId = useId();
@@ -48,7 +52,7 @@ export default function Sheet({ open, onClose, title, children, id }: SheetProps
     <dialog
       ref={dialogRef}
       id={id}
-      className="portal-sheet"
+      className={`portal-sheet${size === "half" ? " is-half" : ""}`}
       aria-labelledby={titleId}
       onClose={onClose}
       onClick={onBackdropClick}

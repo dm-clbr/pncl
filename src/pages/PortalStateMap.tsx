@@ -4,6 +4,13 @@ import { Link } from "react-router-dom";
 import PNCLLogo from "@/components/PNCLLogo";
 import PortalPrimaryNav from "@/components/PortalPrimaryNav";
 import BottomNav from "@/components/portal/BottomNav";
+import Chip, { type ChipVariant } from "@/components/portal/Chip";
+import EmptyState from "@/components/portal/EmptyState";
+import Field from "@/components/portal/Field";
+import ListRow from "@/components/portal/ListRow";
+import Pane from "@/components/portal/Pane";
+import Sheet from "@/components/portal/Sheet";
+import type { StateMapFilter } from "@/components/StateAvailabilityCanvas";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortalProfile } from "@/hooks/usePortalProfile";
 import { useStateAvailability } from "@/hooks/useStateAvailability";
@@ -16,8 +23,21 @@ import {
 import { US_STATES, isUsStateCode, type UsStateCode } from "@/lib/us-states";
 import { trackPageView } from "@/lib/analytics";
 import "@/styles/home2.css";
+import "@/styles/portal-state-map.css";
 
 const StateAvailabilityCanvas = lazy(() => import("@/components/StateAvailabilityCanvas"));
+
+/** The three company statuses, then the agent's own licences. */
+const MAP_FILTERS = [...STATE_AVAILABILITY_STATUSES, "Licensed"] as const;
+const CHIP_VARIANT: Record<StateMapFilter, ChipVariant> = {
+  Active: "active",
+  Pending: "pending",
+  Inactive: "inactive",
+  Licensed: "licensed",
+};
+/** Where the detail moves from a right Pane to a bottom Sheet. Same number as
+    the shell's breakpoint, which is the one the Sheet itself switches on. */
+const COMPACT_QUERY = "(max-width: 620px)";
 
 export default function PortalStateMap() {
   const { user } = useAuth();
@@ -25,6 +45,10 @@ export default function PortalStateMap() {
   const { states, loading, error, reload } = useStateAvailability();
   const [selectedState, setSelectedState] = useState<UsStateCode | null>(null);
   const [hoveredState, setHoveredState] = useState<UsStateCode | null>(null);
+  const [filter, setFilter] = useState<StateMapFilter | null>(null);
+  const [search, setSearch] = useState("");
+  const [compact, setCompact] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const licensedStates = useMemo(
     () => licensedStateCodes(profile?.state_license_numbers),
@@ -51,10 +75,36 @@ export default function PortalStateMap() {
   const counts = useMemo(() => countStateAvailability(states), [states]);
   const visibleState = stateByCode.get(hoveredState ?? selectedState ?? "AL") ?? null;
 
+  const term = search.trim().toLowerCase();
+  const matches = useMemo(
+    () => displayStates.filter((state) => {
+      const kept = filter === null || (filter === "Licensed"
+        ? licensedStates.has(state.stateCode)
+        : state.status === filter);
+      return kept && (term === ""
+        || state.stateName.toLowerCase().includes(term)
+        || state.stateCode.toLowerCase().startsWith(term));
+    }),
+    [displayStates, filter, licensedStates, term],
+  );
+
   useEffect(() => {
     document.title = "State Map — PNCL Portal";
     trackPageView("portal_state_map");
     window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia(COMPACT_QUERY);
+    const sync = () => {
+      setCompact(media.matches);
+      // A sheet left open on a rotate would come back as the desktop panel's
+      // content behind a modal backdrop.
+      if (!media.matches) setSheetOpen(false);
+    };
+    sync();
+    media.addEventListener("change", sync);
+    return () => media.removeEventListener("change", sync);
   }, []);
 
   useEffect(() => {
@@ -67,6 +117,39 @@ export default function PortalStateMap() {
     const firstLicensedState = [...licensedStates][0];
     setSelectedState(firstLicensedState ?? displayStates[0].stateCode);
   }, [displayStates, licensedStates, profile?.address_state, selectedState, stateByCode]);
+
+  // Picking opens the sheet on a phone; the selection the page makes for you on
+  // load goes through setSelectedState instead, so the page never opens with a
+  // modal already over the map.
+  const selectState = (stateCode: UsStateCode) => {
+    setSelectedState(stateCode);
+    if (compact) setSheetOpen(true);
+  };
+
+  const detail = visibleState && (
+    <div className="state-map-detail-body">
+      <p className="state-map-detail-code">{visibleState.stateCode}</p>
+      {usingAvailabilityFallback ? (
+        <>
+          <Chip>Availability unavailable</Chip>
+          <p>No verified company availability is available for this state right now.</p>
+        </>
+      ) : (
+        <>
+          <Chip variant={CHIP_VARIANT[visibleState.status]}>{visibleState.status}</Chip>
+          <p>{STATE_AVAILABILITY_META[visibleState.status].description}</p>
+        </>
+      )}
+      {licensedStates.has(visibleState.stateCode) ? (
+        <p className="state-map-license-note licensed">
+          <CheckCircle2 size={17} aria-hidden="true" />
+          Licensed on your profile
+        </p>
+      ) : (
+        <p className="state-map-license-note">No license recorded on your profile.</p>
+      )}
+    </div>
+  );
 
   return (
     <div className="home2-page">
@@ -104,15 +187,6 @@ export default function PortalStateMap() {
                 marked with a light ring and remain separate from the company status color.
               </p>
             </div>
-            {!loading && hasStateAvailability && (
-              <div className="state-map-counts" aria-label="Company state availability totals">
-                {STATE_AVAILABILITY_STATUSES.map((status) => (
-                  <span key={status} className={`state-map-count state-status-${status.toLowerCase()}`}>
-                    <strong>{counts[status]}</strong> {status}
-                  </span>
-                ))}
-              </div>
-            )}
           </section>
 
           {loading && (
@@ -141,126 +215,123 @@ export default function PortalStateMap() {
 
           {!loading && displayStates.length === US_STATES.length && (
             <>
-              <div className="state-map-layout">
-                <div className="state-map-visual-panel">
-                  <div className="state-map-legend" aria-label="Map legend">
-                    {usingAvailabilityFallback ? (
-                      <span>
-                        <i className="state-map-unavailable-swatch" aria-hidden="true" />
-                        Availability unavailable
-                      </span>
-                    ) : (
-                      STATE_AVAILABILITY_STATUSES.map((status) => (
-                        <span key={status}>
-                          <i
-                            style={{ backgroundColor: STATE_AVAILABILITY_META[status].color }}
-                            aria-hidden="true"
+              {/* The directory comes first in the DOM: a screen reader and a
+                  keyboard reach all 51 states before the canvas they cannot
+                  use. CSS order puts the map back on top visually. */}
+              <div className="state-map-board">
+                <Pane title="All jurisdictions" id="state-directory">
+                  <p className="state-map-directory-note">
+                    Pick a state to move the map and the detail panel.
+                  </p>
+
+                  {!usingAvailabilityFallback && (
+                    <div className="state-map-filters" role="group" aria-label="Filter states">
+                      {MAP_FILTERS.map((name) => (
+                        <button
+                          key={name}
+                          type="button"
+                          className="state-map-filter"
+                          aria-pressed={filter === name}
+                          onClick={() => setFilter((current) => (current === name ? null : name))}
+                        >
+                          <Chip variant={CHIP_VARIANT[name]}>
+                            {name === "Licensed" ? licensedStates.size : counts[name]} {name}
+                          </Chip>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  <Field
+                    label="Search states"
+                    id="state-map-search"
+                    type="search"
+                    autoComplete="off"
+                    placeholder="State name or code"
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                  />
+
+                  {matches.length === 0 ? (
+                    <EmptyState
+                      title="No states match"
+                      body="Clear the search or the status filter."
+                    />
+                  ) : (
+                    <ul className="state-map-list">
+                      {matches.map((state) => (
+                        <li key={state.stateCode}>
+                          <ListRow
+                            label={state.stateName}
+                            icon={<span className="state-map-row-code">{state.stateCode}</span>}
+                            current={selectedState === state.stateCode}
+                            onClick={() => selectState(state.stateCode)}
+                            trailing={
+                              <>
+                                <Chip
+                                  variant={usingAvailabilityFallback
+                                    ? "neutral"
+                                    : CHIP_VARIANT[state.status]}
+                                >
+                                  {usingAvailabilityFallback ? "Unavailable" : state.status}
+                                </Chip>
+                                {licensedStates.has(state.stateCode) && (
+                                  <Chip variant="licensed">Licensed</Chip>
+                                )}
+                              </>
+                            }
                           />
-                          {status}
-                        </span>
-                      ))
-                    )}
-                    <span>
-                      <i className="state-map-license-ring" aria-hidden="true" />
-                      Licensed on your profile
-                    </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {!profileLoading && licensedStates.size === 0 && (
+                    <p className="state-map-profile-note">
+                      No state licenses are currently recorded on your profile. Add license
+                      numbers in <Link to="/portal/profile">My Profile</Link> to display the overlay.
+                    </p>
+                  )}
+                </Pane>
+
+                <div className="state-map-layout">
+                  <div className="state-map-visual-panel">
+                    <Suspense fallback={<div className="state-map-canvas-placeholder">Loading interactive map…</div>}>
+                      <StateAvailabilityCanvas
+                        states={displayStates}
+                        licensedStates={licensedStates}
+                        selectedState={selectedState}
+                        filter={filter}
+                        availabilityUnavailable={usingAvailabilityFallback}
+                        onHover={setHoveredState}
+                        onSelect={selectState}
+                      />
+                    </Suspense>
                   </div>
 
-                  <Suspense fallback={<div className="state-map-canvas-placeholder">Loading interactive map…</div>}>
-                    <StateAvailabilityCanvas
-                      states={displayStates}
-                      licensedStates={licensedStates}
-                      selectedState={selectedState}
-                      availabilityUnavailable={usingAvailabilityFallback}
-                      onHover={setHoveredState}
-                      onSelect={setSelectedState}
-                    />
-                  </Suspense>
-                </div>
-
-                <aside className="state-map-detail" aria-live="polite">
-                  {visibleState && (
-                    <>
-                      <span className="state-map-detail-code">{visibleState.stateCode}</span>
-                      <h2>{visibleState.stateName}</h2>
-                      {usingAvailabilityFallback ? (
-                        <>
-                          <span className="state-map-detail-status state-status-unavailable">
-                            Availability unavailable
-                          </span>
-                          <p>No verified company availability is available for this state right now.</p>
-                        </>
-                      ) : (
-                        <>
-                          <span className={`state-map-detail-status state-status-${visibleState.status.toLowerCase()}`}>
-                            {visibleState.status}
-                          </span>
-                          <p>{STATE_AVAILABILITY_META[visibleState.status].description}</p>
-                        </>
+                  {!compact && (
+                    <div className="state-map-detail" aria-live="polite">
+                      {visibleState && (
+                        <Pane as="aside" title={visibleState.stateName}>
+                          {detail}
+                        </Pane>
                       )}
-                      {licensedStates.has(visibleState.stateCode) ? (
-                        <p className="state-map-license-note licensed">
-                          <CheckCircle2 size={17} aria-hidden="true" />
-                          Licensed on your profile
-                        </p>
-                      ) : (
-                        <p className="state-map-license-note">No license recorded on your profile.</p>
-                      )}
-                    </>
+                    </div>
                   )}
-                </aside>
+                </div>
               </div>
 
-              <section className="state-map-list-section" aria-labelledby="state-list-title">
-                <div className="state-map-list-head">
-                  <div>
-                    <p className="state-map-eyebrow">Accessible state directory</p>
-                    <h2 id="state-list-title">All jurisdictions</h2>
-                  </div>
-                  <p>
-                    Use Tab to move through jurisdictions. Selecting one updates the detail panel
-                    and interactive map.
-                  </p>
-                </div>
-
-                <div className="state-map-state-grid">
-                  {displayStates.map((state) => {
-                    const licensed = licensedStates.has(state.stateCode);
-                    const statusLabel = usingAvailabilityFallback
-                      ? "availability unavailable"
-                      : state.status;
-                    return (
-                      <button
-                        type="button"
-                        key={state.stateCode}
-                        className={`state-map-state-button state-status-${usingAvailabilityFallback ? "unavailable" : state.status.toLowerCase()}${selectedState === state.stateCode ? " selected" : ""}`}
-                        aria-pressed={selectedState === state.stateCode}
-                        aria-label={`${state.stateName}: ${statusLabel}${licensed ? ", licensed on your profile" : ""}`}
-                        onClick={() => setSelectedState(state.stateCode)}
-                        onFocus={() => setSelectedState(state.stateCode)}
-                        onMouseEnter={() => setHoveredState(state.stateCode)}
-                        onMouseLeave={() => setHoveredState(null)}
-                      >
-                        <span className="state-map-state-code">{state.stateCode}</span>
-                        <span className="state-map-state-name">{state.stateName}</span>
-                        <span className="state-map-state-status">
-                          {usingAvailabilityFallback ? "Unavailable" : state.status}
-                        </span>
-                        {licensed && (
-                          <CheckCircle2 className="state-map-state-license" size={16} aria-hidden="true" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {!profileLoading && licensedStates.size === 0 && (
-                  <p className="state-map-profile-note">
-                    No state licenses are currently recorded on your profile. Add license
-                    numbers in <Link to="/portal/profile">My Profile</Link> to display the overlay.
-                  </p>
-                )}
-              </section>
+              {/* 40% of the viewport, so the map keeps the other 60%. */}
+              {compact && visibleState && (
+                <Sheet
+                  open={sheetOpen}
+                  onClose={() => setSheetOpen(false)}
+                  title={visibleState.stateName}
+                  size="half"
+                >
+                  {detail}
+                </Sheet>
+              )}
             </>
           )}
         </div>

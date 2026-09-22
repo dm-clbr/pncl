@@ -20,12 +20,22 @@ interface StateVisual {
   group: THREE.Group;
   outlineMaterials: THREE.LineBasicMaterial[];
   restOutline: { color: string; opacity: number };
+  /** The fill and the licence ring: what a filter fades out. */
+  faceMaterials: THREE.Material[];
+  status: StateAvailabilityStatus;
+  licensed: boolean;
 }
+
+/** One status, or the agent's own licences. Null shows every state. */
+export type StateMapFilter = StateAvailabilityStatus | "Licensed";
 
 interface StateAvailabilityCanvasProps {
   states: StateAvailability[];
   licensedStates: Set<UsStateCode>;
   selectedState: UsStateCode | null;
+  /** Fades every state the filter excludes. The directory below the map
+      filters with it too, so the map is never the only place it shows. */
+  filter?: StateMapFilter | null;
   availabilityUnavailable?: boolean;
   onHover: (stateCode: UsStateCode | null) => void;
   onSelect: (stateCode: UsStateCode) => void;
@@ -50,6 +60,9 @@ const HATCH_INK = "#7a5c14";
 const RING_LIGHT = "#f4f0df";
 const RING_HALO = "#101318";
 const HIGHLIGHT_OUTLINE = "#ff7a3d";
+/** A filtered-out state stays on the map as context and stops competing with
+    the ones that matched. */
+const DIM_OPACITY = 0.2;
 /** A dark fill needs a light edge or the state has no silhouette against the
     panel and two neighbouring Inactive states read as one shape. A bright fill
     keeps the etched dark edge. No single edge colour covers both: the fills are
@@ -160,6 +173,7 @@ export default function StateAvailabilityCanvas({
   states,
   licensedStates,
   selectedState,
+  filter = null,
   availabilityUnavailable = false,
   onHover,
   onSelect,
@@ -172,6 +186,7 @@ export default function StateAvailabilityCanvas({
   const renderRef = useRef<(() => void) | null>(null);
   const applyViewRef = useRef<(() => void) | null>(null);
   const callbacksRef = useRef({ onHover, onSelect });
+  const filterRef = useRef(filter);
   const [webglError, setWebglError] = useState<string | null>(null);
   const [zoom, setZoom] = useState(ZOOM_MIN);
   const zoomRef = useRef(zoom);
@@ -180,18 +195,26 @@ export default function StateAvailabilityCanvas({
   callbacksRef.current = { onHover, onSelect };
   selectedRef.current = selectedState;
   zoomRef.current = zoom;
+  filterRef.current = filter;
 
   const refreshHighlights = () => {
+    const active = filterRef.current;
     for (const [code, visual] of visualsRef.current) {
+      const kept = active === null
+        || (active === "Licensed" ? visual.licensed : visual.status === active);
+      const fade = kept ? 1 : DIM_OPACITY;
       const highlighted = code === selectedRef.current || code === hoveredRef.current;
       visual.group.position.z = highlighted ? 5 : 0;
+      for (const material of visual.faceMaterials) material.opacity = fade;
       for (const material of visual.outlineMaterials) {
         material.color.set(highlighted ? HIGHLIGHT_OUTLINE : visual.restOutline.color);
-        material.opacity = highlighted ? 1 : visual.restOutline.opacity;
+        material.opacity = (highlighted ? 1 : visual.restOutline.opacity) * fade;
       }
     }
     renderRef.current?.();
   };
+
+  useEffect(refreshHighlights, [filter]);
 
   useEffect(() => {
     selectedRef.current = selectedState;
@@ -264,10 +287,15 @@ export default function StateAvailabilityCanvas({
           : STATE_MAP_FILL[availability.status],
         map: hatched ? hatchTexture : null,
         side: THREE.DoubleSide,
+        // Always transparent so a filter can fade it without a shader
+        // recompile. At opacity 1 it still writes depth, and no two states
+        // overlap, so nothing sorts differently from an opaque fill.
+        transparent: true,
       });
       const darkFill = availabilityUnavailable || availability.status === "Inactive";
       const restOutline = darkFill ? LIGHT_OUTLINE : DARK_OUTLINE;
       const outlineMaterials: THREE.LineBasicMaterial[] = [];
+      const faceMaterials: THREE.Material[] = [fillMaterial];
 
       for (const rings of polygonSets(stateFeature.geometry)) {
         const shape = createShape(rings);
@@ -309,12 +337,14 @@ export default function StateAvailabilityCanvas({
             color: RING_HALO,
             side: THREE.DoubleSide,
             depthTest: false,
+            transparent: true,
           }),
         );
         halo.position.set(center.x, center.y, 7.9);
         halo.renderOrder = 4;
         halo.userData.stateCode = stateDefinition.code;
         group.add(halo);
+        faceMaterials.push(halo.material);
 
         const marker = new THREE.Mesh(
           new THREE.RingGeometry(4.5, 8.5, 24),
@@ -322,16 +352,25 @@ export default function StateAvailabilityCanvas({
             color: RING_LIGHT,
             side: THREE.DoubleSide,
             depthTest: false,
+            transparent: true,
           }),
         );
         marker.position.set(center.x, center.y, 8);
         marker.renderOrder = 5;
         marker.userData.stateCode = stateDefinition.code;
         group.add(marker);
+        faceMaterials.push(marker.material);
       }
 
       scene.add(group);
-      visuals.set(stateDefinition.code, { group, outlineMaterials, restOutline });
+      visuals.set(stateDefinition.code, {
+        group,
+        outlineMaterials,
+        restOutline,
+        faceMaterials,
+        status: availability.status,
+        licensed: licensedStateSet.has(stateDefinition.code),
+      });
     }
 
     visualsRef.current = visuals;

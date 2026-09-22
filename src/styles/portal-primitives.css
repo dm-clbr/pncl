@@ -58,6 +58,17 @@
   animation: portal-sheet-up var(--portal-duration) var(--portal-ease-out);
 }
 
+/* size="half": the sheet takes 40% of the viewport and leaves the surface it
+   explains the other 60%, which is what the state map's canvas needs. Bottom
+   sheet widths only; from 621px the sheet is a full-height side panel. */
+@media (max-width: 620px) {
+  .portal-sheet.is-half {
+    height: 40vh;
+    height: 40dvh;
+    max-height: 40dvh;
+  }
+}
+
 /* ::backdrop does not inherit custom properties in every engine, so the
    values are literal here. */
 .portal-sheet::backdrop {
