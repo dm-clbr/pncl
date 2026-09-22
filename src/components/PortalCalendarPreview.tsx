@@ -52,12 +52,18 @@ const RELATIVE_TIME = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" }
 
 /** How far out the next event is, from a plain Date diff: minutes under the
     hour, hours under the day, then days. Intl writes the phrase, so "tomorrow"
-    and the agent's locale come free. */
+    and the agent's locale come free. The preview is a cache and lastSyncedAt
+    can be hours old, so a start in the past only reads as live while endsAt is
+    still ahead. */
 function formatRelativeStart(event: PortalGoogleCalendarEvent): string {
   const start = calendarEventSortValue(event);
   if (!Number.isFinite(start)) return "Starts soon";
-  const minutes = Math.round((start - Date.now()) / 60000);
-  if (minutes <= 0) return "Happening now";
+  const now = Date.now();
+  const minutes = Math.round((start - now) / 60000);
+  if (minutes <= 0) {
+    const end = event.endsAt ? new Date(event.endsAt).getTime() : Number.NaN;
+    return Number.isFinite(end) && end <= now ? "Already ended" : "Happening now";
+  }
   if (minutes < 60) return RELATIVE_TIME.format(minutes, "minute");
   if (minutes < 60 * 24) return RELATIVE_TIME.format(Math.round(minutes / 60), "hour");
   return RELATIVE_TIME.format(Math.round(minutes / (60 * 24)), "day");
@@ -123,6 +129,7 @@ export default function PortalCalendarPreview(props: PortalCalendarPreviewProps)
       <div className="pcal">
         <Pane title="Next up">
           <div className="pcal-stack" role="status" aria-busy="true" aria-label="Loading your calendar">
+            <span className="portal-sr">Loading your calendar</span>
             <Skeleton variant="text" width="38%" />
             {[0, 1, 2].map((row) => (
               <Skeleton key={row} variant="row" />

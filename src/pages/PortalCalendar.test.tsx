@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import PortalCalendar from "@/pages/PortalCalendar";
-import type { PortalGoogleCalendarData } from "@/lib/portal-google-calendar";
+import { formatCalendarEventDate, type PortalGoogleCalendarData } from "@/lib/portal-google-calendar";
 
 const CONNECTED = {
   status: "connected" as const,
@@ -73,7 +73,10 @@ describe("PortalCalendar", () => {
   it("keeps the loading state as a skeleton of the list", () => {
     calendar.loading = true;
     renderPage();
-    expect(screen.getByRole("status", { name: "Loading your calendar" })).toBeInTheDocument();
+    const status = screen.getByRole("status", { name: "Loading your calendar" });
+    expect(status).toBeInTheDocument();
+    // The announcement comes from the content, not the label: every Skeleton is aria-hidden.
+    expect(status).toHaveTextContent("Loading your calendar");
   });
 
   it("keeps the error copy and the retry action", () => {
@@ -97,18 +100,24 @@ describe("PortalCalendar", () => {
     expect(screen.queryByRole("heading", { name: "Coming up" })).not.toBeInTheDocument();
   });
 
-  it("puts the next event in the hero and groups the rest by day", () => {
+  it("puts the next event in the hero and collapses same-day events under one day header", () => {
+    const training = event("e2", "Carrier training", "2026-09-26T16:00:00Z");
+    const review = event("e3", "Rate review", "2026-09-26T18:30:00Z");
     calendar.data = {
       connection: CONNECTED,
-      events: [
-        event("e2", "Carrier training", "2026-09-26T16:00:00Z"),
-        event("e1", "Client call", "2026-09-25T15:00:00Z"),
-      ],
+      events: [review, training, event("e1", "Client call", "2026-09-25T15:00:00Z")],
     };
     renderPage();
     expect(screen.getByRole("heading", { name: "Client call" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Coming up" })).toBeInTheDocument();
-    expect(screen.getByText("Carrier training")).toBeInTheDocument();
     expect(screen.getByText("Connected · read only")).toBeInTheDocument();
+
+    const day = formatCalendarEventDate(training);
+    const headings = screen.getAllByRole("heading", { name: day });
+    expect(headings).toHaveLength(1);
+    const rows = headings[0].parentElement?.querySelectorAll("li.pcal-item");
+    expect(rows).toHaveLength(2);
+    expect(rows?.[0]).toHaveTextContent("Carrier training");
+    expect(rows?.[1]).toHaveTextContent("Rate review");
   });
 });
