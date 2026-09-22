@@ -51,6 +51,10 @@ export default function PortalPayPolicy() {
         <div className="wrap carrier-sheet-wrap">
           <PortalSubpageHeader title="Pay & Commissions" />
 
+          <p className="portal-panel-note">
+            How you get paid: policies, examples, and answers.
+          </p>
+
           {loading ? (
             <div className="portal-incentives-loading">
               <span className="onboarding-spinner" aria-hidden="true" />
@@ -71,6 +75,7 @@ export default function PortalPayPolicy() {
                 <div className="carrier-sheet-panel portal-profile-panel">
                   <div className="carrier-sheet-panel-head">
                     <div>
+                      <h2>Pay policies</h2>
                       <p>The rules PNCL pays by. Questions? Open a support ticket.</p>
                     </div>
                   </div>

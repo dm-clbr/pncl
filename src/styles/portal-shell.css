@@ -314,6 +314,12 @@
   gap: 8px;
 }
 
+/* A page lede between the header and the first pane lines up with the pane's
+   outer edge; .portal-panel-note's own 8px inset is for a note inside a panel. */
+.home2-page .portal-subhead + .portal-panel-note {
+  padding-inline: 0;
+}
+
 @media (max-width: 620px) {
   /* .home2-page carries overflow-x: hidden, which computes overflow-y to auto
      and makes it a scrollport that never scrolls, so a sticky descendant
