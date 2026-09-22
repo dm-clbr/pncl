@@ -1101,3 +1101,556 @@
   font-size: 9px;
   letter-spacing: 0.04em;
 }
+
+/* ── Progress strip ─────────────────────────────────────────────────────── */
+
+/* One 44px link under the nav: stage, count, a 2px bar and a chevron. On
+   desktop it is an anchor to the rail pane; below 621px the page turns the
+   same tap into the checklist sheet. */
+.pstrip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 0 2px;
+  border-radius: 10px;
+  color: var(--portal-text);
+  text-decoration: none;
+  transition: color 0.18s var(--ease-out);
+}
+
+.pstrip:hover {
+  color: var(--portal-text-strong);
+}
+
+.pstrip:focus-visible {
+  outline: 2px solid var(--portal-accent);
+  outline-offset: 3px;
+}
+
+.pstrip-stage {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--portal-text-strong);
+}
+
+.pstrip-count {
+  flex-shrink: 0;
+  font-size: var(--portal-t-body);
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+}
+
+.pstrip-bar {
+  flex: 1 1 auto;
+  min-width: 40px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+}
+
+/* The fill is a scaled transform, not a width, so progress never animates layout. */
+.pstrip-bar span {
+  display: block;
+  height: 100%;
+  background: var(--portal-text-strong);
+  transform-origin: left;
+  transition: transform var(--portal-duration) var(--portal-ease-out);
+}
+
+.pstrip > svg {
+  flex-shrink: 0;
+  color: var(--portal-text-faint);
+  transition: color 0.18s var(--ease-out), transform 0.18s var(--ease-out);
+}
+
+.pstrip:hover > svg {
+  color: var(--portal-text-strong);
+  transform: translateX(2px);
+}
+
+/* ── Checklist rail ─────────────────────────────────────────────────────── */
+
+/* The tiles' pane, holding the checklist. Hidden below 621px, where the strip
+   opens the sheet instead; in flow under the grid from 621px; from 1100px the
+   bento is two columns and the pane sits at the right, sticky. */
+.pcl-rail {
+  display: none;
+  box-sizing: border-box;
+  padding: 16px 16px 12px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--tile-radius);
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
+  box-shadow: var(--portal-pane-shadow);
+  scroll-margin-top: 22px;
+}
+
+@media (min-width: 621px) {
+  .pcl-rail {
+    display: block;
+    width: calc(min(100%, 1180px) - 2 * clamp(14px, 3vw, 28px));
+    margin: 14px auto 0;
+  }
+}
+
+@media (min-width: 1100px) {
+  .portal-bento:has(> .pcl-rail) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-rows: minmax(0, 1fr);
+  }
+
+  .pcl-rail {
+    position: sticky;
+    top: 22px;
+    align-self: start;
+    width: auto;
+    max-height: calc(100dvh - 46px);
+    margin: 0 clamp(14px, 3vw, 28px) 0 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  }
+}
+
+/* ── Checklist ──────────────────────────────────────────────────────────── */
+
+.pcl {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--portal-font);
+  color: var(--portal-text);
+}
+
+.pcl :focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.pcl-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-bottom: 14px;
+}
+
+.pcl-eyebrow {
+  font-size: var(--portal-t-label);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--portal-text-faint);
+}
+
+.pcl-title {
+  margin: 0;
+  font-size: var(--portal-t-mid);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  color: var(--portal-text-strong);
+}
+
+.pcl-progress {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-size: var(--portal-t-body);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.pcl-bar {
+  height: 2px;
+  background: rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+}
+
+.pcl-bar span {
+  display: block;
+  height: 100%;
+  background: var(--portal-text-strong);
+  transform-origin: left;
+  transition: transform var(--portal-duration) var(--portal-ease-out);
+}
+
+.pcl-note {
+  margin: 0 0 10px;
+  font-size: var(--portal-t-micro);
+  line-height: 1.5;
+  color: var(--portal-text);
+}
+
+.pcl-note.is-preview {
+  padding: 8px 10px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius-inner);
+}
+
+.pcl-done {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(59, 214, 107, 0.35);
+  border-radius: var(--portal-radius-inner);
+  color: var(--portal-success);
+}
+
+.pcl-done strong {
+  display: block;
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.pcl-done p {
+  margin: 2px 0 0;
+  font-size: var(--portal-t-micro);
+  line-height: 1.5;
+  color: var(--portal-text);
+}
+
+/* Stages are an accordion list separated by hairlines, not boxes. */
+.pcl-stage {
+  border-top: 1px solid var(--portal-rule);
+}
+
+.pcl-stage:last-child {
+  border-bottom: 1px solid var(--portal-rule);
+}
+
+.pcl-stage.is-locked {
+  opacity: 0.6;
+}
+
+.pcl-stage-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pcl-stage-head:disabled {
+  cursor: default;
+}
+
+.pcl-stage-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  font-size: var(--portal-t-label);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--portal-text);
+}
+
+.pcl-stage.is-current .pcl-stage-title {
+  color: var(--portal-text-strong);
+}
+
+/* Same badge grammar as the Stepper: ring, done fill, current inverted. */
+.pcl-stage-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--portal-border);
+  border-radius: 50%;
+  font-size: var(--portal-t-label);
+  letter-spacing: 0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--portal-text-faint);
+}
+
+.pcl-stage.is-complete .pcl-stage-num {
+  border-color: var(--portal-text-faint);
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--portal-text-strong);
+}
+
+.pcl-stage.is-current .pcl-stage-num {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.95);
+  color: #141414;
+  font-weight: 700;
+}
+
+.pcl-stage-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-size: var(--portal-t-micro);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--portal-text-faint);
+}
+
+.pcl-stage-chevron {
+  transition: transform 200ms var(--portal-ease-out);
+}
+
+.pcl-stage.is-open .pcl-stage-chevron {
+  transform: rotate(180deg);
+}
+
+.pcl-stage-items {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 8px;
+}
+
+.pcl-step + .pcl-step {
+  border-top: 1px solid var(--portal-rule);
+}
+
+/* The title row is the 44px hit area. For agent-checked steps it is the
+   mark-complete toggle itself; the rest render it as a static row. */
+.pcl-step-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 6px 0;
+  box-sizing: border-box;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.pcl-step-toggle {
+  border-radius: 10px;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 120ms var(--portal-ease-out);
+}
+
+.pcl-step-toggle:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.pcl-step-toggle:hover:not(:disabled) .pcl-step-mark {
+  border-color: var(--portal-text);
+}
+
+.pcl-step-toggle:disabled {
+  cursor: default;
+}
+
+.pcl-step-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--portal-border);
+  border-radius: 50%;
+  color: var(--portal-text-faint);
+  transition: border-color 120ms var(--portal-ease-out);
+}
+
+/* A static row's ring is dashed: a form, an admin or the step's own submission
+   completes it, not a tap. */
+div.pcl-step-row .pcl-step-mark {
+  border-style: dashed;
+}
+
+.pcl-step.is-done .pcl-step-mark {
+  border-color: transparent;
+  background: var(--portal-text-strong);
+  color: #141414;
+}
+
+.pcl-step.is-urgent .pcl-step-mark {
+  border-color: transparent;
+}
+
+.pcl-step.is-locked .pcl-step-mark {
+  border-style: solid;
+  border-color: var(--portal-rule);
+}
+
+.pcl-step-spinner {
+  width: 12px;
+  height: 12px;
+  margin: 0;
+  border-width: 2px;
+  border-color: rgba(255, 255, 255, 0.2);
+  border-top-color: var(--portal-text-strong);
+}
+
+.pcl-step-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: var(--portal-t-body);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--portal-text-strong);
+  text-wrap: pretty;
+}
+
+.pcl-step.is-done .pcl-step-title,
+.pcl-step.is-locked .pcl-step-title {
+  font-weight: 400;
+  color: var(--portal-text);
+}
+
+.pcl-step-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 0 0 10px 30px;
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+}
+
+.pcl-step-tag {
+  font-size: var(--portal-t-label);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--portal-text-faint);
+}
+
+/* The accent is the dot, not the text: accent text on the pane measures 1.8:1. */
+.pcl-step-tag.is-urgent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--portal-text);
+}
+
+.pcl-step-tag.is-urgent::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--portal-accent);
+}
+
+.pcl-step-desc {
+  margin: 0;
+  color: var(--portal-text);
+}
+
+.pcl-step-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding-left: 16px;
+  color: var(--portal-text);
+}
+
+.pcl-step-email {
+  margin: 0;
+  font-size: var(--portal-t-micro);
+  color: var(--portal-text);
+}
+
+.pcl-step-email span {
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+/* 44px target; the negative block margin keeps the copy's rhythm. */
+.pcl-step-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  margin: -8px 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--portal-text-strong);
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.35);
+  text-underline-offset: 4px;
+  cursor: pointer;
+  transition:
+    color 0.18s var(--portal-ease-out),
+    text-decoration-color 0.18s var(--portal-ease-out);
+}
+
+.pcl-step-link:hover {
+  color: var(--portal-accent);
+  text-decoration-color: currentColor;
+}
+
+.pcl-step-link:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.pcl-step-link svg {
+  flex-shrink: 0;
+}
+
+/* ── Checklist in the sheet ─────────────────────────────────────────────── */
+
+/* The sheet's own title stands in for the checklist head. The Stepper is the
+   progress readout there and stays pinned while the stages scroll under it;
+   it spans the body's inset so no row shows past its sides. */
+.portal-sheet .pcl-head {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pstrip,
+  .pstrip > svg,
+  .pstrip-bar span,
+  .pcl-bar span,
+  .pcl-stage-chevron,
+  .pcl-step-toggle,
+  .pcl-step-mark,
+  .pcl-step-link {
+    transition: none;
+  }
+}
+
+.portal-sheet .portal-stepper {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0 calc(var(--portal-inset) * -1) 8px;
+  padding: 6px var(--portal-inset) 12px;
+  background: var(--portal-pane-fill);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}

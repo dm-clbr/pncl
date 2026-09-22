@@ -148,3 +148,33 @@ describe("PortalOnboardingChecklist tutorial video", () => {
     }
   });
 });
+
+describe("PortalOnboardingChecklist mark-complete rows", () => {
+  it("makes the whole title row the toggle for agent steps only", () => {
+    const onComplete = vi.fn();
+    render(
+      <MemoryRouter>
+        <PortalOnboardingChecklist
+          todos={[
+            todo({ id: "agent_step", title: "Join the weekly sales call" }),
+            todo({ id: "done_step", title: "Follow PNCL on Instagram", completed: true }),
+            todo({ id: "form_step", title: "Complete your W-9 form", completionType: "auto" }),
+          ]}
+          agentEmail="agent@thepncl.com"
+          completingTodoId={null}
+          onComplete={onComplete}
+        />
+      </MemoryRouter>,
+    );
+
+    const toggle = screen.getByRole("button", { name: /Join the weekly sales call/, pressed: false });
+    fireEvent.click(toggle);
+    expect(onComplete).toHaveBeenCalledWith("agent_step");
+
+    const done = screen.getByRole("button", { name: /Follow PNCL on Instagram/, pressed: true });
+    expect(done).toBeDisabled();
+
+    expect(screen.getByText("Complete your W-9 form")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Complete your W-9 form/ })).not.toBeInTheDocument();
+  });
+});

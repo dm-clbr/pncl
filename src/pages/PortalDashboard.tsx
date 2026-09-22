@@ -1,8 +1,17 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+  type ReactNode,
+} from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowUpRight,
   Award,
+  ChevronRight,
   ClipboardList,
   FileSignature,
   GraduationCap,
@@ -13,7 +22,6 @@ import {
   TrendingUp,
   UserRound,
   Wrench,
-  X,
 } from "lucide-react";
 
 /** 14px outline marks, one per tile, so a tile is identifiable at a glance. */
@@ -33,6 +41,8 @@ function sectionIcon(id: string, title: string) {
 }
 import PNCLLogo from "@/components/PNCLLogo";
 import PortalOnboardingChecklist from "@/components/PortalOnboardingChecklist";
+import Sheet from "@/components/portal/Sheet";
+import Stepper from "@/components/portal/Stepper";
 import { useAuth } from "@/contexts/AuthContext";
 import { PORTAL_SECTIONS } from "@/lib/portal-links";
 import { usePortalDashboardTabs } from "@/hooks/usePortalDashboardTabs";
@@ -49,6 +59,7 @@ import {
   derivePortalPhase,
   isTodoCompleted,
   PORTAL_PHASE_LABELS,
+  PORTAL_TODO_PHASES,
 } from "@/lib/portal-todos";
 import { usePortalTodos } from "@/hooks/usePortalTodos";
 import { usePortalCarriers } from "@/hooks/usePortalCarriers";
@@ -106,6 +117,7 @@ const PORTAL_SOCIAL_LINKS = [
 ] as const;
 
 const GRID_COLUMNS = 3;
+const STAGE_LABELS = PORTAL_TODO_PHASES.map((phase) => phase.label);
 
 function pad(value: number): string {
   return String(value).padStart(2, "0");
@@ -361,19 +373,6 @@ export default function PortalDashboard() {
     window.scrollTo(0, 0);
   }, []);
 
-  useEffect(() => {
-    if (!checklistOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setChecklistOpen(false);
-    };
-    document.addEventListener("keydown", onKeyDown);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [checklistOpen]);
-
   const toggleSection = useCallback((id: string) => {
     setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
   }, []);
@@ -422,6 +421,22 @@ export default function PortalDashboard() {
       : "Admin console";
 
   const phaseLabel = PORTAL_PHASE_LABELS[currentPhase];
+  const totalTodos = resolvedTodos.length;
+  const progressPercent =
+    totalTodos === 0 ? 0 : Math.round((completedTodoCount / totalTodos) * 100);
+  // The Stepper is 1-based; past the last stage every step reads as done.
+  const currentStep =
+    currentPhase === "complete"
+      ? STAGE_LABELS.length + 1
+      : PORTAL_TODO_PHASES.findIndex((phase) => phase.id === currentPhase) + 1;
+
+  /** The strip is an anchor to the rail; below 621px the rail is hidden, so
+      the same tap opens the checklist sheet instead. */
+  const openChecklist = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (!window.matchMedia("(max-width: 620px)").matches) return;
+    event.preventDefault();
+    setChecklistOpen(true);
+  };
 
   const resignNotices = [
     showIcaResignNotice && {
@@ -542,7 +557,7 @@ export default function PortalDashboard() {
       <div className="grain" aria-hidden="true" />
 
       <main
-        className={`portal-bento portal-dash portal-home-dash${staticBase ? " has-static-base" : ""}`}
+        className={`portal-bento${staticBase ? " has-static-base" : ""}`}
         style={{ "--vignette": vignette } as CSSProperties}
       >
         {/* Living backdrop. Pauses itself offscreen, on a hidden tab, and under
@@ -589,6 +604,20 @@ export default function PortalDashboard() {
           </header>
 
           <PortalPrimaryNav />
+
+          {totalTodos > 0 && (
+            <a href="#onboarding-checklist" className="pstrip" onClick={openChecklist}>
+              <span className="pstrip-stage">{phaseLabel}</span>
+              <span className="pstrip-count">
+                {completedTodoCount} of {totalTodos}
+                <span className="portal-sr"> steps complete, open the checklist</span>
+              </span>
+              <span className="pstrip-bar" aria-hidden="true">
+                <span style={{ transform: `scaleX(${progressPercent / 100})` }} />
+              </span>
+              <ChevronRight size={16} strokeWidth={1.75} aria-hidden="true" />
+            </a>
+          )}
 
           {resignNotices.map((notice) => (
             <PortalNoticeBanner
@@ -658,66 +687,37 @@ export default function PortalDashboard() {
           </div>
         </div>
 
-        {resolvedTodos.length > 0 && (
-          <>
-            <aside className="portal-checklist-rail" aria-label="Onboarding checklist">
-              <PortalOnboardingChecklist
-                todos={resolvedTodos}
-                agentEmail={agentEmail}
-                completingTodoId={completingTodoId}
-                onComplete={(id) => void handleCompleteTodo(id)}
-                previewUnlocked={showAdminLink}
-              />
-            </aside>
-
-            {checklistOpen && (
-              <div
-                className="portal-checklist-overlay"
-                onClick={() => setChecklistOpen(false)}
-                aria-hidden="true"
-              />
-            )}
-            <div
-              className={`portal-checklist-drawer${checklistOpen ? " open" : ""}`}
-              role="dialog"
-              aria-modal="true"
-              aria-label="Onboarding checklist"
-              aria-hidden={!checklistOpen}
-            >
-              <button
-                type="button"
-                className="portal-checklist-drawer-close"
-                onClick={() => setChecklistOpen(false)}
-                aria-label="Close checklist"
-                tabIndex={checklistOpen ? 0 : -1}
-              >
-                <X size={18} strokeWidth={2.5} aria-hidden="true" />
-              </button>
-              <PortalOnboardingChecklist
-                todos={resolvedTodos}
-                agentEmail={agentEmail}
-                completingTodoId={completingTodoId}
-                onComplete={(id) => void handleCompleteTodo(id)}
-                previewUnlocked={showAdminLink}
-              />
-            </div>
-
-            {!checklistOpen && (
-              <button
-                type="button"
-                className={`portal-checklist-fab${pendingTodos.length > 0 ? " has-pending" : ""}`}
-                onClick={() => setChecklistOpen(true)}
-              >
-                <ClipboardList size={18} strokeWidth={2.25} aria-hidden="true" />
-                Checklist
-                <span className="portal-checklist-fab-count">
-                  {completedTodoCount}/{resolvedTodos.length}
-                </span>
-              </button>
-            )}
-          </>
+        {totalTodos > 0 && (
+          <aside id="onboarding-checklist" className="pcl-rail" aria-label="Onboarding checklist">
+            <PortalOnboardingChecklist
+              todos={resolvedTodos}
+              agentEmail={agentEmail}
+              completingTodoId={completingTodoId}
+              onComplete={(id) => void handleCompleteTodo(id)}
+              previewUnlocked={showAdminLink}
+            />
+          </aside>
         )}
       </main>
+
+      {/* Outside <main>: .portal-bento > * would set position: relative on the
+          dialog, and the Sheet must sit outside the tilted stage anyway. */}
+      {totalTodos > 0 && (
+        <Sheet
+          open={checklistOpen}
+          onClose={() => setChecklistOpen(false)}
+          title="Onboarding checklist"
+        >
+          <Stepper steps={STAGE_LABELS} current={currentStep} />
+          <PortalOnboardingChecklist
+            todos={resolvedTodos}
+            agentEmail={agentEmail}
+            completingTodoId={completingTodoId}
+            onComplete={(id) => void handleCompleteTodo(id)}
+            previewUnlocked={showAdminLink}
+          />
+        </Sheet>
+      )}
 
       {tunerPanel}
     </div>
