@@ -6743,14 +6743,16 @@ button.portal-todo-link {
     min-height: 235px;
   }
 
-  .home2-page .state-map-legend {
-    gap: 8px 12px;
+  /* The zoom stack gets its own gutter instead of sitting on the map: at this
+     width the right edge of the canvas is the east coast, and an overlaid
+     button would swallow the pointerdown that selects those states. 68px is
+     the 44px target plus the 12px inset and 12px of air. */
+  .home2-page .state-map-canvas-shell {
+    padding-right: 68px;
   }
 
-  /* Thumb zone, and the top right corner of a phone-sized map is New England.
-     Reuses this page's existing 640px line rather than inventing a third. */
-  .home2-page .state-map-zoom {
-    inset: auto 12px 12px auto;
+  .home2-page .state-map-legend {
+    gap: 8px 12px;
   }
 
   .home2-page .state-map-state-grid {

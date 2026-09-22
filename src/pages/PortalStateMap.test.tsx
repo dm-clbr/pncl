@@ -142,4 +142,29 @@ describe("portal state map", () => {
 
     getContext.mockRestore();
   });
+
+  it("keeps the zoomed camera on the map and drops off-screen frames", async () => {
+    const { cameraCenter, canDrawFrame, rendererPixelRatio } = await vi.importActual<
+      typeof import("@/components/StateAvailabilityCanvas")
+    >("@/components/StateAvailabilityCanvas");
+
+    // Frustum halves at zoom 1 for a 1440 wide shell: 530 by 340 map units.
+    // Zoom 1 ignores the selection and pins the map centre.
+    expect(cameraCenter(1, 530, 340, { x: 900, y: -120 })).toEqual({ x: 487.5, y: -305 });
+    // Zoomed in, the camera follows a state inside the margin...
+    expect(cameraCenter(2, 530, 340, { x: 600, y: -260 })).toEqual({ x: 600, y: -260 });
+    // ...and clamps at the edge for one outside it, instead of panning off the
+    // atlas. Margin at zoom 2 is half of each half-frustum: 265 and 170.
+    expect(cameraCenter(2, 530, 340, { x: 1000, y: -20 })).toEqual({ x: 752.5, y: -135 });
+
+    // The render gate: an off-screen or backgrounded ask never reaches the GPU.
+    expect(canDrawFrame(true, false)).toBe(true);
+    expect(canDrawFrame(false, false)).toBe(false);
+    expect(canDrawFrame(true, true)).toBe(false);
+
+    // Touch renders at dpr 1 whatever the screen claims.
+    expect(rendererPixelRatio(true, 3)).toBe(1);
+    expect(rendererPixelRatio(false, 3)).toBe(2);
+    expect(rendererPixelRatio(false, 1)).toBe(1);
+  });
 });

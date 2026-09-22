@@ -65,6 +65,36 @@ const ZOOM_MIN = 1;
 const ZOOM_MAX = 4;
 const ZOOM_STEP = 1.4;
 
+const clamp = (value: number, low: number, high: number) =>
+  Math.min(Math.max(value, low), high);
+
+/** Where the zoomed camera sits: on the selected state, or at the map edge when
+    following it would pan past the atlas. Pure so the clamp is checkable
+    without a WebGL context. Half-width and half-height are the frustum's, at
+    zoom 1. */
+export function cameraCenter(
+  zoom: number,
+  halfWidth: number,
+  halfHeight: number,
+  center?: { x: number; y: number },
+): { x: number; y: number } {
+  const marginX = halfWidth * (1 - 1 / zoom);
+  const marginY = halfHeight * (1 - 1 / zoom);
+  return {
+    x: clamp(center?.x ?? MAP_CENTER_X, MAP_CENTER_X - marginX, MAP_CENTER_X + marginX),
+    y: clamp(center?.y ?? MAP_CENTER_Y, MAP_CENTER_Y - marginY, MAP_CENTER_Y + marginY),
+  };
+}
+
+/** The render gate. Frames are asked for, never looped, so a false here is the
+    whole saving: renderer.render is not reached and the GPU draws nothing. */
+export const canDrawFrame = (onScreen: boolean, documentHidden: boolean) =>
+  onScreen && !documentHidden;
+
+/** A phone paints this map at a third of the fragments for no visible loss. */
+export const rendererPixelRatio = (coarsePointer: boolean, deviceRatio: number) =>
+  coarsePointer ? 1 : Math.min(deviceRatio, 2);
+
 function createShape(rings: Position[][]): THREE.Shape | null {
   const [outer, ...holes] = rings;
   if (!outer || outer.length < 3) return null;
@@ -191,8 +221,7 @@ export default function StateAvailabilityCanvas({
 
     const finePointer = window.matchMedia("(pointer: fine)");
     const coarsePointer = window.matchMedia("(pointer: coarse)");
-    // A phone paints this map at a third of the fragments for no visible loss.
-    renderer.setPixelRatio(coarsePointer.matches ? 1 : Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(rendererPixelRatio(coarsePointer.matches, window.devicePixelRatio));
     renderer.setClearColor(0x000000, 0);
 
     const scene = new THREE.Scene();
@@ -314,7 +343,7 @@ export default function StateAvailabilityCanvas({
     let onScreen = true;
     let framePending = false;
     const render = () => {
-      if (!onScreen || document.hidden) {
+      if (!canDrawFrame(onScreen, document.hidden)) {
         framePending = true;
         return;
       }
@@ -329,25 +358,24 @@ export default function StateAvailabilityCanvas({
     // Zoom alone would push the small north-eastern states out of frame, so the
     // zoomed camera follows the selection and stops at the map's edge. That is
     // the whole pan story: there is no drag, the list is how you reach a state.
-    const clamp = (value: number, low: number, high: number) =>
-      Math.min(Math.max(value, low), high);
     const applyView = () => {
       camera.zoom = zoomRef.current;
-      const center = selectedRef.current ? centers.get(selectedRef.current) : undefined;
-      const marginX = (camera.right - camera.left) / 2 * (1 - 1 / camera.zoom);
-      const marginY = (camera.top - camera.bottom) / 2 * (1 - 1 / camera.zoom);
-      camera.position.x = clamp(
-        center?.x ?? MAP_CENTER_X, MAP_CENTER_X - marginX, MAP_CENTER_X + marginX,
+      const { x, y } = cameraCenter(
+        camera.zoom,
+        (camera.right - camera.left) / 2,
+        (camera.top - camera.bottom) / 2,
+        selectedRef.current ? centers.get(selectedRef.current) : undefined,
       );
-      camera.position.y = clamp(
-        center?.y ?? MAP_CENTER_Y, MAP_CENTER_Y - marginY, MAP_CENTER_Y + marginY,
-      );
+      camera.position.x = x;
+      camera.position.y = y;
       camera.updateProjectionMatrix();
     };
     applyViewRef.current = applyView;
 
     const resize = () => {
-      const bounds = host.getBoundingClientRect();
+      // The canvas box, not the host's: below 640px the shell reserves a right
+      // gutter for the zoom stack, so the two differ by that padding.
+      const bounds = canvas.getBoundingClientRect();
       const width = Math.max(bounds.width, 1);
       const height = Math.max(bounds.height, 1);
       renderer.setSize(width, height, false);
