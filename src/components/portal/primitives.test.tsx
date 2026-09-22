@@ -111,6 +111,24 @@ describe("Stepper", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
+  it("reads done from the done prop when completion is out of order", () => {
+    const { rerender } = render(<Stepper steps={STAGES} current={2} done={[1, 3]} />);
+
+    expect(screen.getAllByRole("listitem").map((li) => li.className)).toEqual([
+      "portal-step is-done",
+      "portal-step is-current",
+      "portal-step is-done",
+      "portal-step is-todo",
+      "portal-step is-todo",
+    ]);
+
+    // Everything done leaves current at 0, so no step is current.
+    rerender(<Stepper steps={STAGES} current={0} done={[1, 2, 3, 4, 5]} />);
+    const all = screen.getAllByRole("listitem");
+    expect(all.map((li) => li.className)).toEqual(Array(5).fill("portal-step is-done"));
+    expect(all.some((li) => li.hasAttribute("aria-current"))).toBe(false);
+  });
+
   it("renders buttons that report the 1-based step when onSelect is given", () => {
     const onSelect = vi.fn();
     render(<Stepper steps={STAGES} current={1} onSelect={onSelect} />);

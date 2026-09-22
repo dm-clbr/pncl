@@ -30,9 +30,12 @@ import "@/styles/portal-training.css";
     host with a thumbnail at a guessable address, so it is the only poster. */
 const YOUTUBE_EMBED = /youtube-nocookie\.com\/embed\/([A-Za-z0-9_-]{11})/;
 
+/* playsinline keeps iOS Safari from taking the tap into its own fullscreen
+   player; autoplay rides the tap that mounted the iframe. */
 function autoplaySrc(embedUrl: string): string {
   const url = new URL(embedUrl);
   url.searchParams.set("autoplay", "1");
+  url.searchParams.set("playsinline", "1");
   return url.toString();
 }
 

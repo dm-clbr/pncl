@@ -63,7 +63,7 @@ describe("PortalDisclosures", () => {
 
     expect(screen.getByTitle("Day 1: Welcome video")).toHaveAttribute(
       "src",
-      "https://www.youtube-nocookie.com/embed/pd2a8WCC8cs?autoplay=1",
+      "https://www.youtube-nocookie.com/embed/pd2a8WCC8cs?autoplay=1&playsinline=1",
     );
   });
 
