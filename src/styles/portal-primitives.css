@@ -1,5 +1,6 @@
 /* ==========================================================================
-   Portal primitives: Sheet and Stepper.
+   Portal primitives: Sheet, Stepper, Pane, ListRow, Chip, EmptyState,
+   Skeleton, Field and Segmented.
    Tokens live in portal-tokens.css; nothing here is scoped to a page.
    ========================================================================== */
 
@@ -608,4 +609,222 @@ button.portal-row:hover .portal-row-trail {
   .portal-skeleton {
     animation: none;
   }
+}
+
+/* ── Field ───────────────────────────────────────────────────────────────── */
+
+.portal-field {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--portal-unit) * 1.5);
+  font-family: var(--portal-font);
+}
+
+.portal-field-label {
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--portal-text);
+}
+
+/* Decoration only: the control carries `required`, which is what a screen
+   reader announces. Kept on the readable tier rather than the accent, which
+   measures 1.77:1 on the pane. */
+.portal-field-req {
+  margin-left: 3px;
+}
+
+.portal-field-hint {
+  margin: 0;
+  font-size: var(--portal-t-micro);
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--portal-text);
+}
+
+/* The control. 44px tall, 16px text (smaller and iOS Safari zooms the page on
+   focus), 12px of horizontal padding. The near-black fill is what the text
+   sits on: white 0.95 reads 8.88:1 on it and the placeholder's 0.60 reads
+   4.66:1, against 5.91:1 and 3.45:1 on the bare pane. */
+.portal-input,
+.portal-select,
+.portal-textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.28);
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  font-size: 16px;
+  line-height: 1.3;
+  /* Native pickers, calendars and dropdowns render dark instead of light. */
+  color-scheme: dark;
+  transition: border-color 120ms var(--portal-ease-out);
+}
+
+.portal-textarea {
+  min-height: 88px;
+  padding: 10px 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+/* Still a native select, so iOS keeps its own picker; only the arrow is ours. */
+.portal-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23ffffff' stroke-opacity='0.6' stroke-width='1.5'%3E%3Cpath d='M1 1.75 6 6.5l5-4.75'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 8px;
+  cursor: pointer;
+}
+
+.portal-input::placeholder,
+.portal-textarea::placeholder {
+  color: var(--portal-text-faint);
+  opacity: 1;
+}
+
+.portal-input:hover:not(:disabled),
+.portal-select:hover:not(:disabled),
+.portal-textarea:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.portal-input:focus,
+.portal-select:focus,
+.portal-textarea:focus {
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+.portal-input:focus-visible,
+.portal-select:focus-visible,
+.portal-textarea:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.portal-input:disabled,
+.portal-select:disabled,
+.portal-textarea:disabled {
+  border-color: var(--portal-rule);
+  background-color: rgba(0, 0, 0, 0.14);
+  color: var(--portal-text-faint);
+  cursor: not-allowed;
+}
+
+.portal-field.is-invalid .portal-input,
+.portal-field.is-invalid .portal-select,
+.portal-field.is-invalid .portal-textarea {
+  border-color: var(--portal-accent);
+}
+
+/* The accent reads 1.77:1 on the pane and 5.43:1 on this near-black fill, the
+   same fill the Chip uses. Backing the text is what makes the accent legible;
+   the state is also carried by the words, role="alert" and aria-invalid. */
+.portal-field-error {
+  align-self: flex-start;
+  margin: 0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.86);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--portal-accent);
+}
+
+/* ── Segmented ───────────────────────────────────────────────────────────── */
+
+/* A recessed track: the darker fill is what lets the quiet items hold 4.66:1
+   (0.60 white) where the bare pane would give them 3.45:1. Scrolls sideways
+   on a phone; each edge fades only once it has content behind it, which the
+   component sets through data-fade-start / data-fade-end. */
+.portal-segmented {
+  --fade-start: 0px;
+  --fade-end: 0px;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--portal-unit) * 2);
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: var(--portal-unit);
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.28);
+  font-family: var(--portal-font);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  scroll-padding-inline: 24px;
+  -webkit-mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 var(--fade-start),
+    #000 calc(100% - var(--fade-end)),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0,
+    #000 var(--fade-start),
+    #000 calc(100% - var(--fade-end)),
+    transparent 100%
+  );
+}
+
+.portal-segmented::-webkit-scrollbar {
+  display: none;
+}
+
+.portal-segmented[data-fade-start="true"] {
+  --fade-start: 24px;
+}
+
+.portal-segmented[data-fade-end="true"] {
+  --fade-end: 24px;
+}
+
+/* 44px tall, 8px apart. The weight stays put between states: bolding the
+   active item would re-measure every label and shift the track under it. */
+.portal-segment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--portal-text-faint);
+  font-family: inherit;
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 120ms var(--portal-ease-out), color 120ms var(--portal-ease-out);
+}
+
+.portal-segment:hover {
+  color: var(--portal-text);
+}
+
+.portal-segment:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.portal-segment[data-active="true"] {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--portal-text-strong);
 }

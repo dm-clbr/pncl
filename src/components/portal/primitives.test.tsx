@@ -3,8 +3,10 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import Chip from "@/components/portal/Chip";
 import EmptyState from "@/components/portal/EmptyState";
+import Field from "@/components/portal/Field";
 import ListRow from "@/components/portal/ListRow";
 import Pane from "@/components/portal/Pane";
+import Segmented, { nextIndex } from "@/components/portal/Segmented";
 import Sheet from "@/components/portal/Sheet";
 import Skeleton from "@/components/portal/Skeleton";
 import Stepper from "@/components/portal/Stepper";
@@ -229,5 +231,130 @@ describe("Skeleton", () => {
     expect(block).toHaveClass("portal-skeleton", "is-row");
     expect(block).toHaveAttribute("aria-hidden", "true");
     expect(block.style.width).toBe("38%");
+  });
+});
+
+describe("Field", () => {
+  it("wires the label, the hint and the error to the input it renders", () => {
+    render(
+      <Field
+        label="Mobile number"
+        id="phone"
+        hint="We text the activation link here."
+        error="Enter a 10 digit number."
+        required
+        type="tel"
+        inputMode="numeric"
+        autoComplete="tel"
+        placeholder="801 555 0134"
+      />,
+    );
+
+    const input = screen.getByLabelText(/Mobile number/);
+    expect(input.tagName).toBe("INPUT");
+    expect(input).toHaveClass("portal-input");
+    expect(input).toBeRequired();
+    expect(input).toHaveAttribute("type", "tel");
+    expect(input).toHaveAttribute("inputmode", "numeric");
+    expect(input).toHaveAttribute("autocomplete", "tel");
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    expect(input).toHaveAttribute("aria-describedby", "phone-hint phone-error");
+    expect(screen.getByRole("alert")).toHaveTextContent("Enter a 10 digit number.");
+  });
+
+  it("describes nothing and claims nothing invalid without a hint or an error", () => {
+    render(<Field label="First name" id="first" autoComplete="given-name" />);
+
+    const input = screen.getByLabelText("First name");
+    expect(input).not.toHaveAttribute("aria-describedby");
+    expect(input).not.toHaveAttribute("aria-invalid");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("hands the same wiring to a child control instead of rendering an input", () => {
+    const { container } = render(
+      <Field label="State" id="state" error="Pick a state.">
+        <select className="portal-select" defaultValue="">
+          <option value="">Choose</option>
+          <option value="UT">Utah</option>
+        </select>
+      </Field>,
+    );
+
+    const select = screen.getByLabelText("State");
+    expect(select.tagName).toBe("SELECT");
+    expect(select).toHaveClass("portal-select");
+    expect(select).toHaveAttribute("aria-describedby", "state-error");
+    expect(select).toHaveAttribute("aria-invalid", "true");
+    expect(container.querySelector("input")).toBeNull();
+  });
+});
+
+describe("Segmented", () => {
+  const TABS = [
+    { value: "details", label: "Details" },
+    { value: "team", label: "Team" },
+    { value: "licensing", label: "Licensing" },
+  ];
+
+  it("wraps the roving index at both ends and ignores keys that are not its own", () => {
+    expect(nextIndex("ArrowRight", 0, 3)).toBe(1);
+    expect(nextIndex("ArrowRight", 2, 3)).toBe(0);
+    expect(nextIndex("ArrowLeft", 2, 3)).toBe(1);
+    expect(nextIndex("ArrowLeft", 0, 3)).toBe(2);
+    expect(nextIndex("Home", 2, 3)).toBe(0);
+    expect(nextIndex("End", 0, 3)).toBe(2);
+    expect(nextIndex("Enter", 1, 3)).toBeNull();
+    expect(nextIndex(" ", 1, 3)).toBeNull();
+  });
+
+  it("is a roving tablist: one tab in the tab order, arrows move focus and value", () => {
+    const onChange = vi.fn();
+    render(<Segmented items={TABS} value="team" onChange={onChange} label="Profile sections" />);
+
+    expect(screen.getByRole("tablist", { name: "Profile sections" })).toBeInTheDocument();
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs.map((tab) => tab.getAttribute("tabindex"))).toEqual(["-1", "0", "-1"]);
+    expect(tabs[1]).toHaveAttribute("aria-selected", "true");
+    expect(tabs[0]).toHaveAttribute("aria-selected", "false");
+
+    fireEvent.click(tabs[2]);
+    expect(onChange).toHaveBeenLastCalledWith("licensing");
+
+    fireEvent.keyDown(tabs[1], { key: "ArrowRight" });
+    expect(onChange).toHaveBeenLastCalledWith("licensing");
+    expect(tabs[2]).toHaveFocus();
+
+    fireEvent.keyDown(tabs[1], { key: "ArrowLeft" });
+    expect(onChange).toHaveBeenLastCalledWith("details");
+    expect(tabs[0]).toHaveFocus();
+
+    fireEvent.keyDown(tabs[1], { key: "End" });
+    expect(onChange).toHaveBeenLastCalledWith("licensing");
+    expect(tabs[2]).toHaveFocus();
+
+    onChange.mockClear();
+    fireEvent.keyDown(tabs[1], { key: "Enter" });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("becomes router links with aria-current when linkTo is given", () => {
+    render(
+      <MemoryRouter>
+        <Segmented
+          items={TABS}
+          value="team"
+          label="Profile sections"
+          linkTo={(value) => `/portal/profile?tab=${value}`}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Profile sections" })).toBeInTheDocument();
+    const links = screen.getAllByRole("link");
+    expect(links[1]).toHaveAttribute("href", "/portal/profile?tab=team");
+    expect(links[1]).toHaveAttribute("aria-current", "page");
+    expect(links[0]).not.toHaveAttribute("aria-current");
   });
 });
