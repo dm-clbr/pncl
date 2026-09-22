@@ -1033,6 +1033,16 @@
 }
 
 @media (min-width: 1100px) {
+  /* .home2-page carries overflow-x: hidden, which computes overflow-y to auto
+     and makes it a scrollport that never scrolls, so a sticky descendant never
+     sticks. clip gives the same horizontal containment without the scroll
+     container. Scoped to the rail, and to the widths where the rail is sticky,
+     so the marketing pages in home2.css keep theirs. Same fix as the sub-page
+     header's in portal-shell.css. */
+  .home2-page:has(.pcl-rail) {
+    overflow-x: clip;
+  }
+
   .portal-bento:has(> .pcl-rail) {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 360px;
