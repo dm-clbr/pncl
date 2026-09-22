@@ -94,4 +94,59 @@ describe("PortalCarrierSheet", () => {
     expect(screen.getByText("Athene")).toBeInTheDocument();
     expect(screen.getAllByRole("listitem")).toHaveLength(2);
   });
+
+  // The five headers the brief names come from portal_carriers.section, set by
+  // supabase/migrations/20260724000000_carrier_sheet_sections.sql (three SureLC
+  // strings plus "Automatic"; "Other" is the page's fallback for a published
+  // row whose section is blank). The Edge Function orders by sort_order, which
+  // that migration assigns 0..13 in section order, so each section is one run.
+  it("renders the five headers the live section values produce, in sheet order", () => {
+    const section1 = 'SureLC #1 — "Basso Montemurro"';
+    const section2 = 'SureLC #2 — "The Pinnacle Life Group"';
+    const section3 = 'SureLC #3 — "Pinnacle Life Group"';
+    const row = (id: string, carrier: string, section: string): PortalCarrier => ({
+      id,
+      carrier,
+      companyNumber: "",
+      eAppLabel: "",
+      eAppUrl: null,
+      section,
+    });
+    carrierState.carriers = [
+      row("1", "American Amicable", section1),
+      row("2", "Fidelity & Guaranty", section2),
+      row("3", "AuguStar", section3),
+      row("4", "Ethos", "Automatic"),
+      row("5", "Legacy carrier", ""),
+    ];
+    renderPage();
+
+    const headings = screen
+      .getAllByRole("heading", { level: 2 })
+      .map((node) => node.textContent);
+    expect(headings).toEqual([section1, section2, section3, "Automatic", "Other"]);
+  });
+
+  // Dropping a blank row can only join two runs that already carry the same
+  // section string, which is one section by definition. A blank row cannot keep
+  // two differently named sections apart, so filtering first loses nothing.
+  it("joins two runs of one section that a blank row had split", () => {
+    const blank: PortalCarrier = {
+      id: "b",
+      carrier: "",
+      companyNumber: "",
+      eAppLabel: "",
+      eAppUrl: null,
+      section: "Automatic",
+    };
+    carrierState.carriers = [
+      { ...blank, id: "1", carrier: "Ethos" },
+      blank,
+      { ...blank, id: "2", carrier: "United Home Life" },
+    ];
+    renderPage();
+
+    expect(screen.getAllByRole("heading", { name: "Automatic" })).toHaveLength(1);
+    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+  });
 });

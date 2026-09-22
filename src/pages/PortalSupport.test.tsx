@@ -73,10 +73,14 @@ describe("PortalSupport", () => {
     vi.mocked(fetchPortalTickets).mockResolvedValue([TICKET]);
     renderPage();
 
-    // Four ticket types, so the select is a Segmented control.
-    const tabs = screen.getAllByRole("tab");
-    expect(tabs).toHaveLength(4);
-    expect(tabs[0]).toHaveAttribute("aria-selected", "true");
+    // Four ticket types, so the select is a Segmented control. It is a form
+    // choice with no panel behind it, so it carries radio roles, not tab ones.
+    const group = screen.getByRole("radiogroup", { name: "What is this about?" });
+    const radios = screen.getAllByRole("radio");
+    expect(group).toBeInTheDocument();
+    expect(radios).toHaveLength(4);
+    expect(radios[0]).toHaveAttribute("aria-checked", "true");
+    expect(screen.queryAllByRole("tab")).toHaveLength(0);
     expect(screen.getByLabelText(/Subject/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Details/).tagName).toBe("TEXTAREA");
     expect(screen.getByRole("button", { name: /Submit ticket/ })).toBeInTheDocument();

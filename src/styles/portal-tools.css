@@ -78,6 +78,13 @@
   padding-right: 44px;
 }
 
+/* WebKit draws its own clear glyph inside the content box, so padding only
+   shifts it left of ours. Two clear affordances side by side; drop theirs. */
+.ptools-page .ptools-search .portal-input::-webkit-search-cancel-button {
+  appearance: none;
+  display: none;
+}
+
 .ptools-page .ptools-search-clear {
   position: absolute;
   right: 0;
@@ -147,7 +154,9 @@
 }
 
 /* The accent reads 1.77:1 on the pane, so the message takes the same near-black
-   fill that backs .portal-field-error. */
+   fill that backs .portal-field-error. On that fill --portal-accent measures
+   4.70:1 worst case (over the brightest pncl gradient stop) and 5.76:1 over
+   --portal-bar-fill, so body text clears WCAG AA 4.5:1 everywhere it lands. */
 .ptools-page .ptools-error {
   margin: 0;
   padding: 8px 10px;

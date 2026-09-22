@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import PortalClients from "@/pages/PortalClients";
@@ -89,5 +89,23 @@ describe("PortalClients", () => {
     const search = screen.getByLabelText("Search clients");
     expect(search).toHaveAttribute("type", "search");
     expect(search).toHaveClass("portal-input");
+  });
+
+  it("shows the clear button and the search empty copy, and clearing restores the row", () => {
+    clientState.clients = [CLIENT];
+    renderPage();
+
+    const search = screen.getByLabelText("Search clients");
+    expect(screen.queryByRole("button", { name: "Clear the client search" })).toBeNull();
+
+    fireEvent.change(search, { target: { value: "zzz" } });
+    expect(search).toHaveValue("zzz");
+    expect(screen.getByText("No matches")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Dana Whitfield/ })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear the client search" }));
+    expect(search).toHaveValue("");
+    expect(screen.getByRole("button", { name: /Dana Whitfield/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Clear the client search" })).toBeNull();
   });
 });

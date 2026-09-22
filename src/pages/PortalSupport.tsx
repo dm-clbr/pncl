@@ -140,7 +140,7 @@ export default function PortalSupport() {
                 onSubmit={(event) => void handleSubmit(event)}
               >
                 <div className="ptools-group">
-                  <span className="ptools-group-label">
+                  <span className="ptools-group-label" id="ticket-type-label">
                     {TYPE_LABEL}
                   </span>
                   <Segmented
@@ -148,6 +148,8 @@ export default function PortalSupport() {
                     value={type}
                     onChange={(value) => setType(value as PortalTicketType)}
                     label={TYPE_LABEL}
+                    labelledBy="ticket-type-label"
+                    mode="radiogroup"
                   />
                 </div>
 
