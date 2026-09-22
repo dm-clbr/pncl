@@ -584,8 +584,12 @@ button.ptile-action {
   box-shadow:
     0 4px 10px rgba(0, 0, 0, 0.5),
     0 12px 28px rgba(0, 0, 0, 0.34);
-  /* Grows out of the card's edge rather than appearing next to it. */
-  height: var(--menu-h);
+  /* Grows out of the card's edge rather than appearing next to it. The page
+     measures --menu-h from the content and the room around the card; the cap
+     is a second bound so the phone rule below composes with that measure
+     instead of replacing it. */
+  --menu-max: 100vh;
+  height: min(var(--menu-h), var(--menu-max));
   overflow: hidden;
   font-family: var(--ff-sans, "Manrope", sans-serif);
 }
@@ -633,8 +637,17 @@ button.ptile-action {
     opacity: 0.35;
   }
   to {
-    height: var(--menu-h);
+    height: min(var(--menu-h), var(--menu-max));
     opacity: 1;
+  }
+}
+
+/* Phones: the menu never takes more than 60vh and the body scrolls the rest.
+   The same min() sits in the height rule and in the keyframe's final frame,
+   so the clip-wipe still lands exactly on the capped height. */
+@media (max-width: 620px) {
+  .ptile-menu {
+    --menu-max: 60vh;
   }
 }
 
