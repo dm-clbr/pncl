@@ -306,7 +306,11 @@ button.portal-step-inner:hover .portal-step-num {
 .portal-pane {
   display: block;
   box-sizing: border-box;
-  padding: var(--portal-inset);
+  /* Pane padding is 16px, wider than the 12px --portal-inset the grid uses,
+     so the inner radius is redefined here to keep nested children concentric
+     with the pane's own corner (outer radius minus this padding). */
+  padding: 16px;
+  --portal-radius-inner: calc(var(--portal-radius) - 16px);
   border: 1px solid var(--portal-border);
   border-radius: var(--portal-radius);
   background: var(--portal-pane-sheen), var(--portal-pane-fill);
@@ -319,7 +323,8 @@ button.portal-step-inner:hover .portal-step-num {
 
 @media (min-width: 621px) {
   .portal-pane {
-    padding: calc(var(--portal-unit) * 5);
+    padding: 20px;
+    --portal-radius-inner: calc(var(--portal-radius) - 20px);
   }
 }
 
@@ -417,11 +422,13 @@ button.portal-row:hover {
   overflow-wrap: anywhere;
 }
 
+/* Body-class text, so it holds the 4.5:1 rung, not the 0.60 UI rung that
+   --portal-text-faint reserves for glyphs, counts and uppercase labels. */
 .portal-row-secondary {
   font-size: var(--portal-t-micro);
   font-weight: 400;
   line-height: 1.35;
-  color: var(--portal-text-faint);
+  color: var(--portal-text);
 }
 
 .portal-row-trail {
