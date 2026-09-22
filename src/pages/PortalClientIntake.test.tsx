@@ -78,6 +78,45 @@ const answerEveryStep = () => {
   throw new Error("Never reached the review screen");
 };
 
+/** matchMedia stub that reports the desktop breakpoint as matching. */
+const desktopMatchMedia = (query: string) => ({
+  matches: query === "(min-width: 621px)",
+  media: query,
+  onchange: null,
+  addListener: () => {},
+  removeListener: () => {},
+  addEventListener: () => {},
+  removeEventListener: () => {},
+  dispatchEvent: () => false,
+});
+
+/** The steps rendered on the current screen, in screen order. */
+const screenSteps = () =>
+  screen
+    .getAllByRole("heading")
+    .map((node) => STEP_BY_QUESTION.get(node.textContent ?? ""))
+    .filter((step): step is NonNullable<typeof step> => !!step);
+
+/** Fills every text-like question on the current screen, leaving yes/no and
+    select questions alone. */
+const fillTextQuestions = () => {
+  const controls = document.querySelectorAll(".pintake-control");
+  screenSteps().forEach((step, offset) => {
+    const root = controls[offset];
+    if (!root || step.type === "yesno" || step.type === "select") return;
+    const inputs = root.querySelectorAll<HTMLElement>("input, textarea");
+    if (step.type === "dual") {
+      fireEvent.change(inputs[0], { target: { value: "5 ft 6 in" } });
+      fireEvent.change(inputs[1], { target: { value: "148" } });
+      return;
+    }
+    fireEvent.change(inputs[0], { target: { value: answerFor(String(step.key)) } });
+  });
+};
+
+const choiceButtons = () =>
+  Array.from(document.querySelectorAll<HTMLButtonElement>(".pintake-option"));
+
 describe("PortalClientIntake", () => {
   vi.useFakeTimers({ shouldAdvanceTime: true });
   afterEach(() => vi.clearAllTimers());
@@ -183,6 +222,62 @@ describe("PortalClientIntake", () => {
       act(() => void vi.advanceTimersByTime(400));
       expect(screen.getByText(/^Step 1 of /)).toBeInTheDocument();
       expect(screen.getByText(/^Step 3 of /)).toBeInTheDocument();
+    } finally {
+      Object.defineProperty(window, "matchMedia", { writable: true, value: original });
+    }
+  });
+
+  it("does not auto-advance a desktop yes/no while earlier questions are blank", () => {
+    const original = window.matchMedia;
+    Object.defineProperty(window, "matchMedia", { writable: true, value: desktopMatchMedia });
+    try {
+      renderPage();
+      fireEvent.click(screen.getByRole("button", { name: "Start intake" }));
+
+      // Walk to the first desktop screen that pairs text questions with a yes/no.
+      let guard = 0;
+      while (
+        !(screenSteps().some((step) => step.type === "yesno")
+          && screenSteps().some((step) => step.type !== "yesno" && step.type !== "select"))
+      ) {
+        if (guard++ > 60) throw new Error("No mixed text + yes/no screen in the step table");
+        fillTextQuestions();
+        const options = choiceButtons();
+        const select = screen.queryByRole("combobox");
+        if (options.length > 0) {
+          fireEvent.click(options.find((b) => b.textContent === "No") ?? options[0]);
+          act(() => void vi.advanceTimersByTime(600));
+        } else if (select) {
+          const step = screenSteps().find((entry) => entry.type === "select")!;
+          fireEvent.change(select, { target: { value: step.options![0] } });
+          act(() => void vi.advanceTimersByTime(600));
+        } else {
+          fireEvent.click(screen.getByRole("button", { name: /^(Continue|Review form)$/ }));
+          act(() => void vi.advanceTimersByTime(400));
+        }
+      }
+
+      /* Step number only: a Yes answer can reveal a branch and change the total. */
+      const stepNumber = () => document.querySelector(".pintake-count")!.textContent!.split(" of ")[0];
+      const counter = stepNumber();
+      const blanks = screen.getAllByRole("textbox").length;
+      expect(blanks).toBeGreaterThan(0);
+
+      // Answering the yes/no first must not skip the blank questions above it.
+      fireEvent.click(choiceButtons()[0]);
+      act(() => void vi.advanceTimersByTime(600));
+      expect(stepNumber()).toBe(counter);
+      expect(screen.getAllByRole("alert").length).toBeGreaterThan(0);
+      expect(screen.getByRole("button", { name: /^(Continue|Review form)$/ }))
+        .toHaveAttribute("aria-disabled", "true");
+
+      // Once the text questions are answered, Continue moves the whole screen.
+      fillTextQuestions();
+      const advance = screen.getByRole("button", { name: /^(Continue|Review form)$/ });
+      expect(advance).toHaveAttribute("aria-disabled", "false");
+      fireEvent.click(advance);
+      act(() => void vi.advanceTimersByTime(400));
+      expect(stepNumber()).not.toBe(counter);
     } finally {
       Object.defineProperty(window, "matchMedia", { writable: true, value: original });
     }

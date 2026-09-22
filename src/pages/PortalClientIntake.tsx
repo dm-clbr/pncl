@@ -164,14 +164,20 @@ export default function PortalClientIntake() {
     advance(Math.max(groupSteps.length, 1));
   };
 
-  const handleYesNo = (target: ClientIntakeStep, value: string) => {
+  /** Yes/no and select answers end their screen, so on desktop they can sit
+      behind questions that are still blank. Auto-advance only when the rest of
+      the screen is already answered; otherwise the answer lands, the screen is
+      marked touched, and Continue stays the way forward. */
+  const handleChoice = (target: ClientIntakeStep, value: string) => {
     setData((prev) => setStepValue(target, value, prev));
-    setTimeout(finishStep, 200);
-  };
-
-  const handleSelect = (target: ClientIntakeStep, value: string) => {
-    setData((prev) => setStepValue(target, value, prev));
-    setTimeout(finishStep, 200);
+    const restAnswered = groupState.every(
+      (entry) => entry.step === target || entry.answered,
+    );
+    if (restAnswered) {
+      setTimeout(finishStep, 200);
+      return;
+    }
+    setTouchedKeys(groupSteps.map((groupStep) => String(groupStep.key)));
   };
 
   const touch = (target: ClientIntakeStep) => {
@@ -424,7 +430,7 @@ export default function PortalClientIntake() {
                                 type="button"
                                 className={`pintake-option${value === opt ? " selected" : ""}`}
                                 aria-pressed={value === opt}
-                                onClick={() => handleYesNo(step, opt)}
+                                onClick={() => handleChoice(step, opt)}
                                 disabled={loading}
                               >
                                 {opt}
@@ -440,7 +446,7 @@ export default function PortalClientIntake() {
                               id={stepId}
                               className="portal-select"
                               value={value}
-                              onChange={(e) => handleSelect(step, e.target.value)}
+                              onChange={(e) => handleChoice(step, e.target.value)}
                               autoFocus={offset === 0}
                               {...errorProps}
                             >
