@@ -1,0 +1,298 @@
+/* ==========================================================================
+   Portal primitives: Sheet and Stepper.
+   Tokens live in portal-tokens.css; nothing here is scoped to a page.
+   ========================================================================== */
+
+.portal-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.portal-sheet :focus-visible,
+.portal-stepper :focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+/* ── Sheet ───────────────────────────────────────────────────────────────── */
+
+/* Native <dialog> in the top layer, so it is immune to the bento stage's
+   preserve-3d and to every stacking context. Bottom sheet up to 620px,
+   right side panel from 621px. */
+.portal-sheet {
+  position: fixed;
+  inset: auto 0 0 0;
+  width: 100%;
+  max-width: none;
+  height: auto;
+  max-height: 85vh;
+  max-height: 85dvh;
+  margin: 0;
+  padding: 0;
+  display: none;
+  flex-direction: column;
+  box-sizing: border-box;
+  border: 1px solid var(--portal-border);
+  border-bottom: 0;
+  border-radius: var(--portal-radius) var(--portal-radius) 0 0;
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
+  box-shadow: var(--portal-pane-shadow);
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+  overflow: hidden;
+  /* One instance, so a receiver blur is allowed; kept under 20px. */
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+.portal-sheet[open] {
+  display: flex;
+  animation: portal-sheet-up var(--portal-duration) var(--portal-ease-out);
+}
+
+/* ::backdrop does not inherit custom properties in every engine, so the
+   values are literal here. */
+.portal-sheet::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+  animation: portal-sheet-fade 360ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .portal-sheet {
+    background: rgba(20, 18, 17, 0.96);
+  }
+}
+
+/* Modal open: the page behind must not scroll. */
+body:has(dialog.portal-sheet[open]) {
+  overflow: hidden;
+}
+
+/* Static drag-handle affordance. A real element, not ::before, so a tap on it
+   does not read as a backdrop click on the dialog itself. */
+.portal-sheet-handle {
+  flex-shrink: 0;
+  align-self: center;
+  width: 36px;
+  height: 4px;
+  margin: 8px 0 0;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.portal-sheet-head {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--portal-unit) * 2);
+  flex-shrink: 0;
+  padding: var(--portal-unit) var(--portal-unit) var(--portal-unit) calc(var(--portal-inset) + var(--portal-unit) * 2);
+}
+
+.portal-sheet-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--portal-t-mid);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  text-wrap: balance;
+  color: var(--portal-text-strong);
+}
+
+.portal-sheet-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--portal-radius-inner);
+  background: none;
+  color: var(--portal-text);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 120ms var(--portal-ease-out), color 120ms var(--portal-ease-out);
+}
+
+.portal-sheet-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--portal-text-strong);
+}
+
+/* The scroll lives here, never on the dialog, so the head stays put. */
+.portal-sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 var(--portal-inset) calc(var(--portal-inset) + env(safe-area-inset-bottom));
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+}
+
+@keyframes portal-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes portal-sheet-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes portal-sheet-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (min-width: 621px) {
+  .portal-sheet {
+    inset: 0 0 0 auto;
+    width: 420px;
+    max-height: none;
+    border: 0;
+    border-left: 1px solid var(--portal-border);
+    border-radius: 0;
+  }
+
+  .portal-sheet[open] {
+    animation-name: portal-sheet-in;
+  }
+
+  .portal-sheet-handle {
+    display: none;
+  }
+
+  .portal-sheet-head {
+    padding-top: calc(var(--portal-unit) * 3);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-sheet::backdrop {
+    animation: none;
+  }
+}
+
+/* ── Stepper ─────────────────────────────────────────────────────────────── */
+
+.portal-stepper {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--portal-font);
+}
+
+.portal-step {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Connector from the previous badge centre to this one. */
+.portal-step + .portal-step::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  right: 50%;
+  width: 100%;
+  height: 1px;
+  background: var(--portal-rule);
+}
+
+.portal-step.is-done + .portal-step::before {
+  background: var(--portal-text-faint);
+}
+
+/* Static span or, with onSelect, a 44px button. Same box either way. */
+.portal-step-inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: calc(var(--portal-unit) * 1.5);
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+}
+
+button.portal-step-inner {
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button.portal-step-inner:hover .portal-step-num {
+  border-color: var(--portal-text);
+}
+
+.portal-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--portal-border);
+  border-radius: 50%;
+  font-size: var(--portal-t-label);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--portal-text-faint);
+  transition: border-color 120ms var(--portal-ease-out);
+}
+
+.portal-step.is-done .portal-step-num {
+  border-color: var(--portal-text-faint);
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--portal-text-strong);
+}
+
+.portal-step.is-current .portal-step-num {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.95);
+  color: #141414;
+  font-weight: 700;
+}
+
+.portal-step-label {
+  max-width: 100%;
+  font-size: var(--portal-t-label);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  line-height: 1.25;
+  text-transform: uppercase;
+  color: var(--portal-text-faint);
+}
+
+.portal-step.is-done .portal-step-label {
+  color: var(--portal-text);
+}
+
+.portal-step.is-current .portal-step-label {
+  color: var(--portal-text-strong);
+}
