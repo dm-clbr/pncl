@@ -254,6 +254,13 @@
    to. White 0.62 on the page's --ink (#161616) reads 7.47:1 (R27: measured
    against this surface, not against the pane). */
 .home2-page .portal-profile-foot {
+  /* The .portal-bento-* footer rules live outside .portal-bento here, so they
+     inherit none of its variables: without these two, the hover colour is
+     unset (the social glyph's background-color falls back to transparent and
+     the icon vanishes) and the 0.18s transitions have no timing function.
+     Same fix .ptile-menu uses for its portaled-out case, portal-tile.css:579. */
+  --t-primary: var(--portal-text-strong);
+  --ease-out: var(--portal-ease-out);
   margin-top: 24px;
   color: rgba(255, 255, 255, 0.62);
 }

@@ -411,10 +411,15 @@ export default function PortalProfile() {
     () => (profileRow ? profileToFormValues(profileRow) : getDefaultProfileValues(user)),
     [profileRow, user],
   );
+  // ponytail: compare through the same two transforms savePortalProfile
+  // applies (trim on every string, lower-case on the recovery email), or a
+  // save that normalises input leaves the bar stuck on "Unsaved changes".
+  const normalizeForCompare = (key: keyof PortalProfileFormValues, value: string) =>
+    key === "recoveryEmail" ? value.trim().toLowerCase() : value.trim();
   const dirty =
     pendingPhotoFile !== null ||
     (Object.keys(savedValues) as (keyof PortalProfileFormValues)[]).some(
-      (key) => form[key] !== savedValues[key],
+      (key) => normalizeForCompare(key, form[key]) !== normalizeForCompare(key, savedValues[key]),
     );
   const showAdminLink = hasAdminConsoleAccess(user);
   const adminLink = isGenesisAdmin(user)

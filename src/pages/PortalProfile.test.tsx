@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import PortalProfile from "@/pages/PortalProfile";
@@ -32,12 +32,16 @@ const profileRow = {
 let fetchResult: () => Promise<PortalProfileRow | null> = () => Promise.resolve(profileRow);
 const toastError = vi.fn();
 
+// One frozen session object: the page reloads the profile on every new `user`
+// identity, so a fresh literal per render would refetch in a loop.
+const authValue = {
+  user: { id: "agent-1", email: "porter@thepncl.com", app_metadata: {}, user_metadata: {} },
+  session: null,
+  signOut: vi.fn(),
+};
+
 vi.mock("@/contexts/AuthContext", () => ({
-  useAuth: () => ({
-    user: { id: "agent-1", email: "porter@thepncl.com", app_metadata: {}, user_metadata: {} },
-    session: null,
-    signOut: vi.fn(),
-  }),
+  useAuth: () => authValue,
   isEmailConfirmed: () => true,
 }));
 
@@ -132,6 +136,22 @@ describe("portal profile details tab", () => {
     expect(await screen.findByText("Ramsey")).toBeInTheDocument();
 
     // The save bar is disabled until the form differs from the saved profile.
+    expect(screen.getByRole("button", { name: "Save profile" })).toBeDisabled();
+    expect(screen.getByText("All changes saved")).toBeInTheDocument();
+
+    // An edit arms it.
+    const firstName = screen.getByLabelText(/^First name/);
+    fireEvent.change(firstName, { target: { value: "Porters" } });
+    expect(screen.getByRole("button", { name: "Save profile" })).toBeEnabled();
+    expect(screen.getByText("Unsaved changes")).toBeInTheDocument();
+
+    // A difference savePortalProfile normalises away is not a difference:
+    // the trim and the lower-case have to be on both sides of the compare,
+    // or the bar stays armed forever after a save.
+    fireEvent.change(firstName, { target: { value: " Porter " } });
+    fireEvent.change(screen.getByLabelText(/^Personal recovery email/), {
+      target: { value: "Porter@Example.com" },
+    });
     expect(screen.getByRole("button", { name: "Save profile" })).toBeDisabled();
     expect(screen.getByText("All changes saved")).toBeInTheDocument();
 
