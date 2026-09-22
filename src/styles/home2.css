@@ -6821,6 +6821,29 @@ button.portal-todo-link {
   text-align: left;
 }
 
+.home2-page .training-header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.home2-page .training-refresh-btn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.home2-page .training-refresh-btn:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
+.home2-page .training-refresh-btn .is-spinning {
+  animation: portal-calendar-spin .8s linear infinite;
+}
+
 .home2-page .carrier-sheet-panel {
   background: var(--ink-2);
   border: 1px solid rgba(240, 237, 228, .1);
@@ -8437,6 +8460,14 @@ button.portal-todo-link {
 @media (max-width: 720px) {
   .home2-page .carrier-sheet-header {
     grid-template-columns: 1fr;
+  }
+
+  .home2-page .training-header-actions {
+    align-items: stretch;
+  }
+
+  .home2-page .training-refresh-btn {
+    justify-content: center;
   }
 
   .home2-page .carrier-sheet-panel-head {

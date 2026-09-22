@@ -1,4 +1,4 @@
-import { getSupabaseClient } from "@/lib/supabase";
+import { getSupabaseClient, getSupabaseConfig } from "@/lib/supabase";
 
 export interface PortalDisclosure {
   id: string;
@@ -8,6 +8,14 @@ export interface PortalDisclosure {
   video_url: string | null;
   sort_order: number;
   content_version: number;
+}
+
+export interface SyncPortalTrainingVideosResult {
+  synced: true;
+  channelId: string;
+  found: number;
+  added: number;
+  checkedAt: string;
 }
 
 export function hasDisclosureVideo(disclosure: PortalDisclosure): boolean {
@@ -71,6 +79,27 @@ export async function acknowledgeDisclosure(
 
   // Re-acknowledging (unique violation) is fine.
   if (error && error.code !== "23505") throw error;
+}
+
+export async function syncPortalTrainingVideos(
+  accessToken: string,
+): Promise<SyncPortalTrainingVideosResult> {
+  const { url, anonKey } = getSupabaseConfig();
+  const response = await fetch(
+    `${url.replace(/\/$/, "")}/functions/v1/sync-portal-training-videos`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        apikey: anonKey,
+      },
+    },
+  );
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message ?? "Unable to refresh training videos");
+  }
+  return data as SyncPortalTrainingVideosResult;
 }
 
 /** Converts common video URLs to an embeddable iframe src; null means use <video>. */
