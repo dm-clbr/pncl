@@ -9,25 +9,32 @@ type FieldProps = {
   hint?: string;
   /** Message under the control. Sets aria-invalid and announces itself. */
   error?: string;
-  /** One control: a select, a textarea, anything. Without it Field renders an input. */
+  /** One control: a select, a textarea, anything. Without it Field renders an
+      input. The remaining props are forwarded to it either way. */
   children?: ReactNode;
 } & Omit<InputHTMLAttributes<HTMLInputElement>, "id" | "children">;
 
 /** One labelled control. Styles under .portal-field in
     src/styles/portal-primitives.css: label above, control 44px tall at 16px so
-    iOS Safari does not zoom on focus, error under it. Pass `children` to wrap a
-    select or a textarea (they keep the native picker), or leave it out and the
-    rest of the props spread onto an input: type, inputMode, autoComplete,
-    value, onChange, placeholder. Focusing the first error on submit is the
-    form's job; Field only marks it. */
+    iOS Safari does not zoom on focus, error under it. The rest of the props
+    (type, inputMode, autoComplete, value, onChange, disabled, placeholder)
+    reach the control either way: onto the input Field renders, or onto the
+    `children` control that replaces it, so a select or a textarea keeps the
+    native picker and still gets the handlers. Focusing the first error on
+    submit is the form's job; Field only marks it. */
 export default function Field({ label, id, hint, error, required, children, ...input }: FieldProps) {
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
+  const describedBy = [hint && hintId, error && errorId].filter(Boolean).join(" ") || undefined;
+  // Field owns the wiring: the label's htmlFor points at `id`, so a control
+  // that brought its own id would leave the label pointing at nothing. Keys
+  // with no value are left out rather than spread as undefined, so a child
+  // keeps its own aria-describedby when this Field has no hint and no error.
   const wiring = {
     id,
-    required,
-    "aria-describedby": [hint && hintId, error && errorId].filter(Boolean).join(" ") || undefined,
-    "aria-invalid": error ? true : undefined,
+    ...(required !== undefined && { required }),
+    ...(describedBy && { "aria-describedby": describedBy }),
+    ...(error && { "aria-invalid": true }),
   };
 
   return (
@@ -45,12 +52,17 @@ export default function Field({ label, id, hint, error, required, children, ...i
           {hint}
         </p>
       )}
-      {/* ponytail: cloneElement fills the wiring the child did not set for
-          itself, so a caller's own id or aria-describedby still wins. */}
+      {/* ponytail: one cloneElement instead of a context. The props the child
+          set for itself beat the ones passed to Field, and the wiring beats
+          both, because the label and the error point at it by id. */}
       {children === undefined ? (
         <input className="portal-input" {...wiring} {...input} />
       ) : isValidElement(children) ? (
-        cloneElement(children as ReactElement, { ...wiring, ...(children as ReactElement).props })
+        cloneElement(children as ReactElement, {
+          ...input,
+          ...(children as ReactElement).props,
+          ...wiring,
+        })
       ) : (
         children
       )}

@@ -291,6 +291,24 @@ describe("Field", () => {
     expect(select).toHaveAttribute("aria-invalid", "true");
     expect(container.querySelector("input")).toBeNull();
   });
+
+  it("keeps its own id on a child that brought one and forwards the rest of the props", () => {
+    const onChange = vi.fn();
+    render(
+      <Field label="Resident state" id="state" onChange={onChange}>
+        <select className="portal-select" id="brought-its-own" defaultValue="">
+          <option value="">Choose</option>
+          <option value="UT">Utah</option>
+        </select>
+      </Field>,
+    );
+
+    // The label's htmlFor is the Field id, so losing it costs the accessible name.
+    const select = screen.getByLabelText("Resident state");
+    expect(select).toHaveAttribute("id", "state");
+    fireEvent.change(select, { target: { value: "UT" } });
+    expect(onChange).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("Segmented", () => {
