@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import BottomNav from "@/components/portal/BottomNav";
 import ListRow from "@/components/portal/ListRow";
 import Pane from "@/components/portal/Pane";
+import PortalBackground from "@/components/portal/PortalBackground";
 import PortalHeader from "@/components/portal/PortalHeader";
 import PortalSubpageHeader from "@/components/portal/PortalSubpageHeader";
 import Stepper from "@/components/portal/Stepper";
@@ -281,6 +282,7 @@ export default function PortalClientIntake() {
 
   return (
     <div className="home2-page ptools-page pintake-page">
+      <PortalBackground />
       <div className="grain" aria-hidden="true" />
 
       <main className="portal-dash dark">

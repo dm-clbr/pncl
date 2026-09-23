@@ -5,6 +5,7 @@ import BottomNav from "@/components/portal/BottomNav";
 import Chip from "@/components/portal/Chip";
 import EmptyState from "@/components/portal/EmptyState";
 import Pane from "@/components/portal/Pane";
+import PortalBackground from "@/components/portal/PortalBackground";
 import PortalHeader from "@/components/portal/PortalHeader";
 import PortalSubpageHeader from "@/components/portal/PortalSubpageHeader";
 import Skeleton from "@/components/portal/Skeleton";
@@ -175,6 +176,7 @@ export default function PortalDisclosures() {
 
   return (
     <div className="home2-page">
+      <PortalBackground />
       <div className="grain" aria-hidden="true" />
 
       <main className="portal-dash dark">

@@ -556,8 +556,11 @@
 /* The dashboard's footer markup and classes. The colour is declared on the
    container because .home2-page a { color: inherit } is 0-1-1 and outranks
    .portal-bento-footer-link, so the admin link renders whatever this resolves
-   to. White 0.62 on the page's --ink (#161616) reads 7.47:1 (R27: measured
-   against this surface, not against the pane). */
+   to. The footer now sits on --portal-bar-fill, given by portal-shell.css on
+   any page carrying the backdrop, where white 0.62 reads 7.43:1 and 6.57:1
+   under the sheen's maximum. On a page without the backdrop it is still the
+   flat --ink (#161616) at 7.47:1 (R27: measured against this surface, not
+   against the pane). */
 .home2-page .portal-profile-foot {
   /* The .portal-bento-* footer rules live outside .portal-bento here, so they
      inherit none of its variables: without these two, the hover colour is

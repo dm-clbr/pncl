@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileCheck2 } from "lucide-react";
 import IcaSigningStep from "@/components/IcaSigningStep";
+import PortalBackground from "@/components/portal/PortalBackground";
 import PortalHeader from "@/components/portal/PortalHeader";
 import PortalSubpageHeader from "@/components/portal/PortalSubpageHeader";
 import BottomNav from "@/components/portal/BottomNav";
@@ -121,6 +122,7 @@ export default function PortalIca() {
 
   return (
     <div className="home2-page">
+      <PortalBackground />
       <div className="grain" aria-hidden="true" />
 
       <main className="portal-dash dark carrier-sheet-dash pforms-page">

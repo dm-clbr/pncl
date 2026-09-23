@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ArrowUpRight, FileSignature } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
+import PortalBackground from "@/components/portal/PortalBackground";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   fetchPortalCompAttachments,
@@ -195,6 +196,7 @@ export default function PortalCompAgreement() {
 
   return (
     <div className="home2-page">
+      <PortalBackground />
       <div className="grain" aria-hidden="true" />
 
       <main className="portal-dash dark carrier-sheet-dash">

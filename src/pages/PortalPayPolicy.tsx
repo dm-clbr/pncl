@@ -4,6 +4,7 @@ import { ChevronDown, Wallet } from "lucide-react";
 import BottomNav from "@/components/portal/BottomNav";
 import EmptyState from "@/components/portal/EmptyState";
 import Pane from "@/components/portal/Pane";
+import PortalBackground from "@/components/portal/PortalBackground";
 import PortalSubpageHeader from "@/components/portal/PortalSubpageHeader";
 import Skeleton from "@/components/portal/Skeleton";
 import { fetchPayPolicyEntries, type PayPolicyEntry } from "@/lib/portal-pay-policy";
@@ -32,6 +33,7 @@ export default function PortalPayPolicy() {
 
   return (
     <div className="home2-page ptools-page">
+      <PortalBackground />
       <div className="grain" aria-hidden="true" />
 
       <main className="portal-dash dark carrier-sheet-dash">

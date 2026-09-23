@@ -15,6 +15,82 @@
   --portal-bar-fill: rgb(28, 22, 17);
 }
 
+/* ── Backdrop ────────────────────────────────────────────────── */
+
+/* The shared gradient layer, mounted by PortalBackground as the first child of
+   the page wrapper. Fixed rather than absolute: every portal page scrolls past
+   one viewport and the gradient should not scroll with it. Blur and overscale
+   repeat .portal-bento-canvas so the dashboard and the rest of the portal read
+   as one surface, and the overscale keeps the blurred edge outside the frame. */
+.portal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  filter: blur(32px);
+  transform: scale(1.16);
+}
+
+/* Half the blur radius on phones and touch devices: the canvas already runs at
+   0.5 dpr there and the upscale supplies the softness the radius gives up. */
+@media (pointer: coarse), (max-width: 620px) {
+  .portal-backdrop {
+    filter: blur(16px);
+  }
+}
+
+/* Mounting the canvas is not enough. A portal page paints an opaque fill twice
+   over the fixed layer: .home2-page:has(.portal-dash) on the wrapper and
+   .home2-page .portal-dash on <main>, both in home2.css. Left alone the
+   gradient renders into a layer nobody can see. So the wrapper keeps the dark
+   base the gradient's own dark stops sit on (and the fallback when WebGL2 is
+   missing), <main> goes transparent, and the page content is raised over the
+   layer. position: relative carries the raise on its own and there is
+   deliberately NO z-index here: .portal-backdrop is z-index: 0 and precedes
+   <main> in tree order, so the two paint in the same step and tree order puts
+   <main> on top. Adding a z-index would make <main> a stacking context and
+   trap every fixed overlay rendered inside it. The ICA signature modal is one:
+   .ica-signature-modal-backdrop is z-index: 1100 (onboarding.css) but sits
+   inside <main> on PortalIca, so a stacking context here drops it under the
+   z-index: 50 tab bar at 620px and leaves the bar tappable over a legal
+   signature. The selector is 0-2-1 and clears .home2-page .portal-dash at
+   0-2-0. Only <main> is raised: .grain and .portal-bottom-nav are already
+   fixed with their own z-index, and position: relative would break both. */
+.home2-page:has(> .portal-backdrop) {
+  background: var(--ink);
+}
+
+.home2-page:has(> .portal-backdrop) > main,
+.home2-page:has(> .portal-backdrop) > .portal-dash {
+  position: relative;
+  background: transparent;
+}
+
+/* Raising the page off the flat --ink moves every fill-less text run onto the
+   live gradient, where the run's contrast is set by whatever the canvas is
+   painting. The pncl preset's brightest stop is rgb(232, 205, 176): white 0.62
+   reads 1.31:1 there and --steel #BCBFCC reads 1.20:1, so DESIGN.md's rule
+   applies here as it does to the masthead. Text over the backdrop sits on a
+   fill. These six were the runs that had none once the backdrop went in: the
+   page lede under the sub-page header, the profile details lede (the child
+   combinator keeps the Pane-wrapped documents lede from being backed twice),
+   the state map intro, the profile footer, and the two legacy headers that
+   predate PortalHeader. On --portal-bar-fill rgb(28, 22, 17) they read white
+   0.62 = 7.43:1, --steel = 9.78:1 and --bone = 15.30:1, and under the sheen's
+   maximum 6.57:1, 8.00:1 and 12.52:1, all clear of the 4.5:1 body floor. */
+.home2-page:has(> .portal-backdrop) .portal-subhead + .portal-panel-note,
+.home2-page:has(> .portal-backdrop) .portal-profile-details > .portal-profile-lede,
+.home2-page:has(> .portal-backdrop) .state-map-intro,
+.home2-page:has(> .portal-backdrop) .portal-profile-foot,
+.home2-page:has(> .portal-backdrop) .brand-assets-header,
+.home2-page:has(> .portal-backdrop) .carrier-sheet-header {
+  box-sizing: border-box;
+  padding: 12px 16px;
+  border: 1px solid var(--portal-rule);
+  border-radius: var(--portal-radius);
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+}
+
 /* ── Masthead ───────────────────────────────────────────────────────────── */
 
 /* The masthead sits over the gradient's brightest region: the wall light is

@@ -6,6 +6,7 @@ import EmptyState from "@/components/portal/EmptyState";
 import Field from "@/components/portal/Field";
 import ListRow from "@/components/portal/ListRow";
 import Pane from "@/components/portal/Pane";
+import PortalBackground from "@/components/portal/PortalBackground";
 import PortalHeader from "@/components/portal/PortalHeader";
 import PortalSubpageHeader from "@/components/portal/PortalSubpageHeader";
 import Segmented from "@/components/portal/Segmented";
@@ -116,6 +117,7 @@ export default function PortalSupport() {
 
   return (
     <div className="home2-page ptools-page">
+      <PortalBackground />
       <div className="grain" aria-hidden="true" />
 
       <main className="portal-dash dark carrier-sheet-dash">

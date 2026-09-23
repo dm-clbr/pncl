@@ -9,6 +9,7 @@ import EmptyState from "@/components/portal/EmptyState";
 import Field from "@/components/portal/Field";
 import ListRow from "@/components/portal/ListRow";
 import Pane from "@/components/portal/Pane";
+import PortalBackground from "@/components/portal/PortalBackground";
 import Sheet from "@/components/portal/Sheet";
 import { matchesFilter, type StateMapFilter } from "@/components/portal/state-map-filter";
 import { useAuth } from "@/contexts/AuthContext";
@@ -151,6 +152,7 @@ export default function PortalStateMap() {
 
   return (
     <div className="home2-page">
+      <PortalBackground />
       <div className="grain" aria-hidden="true" />
 
       <main className="portal-dash dark portal-state-map-page">

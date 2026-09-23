@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowDownToLine, ArrowLeft, Copy, FileText } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
+import PortalBackground from "@/components/portal/PortalBackground";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortalBrandAssets } from "@/hooks/usePortalBrandAssets";
 import {
@@ -28,6 +29,7 @@ export default function PortalBrandAssets() {
 
   return (
     <div className="home2-page">
+      <PortalBackground />
       <div className="grain" aria-hidden="true" />
 
       <main className="portal-dash dark brand-assets-dash">
