@@ -1,4 +1,4 @@
-/* Chrome for the portal's PDF forms: the ICA and the W-9.
+/* The portal's three forms: the ICA, the W-9 and direct deposit.
 
    The document itself is a pdf.js canvas stack with AcroForm inputs overlaid on
    it, and none of that is ours. What is ours is everything around it: the
@@ -14,7 +14,10 @@
 
    .pforms-doc carries overflow: clip rather than hidden. hidden computes
    overflow-y to auto and makes the element a scrollport that never scrolls,
-   which would stop the pager inside it from ever sticking. */
+   which would stop the pager inside it from ever sticking.
+
+   Direct deposit has no canvas and no pager: a single column of Fields in a
+   pane with one sticky submit bar, which shares the pager's bar recipe. */
 
 .pforms {
   max-width: none;
@@ -98,7 +101,8 @@
    is around 1290px tall on a desktop pane, so a pager pinned to the bottom of
    the frame would sit a screen and a half below the fold, and the Sign button
    with it. */
-.pforms-pager {
+.pforms-pager,
+.pforms-submit-bar {
   position: sticky;
   bottom: 0;
   z-index: 5;
@@ -111,7 +115,7 @@
    sticks. clip gives the same horizontal containment without the scroll
    container. Scoped with :has() to the pages that carry this bar, per
    docs/DESIGN.md, and shipped in the same commit as the sticky. */
-.home2-page:has(.pforms-pager) {
+.home2-page:has(.pforms-pager, .pforms-submit-bar) {
   overflow-x: clip;
 }
 
@@ -305,6 +309,91 @@
   cursor: default;
 }
 
+/* ── The direct deposit form ───────────────────────────────── */
+
+/* No canvas here, so no pager: a single column of Fields and one sticky submit.
+   One control per row at every width, because at 390px a City / State / ZIP row
+   leaves three controls well under the 44px floor. */
+/* One capped column for every state the page can be in, the aside included.
+   The wrap runs to 1320px, which would stretch a five-character ZIP field
+   across the whole screen. */
+.pforms-dd-col {
+  display: grid;
+  gap: var(--portal-gap);
+  max-width: 560px;
+  margin-top: 20px;
+}
+
+.pforms-dd {
+  display: grid;
+  gap: var(--portal-gap);
+  font-family: var(--portal-font);
+}
+
+.pforms-dd-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.pforms-dd-lead,
+.pforms-dd-note {
+  margin: 0;
+  max-width: 68ch;
+  font-size: var(--portal-t-body);
+  line-height: 1.6;
+  color: var(--portal-text);
+}
+
+.pforms-dd-lead {
+  margin-bottom: 16px;
+}
+
+.pforms-dd-lead:last-child {
+  margin-bottom: 0;
+}
+
+/* .home2-page a is 0-1-1 and strips both the colour and the underline, so a
+   link inside body copy has to be declared past it or nothing marks it as a
+   link at all. */
+.pforms-page .pforms-dd-lead a {
+  color: var(--portal-text-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Native grouping: the legend names the set for a screen reader, which is what
+   the checking / savings radio pair needs. Left as a block box rather than a
+   grid, because a legend inside a grid fieldset stops being a legend box and
+   becomes an ordinary grid item. */
+.pforms-dd-group {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.pforms-dd-group > * + * {
+  margin-top: 16px;
+}
+
+.pforms-dd-group legend {
+  margin-left: -6px;
+  padding: 0 6px;
+  font-size: var(--portal-t-micro);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--portal-text-faint);
+}
+
+/* The bar keeps the action in the thumb zone on a form that runs past two
+   screens. It takes the sticky recipe above, so it is solid, not translucent. */
+.pforms-submit-bar {
+  padding: 10px 0;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+}
+
 /* ── The page around it ─────────────────────────────────────────────────── */
 
 .pforms-loading {
@@ -342,11 +431,13 @@
 
 @media (max-width: 620px) {
   /* Above the tab bar on the pages that mount one. */
-  .home2-page:has(> .portal-bottom-nav) .pforms-pager {
+  .home2-page:has(> .portal-bottom-nav) .pforms-pager,
+  .home2-page:has(> .portal-bottom-nav) .pforms-submit-bar {
     bottom: calc(56px + env(safe-area-inset-bottom));
   }
 
-  .home2-page:has(> .portal-bottom-nav) .pforms-pager-row {
+  .home2-page:has(> .portal-bottom-nav) .pforms-pager-row,
+  .home2-page:has(> .portal-bottom-nav) .pforms-submit-bar {
     padding-bottom: 8px;
   }
 

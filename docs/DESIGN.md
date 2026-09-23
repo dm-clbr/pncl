@@ -74,6 +74,12 @@ The pdf.js scroll container takes `max-width: 100%`, `overflow: auto` and `touch
 
 In a tile reveal `portal-tile.css` drives `.portal-row` from the same rules as the `.ptile-link` it replaced, so the 44px floor, the full width and the 8px radius apply on a page but not in a card menu.
 
+### Direct deposit
+
+The third form carries no canvas. `.pforms-dd-col` holds the loading pane, the submitted pane, the form and the "About this form" aside in one 560px column, which stops a five-character ZIP field short of the 1320px wrap. Inside it the controls are a single stack of Field, one per row at every width, with `inputmode="numeric"` and no `autocomplete` on the account and routing numbers. The checking and savings pair and the authorization line take `.pforms-ack` rows, the same 44px target the signing sheet uses, inside a `<fieldset>` whose legend names the group.
+
+`.pforms-submit-bar` shares the pager's sticky recipe, its `overflow-x: clip` on the page wrapper and its lift above the bottom nav at 620px and below. `validatePortalDirectDepositForm` returns one message for the whole form and `src/lib` is read-only, so the page maps that message back to a control id by prefix and moves focus there. Every control carries `required`, so the browser catches an empty field before that runs and only a format error reaches the mapping.
+
 ## Shell
 The portal carries one header, one nav and one sub-page header. 620px is the only breakpoint: above it the nav is text links in the masthead, below it a fixed tab bar in the thumb zone.
 
