@@ -1,16 +1,22 @@
 import { useState, type FormEvent } from "react";
-import { ArrowUpRight, CheckCircle2, Copy, Pencil, Plus } from "lucide-react";
+import { ArrowUpRight, ChevronRight, Copy, Eye, EyeOff } from "lucide-react";
+import Chip from "@/components/portal/Chip";
+import EmptyState from "@/components/portal/EmptyState";
+import Field from "@/components/portal/Field";
+import ListRow from "@/components/portal/ListRow";
+import Pane from "@/components/portal/Pane";
+import Sheet from "@/components/portal/Sheet";
+import Skeleton from "@/components/portal/Skeleton";
 import { usePortalCarrierCredentials } from "@/hooks/usePortalCarrierCredentials";
 import {
   copyCredentialValue,
   hasCarrierCredentials,
   type CarrierCredentialItem,
+  type UpsertCarrierCredentialInput,
 } from "@/lib/portal-carrier-credentials";
 import { toast } from "sonner";
 
-type EditState = {
-  carrierId: string;
-};
+const MASK = "••••••••";
 
 async function handleCopy(value: string, label: string) {
   try {
@@ -19,6 +25,33 @@ async function handleCopy(value: string, label: string) {
   } catch {
     toast.error(`Unable to copy ${label.toLowerCase()}.`);
   }
+}
+
+function CopyButton({ value, label }: { value: string; label: string }) {
+  return (
+    <button
+      type="button"
+      className="portal-profile-iconbtn"
+      onClick={() => void handleCopy(value, label)}
+      aria-label={`Copy ${label.toLowerCase()}`}
+    >
+      <Copy size={16} aria-hidden="true" />
+    </button>
+  );
+}
+
+function RevealButton({ shown, onToggle, label }: { shown: boolean; onToggle: () => void; label: string }) {
+  return (
+    <button
+      type="button"
+      className="portal-profile-iconbtn"
+      onClick={onToggle}
+      aria-pressed={shown}
+      aria-label={shown ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`}
+    >
+      {shown ? <EyeOff size={16} aria-hidden="true" /> : <Eye size={16} aria-hidden="true" />}
+    </button>
+  );
 }
 
 function CarrierName({ item }: { item: CarrierCredentialItem }) {
@@ -30,10 +63,11 @@ function CarrierName({ item }: { item: CarrierCredentialItem }) {
         href={item.loginUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="carrier-sheet-link portal-carrier-credential-link"
+        className="portal-carrier-link"
       >
         <span>{label}</span>
         <ArrowUpRight size={14} aria-hidden="true" />
+        <span className="portal-sr">opens in a new tab</span>
       </a>
     );
   }
@@ -41,29 +75,39 @@ function CarrierName({ item }: { item: CarrierCredentialItem }) {
   return <span>{label}</span>;
 }
 
+/** One table cell's value: the text, an optional reveal toggle and copy. The
+    mask is a fixed eight dots, so it never reports the real length, and it is
+    hidden from assistive tech: the toggle's own label carries the state. */
 function CredentialValue({
   value,
   label,
+  masked = false,
 }: {
   value: string;
   label: string;
+  masked?: boolean;
 }) {
+  const [shown, setShown] = useState(false);
+  const hidden = masked && !shown;
+
   return (
-    <div className="portal-carrier-credential-value">
-      <span className="portal-carrier-credential-text">{value}</span>
-      <button
-        type="button"
-        className="portal-carrier-credential-copy-btn"
-        onClick={() => void handleCopy(value, label)}
-        aria-label={`Copy ${label.toLowerCase()}`}
-      >
-        <Copy size={14} aria-hidden="true" />
-      </button>
+    <div className="portal-carrier-value">
+      <span className="portal-carrier-text" aria-hidden={hidden || undefined}>
+        {hidden ? MASK : value}
+      </span>
+      {masked && (
+        <RevealButton shown={shown} onToggle={() => setShown(!shown)} label={label} />
+      )}
+      <CopyButton value={value} label={label} />
     </div>
   );
 }
 
-function CredentialForm({
+function EmptyCell() {
+  return <span className="portal-carrier-empty">Not added</span>;
+}
+
+function CarrierSheetBody({
   item,
   submitting,
   onCancel,
@@ -74,9 +118,14 @@ function CredentialForm({
   onCancel: () => void;
   onSave: (values: { username: string; password: string; writingNumber: string }) => Promise<void>;
 }) {
+  // ponytail: the password starts at the saved value rather than blank, so the
+  // sheet is the one place to read, copy and change it. Resending the same
+  // string upserts the same row, and clearing the field still sends undefined,
+  // which is what "leave blank to keep the current password" means.
   const [username, setUsername] = useState(item.username ?? "");
-  const [password, setPassword] = useState("");
+  const [password, setPassword] = useState(item.password ?? "");
   const [writingNumber, setWritingNumber] = useState(item.writingNumber ?? "");
+  const [shown, setShown] = useState(false);
   const isNew = !hasCarrierCredentials(item);
 
   const handleSubmit = async (event: FormEvent) => {
@@ -85,158 +134,96 @@ function CredentialForm({
   };
 
   return (
-    <form className="portal-carrier-credential-form" onSubmit={(event) => void handleSubmit(event)}>
-      <label className="admin-field">
-        <span>Username</span>
-        <input
-          type="text"
-          value={username}
-          onChange={(event) => setUsername(event.target.value)}
-          autoComplete="username"
-          required
+    <div className="portal-carrier-sheet">
+      {item.loginUrl && (
+        <ListRow
+          href={item.loginUrl}
+          label="Open the carrier portal"
+          secondary="Sign in with the username and password below."
         />
-      </label>
-      <label className="admin-field">
-        <span>{isNew ? "Password" : "New password"}</span>
-        <input
-          type="text"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          autoComplete="new-password"
-          required={isNew}
-          placeholder={isNew ? "Enter password" : "Leave blank to keep current password"}
-        />
-      </label>
-      <label className="admin-field">
-        <span>Writing number</span>
-        <input
-          type="text"
-          value={writingNumber}
-          onChange={(event) => setWritingNumber(event.target.value)}
-          autoComplete="off"
-          placeholder="From your carrier welcome letter"
-        />
-      </label>
-      <div className="portal-carrier-credential-form-actions">
-        <button type="submit" className="portal-panel-btn" disabled={submitting}>
-          {submitting ? "Saving..." : "Save credentials"}
-        </button>
-        <button type="button" className="admin-secondary-link" onClick={onCancel}>
-          Cancel
-        </button>
-      </div>
-    </form>
+      )}
+
+      {item.applicationSubmitted && (
+        <p className="portal-carrier-status">
+          <Chip variant="active">Application submitted</Chip>
+        </p>
+      )}
+
+      <form className="portal-profile-form" onSubmit={(event) => void handleSubmit(event)}>
+        <div className="portal-carrier-field">
+          <Field
+            label="Username"
+            id="carrier-username"
+            type="text"
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+            autoComplete="off"
+            required
+          />
+          {username && <CopyButton value={username} label="Username" />}
+        </div>
+
+        <div className="portal-carrier-field">
+          <Field
+            label="Password"
+            id="carrier-password"
+            type={shown ? "text" : "password"}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            autoComplete="off"
+            required={isNew}
+            placeholder={isNew ? "Enter password" : "Leave blank to keep the current password"}
+          />
+          <RevealButton shown={shown} onToggle={() => setShown(!shown)} label="Password" />
+          {password && <CopyButton value={password} label="Password" />}
+        </div>
+
+        <div className="portal-carrier-field">
+          <Field
+            label="Writing number"
+            id="carrier-writing-number"
+            type="text"
+            value={writingNumber}
+            onChange={(event) => setWritingNumber(event.target.value)}
+            autoComplete="off"
+            placeholder="From your carrier welcome letter"
+          />
+          {writingNumber && <CopyButton value={writingNumber} label="Writing number" />}
+        </div>
+
+        <div className="portal-carrier-actions">
+          <button type="submit" className="portal-profile-btn" disabled={submitting}>
+            {submitting ? "Saving..." : "Save credentials"}
+          </button>
+          <button type="button" className="portal-profile-btn" onClick={onCancel}>
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }
 
-function CredentialRow({
-  item,
-  editing,
-  submitting,
-  onEdit,
-  onCancel,
-  onSave,
+/** Props rather than the hook, so the preview harness and the component test
+    can render the same markup with fixed data and no Supabase session. */
+export function CarrierCredentialsView({
+  credentials,
+  loading,
+  error,
+  save,
+  initialOpenId,
 }: {
-  item: CarrierCredentialItem;
-  editing: EditState | null;
-  submitting: boolean;
-  onEdit: () => void;
-  onCancel: () => void;
-  onSave: (values: { username: string; password: string; writingNumber: string }) => Promise<void>;
+  credentials: CarrierCredentialItem[];
+  loading: boolean;
+  error: string | null;
+  save: (input: UpsertCarrierCredentialInput) => Promise<void>;
+  /** Opens one carrier's sheet on mount. The browser tools cannot click, so
+      this is how the harness screenshots the sheet. */
+  initialOpenId?: string;
 }) {
-  const isEditing = editing?.carrierId === item.carrierId;
-  const saved = hasCarrierCredentials(item);
-
-  if (isEditing) {
-    return (
-      <tr>
-        <td colSpan={5}>
-          <div className="portal-carrier-credential-edit-wrap">
-            <div className="portal-carrier-credential-edit-head">
-              <strong>{item.carrier || "Carrier"}</strong>
-              {item.loginUrl && (
-                <a
-                  href={item.loginUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="carrier-sheet-link"
-                >
-                  Open login
-                  <ArrowUpRight size={14} aria-hidden="true" />
-                </a>
-              )}
-            </div>
-            <CredentialForm
-              item={item}
-              submitting={submitting}
-              onCancel={onCancel}
-              onSave={onSave}
-            />
-          </div>
-        </td>
-      </tr>
-    );
-  }
-
-  return (
-    <tr>
-      <td>
-        <CarrierName item={item} />
-        {item.applicationSubmitted && (
-          <span className="portal-carrier-submitted-badge">
-            <CheckCircle2 size={12} aria-hidden="true" />
-            Application submitted
-          </span>
-        )}
-      </td>
-      <td>
-        {saved && item.username ? (
-          <CredentialValue value={item.username} label="Username" />
-        ) : (
-          <span className="portal-carrier-credential-empty">Not added</span>
-        )}
-      </td>
-      <td>
-        {saved && item.password ? (
-          <CredentialValue value={item.password} label="Password" />
-        ) : (
-          <span className="portal-carrier-credential-empty">Not added</span>
-        )}
-      </td>
-      <td>
-        {item.writingNumber ? (
-          <CredentialValue value={item.writingNumber} label="Writing number" />
-        ) : (
-          <span className="portal-carrier-credential-empty">Not added</span>
-        )}
-      </td>
-      <td>
-        <button
-          type="button"
-          className="portal-carrier-credential-action-btn"
-          onClick={onEdit}
-        >
-          {saved ? (
-            <>
-              <Pencil size={14} aria-hidden="true" />
-              Edit
-            </>
-          ) : (
-            <>
-              <Plus size={14} aria-hidden="true" />
-              Add
-            </>
-          )}
-        </button>
-      </td>
-    </tr>
-  );
-}
-
-export default function PortalCarrierCredentials() {
-  const { credentials, loading, error, save } = usePortalCarrierCredentials();
-  const [editing, setEditing] = useState<EditState | null>(null);
+  const [openId, setOpenId] = useState<string | null>(initialOpenId ?? null);
   const [submitting, setSubmitting] = useState(false);
+  const openItem = credentials.find((item) => item.carrierId === openId);
 
   const handleSave = async (
     item: CarrierCredentialItem,
@@ -250,7 +237,7 @@ export default function PortalCarrierCredentials() {
         password: values.password.trim() || undefined,
         writingNumber: values.writingNumber.trim(),
       });
-      setEditing(null);
+      setOpenId(null);
       toast.success(`${item.carrier || "Carrier"} credentials saved.`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Unable to save credentials.");
@@ -260,54 +247,151 @@ export default function PortalCarrierCredentials() {
   };
 
   return (
-    <div className="carrier-sheet-panel portal-carrier-credentials-panel">
-      <div className="carrier-sheet-panel-head">
-        <div>
-          <h1>Carrier accounts</h1>
-          <p>
-            Save your carrier login usernames, passwords, and writing numbers here for quick
-            access. Carrier names link to each portal when available.
-          </p>
-        </div>
-      </div>
+    <Pane
+      title="Carrier accounts"
+      aside={!loading && !error && credentials.length > 0 ? <Chip>{credentials.length} carriers</Chip> : undefined}
+    >
+      <p className="portal-profile-lede">
+        Save each carrier login and writing number here. A carrier name links to that carrier's
+        portal when PNCL has the URL on file.
+      </p>
 
       {loading && (
-        <div className="portal-incentives-loading">
-          <span className="onboarding-spinner" aria-hidden="true" />
-          <span>Loading carrier accounts...</span>
+        <div className="portal-profile-rows" aria-busy="true">
+          <span className="portal-sr">Loading carrier accounts...</span>
+          <Skeleton variant="row" />
+          <Skeleton variant="row" />
+          <Skeleton variant="row" />
         </div>
       )}
 
-      {!loading && error && <p className="admin-error">{error}</p>}
+      {!loading && error && (
+        <div className="portal-profile-error" role="alert">
+          <p>{error}</p>
+        </div>
+      )}
 
-      {!loading && !error && (
-        <div className="carrier-sheet-table-wrap portal-carrier-credentials-table-wrap">
-          <table className="carrier-sheet-table portal-carrier-credentials-table">
-            <thead>
-              <tr>
-                <th>Carrier</th>
-                <th>Username</th>
-                <th>Password</th>
-                <th>Writing #</th>
-                <th aria-label="Actions" />
-              </tr>
-            </thead>
-            <tbody>
-              {credentials.map((item) => (
-                <CredentialRow
-                  key={item.carrierId}
-                  item={item}
-                  editing={editing}
-                  submitting={submitting}
-                  onEdit={() => setEditing({ carrierId: item.carrierId })}
-                  onCancel={() => setEditing(null)}
-                  onSave={(values) => handleSave(item, values)}
+      {!loading && !error && credentials.length === 0 && (
+        <EmptyState
+          title="No carriers yet"
+          body="You see your carriers here after PNCL submits your contracting."
+        />
+      )}
+
+      {!loading && !error && credentials.length > 0 && (
+        <>
+          {/* The phone list. A five-column table does not survive 390px, so the
+              row carries the name and the writing number and the sheet carries
+              the credentials. */}
+          <ul className="portal-profile-rows portal-carrier-list">
+            {credentials.map((item) => (
+              <li key={item.carrierId}>
+                <ListRow
+                  label={item.carrier || "Carrier"}
+                  secondary={
+                    item.writingNumber ? `Writing # ${item.writingNumber}` : "Not added"
+                  }
+                  onClick={() => setOpenId(item.carrierId)}
+                  trailing={
+                    <>
+                      {item.applicationSubmitted && <Chip variant="active">Submitted</Chip>}
+                      <ChevronRight size={14} strokeWidth={1.75} aria-hidden="true" />
+                    </>
+                  }
                 />
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </li>
+            ))}
+          </ul>
+
+          <div className="portal-carrier-table-wrap">
+            <table className="portal-carrier-table">
+              <thead>
+                <tr>
+                  <th>Carrier</th>
+                  <th>Username</th>
+                  <th>Password</th>
+                  <th>Writing #</th>
+                  <th aria-label="Actions" />
+                </tr>
+              </thead>
+              <tbody>
+                {credentials.map((item) => {
+                  const saved = hasCarrierCredentials(item);
+                  return (
+                    <tr key={item.carrierId}>
+                      <td>
+                        <CarrierName item={item} />
+                        {item.applicationSubmitted && (
+                          <Chip variant="active">Submitted</Chip>
+                        )}
+                      </td>
+                      <td>
+                        {saved && item.username ? (
+                          <CredentialValue value={item.username} label="Username" />
+                        ) : (
+                          <EmptyCell />
+                        )}
+                      </td>
+                      <td>
+                        {saved && item.password ? (
+                          <CredentialValue value={item.password} label="Password" masked />
+                        ) : (
+                          <EmptyCell />
+                        )}
+                      </td>
+                      <td>
+                        {item.writingNumber ? (
+                          <CredentialValue value={item.writingNumber} label="Writing number" />
+                        ) : (
+                          <EmptyCell />
+                        )}
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className="portal-profile-btn"
+                          onClick={() => setOpenId(item.carrierId)}
+                        >
+                          {saved ? "Edit" : "Add"}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
-    </div>
+
+      <Sheet
+        open={openItem !== undefined}
+        onClose={() => setOpenId(null)}
+        title={openItem?.carrier || "Carrier"}
+      >
+        {openItem && (
+          <CarrierSheetBody
+            key={openItem.carrierId}
+            item={openItem}
+            submitting={submitting}
+            onCancel={() => setOpenId(null)}
+            onSave={(values) => handleSave(openItem, values)}
+          />
+        )}
+      </Sheet>
+    </Pane>
+  );
+}
+
+export default function PortalCarrierCredentials() {
+  const { credentials, loading, error, save } = usePortalCarrierCredentials();
+
+  return (
+    <CarrierCredentialsView
+      credentials={credentials}
+      loading={loading}
+      error={error}
+      save={save}
+    />
   );
 }

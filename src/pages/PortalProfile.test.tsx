@@ -181,6 +181,13 @@ describe("portal profile details tab", () => {
     expect(screen.getByRole("tabpanel", { name: "Team" })).toBeInTheDocument();
   });
 
+  it("opens the carrier logins tab panel", async () => {
+    renderProfile();
+
+    fireEvent.click(await screen.findByRole("tab", { name: "Carrier logins" }));
+    expect(screen.getByRole("tabpanel", { name: "Carrier logins" })).toBeInTheDocument();
+  });
+
   it("opens the licensing tab panel", async () => {
     renderProfile();
 

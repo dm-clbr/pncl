@@ -26,7 +26,8 @@
 .home2-page .portal-profile-details .portal-pane > * + *,
 .home2-page .portal-profile-team .portal-pane > * + *,
 .home2-page .portal-profile-licensing .portal-pane > * + *,
-.home2-page .portal-profile-docs .portal-pane > * + * {
+.home2-page .portal-profile-docs .portal-pane > * + *,
+.home2-page .portal-profile-carriers .portal-pane > * + * {
   margin-top: var(--portal-gap);
 }
 
@@ -252,7 +253,8 @@
 
 .home2-page .portal-profile-team,
 .home2-page .portal-profile-licensing,
-.home2-page .portal-profile-docs {
+.home2-page .portal-profile-docs,
+.home2-page .portal-profile-carriers {
   display: flex;
   flex-direction: column;
   gap: var(--portal-gap);
@@ -553,4 +555,160 @@
   --ease-out: var(--portal-ease-out);
   margin-top: 24px;
   color: rgba(255, 255, 255, 0.62);
+}
+
+/* ── Carrier logins ─────────────────────────────────────────────────────── */
+
+/* Wider than the 680px form measure: this tab is a five-column record, not
+   something an agent reads line by line. */
+.home2-page .portal-profile-carriers {
+  max-width: 900px;
+}
+
+/* One surface per width. Below 621px the table is gone and the row plus the
+   sheet carry it; above, the table is back and the list is gone. Only one is
+   ever displayed, so assistive tech never meets the pair. */
+.home2-page .portal-carrier-table-wrap {
+  display: none;
+}
+
+@media (min-width: 621px) {
+  .home2-page .portal-carrier-list {
+    display: none;
+  }
+
+  .home2-page .portal-carrier-table-wrap {
+    display: block;
+    min-width: 0;
+    overflow-x: auto;
+  }
+}
+
+.home2-page .portal-carrier-table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  font-family: var(--portal-font);
+}
+
+.home2-page .portal-carrier-table th {
+  padding: 0 12px 8px;
+  border-bottom: 1px solid var(--portal-rule);
+  color: var(--portal-text-faint);
+  font-size: var(--portal-t-label);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* 44px rows: the height is a floor, and the cell padding is horizontal only so
+   a 44px control fills the row rather than adding to it. */
+.home2-page .portal-carrier-table td {
+  height: 44px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--portal-rule);
+  color: var(--portal-text-strong);
+  font-size: var(--portal-t-body);
+  vertical-align: middle;
+}
+
+.home2-page .portal-carrier-table th:last-child,
+.home2-page .portal-carrier-table td:last-child {
+  width: 1%;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* The three value columns split what the carrier name leaves, so a short
+   username does not drag its copy target left of the row above it. */
+.home2-page .portal-carrier-table th:nth-child(n + 2):nth-child(-n + 4) {
+  width: 26%;
+}
+
+/* The name never wraps, so the percentage hints below cannot squeeze the
+   column below its own content. The wrapper scrolls if the sum overflows. */
+.home2-page .portal-carrier-table td:first-child {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* The chip trails the name on the same line and needs its own gap. The cell
+   stays a table cell: display: flex on a td makes the browser wrap it in an
+   anonymous cell and the column widths stop agreeing with the header. */
+.home2-page .portal-carrier-table td:first-child .portal-chip {
+  margin-left: 8px;
+}
+
+/* The glyph, not the colour, says the name is a link: .home2-page a wins the
+   colour anyway at 0-1-1, so the name takes the cell's. */
+.home2-page .portal-carrier-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.35);
+  text-underline-offset: 3px;
+}
+
+.home2-page .portal-carrier-link:hover {
+  text-decoration-color: rgba(255, 255, 255, 0.7);
+}
+
+.home2-page .portal-carrier-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 2px 0;
+}
+
+/* A username or a writing number can be long and has no natural break, so it
+   wraps inside the cell rather than pushing the table sideways. */
+.home2-page .portal-carrier-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}
+
+.home2-page .portal-carrier-empty {
+  color: var(--portal-text);
+  font-size: var(--portal-t-body);
+}
+
+/* ── Carrier sheet ──────────────────────────────────────────────────────── */
+
+.home2-page .portal-carrier-sheet > * + * {
+  margin-top: var(--portal-gap);
+}
+
+.home2-page .portal-carrier-status {
+  margin: 0;
+}
+
+/* The reveal and copy targets sit beside the control, not over it: aligning
+   the row to its end lines all three 44px boxes up without the padding maths
+   an overlay would need, and the label stays clear of them. */
+.home2-page .portal-carrier-field {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.home2-page .portal-carrier-field .portal-field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.home2-page .portal-carrier-field .portal-profile-iconbtn {
+  flex-shrink: 0;
+}
+
+.home2-page .portal-carrier-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }

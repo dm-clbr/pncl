@@ -1030,8 +1030,10 @@ export default function PortalProfile() {
             aria-labelledby="profile-tab-carriers"
             hidden={activeTab !== "carriers"}
           >
-            <PortalSureLcLinks todos={resolvedTodos} />
-            <PortalCarrierCredentials />
+            <div className="portal-profile-carriers">
+              <PortalSureLcLinks todos={resolvedTodos} />
+              <PortalCarrierCredentials />
+            </div>
           </div>
 
           {/* The portal footer, same markup and classes as the dashboard's.

@@ -1,5 +1,6 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { beforeAll, describe, expect, it, vi } from "vitest";
+import { CarrierCredentialsView } from "@/components/PortalCarrierCredentials";
 import PortalLicensingSection from "@/components/PortalLicensingSection";
 import PortalProfileDocumentsSection from "@/components/PortalProfileDocumentsSection";
 import type { PortalProfile } from "@/lib/portal-profile";
@@ -49,6 +50,31 @@ const licensingProfile = {
 } as unknown as PortalProfile;
 
 const user = { id: "agent-1" } as never;
+
+// jsdom 20 ships HTMLDialogElement without showModal, close or the open
+// reflection, the same stand-in src/components/portal/primitives.test.tsx uses.
+beforeAll(() => {
+  const proto = HTMLDialogElement.prototype;
+  if (!("open" in proto)) {
+    Object.defineProperty(proto, "open", {
+      configurable: true,
+      get(this: HTMLDialogElement) {
+        return this.hasAttribute("open");
+      },
+      set(this: HTMLDialogElement, value: boolean) {
+        if (value) this.setAttribute("open", "");
+        else this.removeAttribute("open");
+      },
+    });
+  }
+  proto.showModal = function showModal(this: HTMLDialogElement) {
+    this.open = true;
+  };
+  proto.close = function close(this: HTMLDialogElement) {
+    this.open = false;
+    this.dispatchEvent(new Event("close"));
+  };
+});
 
 describe("portal licensing section", () => {
   it("renders the three panes, the add row and a remove target per license", () => {
@@ -113,5 +139,96 @@ describe("portal profile documents section", () => {
     expect(await screen.findByText("Nothing uploaded yet")).toBeInTheDocument();
     expect(screen.queryByRole("list")).not.toBeInTheDocument();
     expect(screen.getByLabelText(/^Document name/)).toBeInTheDocument();
+  });
+});
+
+describe("portal carrier credentials", () => {
+  // Invented values: a real carrier login never reaches a test or a screenshot.
+  const carriers = [
+    {
+      carrierId: "c1",
+      carrier: "Americo",
+      loginUrl: "https://agents.example-carrier.com",
+      username: "p.gerlach",
+      password: "sample-value",
+      writingNumber: "AM-4471902",
+      applicationSubmitted: true,
+    },
+    {
+      carrierId: "c2",
+      carrier: "Foresters Financial",
+      loginUrl: null,
+      username: null,
+      password: null,
+      writingNumber: null,
+    },
+  ];
+
+  it("gives each carrier a row and keeps the table password masked until asked", () => {
+    render(
+      <CarrierCredentialsView
+        credentials={carriers}
+        loading={false}
+        error={null}
+        save={vi.fn()}
+      />,
+    );
+
+    // The row carries the name and the writing number, never the credentials.
+    expect(screen.getByRole("button", { name: /Americo/ })).toHaveTextContent(
+      "Writing # AM-4471902",
+    );
+    expect(screen.getByRole("button", { name: /Foresters/ })).toHaveTextContent("Not added");
+
+    expect(screen.getByRole("table")).toBeInTheDocument();
+    expect(screen.queryByText("sample-value")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Show password"));
+    expect(screen.getByText("sample-value")).toBeInTheDocument();
+  });
+
+  it("opens the sheet on the row with the fields masked and off autocomplete", () => {
+    render(
+      <CarrierCredentialsView
+        credentials={carriers}
+        loading={false}
+        error={null}
+        save={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Americo/ }));
+
+    const sheet = screen.getByRole("dialog", { name: "Americo" });
+    const password = within(sheet).getByLabelText(/^Password/);
+    expect(password).toHaveAttribute("type", "password");
+    expect(password).toHaveAttribute("autocomplete", "off");
+    expect(password).toHaveValue("sample-value");
+    expect(within(sheet).getByLabelText(/^Username/)).toHaveValue("p.gerlach");
+    expect(within(sheet).getByLabelText(/^Writing number/)).toHaveValue("AM-4471902");
+
+    fireEvent.click(within(sheet).getByLabelText("Show password"));
+    expect(password).toHaveAttribute("type", "text");
+  });
+
+  it("keeps the loading, error and empty states", () => {
+    const { rerender } = render(
+      <CarrierCredentialsView credentials={[]} loading error={null} save={vi.fn()} />,
+    );
+    expect(screen.getByText("Loading carrier accounts...")).toBeInTheDocument();
+
+    rerender(
+      <CarrierCredentialsView
+        credentials={[]}
+        loading={false}
+        error="Unable to load carrier credentials"
+        save={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("Unable to load carrier credentials");
+
+    rerender(
+      <CarrierCredentialsView credentials={[]} loading={false} error={null} save={vi.fn()} />,
+    );
+    expect(screen.getByText("No carriers yet")).toBeInTheDocument();
   });
 });
