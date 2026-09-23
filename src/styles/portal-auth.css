@@ -186,15 +186,15 @@
    the inputs sit on: white 0.95 reads 8.88:1 there and the 0.60 label 4.66:1. */
 .portal-auth .pauth-note {
   margin-top: calc(var(--portal-unit) * 4);
+  padding: calc(var(--portal-unit) * 3);
+  border: 1px solid var(--portal-rule);
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.28);
 }
 
 /* Inside the form the flex gap already spaces it. */
 .portal-auth .pauth-form > .pauth-note {
   margin-top: 0;
-  padding: calc(var(--portal-unit) * 3);
-  border: 1px solid var(--portal-rule);
-  border-radius: 10px;
-  background-color: rgba(0, 0, 0, 0.28);
 }
 
 .portal-auth .pauth-note-label {
