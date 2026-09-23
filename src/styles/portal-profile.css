@@ -17,12 +17,16 @@
 /* Single column always, on a measure a form can be read at. The wrap runs to
    1400px, which would otherwise stretch every control across the viewport. */
 .home2-page .portal-profile-details,
-.home2-page .portal-profile-team {
+.home2-page .portal-profile-team,
+.home2-page .portal-profile-licensing,
+.home2-page .portal-profile-docs {
   max-width: 680px;
 }
 
 .home2-page .portal-profile-details .portal-pane > * + *,
-.home2-page .portal-profile-team .portal-pane > * + * {
+.home2-page .portal-profile-team .portal-pane > * + *,
+.home2-page .portal-profile-licensing .portal-pane > * + *,
+.home2-page .portal-profile-docs .portal-pane > * + * {
   margin-top: var(--portal-gap);
 }
 
@@ -246,7 +250,9 @@
 
 /* ── Team tab ───────────────────────────────────────────────────────────── */
 
-.home2-page .portal-profile-team {
+.home2-page .portal-profile-team,
+.home2-page .portal-profile-licensing,
+.home2-page .portal-profile-docs {
   display: flex;
   flex-direction: column;
   gap: var(--portal-gap);
@@ -307,7 +313,8 @@
   user-select: all;
 }
 
-.home2-page .portal-profile-copy {
+.home2-page .portal-profile-copy,
+.home2-page .portal-profile-iconbtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -321,11 +328,13 @@
   transition: border-color 120ms var(--portal-ease-out);
 }
 
-.home2-page .portal-profile-copy:hover {
+.home2-page .portal-profile-copy:hover,
+.home2-page .portal-profile-iconbtn:hover {
   border-color: rgba(255, 255, 255, 0.3);
 }
 
-.home2-page .portal-profile-copy:focus-visible {
+.home2-page .portal-profile-copy:focus-visible,
+.home2-page .portal-profile-iconbtn:focus-visible {
   outline: var(--portal-focus-ring);
   outline-offset: var(--portal-focus-offset);
 }
@@ -349,6 +358,122 @@
    otherwise stretch it edge to edge. */
 .home2-page .portal-profile-form > .portal-profile-btn {
   align-self: flex-start;
+}
+
+/* ── Licensing and Documents ────────────────────────────────────────────── */
+
+/* Upload drop zone. The file input covers the zone at zero opacity: a file
+   input is a drop target in its own right, so the drag, the tap and the
+   native picker all work without a single drag handler of ours. The label
+   wraps the input, so the copy inside is the control's name. */
+.home2-page .portal-dropzone {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 12px;
+  border: 1px dashed var(--portal-border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  transition: border-color 120ms var(--portal-ease-out);
+}
+
+.home2-page .portal-dropzone:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* The input carries the focus, so the ring goes on the zone around it. */
+.home2-page .portal-dropzone:focus-within {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.home2-page .portal-dropzone-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--portal-text-faint);
+}
+
+.home2-page .portal-dropzone-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home2-page .portal-dropzone-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-family: var(--portal-font);
+}
+
+.home2-page .portal-dropzone-copy strong {
+  color: var(--portal-text-strong);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+}
+
+.home2-page .portal-dropzone-copy span {
+  color: var(--portal-text);
+  font-size: var(--portal-t-micro);
+  line-height: 1.4;
+}
+
+.home2-page .portal-dropzone-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* The chosen file, under its zone. */
+.home2-page .portal-dropzone-files {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* State, number and the Add button on one line, stacked below 620px. The
+   button aligns to the controls, not to the labels above them. */
+.home2-page .portal-licensing-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+/* Each license is a Chip plus its own 44px remove target. */
+.home2-page .portal-licensing-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home2-page .portal-licensing-list > li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (max-width: 620px) {
+  .home2-page .portal-licensing-add {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* ── Sticky save bar ────────────────────────────────────────────────────── */

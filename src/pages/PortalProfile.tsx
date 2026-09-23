@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowUpRight, Camera, LogOut, Shield } from "lucide-react";
+import { Camera, FileText, LogOut, Shield } from "lucide-react";
 import ProfilePhotoCropModal from "@/components/ProfilePhotoCropModal";
 import BottomNav from "@/components/portal/BottomNav";
 import Chip from "@/components/portal/Chip";
+import EmptyState from "@/components/portal/EmptyState";
 import Field from "@/components/portal/Field";
+import ListRow from "@/components/portal/ListRow";
 import Pane from "@/components/portal/Pane";
 import PortalHeader from "@/components/portal/PortalHeader";
 import PortalSubpageHeader from "@/components/portal/PortalSubpageHeader";
 import Segmented from "@/components/portal/Segmented";
+import Skeleton from "@/components/portal/Skeleton";
 import PortalCarrierCredentials from "@/components/PortalCarrierCredentials";
 import PortalLicensingSection from "@/components/PortalLicensingSection";
 import PortalProfileDocumentsSection from "@/components/PortalProfileDocumentsSection";
@@ -914,176 +917,110 @@ export default function PortalProfile() {
             aria-labelledby="profile-tab-documents"
             hidden={activeTab !== "documents"}
           >
-          <div className="carrier-sheet-panel portal-profile-panel">
-            <div className="carrier-sheet-panel-head">
-              <div>
-                <h2>Saved documents</h2>
-                <p>Signed forms submitted through the portal are stored here for your records.</p>
-              </div>
+            <div className="portal-profile-docs">
+              <Pane title="Saved documents">
+                <p className="portal-profile-lede">
+                  The portal keeps a copy of each form you sign.
+                </p>
+
+                {documentsLoading ? (
+                  <div className="portal-profile-rows" aria-busy="true">
+                    <span className="portal-sr">Loading documents...</span>
+                    <Skeleton variant="row" />
+                    <Skeleton variant="row" />
+                    <Skeleton variant="row" />
+                  </div>
+                ) : hasSavedDocuments ? (
+                  <ul className="portal-profile-rows">
+                    {!icaSubmitted && (
+                      <li>
+                        <ListRow
+                          href="/portal/ica"
+                          label="Independent Contractor Agreement"
+                          secondary="Sign your ICA to save a copy to your profile."
+                        />
+                      </li>
+                    )}
+                    {icaSubmitted && ica && (
+                      <li>
+                        <ListRow
+                          href={icaPdfUrl ?? "/portal/ica"}
+                          label="Independent Contractor Agreement"
+                          secondary={`Signed${icaSignedDate ? ` on ${icaSignedDate}` : ""} for ${ica.legalName}.`}
+                          trailing={icaPdfUrl ? <Chip variant="pdf">PDF</Chip> : undefined}
+                        />
+                      </li>
+                    )}
+                    {w9Submitted && w9 && (
+                      <li>
+                        <ListRow
+                          href={w9PdfUrl ?? "/portal/w9"}
+                          label="Form W-9"
+                          secondary={`Submitted${w9SignedDate ? ` on ${w9SignedDate}` : ""} for ${w9.legalName}.`}
+                          trailing={w9PdfUrl ? <Chip variant="pdf">PDF</Chip> : undefined}
+                        />
+                      </li>
+                    )}
+                    {directDepositSubmitted && directDeposit && (
+                      <li>
+                        <ListRow
+                          href={directDepositPdfUrl ?? "/portal/direct-deposit"}
+                          label="Direct deposit request"
+                          secondary={`Submitted${directDepositSignedDate ? ` on ${directDepositSignedDate}` : ""} for ${directDeposit.legalName}.`}
+                          trailing={directDepositPdfUrl ? <Chip variant="pdf">PDF</Chip> : undefined}
+                        />
+                      </li>
+                    )}
+                    {pendingCompAttachment && (
+                      <li>
+                        <ListRow
+                          href="/portal/comp-agreement"
+                          label={pendingCompAttachment.title}
+                          secondary={`Ready to sign. Assigned ${new Date(
+                            pendingCompAttachment.assignedAt,
+                          ).toLocaleDateString(undefined, {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric",
+                          })}.`}
+                        />
+                      </li>
+                    )}
+                    {signedCompAttachment && (
+                      <li>
+                        <ListRow
+                          href={signedCompAttachment.documentUrl ?? "/portal/comp-agreement"}
+                          label={signedCompAttachment.title}
+                          secondary={`Signed${compSignedDate ? ` on ${compSignedDate}` : ""}${
+                            signedCompAttachment.signatureName
+                              ? ` by ${signedCompAttachment.signatureName}`
+                              : ""
+                          }.`}
+                          trailing={
+                            signedCompAttachment.documentUrl ? (
+                              <Chip variant="pdf">PDF</Chip>
+                            ) : undefined
+                          }
+                        />
+                      </li>
+                    )}
+                  </ul>
+                ) : (
+                  <EmptyState
+                    icon={<FileText size={22} aria-hidden="true" />}
+                    title="No documents yet"
+                    body="Forms you sign in the portal show up here, with any comp attachment PNCL assigns."
+                    action={
+                      <Link className="portal-profile-btn" to="/portal/ica">
+                        Sign your agreement
+                      </Link>
+                    }
+                  />
+                )}
+              </Pane>
+
+              <PortalProfileDocumentsSection user={user} />
             </div>
-
-            {documentsLoading ? (
-              <div className="portal-incentives-loading">
-                <span className="onboarding-spinner" aria-hidden="true" />
-                <span>Loading documents...</span>
-              </div>
-            ) : hasSavedDocuments ? (
-              <div className="portal-profile-documents">
-                {!icaSubmitted && (
-                  <div className="portal-profile-document-item">
-                    <div>
-                      <strong>Independent Contractor Agreement</strong>
-                      <p className="portal-panel-note">
-                        Sign your ICA to save a copy to your profile.
-                      </p>
-                    </div>
-                    <Link to="/portal/ica" className="portal-w9-aside-pdf">
-                      Sign agreement
-                      <ArrowUpRight size={14} aria-hidden="true" />
-                    </Link>
-                  </div>
-                )}
-                {icaSubmitted && ica && (
-                  <div className="portal-profile-document-item">
-                    <div>
-                      <strong>Independent Contractor Agreement</strong>
-                      <p className="portal-panel-note">
-                        Signed{icaSignedDate ? ` on ${icaSignedDate}` : ""} for {ica.legalName}.
-                      </p>
-                    </div>
-                    {icaPdfUrl ? (
-                      <a
-                        href={icaPdfUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="portal-w9-aside-pdf"
-                      >
-                        Download PDF
-                        <ArrowUpRight size={14} aria-hidden="true" />
-                      </a>
-                    ) : (
-                      <Link to="/portal/ica" className="portal-w9-aside-pdf">
-                        View agreement
-                        <ArrowUpRight size={14} aria-hidden="true" />
-                      </Link>
-                    )}
-                  </div>
-                )}
-                {w9Submitted && w9 && (
-                  <div className="portal-profile-document-item">
-                    <div>
-                      <strong>Form W-9</strong>
-                      <p className="portal-panel-note">
-                        Submitted{w9SignedDate ? ` on ${w9SignedDate}` : ""} for {w9.legalName}.
-                      </p>
-                    </div>
-                    {w9PdfUrl ? (
-                      <a
-                        href={w9PdfUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="portal-w9-aside-pdf"
-                      >
-                        Download PDF
-                        <ArrowUpRight size={14} aria-hidden="true" />
-                      </a>
-                    ) : (
-                      <Link to="/portal/w9" className="portal-w9-aside-pdf">
-                        View form
-                        <ArrowUpRight size={14} aria-hidden="true" />
-                      </Link>
-                    )}
-                  </div>
-                )}
-                {directDepositSubmitted && directDeposit && (
-                  <div className="portal-profile-document-item">
-                    <div>
-                      <strong>Direct deposit request</strong>
-                      <p className="portal-panel-note">
-                        Submitted{directDepositSignedDate ? ` on ${directDepositSignedDate}` : ""} for {directDeposit.legalName}.
-                      </p>
-                    </div>
-                    {directDepositPdfUrl ? (
-                      <a
-                        href={directDepositPdfUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="portal-w9-aside-pdf"
-                      >
-                        Download PDF
-                        <ArrowUpRight size={14} aria-hidden="true" />
-                      </a>
-                    ) : (
-                      <Link to="/portal/direct-deposit" className="portal-w9-aside-pdf">
-                        View form
-                        <ArrowUpRight size={14} aria-hidden="true" />
-                      </Link>
-                    )}
-                  </div>
-                )}
-                {pendingCompAttachment && (
-                  <div className="portal-profile-document-item">
-                    <div>
-                      <strong>{pendingCompAttachment.title}</strong>
-                      <p className="portal-panel-note">
-                        Ready to sign — assigned{" "}
-                        {new Date(pendingCompAttachment.assignedAt).toLocaleDateString(undefined, {
-                          month: "long",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                        .
-                      </p>
-                    </div>
-                    <Link to="/portal/comp-agreement" className="portal-w9-aside-pdf">
-                      Sign comp attachment
-                      <ArrowUpRight size={14} aria-hidden="true" />
-                    </Link>
-                  </div>
-                )}
-                {signedCompAttachment && (
-                  <div className="portal-profile-document-item">
-                    <div>
-                      <strong>{signedCompAttachment.title}</strong>
-                      <p className="portal-panel-note">
-                        Signed{compSignedDate ? ` on ${compSignedDate}` : ""}
-                        {signedCompAttachment.signatureName
-                          ? ` by ${signedCompAttachment.signatureName}`
-                          : ""}
-                        .
-                      </p>
-                    </div>
-                    {signedCompAttachment.documentUrl ? (
-                      <a
-                        href={signedCompAttachment.documentUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="portal-w9-aside-pdf"
-                      >
-                        Download PDF
-                        <ArrowUpRight size={14} aria-hidden="true" />
-                      </a>
-                    ) : (
-                      <Link to="/portal/comp-agreement" className="portal-w9-aside-pdf">
-                        View agreement
-                        <ArrowUpRight size={14} aria-hidden="true" />
-                      </Link>
-                    )}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <p className="portal-panel-note">
-                No documents yet. Sign your{" "}
-                <Link to="/portal/ica">Independent Contractor Agreement</Link>, submit your{" "}
-                <Link to="/portal/w9">W-9</Link>, or{" "}
-                <Link to="/portal/direct-deposit">direct deposit form</Link> from the portal. Your
-                compensation attachment will appear here once PNCL assigns it.
-              </p>
-            )}
-          </div>
-
-          <PortalProfileDocumentsSection user={user} />
           </div>
 
           <div

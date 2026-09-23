@@ -60,6 +60,8 @@ Measured with the workspace's contrast.mjs: the shipped pncl preset's brightest 
 
 In a tile reveal `portal-tile.css` drives `.portal-row` from the same rules as the `.ptile-link` it replaced, so the 44px floor, the full width and the 8px radius apply on a page but not in a card menu. `.ptile-reveal-body .portal-pane` strips the pane's padding, border, radius, fill and shadow for the same reason: the card is already the glass surface, and PortalReferralPanel renders one Pane for both the dashboard reveal and the profile's Team tab, where the pane IS the surface.
 
+The profile's Licensing and Documents tabs add one page-level pattern rather than a primitive: `.portal-dropzone` in `portal-profile.css`, a `<label>` whose `<input type="file">` covers it at zero opacity. A file input is already a drop target, so the drag, the tap and the native picker all work without a drag handler, the label's copy names the control, and the ring goes on the zone through `:focus-within`. The chosen file reads back as a Chip under the zone, never as colour alone.
+
 ## Shell
 The portal carries one header, one nav and one sub-page header. 620px is the only breakpoint: above it the nav is text links in the masthead, below it a fixed tab bar in the thumb zone.
 

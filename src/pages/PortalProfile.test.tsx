@@ -166,4 +166,19 @@ describe("portal profile details tab", () => {
     fireEvent.click(await screen.findByRole("tab", { name: "Team" }));
     expect(screen.getByRole("tabpanel", { name: "Team" })).toBeInTheDocument();
   });
+
+  it("opens the licensing tab panel", async () => {
+    renderProfile();
+
+    fireEvent.click(await screen.findByRole("tab", { name: "Licensing" }));
+    expect(screen.getByRole("tabpanel", { name: "Licensing" })).toBeInTheDocument();
+  });
+
+  it("opens the documents tab on the saved forms empty state", async () => {
+    renderProfile();
+
+    fireEvent.click(await screen.findByRole("tab", { name: "Documents" }));
+    expect(screen.getByRole("heading", { name: "Saved documents" })).toBeInTheDocument();
+    expect(screen.getByText("No documents yet")).toBeInTheDocument();
+  });
 });

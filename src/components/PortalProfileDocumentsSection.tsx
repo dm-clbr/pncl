@@ -1,6 +1,12 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Download, FileUp, Trash2 } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
+import Chip from "@/components/portal/Chip";
+import EmptyState from "@/components/portal/EmptyState";
+import Field from "@/components/portal/Field";
+import ListRow from "@/components/portal/ListRow";
+import Pane from "@/components/portal/Pane";
+import Skeleton from "@/components/portal/Skeleton";
 import {
   deleteProfileDocument,
   fetchProfileDocuments,
@@ -25,7 +31,6 @@ function formatUploadDate(iso: string): string {
 }
 
 export default function PortalProfileDocumentsSection({ user }: { user: User | null }) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [documents, setDocuments] = useState<PortalProfileDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [label, setLabel] = useState("");
@@ -117,107 +122,122 @@ export default function PortalProfileDocumentsSection({ user }: { user: User | n
   };
 
   return (
-    <div className="carrier-sheet-panel portal-profile-panel">
-      <div className="carrier-sheet-panel-head">
-        <div>
-          <h2>My documents</h2>
-          <p>
-            Upload any other documents PNCL asks for — certifications, carrier paperwork, or
-            anything else. Admins can view what you upload here.
-          </p>
-        </div>
-      </div>
+    <Pane
+      title="My documents"
+      aside={
+        !loading && documents.length > 0 ? <Chip>{documents.length} uploaded</Chip> : undefined
+      }
+    >
+      <p className="portal-profile-lede">
+        Upload anything else PNCL asks for, such as a certification or carrier paperwork. Admins
+        can see what you add here.
+      </p>
 
       {loading ? (
-        <div className="portal-incentives-loading">
-          <span className="onboarding-spinner" aria-hidden="true" />
-          <span>Loading documents...</span>
+        <div className="portal-profile-rows" aria-busy="true">
+          <span className="portal-sr">Loading documents...</span>
+          <Skeleton variant="row" />
+          <Skeleton variant="row" />
         </div>
       ) : (
         <>
           {documents.length > 0 ? (
-            <ul className="portal-documents-list">
+            <ul className="portal-profile-rows">
               {documents.map((doc) => (
-                <li key={doc.id} className="portal-documents-item">
-                  <div className="portal-documents-copy">
-                    <strong>{doc.label}</strong>
-                    <span>
-                      Uploaded {formatUploadDate(doc.created_at)}
-                      {doc.size_bytes ? ` · ${formatFileSize(doc.size_bytes)}` : ""}
-                    </span>
-                  </div>
-                  <div className="portal-documents-actions">
-                    <button
-                      type="button"
-                      className="portal-panel-btn"
-                      disabled={downloadingId === doc.id}
-                      onClick={() => void handleDownload(doc)}
-                    >
-                      <Download size={14} aria-hidden="true" />
-                      View
-                    </button>
-                    <button
-                      type="button"
-                      className="portal-panel-btn portal-documents-delete"
-                      disabled={deletingId === doc.id}
-                      onClick={() => void handleDelete(doc)}
-                    >
-                      <Trash2 size={14} aria-hidden="true" />
-                      {deletingId === doc.id ? "Deleting..." : "Delete"}
-                    </button>
-                  </div>
+                <li key={doc.id}>
+                  <ListRow
+                    label={doc.label}
+                    secondary={`Uploaded ${formatUploadDate(doc.created_at)}${
+                      doc.size_bytes ? ` · ${formatFileSize(doc.size_bytes)}` : ""
+                    }`}
+                    trailing={
+                      <>
+                        <button
+                          type="button"
+                          className="portal-profile-iconbtn"
+                          disabled={downloadingId === doc.id}
+                          onClick={() => void handleDownload(doc)}
+                          aria-label={
+                            downloadingId === doc.id
+                              ? `Opening ${doc.label}`
+                              : `View ${doc.label}`
+                          }
+                        >
+                          <Download size={16} aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          className="portal-profile-iconbtn"
+                          disabled={deletingId === doc.id}
+                          onClick={() => void handleDelete(doc)}
+                          aria-label={
+                            deletingId === doc.id
+                              ? `Deleting ${doc.label}`
+                              : `Delete ${doc.label}`
+                          }
+                        >
+                          <Trash2 size={16} aria-hidden="true" />
+                        </button>
+                      </>
+                    }
+                  />
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="portal-panel-note">No documents uploaded yet.</p>
+            <EmptyState
+              icon={<FileUp size={22} aria-hidden="true" />}
+              title="Nothing uploaded yet"
+              body="What you add stays on your profile for PNCL admins."
+            />
           )}
 
-          <form className="admin-form portal-profile-form" onSubmit={(event) => void handleUpload(event)}>
-            <div className="portal-profile-form-grid">
-              <label className="admin-field">
-                <span>Document name</span>
-                <input
-                  type="text"
-                  value={label}
-                  onChange={(event) => setLabel(event.target.value)}
-                  placeholder="e.g. AHIP certification"
-                  autoComplete="off"
-                />
-              </label>
+          <form className="portal-profile-form" onSubmit={(event) => void handleUpload(event)}>
+            <Field
+              label="Document name"
+              id="profile-document-label"
+              type="text"
+              value={label}
+              onChange={(event) => setLabel(event.target.value)}
+              placeholder="e.g. AHIP certification"
+              autoComplete="off"
+            />
 
-              <div className="admin-field">
-                <span>File (PDF or image, up to 5 MB)</span>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="application/pdf,image/jpeg,image/png,image/webp"
-                  className="portal-profile-photo-input"
-                  onChange={handleFileChange}
-                />
-                <button
-                  type="button"
-                  className="portal-panel-btn portal-profile-photo-btn"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <FileUp size={14} aria-hidden="true" />
-                  {pendingFile ? `Selected: ${pendingFile.name}` : "Choose file"}
-                </button>
+            {/* ponytail: the file input covers the zone at zero opacity, so the
+                browser's own drop target and picker do the work and no drag
+                handlers are needed. */}
+            <label className="portal-dropzone">
+              <span className="portal-dropzone-icon" aria-hidden="true">
+                <FileUp size={22} strokeWidth={1.5} />
+              </span>
+              <span className="portal-dropzone-copy">
+                <strong>Add a file</strong>
+                <span>Drop a file here or tap to browse. PDF or image, up to 5 MB.</span>
+              </span>
+              <input
+                type="file"
+                accept="application/pdf,image/jpeg,image/png,image/webp"
+                className="portal-dropzone-input"
+                onChange={handleFileChange}
+              />
+            </label>
+
+            {pendingFile && (
+              <div className="portal-dropzone-files">
+                <Chip variant="pdf">{pendingFile.name}</Chip>
               </div>
-            </div>
+            )}
 
-            <div className="admin-form-actions">
-              <button
-                type="submit"
-                className="admin-primary-btn"
-                disabled={uploading || !pendingFile || !label.trim()}
-              >
-                {uploading ? "Uploading..." : "Upload document"}
-              </button>
-            </div>
+            <button
+              type="submit"
+              className="portal-profile-btn"
+              disabled={uploading || !pendingFile || !label.trim()}
+            >
+              {uploading ? "Uploading..." : "Upload document"}
+            </button>
           </form>
         </>
       )}
-    </div>
+    </Pane>
   );
 }
