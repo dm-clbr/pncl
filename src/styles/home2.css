@@ -6302,11 +6302,22 @@ button.portal-todo-link {
   height: 100%;
 }
 
-/* Single-pointer zoom (WCAG 2.5.1). The near-black fill is the shell bar's,
-   where a white 0.95 glyph reads 16.20:1; the white 0.38 border is the chip's,
-   and one of the two edges clears 3:1 against the panel and against all three
-   map fills (border on the panel 3.30:1, fill on Active 3.85:1, border on
-   Inactive 3.07:1). */
+/* Single-pointer zoom (WCAG 2.5.1). The buttons float over the canvas, so the
+   surface behind them is the panel wherever the atlas is transparent, and a
+   state fill once the map is zoomed. Both edges are measured against those
+   surfaces, not against the token ladder (R27). The near-black fill is the
+   shell bar's and carries a white 0.95 glyph at 16.20:1. The border is white
+   0.45 over that fill rather than over the surface, because background-clip
+   defaults to border-box, so it composites to rgb(130, 127, 124). One of the
+   two edges then clears the 3:1 non-text floor on each surface: border on the
+   panel 4.43:1, border on Inactive 3.77:1, fill on Active 3.96:1, fill on
+   Pending 13.77:1. The border was white 0.38, which put Inactive at 2.996:1,
+   under the floor. Figures computed from the declared colours; the panel is a
+   pixel sampled beside the button at 1440x900, rgb(28, 24, 21), because its
+   sheen is a gradient (4.34:1 at the lightest pixel in that sample).
+   Known gap: the #3d4654 fill the map falls back to when availability is
+   unavailable clears neither edge (border 2.39:1, fill 1.88:1), and no border
+   alpha fixes it without dropping Pending's border below 3:1. */
 .home2-page .state-map-zoom {
   position: absolute;
   inset: 12px 12px auto auto;
@@ -6322,7 +6333,7 @@ button.portal-todo-link {
   width: 44px;
   height: 44px;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, .38);
+  border: 1px solid rgba(255, 255, 255, .45);
   border-radius: 8px;
   background: var(--portal-bar-fill);
   box-shadow: 0 2px 10px rgba(0, 0, 0, .45);
