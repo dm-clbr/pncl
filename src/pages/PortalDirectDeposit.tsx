@@ -181,8 +181,8 @@ export default function PortalDirectDeposit() {
           <PortalHeader name={displayName} email={user?.email} initials={initials} subpage />
           <PortalSubpageHeader
             title="Direct deposit"
-            backTo="/portal/profile"
-            backLabel="Back to profile"
+            backTo="/portal"
+            backLabel="Back to portal"
           />
 
           {/* One capped column: a 1320px wrap would stretch a five-character ZIP

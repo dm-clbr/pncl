@@ -72,6 +72,18 @@ describe("PortalDirectDeposit", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Direct deposit" })).toBeInTheDocument();
   });
 
+  /** Four routes link here (portal-todos.ts, the dashboard re-sign notice and
+      two links on the profile page), so the back link has to point at the
+      portal, the one page every entry path shares. */
+  it("sends the back link to the portal, not the profile", async () => {
+    await renderPage();
+
+    expect(screen.getByRole("link", { name: "Back to portal" })).toHaveAttribute(
+      "href",
+      "/portal",
+    );
+  });
+
   it("keeps the submitted state, its date and the PDF download", async () => {
     ddState.loading = false;
     ddState.submitted = true;
