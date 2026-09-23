@@ -17,6 +17,10 @@ type SegmentedProps = {
   onChange?: (value: string) => void;
   /** Names the tablist or, in link mode, the navigation. */
   label: string;
+  /** Id of a visible label to name the group with instead of `label`. */
+  labelledBy?: string;
+  /** "radiogroup" for a form choice that controls no panel. Default "tab". */
+  mode?: "tab" | "radiogroup";
   /** Link mode: the href for an item. Drops the tab roles for aria-current. */
   linkTo?: (value: string) => string;
 };
@@ -35,8 +39,19 @@ export function nextIndex(key: string, index: number, count: number): number | n
     src/styles/portal-primitives.css: 44px items, 8px apart, on a recessed
     track that scrolls sideways on a phone with a fade on whichever edge has
     something behind it. Tab mode is a roving tablist (Left, Right, Home, End);
-    `linkTo` turns the items into router links that keep ?tab= in the URL. */
-export default function Segmented({ items, value, onChange, label, linkTo }: SegmentedProps) {
+    `linkTo` turns the items into router links that keep ?tab= in the URL.
+    `mode="radiogroup"` swaps the tab roles for radio ones when the control is a
+    form choice with no panel behind it; the roving keys are unchanged. */
+export default function Segmented({
+  items,
+  value,
+  onChange,
+  label,
+  labelledBy,
+  mode = "tab",
+  linkTo,
+}: SegmentedProps) {
+  const radio = !linkTo && mode === "radiogroup";
   const trackRef = useRef<HTMLDivElement>(null);
   // Roving tabindex needs one tab in the tab order at all times. A stale ?tab=
   // in a bookmarked URL matches nothing, and -1 on every tab would drop the
@@ -78,8 +93,9 @@ export default function Segmented({ items, value, onChange, label, linkTo }: Seg
     <div
       ref={trackRef}
       className="portal-segmented"
-      role={linkTo ? "navigation" : "tablist"}
-      aria-label={label}
+      role={linkTo ? "navigation" : radio ? "radiogroup" : "tablist"}
+      aria-label={labelledBy ? undefined : label}
+      aria-labelledby={labelledBy}
       onScroll={syncEdges}
     >
       {items.map((item, index) => {
@@ -101,9 +117,10 @@ export default function Segmented({ items, value, onChange, label, linkTo }: Seg
             id={item.id}
             type="button"
             className="portal-segment"
-            role="tab"
-            aria-selected={active}
-            aria-controls={item.controls}
+            role={radio ? "radio" : "tab"}
+            aria-selected={radio ? undefined : active}
+            aria-checked={radio ? active : undefined}
+            aria-controls={radio ? undefined : item.controls}
             tabIndex={index === activeIndex ? 0 : -1}
             data-active={active}
             onClick={() => onChange?.(item.value)}

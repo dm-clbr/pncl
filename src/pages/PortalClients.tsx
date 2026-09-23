@@ -1,17 +1,26 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Plus, Users } from "lucide-react";
-import PNCLLogo from "@/components/PNCLLogo";
+import { Users, X } from "lucide-react";
 import PinnacleFormPreview from "@/components/PinnacleFormPreview";
+import BottomNav from "@/components/portal/BottomNav";
+import EmptyState from "@/components/portal/EmptyState";
+import Field from "@/components/portal/Field";
+import ListRow from "@/components/portal/ListRow";
+import Pane from "@/components/portal/Pane";
+import PortalHeader from "@/components/portal/PortalHeader";
+import PortalSubpageHeader from "@/components/portal/PortalSubpageHeader";
+import Skeleton from "@/components/portal/Skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortalClients } from "@/hooks/usePortalClients";
+import { usePortalProfile } from "@/hooks/usePortalProfile";
 import { clientRecordToFormData } from "@/lib/client-intake";
 import { trackPageView } from "@/lib/analytics";
 import "@/styles/home2.css";
 import "@/styles/client-intake.css";
+import "@/styles/portal-tools.css";
 
 function formatDate(value: string | null): string {
-  if (!value) return "—";
+  if (!value) return "no date";
   const date = new Date(`${value}T00:00:00`);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -19,6 +28,7 @@ function formatDate(value: string | null): string {
 
 export default function PortalClients() {
   const { user } = useAuth();
+  const { photoUrl, initials, displayName } = usePortalProfile(user);
   const { clients, loading, error } = usePortalClients(user?.id);
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -48,123 +58,124 @@ export default function PortalClients() {
     [filteredClients, selectedId],
   );
 
-  const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Agent";
+  const searching = query.trim().length > 0;
 
   return (
-    <div className="home2-page">
+    <div className="home2-page ptools-page">
       <div className="grain" aria-hidden="true" />
 
       <main className="portal-dash dark carrier-sheet-dash">
         <div className="wrap carrier-sheet-wrap">
-          <header className="carrier-sheet-header">
-            <Link to="/" className="portal-hero-logo" aria-label="PNCL home">
-              <PNCLLogo height={40} />
-            </Link>
-            <div className="carrier-sheet-header-copy">
-              <p className="portal-welcome">My clients</p>
-              <p className="portal-meta">{displayName}</p>
-            </div>
-            <Link to="/portal" className="admin-back-link">
-              <ArrowLeft size={16} aria-hidden="true" />
-              Back to portal
-            </Link>
-          </header>
+          <PortalHeader
+            name={displayName}
+            email={user?.email}
+            initials={initials}
+            photoUrl={photoUrl}
+          />
 
-          <div className="carrier-sheet-panel">
-            <div className="client-list-toolbar">
-              <div>
-                <h1>Client list</h1>
-                <p>Financial inventory forms you have submitted for clients.</p>
-              </div>
-              <Link to="/portal/clients/new" className="btn btn-accent">
-                <Plus size={16} aria-hidden="true" />
-                New client intake
+          <PortalSubpageHeader
+            title="My Clients"
+            aside={
+              <Link to="/portal/clients/new" className="ptools-cta">
+                New intake
               </Link>
-            </div>
+            }
+          />
 
-            <div className="admin-field" style={{ maxWidth: "420px", marginBottom: "1rem" }}>
-              <label htmlFor="client-search">Search clients</label>
-              <input
-                id="client-search"
-                type="search"
-                placeholder="Name, phone, email, or address"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </div>
+          <p className="portal-panel-note">
+            Financial inventory forms you have submitted for clients.
+          </p>
 
-            {loading && (
-              <div className="portal-incentives-loading">
-                <span className="onboarding-spinner" aria-hidden="true" />
-                <span>Loading clients...</span>
-              </div>
-            )}
-
-            {!loading && error && <p className="admin-error">{error}</p>}
-
-            {!loading && !error && filteredClients.length === 0 && (
-              <div className="client-list-empty">
-                <Users size={32} strokeWidth={1.5} aria-hidden="true" />
-                <p>No clients yet.</p>
-                <Link to="/portal/clients/new" className="btn btn-accent" style={{ marginTop: "1rem" }}>
-                  Start your first intake
-                </Link>
-              </div>
-            )}
-
-            {!loading && !error && filteredClients.length > 0 && (
-              <div className="client-detail-panel">
-                <div className="admin-table-wrap">
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Client</th>
-                        <th>Phone</th>
-                        <th>Date met</th>
-                        <th>Added</th>
-                        <th />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredClients.map((client) => (
-                        <tr key={client.id}>
-                          <td>
-                            {client.primary_first_name} {client.primary_last_name}
-                          </td>
-                          <td>{client.primary_phone || "—"}</td>
-                          <td>{formatDate(client.date_met)}</td>
-                          <td>{formatDate(client.created_at.slice(0, 10))}</td>
-                          <td>
-                            <button
-                              type="button"
-                              className="btn btn-ghost"
-                              onClick={() => setSelectedId(client.id === selectedId ? null : client.id)}
-                            >
-                              {selectedId === client.id ? "Hide form" : "View form"}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {selectedClient && (
-                  <div>
-                    <h2>
-                      {selectedClient.primary_first_name} {selectedClient.primary_last_name}
-                    </h2>
-                    <PinnacleFormPreview
-                      data={clientRecordToFormData(selectedClient)}
-                      compact
-                    />
-                  </div>
+          <div className="ptools-stack">
+            <Pane
+              title="Client list"
+              aside={loading || error ? undefined : `${filteredClients.length}`}
+            >
+              <div className="ptools-search">
+                <Field
+                  label="Search clients"
+                  id="client-search"
+                  type="search"
+                  inputMode="search"
+                  autoComplete="off"
+                  placeholder="Name, phone, email, or address"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+                {searching && (
+                  <button
+                    type="button"
+                    className="ptools-search-clear"
+                    aria-label="Clear the client search"
+                    onClick={() => setQuery("")}
+                  >
+                    <X size={18} strokeWidth={1.75} aria-hidden="true" />
+                  </button>
                 )}
               </div>
+
+              {loading && (
+                <div className="ptools-rows" aria-busy="true" aria-label="Loading clients">
+                  <Skeleton variant="row" />
+                  <Skeleton variant="row" />
+                  <Skeleton variant="row" />
+                </div>
+              )}
+
+              {!loading && error && <p className="ptools-error">{error}</p>}
+
+              {!loading && !error && filteredClients.length === 0 && (
+                <EmptyState
+                  icon={<Users aria-hidden="true" />}
+                  title={searching ? "No matches" : "No clients yet"}
+                  body={
+                    searching
+                      ? "No client matches that search."
+                      : "Every intake you submit is listed here."
+                  }
+                  action={
+                    <Link to="/portal/clients/new" className="ptools-cta">
+                      Start your first intake
+                    </Link>
+                  }
+                />
+              )}
+
+              {!loading && !error && filteredClients.length > 0 && (
+                <ul className="ptools-rows">
+                  {filteredClients.map((client) => (
+                    <li key={client.id}>
+                      <ListRow
+                        label={`${client.primary_first_name} ${client.primary_last_name}`}
+                        secondary={`${client.primary_phone || "no phone"} · Met ${formatDate(client.date_met)}`}
+                        trailing={
+                          <span className="ptools-row-action">
+                            {selectedId === client.id ? "Hide form" : "View form"}
+                          </span>
+                        }
+                        onClick={() =>
+                          setSelectedId(client.id === selectedId ? null : client.id)
+                        }
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Pane>
+
+            {selectedClient && (
+              <Pane
+                title={`${selectedClient.primary_first_name} ${selectedClient.primary_last_name}`}
+              >
+                <PinnacleFormPreview data={clientRecordToFormData(selectedClient)} compact />
+              </Pane>
             )}
           </div>
         </div>
       </main>
+
+      {/* Outside <main> so the fixed bar never inherits a page containing block. */}
+      <BottomNav />
     </div>
   );
 }

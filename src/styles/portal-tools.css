@@ -1,0 +1,270 @@
+/* ==========================================================================
+   Tools cluster: Carriers, My Clients, Support, Pay & Commissions
+   Every rule is scoped to .ptools-page, the second class these four pages put
+   on .home2-page, so nothing here reaches another portal surface. Tokens live
+   in portal-tokens.css; the panes, rows, chips, fields and empty states are
+   the shared primitives in portal-primitives.css.
+   ========================================================================== */
+
+.ptools-page .ptools-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--portal-gap);
+}
+
+/* home2.css sets `.home2-page a { color: inherit }` at 0-1-1, which outranks
+   .portal-row's own 0-1-0 colour: a link row would sit one tier below the
+   button and plain rows next to it. 0-2-1 puts it back on the strong tier. */
+.ptools-page a.portal-row,
+.ptools-page a.ptools-cta {
+  color: var(--portal-text-strong);
+}
+
+.ptools-page .ptools-rows {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--portal-unit) * 2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* One CTA shape for the empty states and the ticket form. */
+.ptools-page .ptools-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--portal-unit) * 2);
+  min-height: 44px;
+  padding: 0 calc(var(--portal-unit) * 4);
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  line-height: 1;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 120ms var(--portal-ease-out);
+}
+
+.ptools-page .ptools-cta:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.ptools-page .ptools-cta:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.ptools-page .ptools-cta:disabled {
+  color: var(--portal-text-faint);
+  cursor: not-allowed;
+}
+
+/* Search: the Field plus a 44px clear button over the input's right edge. The
+   input is the bottom 44px of the field, so the button anchors to the bottom
+   rather than being centred on a box that also holds the label. */
+.ptools-page .ptools-search {
+  position: relative;
+  max-width: 420px;
+  margin-bottom: calc(var(--portal-unit) * 4);
+}
+
+.ptools-page .ptools-search .portal-input {
+  padding-right: 44px;
+}
+
+/* WebKit draws its own clear glyph inside the content box, so padding only
+   shifts it left of ours. Two clear affordances side by side; drop theirs. */
+.ptools-page .ptools-search .portal-input::-webkit-search-cancel-button {
+  appearance: none;
+  display: none;
+}
+
+.ptools-page .ptools-search-clear {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--portal-text-faint);
+  cursor: pointer;
+}
+
+.ptools-page .ptools-search-clear:hover {
+  color: var(--portal-text-strong);
+}
+
+.ptools-page .ptools-search-clear:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: -2px;
+}
+
+/* A row's trailing word carries meaning, so it sits on the 4.5:1 body tier
+   rather than the 3:1 tier .portal-row-trail reserves for its glyph. */
+.ptools-page .ptools-row-action {
+  font-size: var(--portal-t-micro);
+  font-weight: 600;
+  color: var(--portal-text);
+}
+
+/* Forms: single column, label above the control, 8px between targets. */
+.ptools-page .ptools-form {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--portal-unit) * 4);
+  /* A pane runs to 1030px on a wide screen; a subject line that wide is a
+     worse target than a short one. The measure caps the controls, not the pane. */
+  max-width: 680px;
+}
+
+.ptools-page .ptools-group {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--portal-unit) * 1.5);
+}
+
+.ptools-page .ptools-group-label {
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--portal-text);
+}
+
+/* A ticket's resolution, under its row rather than inside it: a third line
+   would break the row's 44px floor. */
+.ptools-page .ptools-note {
+  margin: 2px 0 0;
+  padding: 0 calc(var(--portal-unit) * 2.5) calc(var(--portal-unit) * 1.5);
+  font-size: var(--portal-t-micro);
+  line-height: 1.45;
+  color: var(--portal-text);
+}
+
+/* The accent reads 1.77:1 on the pane, so the message takes the same near-black
+   fill that backs .portal-field-error. On that fill --portal-accent measures
+   4.70:1 worst case (over the brightest pncl gradient stop) and 5.76:1 over
+   --portal-bar-fill, so body text clears WCAG AA 4.5:1 everywhere it lands. */
+.ptools-page .ptools-error {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.86);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--portal-accent);
+}
+
+/* Pay policies. The title is an h3 under the pane's h2, so weight carries the
+   step down, not colour. */
+.ptools-page .ptools-policy {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--portal-unit) * 5);
+}
+
+.ptools-page .ptools-policy-title {
+  margin: 0 0 3px;
+  font-size: var(--portal-t-body);
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--portal-text-strong);
+}
+
+/* A pane runs to 1030px wide; policy prose needs a measure, not the pane. */
+.ptools-page .ptools-policy-body,
+.ptools-page .ptools-faq-a {
+  max-width: 72ch;
+}
+
+.ptools-page .ptools-policy-body {
+  margin: 0;
+  font-size: var(--portal-t-body);
+  line-height: 1.6;
+  color: var(--portal-text);
+  white-space: pre-line;
+}
+
+/* FAQ: native <details>, so the disclosure needs no state and no key handler. */
+.ptools-page .ptools-faq + .ptools-faq {
+  border-top: 1px solid var(--portal-rule);
+}
+
+.ptools-page .ptools-faq-q {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: calc(var(--portal-unit) * 3);
+  min-height: 44px;
+  padding: calc(var(--portal-unit) * 2) calc(var(--portal-unit) * 2.5);
+  border-radius: 8px;
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  line-height: 1.4;
+  list-style: none;
+  cursor: pointer;
+}
+
+.ptools-page .ptools-faq-q::-webkit-details-marker {
+  display: none;
+}
+
+.ptools-page .ptools-faq-q:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.ptools-page .ptools-faq-q:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.ptools-page .ptools-faq-q svg {
+  flex-shrink: 0;
+  color: var(--portal-text-faint);
+  transition: transform 120ms var(--portal-ease-out);
+}
+
+.ptools-page .ptools-faq[open] .ptools-faq-q svg {
+  transform: rotate(180deg);
+}
+
+.ptools-page .ptools-faq-a {
+  margin: 0;
+  padding: 0 calc(var(--portal-unit) * 2.5) calc(var(--portal-unit) * 3);
+  font-size: var(--portal-t-body);
+  line-height: 1.6;
+  color: var(--portal-text);
+  white-space: pre-line;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ptools-page .ptools-faq-q svg {
+    transition: none;
+  }
+}
+
+@media (max-width: 620px) {
+  /* The sub-page header is a 44px bar, and the CTA's own 44px floor fills it
+     edge to edge. Drop the pill and keep the target: the action reads as a
+     bar item, still 44px, still white 0.95 on the solid bar fill. */
+  .ptools-page .portal-subhead-aside .ptools-cta {
+    border-color: transparent;
+    background: none;
+  }
+}
