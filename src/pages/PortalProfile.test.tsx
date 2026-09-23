@@ -57,15 +57,26 @@ vi.mock("@/lib/portal-profile", async () => {
   };
 });
 
+// Mutable so one test can put a signed form on the Documents tab.
+let w9State = { w9: null as unknown, submitted: false, loading: false };
+let directDepositState = { directDeposit: null as unknown, submitted: false, loading: false };
+let icaState = { ica: null as unknown, submitted: false, loading: false };
+
 vi.mock("@/hooks/usePortalW9", () => ({
-  usePortalW9: () => ({ w9: null, submitted: false, loading: false }),
+  usePortalW9: () => w9State,
 }));
 vi.mock("@/hooks/usePortalDirectDeposit", () => ({
-  usePortalDirectDeposit: () => ({ directDeposit: null, submitted: false, loading: false }),
+  usePortalDirectDeposit: () => directDepositState,
 }));
 vi.mock("@/hooks/usePortalIca", () => ({
-  usePortalIca: () => ({ ica: null, submitted: false, loading: false }),
+  usePortalIca: () => icaState,
 }));
+vi.mock("@/lib/portal-direct-deposit", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/portal-direct-deposit")>(
+    "@/lib/portal-direct-deposit",
+  );
+  return { ...actual, getDirectDepositPdfUrl: () => Promise.resolve("https://files.test/dd.pdf") };
+});
 vi.mock("@/hooks/usePortalTodos", () => ({
   usePortalTodos: () => ({ todos: [], loading: false, error: null, reload: vi.fn() }),
 }));
@@ -91,6 +102,9 @@ describe("portal profile details tab", () => {
   beforeEach(() => {
     fetchResult = () => Promise.resolve(profileRow);
     toastError.mockReset();
+    w9State = { w9: null, submitted: false, loading: false };
+    directDepositState = { directDeposit: null, submitted: false, loading: false };
+    icaState = { ica: null, submitted: false, loading: false };
   });
 
   it("shows the loading state until the profile arrives", async () => {
@@ -172,6 +186,41 @@ describe("portal profile details tab", () => {
 
     fireEvent.click(await screen.findByRole("tab", { name: "Licensing" }));
     expect(screen.getByRole("tabpanel", { name: "Licensing" })).toBeInTheDocument();
+  });
+
+  // The licensing and uploads markup itself is asserted against the real
+  // components in src/components/PortalProfileSections.test.tsx, since both are
+  // mocked out above to keep this page test off the network.
+
+  it("renders a signed form as a row with a PDF chip and its date", async () => {
+    icaState = {
+      ica: { legalName: "Porter Gerlach", signedAt: "2026-09-04T12:00:00.000Z" },
+      submitted: true,
+      loading: false,
+    };
+    directDepositState = {
+      directDeposit: {
+        legalName: "Porter Gerlach",
+        signedAt: "2026-09-06T12:00:00.000Z",
+        pdfPath: "agent-1/dd.pdf",
+      },
+      submitted: true,
+      loading: false,
+    };
+
+    renderProfile();
+    fireEvent.click(await screen.findByRole("tab", { name: "Documents" }));
+
+    const directDeposit = await screen.findByRole("link", { name: /Direct deposit request/ });
+    expect(directDeposit).toHaveAttribute("href", "https://files.test/dd.pdf");
+    expect(directDeposit).toHaveTextContent("Submitted on September 6, 2026 for Porter Gerlach.");
+    expect(directDeposit).toHaveTextContent("PDF");
+
+    // No PDF URL (no session here), so the ICA row falls back to its route.
+    expect(
+      screen.getByRole("link", { name: /Independent Contractor Agreement/ }),
+    ).toHaveAttribute("href", "/portal/ica");
+    expect(screen.queryByText("No documents yet")).not.toBeInTheDocument();
   });
 
   it("opens the documents tab on the saved forms empty state", async () => {
