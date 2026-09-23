@@ -109,6 +109,19 @@ export const canDrawFrame = (onScreen: boolean, documentHidden: boolean) =>
 export const rendererPixelRatio = (coarsePointer: boolean, deviceRatio: number) =>
   coarsePointer ? 1 : Math.min(deviceRatio, 2);
 
+/** The slop a finger leaves on a deliberate tap, in CSS pixels. */
+const TAP_SLOP = 8;
+
+/** A tap rather than the start of a scroll. On a phone the map card is pinned
+    across the top of the viewport, so it is the primary scroll surface: a
+    swipe that begins over a drawn state must not commit the selection, because
+    selecting opens a modal sheet and the open dialog then locks the scroll
+    mid-gesture. Pure so the threshold is checkable without a pointer device. */
+export const isTap = (
+  down: { x: number; y: number },
+  up: { x: number; y: number },
+) => Math.hypot(up.x - down.x, up.y - down.y) <= TAP_SLOP;
+
 function createShape(rings: Position[][]): THREE.Shape | null {
   const [outer, ...holes] = rings;
   if (!outer || outer.length < 3) return null;
@@ -463,19 +476,42 @@ export default function StateAvailabilityCanvas({
       hoveredRef.current = null;
       canvas.style.cursor = "default";
       callbacksRef.current.onHover(null);
+      pendingTap = null;
       refreshHighlights();
     };
 
-    // pointerdown, not click: a tap selects on every pointer type, and touch
-    // gets the state without a hover step it can never reach.
+    // The raycast runs on pointerdown, not click: the hit is taken where the
+    // finger landed, so touch gets the state without a hover step it can never
+    // reach. The selection commits on pointerup, and only within TAP_SLOP of
+    // that point, so a scroll that starts over a drawn state is not a pick.
+    let pendingTap:
+      | { id: number; x: number; y: number; code: UsStateCode }
+      | null = null;
+
     const handlePointerDown = (event: PointerEvent) => {
       const code = stateAtPointer(event);
-      if (code) callbacksRef.current.onSelect(code);
+      pendingTap = code
+        ? { id: event.pointerId, x: event.clientX, y: event.clientY, code }
+        : null;
+    };
+
+    const handlePointerUp = (event: PointerEvent) => {
+      const tap = pendingTap;
+      pendingTap = null;
+      if (!tap || tap.id !== event.pointerId) return;
+      if (!isTap(tap, { x: event.clientX, y: event.clientY })) return;
+      callbacksRef.current.onSelect(tap.code);
+    };
+
+    const handlePointerCancel = () => {
+      pendingTap = null;
     };
 
     canvas.addEventListener("pointermove", handlePointerMove);
     canvas.addEventListener("pointerleave", handlePointerLeave);
     canvas.addEventListener("pointerdown", handlePointerDown);
+    canvas.addEventListener("pointerup", handlePointerUp);
+    canvas.addEventListener("pointercancel", handlePointerCancel);
     document.addEventListener("visibilitychange", flush);
     const intersectionObserver = new IntersectionObserver(([entry]) => {
       onScreen = entry.isIntersecting;
@@ -491,6 +527,8 @@ export default function StateAvailabilityCanvas({
       canvas.removeEventListener("pointermove", handlePointerMove);
       canvas.removeEventListener("pointerleave", handlePointerLeave);
       canvas.removeEventListener("pointerdown", handlePointerDown);
+      canvas.removeEventListener("pointerup", handlePointerUp);
+      canvas.removeEventListener("pointercancel", handlePointerCancel);
       document.removeEventListener("visibilitychange", flush);
       intersectionObserver.disconnect();
       resizeObserver.disconnect();

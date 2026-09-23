@@ -269,4 +269,20 @@ describe("portal state map", () => {
     expect(rendererPixelRatio(false, 3)).toBe(2);
     expect(rendererPixelRatio(false, 1)).toBe(1);
   });
+
+  it("commits a map pick on a tap but not on a scroll gesture", async () => {
+    const { isTap } = await vi.importActual<
+      typeof import("@/components/StateAvailabilityCanvas")
+    >("@/components/StateAvailabilityCanvas");
+
+    // A finger never lands and lifts on exactly the same pixel.
+    expect(isTap({ x: 200, y: 400 }, { x: 200, y: 400 })).toBe(true);
+    expect(isTap({ x: 200, y: 400 }, { x: 203, y: 404 })).toBe(true);
+    // 8px is the edge of a tap, inclusive.
+    expect(isTap({ x: 200, y: 400 }, { x: 200, y: 408 })).toBe(true);
+    // A vertical swipe over the pinned map is a scroll, not a pick.
+    expect(isTap({ x: 200, y: 400 }, { x: 200, y: 391 })).toBe(false);
+    expect(isTap({ x: 200, y: 400 }, { x: 200, y: 520 })).toBe(false);
+    expect(isTap({ x: 200, y: 400 }, { x: 260, y: 400 })).toBe(false);
+  });
 });
