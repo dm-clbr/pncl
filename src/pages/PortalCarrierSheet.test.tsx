@@ -43,6 +43,14 @@ const CARRIERS: PortalCarrier[] = [
     section: "Automatic",
   },
   { id: "3", carrier: "", companyNumber: "", eAppLabel: "", eAppUrl: null, section: "Automatic" },
+  {
+    id: "4",
+    carrier: "",
+    companyNumber: "",
+    eAppLabel: "",
+    eAppUrl: "https://example.com/link-only",
+    section: "Automatic",
+  },
 ];
 
 const renderPage = () =>
@@ -92,7 +100,11 @@ describe("PortalCarrierSheet", () => {
     // rows are dropped rather than rendered as empty 44px rows.
     expect(screen.queryByRole("link", { name: /Athene/ })).not.toBeInTheDocument();
     expect(screen.getByText("Athene")).toBeInTheDocument();
-    expect(screen.getAllByRole("listitem")).toHaveLength(2);
+
+    // A row carrying only a hyperlink keeps its link, labelled by the URL.
+    const urlOnly = screen.getByRole("link", { name: /link-only/ });
+    expect(urlOnly).toHaveAttribute("href", "https://example.com/link-only");
+    expect(screen.getAllByRole("listitem")).toHaveLength(3);
   });
 
   // The five headers the brief names come from portal_carriers.section, set by

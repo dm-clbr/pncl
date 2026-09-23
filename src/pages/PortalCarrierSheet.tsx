@@ -55,7 +55,7 @@ export default function PortalCarrierSheet() {
   // ponytail: the sheet carries blank spacer rows; a table filled them with a
   // non-breaking space, a 44px row would just read as broken. Drop them.
   const sections = groupCarriersBySection(
-    carriers.filter((row) => row.carrier || row.companyNumber || row.eAppLabel),
+    carriers.filter((row) => row.carrier || row.companyNumber || row.eAppLabel || row.eAppUrl),
   );
 
   return (
@@ -115,7 +115,7 @@ export default function PortalCarrierSheet() {
                 >
                   <ul className="ptools-rows">
                     {section.carriers.map((row) => {
-                      const label = row.carrier || row.eAppLabel || row.companyNumber;
+                      const label = row.carrier || row.eAppLabel || row.companyNumber || row.eAppUrl;
                       return (
                         <li key={row.id}>
                           <ListRow
