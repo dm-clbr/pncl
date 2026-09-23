@@ -8,13 +8,15 @@ import type { PortalProfile } from "@/lib/portal-profile";
 
 // The page test mocks both of these components away, so the rebuilt markup is
 // asserted here against the real components instead.
+let driversLicenseUrl: string | null = null;
+
 vi.mock("@/lib/portal-profile", async () => {
   const actual = await vi.importActual<typeof import("@/lib/portal-profile")>(
     "@/lib/portal-profile",
   );
   return {
     ...actual,
-    getDriversLicenseUrl: () => Promise.resolve(null),
+    getDriversLicenseUrl: () => Promise.resolve(driversLicenseUrl),
     getEoCertificateUrl: () => Promise.resolve(null),
   };
 });
@@ -102,6 +104,29 @@ describe("portal licensing section", () => {
     expect(screen.getByLabelText("Remove MN license")).toBeInTheDocument();
     expect(screen.getByLabelText("Remove WI license")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Add license" })).toBeDisabled();
+  });
+
+  it("gives a saved driver's license its own view link, not just the drop zone thumb", async () => {
+    driversLicenseUrl = "https://files.thepncl.com/license.jpg";
+    try {
+      render(
+        <PortalLicensingSection
+          user={user}
+          profile={{ ...licensingProfile, drivers_license_path: "agent-1/license.jpg" }}
+          loading={false}
+          names={{ firstName: "Porter", lastName: "Gerlach" }}
+        />,
+      );
+
+      // The thumb sits under the file input, so without this link the only way
+      // to look at the saved scan is to replace it.
+      const view = await screen.findByRole("link", { name: "View image" });
+      expect(view).toHaveAttribute("href", driversLicenseUrl);
+      expect(view).toHaveAttribute("rel", "noopener noreferrer");
+      expect(screen.getByText("Image on file")).toBeInTheDocument();
+    } finally {
+      driversLicenseUrl = null;
+    }
   });
 
   it("shows the loading state instead of the form", () => {

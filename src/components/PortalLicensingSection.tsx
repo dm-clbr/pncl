@@ -303,6 +303,14 @@ export default function PortalLicensingSection({
             ) : licenseUrl ? (
               <div className="portal-dropzone-files">
                 <Chip variant="licensed">Image on file</Chip>
+                <a
+                  className="portal-profile-btn"
+                  href={licenseUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View image
+                </a>
               </div>
             ) : null}
           </Pane>
