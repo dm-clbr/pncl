@@ -447,6 +447,19 @@
   gap: 8px;
 }
 
+/* The queued file's Chip carries a filename, not a status word: a nowrap flex
+   item cannot shrink below its own min-content, so at 390px a long name pushed
+   past the pane's border and was clipped with no ellipsis. max-width caps the
+   automatic minimum size, and the name keeps its own casing. Only the pdf
+   variant, so the "on file" chips beside it keep their glyph and their caps. */
+.home2-page .portal-dropzone-files .portal-chip.is-pdf {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: none;
+}
+
 /* State, number and the Add button on one line, stacked below 620px. The
    button aligns to the controls, not to the labels above them. */
 .home2-page .portal-licensing-add {
