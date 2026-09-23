@@ -50,20 +50,27 @@ function formatLastSynced(value: string | null): string {
 
 const RELATIVE_TIME = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
 
+/** When the event stops being current, the mirror of calendarEventSortValue.
+    An all-day event carries no endsAt at all: the schema stores its end as an
+    exclusive endDate, so it runs until that date's local midnight. NaN means
+    the cache recorded no end, which the schema's own check prevents. */
+function calendarEventEndValue(event: PortalGoogleCalendarEvent): number {
+  const value = event.allDay
+    ? event.endDate && `${event.endDate}T00:00:00`
+    : event.endsAt;
+  const time = value ? new Date(value).getTime() : Number.NaN;
+  return Number.isFinite(time) ? time : Number.NaN;
+}
+
 /** How far out the next event is, from a plain Date diff: minutes under the
     hour, hours under the day, then days. Intl writes the phrase, so "tomorrow"
-    and the agent's locale come free. The preview is a cache and lastSyncedAt
-    can be hours old, so a start in the past only reads as live while endsAt is
-    still ahead. */
+    and the agent's locale come free. Events that already finished are dropped
+    before this runs, so a start in the past is genuinely under way. */
 function formatRelativeStart(event: PortalGoogleCalendarEvent): string {
   const start = calendarEventSortValue(event);
   if (!Number.isFinite(start)) return "Starts soon";
-  const now = Date.now();
-  const minutes = Math.round((start - now) / 60000);
-  if (minutes <= 0) {
-    const end = event.endsAt ? new Date(event.endsAt).getTime() : Number.NaN;
-    return Number.isFinite(end) && end <= now ? "Already ended" : "Happening now";
-  }
+  const minutes = Math.round((start - Date.now()) / 60000);
+  if (minutes <= 0) return "Happening now";
   if (minutes < 60) return RELATIVE_TIME.format(minutes, "minute");
   if (minutes < 60 * 24) return RELATIVE_TIME.format(Math.round(minutes / 60), "hour");
   return RELATIVE_TIME.format(Math.round(minutes / (60 * 24)), "day");
@@ -118,10 +125,20 @@ function DisconnectConfirm(props: {
 
 export default function PortalCalendarPreview(props: PortalCalendarPreviewProps) {
   const [confirmingDisconnect, setConfirmingDisconnect] = useState(false);
-  const sortedEvents = useMemo(
-    () => [...props.data.events].sort((a, b) => calendarEventSortValue(a) - calendarEventSortValue(b)),
-    [props.data.events],
-  );
+  const sortedEvents = useMemo(() => {
+    // The preview is a cache that the read endpoint never filters by time, so it
+    // holds events that already finished. Drop them once, here: a finished event
+    // must not take the "Next up" hero, read as live, or keep a Join button.
+    // ponytail: recomputed per data change, not on a timer, so an event that
+    // ends while the page sits open survives until the next render.
+    const now = Date.now();
+    return props.data.events
+      .filter((event) => {
+        const end = calendarEventEndValue(event);
+        return Number.isNaN(end) || end > now;
+      })
+      .sort((a, b) => calendarEventSortValue(a) - calendarEventSortValue(b));
+  }, [props.data.events]);
   const connection = props.data.connection;
 
   if (props.loading) {

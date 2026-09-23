@@ -42,6 +42,8 @@ describe("PortalCalendarPreview", () => {
   });
 
   it("renders connected state, event context, refresh, and privacy disclosure", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-24T12:00:00Z"));
     renderPreview({
       connection: {
         status: "connected",
@@ -105,7 +107,6 @@ describe("PortalCalendarPreview", () => {
       ["in 5 hours", "2026-09-22T17:00:00Z", /5 hour/i],
       ["in 3 days", "2026-09-25T12:00:00Z", /3 day/i],
       ["running now", "2026-09-22T11:30:00Z", /^Happening now$/],
-      ["already over", "2026-09-22T09:00:00Z", /^Already ended$/],
       ["no start time", null, /^Starts soon$/],
     ];
     for (const [, startsAt, expected] of cases) {
@@ -136,7 +137,115 @@ describe("PortalCalendarPreview", () => {
     }
   });
 
+  it("drops events that already ended, all-day ones included", () => {
+    vi.useFakeTimers();
+    // Local, not UTC: an all-day event ends at its exclusive end date's local
+    // midnight, so a Z-suffixed clock would move the boundary per time zone.
+    vi.setSystemTime(new Date("2026-09-22T12:00:00"));
+    renderPreview({
+      connection: {
+        status: "connected",
+        scope: "https://www.googleapis.com/auth/calendar.events.readonly",
+        connectedAt: "2026-09-19T10:00:00",
+        lastSyncedAt: "2026-09-19T10:01:00",
+        syncWindowEnd: "2026-10-03T10:01:00",
+        lastErrorCode: null,
+      },
+      events: [
+        {
+          id: "stale-all-day",
+          title: "Company holiday",
+          startsAt: null,
+          endsAt: null,
+          startDate: "2026-09-20",
+          endDate: "2026-09-21",
+          allDay: true,
+          calendarContext: "Primary calendar",
+          joinUrl: "https://meet.google.com/old-stale-one",
+          cachedAt: "2026-09-19T10:01:00",
+        },
+        {
+          id: "stale-timed",
+          title: "Morning standup",
+          startsAt: "2026-09-22T09:00:00",
+          endsAt: "2026-09-22T09:30:00",
+          startDate: null,
+          endDate: null,
+          allDay: false,
+          calendarContext: "Primary calendar",
+          joinUrl: "https://meet.google.com/aaa-bbbb-ccc",
+          cachedAt: "2026-09-19T10:01:00",
+        },
+        {
+          id: "live-all-day",
+          title: "Open enrollment day",
+          startsAt: null,
+          endsAt: null,
+          startDate: "2026-09-22",
+          endDate: "2026-09-23",
+          allDay: true,
+          calendarContext: "Primary calendar",
+          joinUrl: null,
+          cachedAt: "2026-09-19T10:01:00",
+        },
+        {
+          id: "later-timed",
+          title: "Underwriting sync",
+          startsAt: "2026-09-22T15:00:00",
+          endsAt: "2026-09-22T16:00:00",
+          startDate: null,
+          endDate: null,
+          allDay: false,
+          calendarContext: "Primary calendar",
+          joinUrl: null,
+          cachedAt: "2026-09-19T10:01:00",
+        },
+      ],
+    });
+
+    expect(screen.queryByText("Company holiday")).not.toBeInTheDocument();
+    expect(screen.queryByText("Morning standup")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^Join/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Open enrollment day" })).toBeInTheDocument();
+    expect(screen.getByText("Happening now")).toBeInTheDocument();
+    expect(screen.getByText("Underwriting sync")).toBeInTheDocument();
+  });
+
+  it("falls back to the empty state when every cached event has ended", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-09-22T12:00:00"));
+    renderPreview({
+      connection: {
+        status: "connected",
+        scope: "https://www.googleapis.com/auth/calendar.events.readonly",
+        connectedAt: "2026-09-19T10:00:00",
+        lastSyncedAt: "2026-09-19T10:01:00",
+        syncWindowEnd: "2026-10-03T10:01:00",
+        lastErrorCode: null,
+      },
+      events: [
+        {
+          id: "stale-all-day",
+          title: "Company holiday",
+          startsAt: null,
+          endsAt: null,
+          startDate: "2026-09-20",
+          endDate: "2026-09-21",
+          allDay: true,
+          calendarContext: "Primary calendar",
+          joinUrl: "https://meet.google.com/old-stale-one",
+          cachedAt: "2026-09-19T10:01:00",
+        },
+      ],
+    });
+
+    expect(screen.getByText("Clear for the next 14 days")).toBeInTheDocument();
+    expect(screen.queryByText("Company holiday")).not.toBeInTheDocument();
+  });
+
   it("does not render a Join button for an event without a join URL", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-24T12:00:00Z"));
     renderPreview({
       connection: {
         status: "connected",
