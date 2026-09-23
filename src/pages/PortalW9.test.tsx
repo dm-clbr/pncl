@@ -98,6 +98,18 @@ describe("PortalW9", () => {
     );
   });
 
+  /** Four routes link here (portal-todos.ts, the dashboard checklist and two
+      links on the profile page), so the back link has to point at the portal,
+      the one page every entry path shares. Direct deposit pins the same href. */
+  it("sends the back link to the portal, not the profile", async () => {
+    await renderPage();
+
+    expect(screen.getByRole("link", { name: "Back to portal" })).toHaveAttribute(
+      "href",
+      "/portal",
+    );
+  });
+
   it("gates the signing sheet on the viewer reporting the W-9's form page", async () => {
     w9State.loading = false;
 

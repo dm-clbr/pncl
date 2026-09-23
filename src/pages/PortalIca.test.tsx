@@ -100,6 +100,18 @@ describe("PortalIca", () => {
     );
   });
 
+  /** Four routes link here (portal-todos.ts, the dashboard checklist and two
+      links on the profile page), so the back link has to point at the portal,
+      the one page every entry path shares. Direct deposit pins the same href. */
+  it("sends the back link to the portal, not the profile", async () => {
+    await renderPage();
+
+    expect(screen.getByRole("link", { name: "Back to portal" })).toHaveAttribute(
+      "href",
+      "/portal",
+    );
+  });
+
   /* The email AcroForm field is on page 12 and the signing sheet only unlocks on
      page 14, so a warning that lives in the sheet is unreachable while the field
      is being filled. That address becomes the account recovery email and the

@@ -128,8 +128,8 @@ export default function PortalIca() {
           <PortalHeader name={displayName} email={user?.email} initials={initials} subpage />
           <PortalSubpageHeader
             title="Independent Contractor Agreement"
-            backTo="/portal/profile"
-            backLabel="Back to profile"
+            backTo="/portal"
+            backLabel="Back to portal"
           />
 
           {loading && (

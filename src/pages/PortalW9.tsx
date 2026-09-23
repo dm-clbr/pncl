@@ -130,8 +130,8 @@ export default function PortalW9() {
           <PortalHeader name={displayName} email={user?.email} initials={initials} subpage />
           <PortalSubpageHeader
             title="Form W-9"
-            backTo="/portal/profile"
-            backLabel="Back to profile"
+            backTo="/portal"
+            backLabel="Back to portal"
           />
 
           {loading && (
