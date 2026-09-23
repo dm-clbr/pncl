@@ -3,6 +3,7 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import PortalProfile from "@/pages/PortalProfile";
 import type { PortalProfile as PortalProfileRow } from "@/lib/portal-profile";
+import type { PortalTodo } from "@/lib/portal-todos";
 
 const profileRow = {
   id: "profile-1",
@@ -77,8 +78,10 @@ vi.mock("@/lib/portal-direct-deposit", async () => {
   );
   return { ...actual, getDirectDepositPdfUrl: () => Promise.resolve("https://files.test/dd.pdf") };
 });
+let todoRows: PortalTodo[] = [];
+
 vi.mock("@/hooks/usePortalTodos", () => ({
-  usePortalTodos: () => ({ todos: [], loading: false, error: null, reload: vi.fn() }),
+  usePortalTodos: () => ({ todos: todoRows, loading: false, error: null, reload: vi.fn() }),
 }));
 
 vi.mock("@/components/AgentBusinessCardDownload", () => ({ default: () => <div /> }));
@@ -172,6 +175,32 @@ describe("portal profile details tab", () => {
     // Sign out stays reachable on the page, never in the bottom tab bar.
     expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Portal sections" })).toBeInTheDocument();
+  });
+
+  it("names the onboarding progress bar on the widget, not on its wrapper", async () => {
+    const todo = (id: string, completed: boolean): PortalTodo => ({
+      id,
+      title: id,
+      description: "",
+      href: "/portal",
+      external: false,
+      actionLabel: "Open",
+      phase: "on_board",
+      completionType: "admin",
+      completed,
+    });
+    todoRows = [todo("a", true), todo("b", true), todo("c", false), todo("d", false)];
+    try {
+      renderProfile();
+
+      // ARIA cannot name a generic element, so a label on the wrapper div was
+      // dropped and the bar was announced with no name at all.
+      const bar = await screen.findByRole("progressbar", { name: "Onboarding progress" });
+      expect(bar).toHaveAttribute("aria-valuenow", "50");
+      expect(screen.getByText("2 of 4 steps complete")).toBeInTheDocument();
+    } finally {
+      todoRows = [];
+    }
   });
 
   it("opens the team tab panel", async () => {

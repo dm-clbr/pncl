@@ -127,7 +127,14 @@ export default function AgentBusinessCardDownload({
       </p>
 
       <div className="portal-profile-card">
-        <div className="portal-business-card-preview" aria-label={`Business card preview for ${agentName}`}>
+        {/* role="group" so the label is on an element ARIA can name: a bare div
+            is generic and browsers drop the name. Not role="img": the card's
+            email, phone and NPN are real text and must stay readable. */}
+        <div
+          className="portal-business-card-preview"
+          role="group"
+          aria-label={`Business card preview for ${agentName}`}
+        >
           <div className="portal-business-card-brand">
             <strong>PNCL</strong>
             <span>Agent network</span>

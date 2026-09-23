@@ -576,7 +576,7 @@ export default function PortalProfile() {
           />
 
           {!todosLoading && todoTotal > 0 && (
-            <div className="portal-profile-progress" aria-label="Onboarding progress">
+            <div className="portal-profile-progress">
               <div className="portal-profile-progress-head">
                 <span className={`portal-phase-badge phase-${currentPhase}`}>
                   {PORTAL_PHASE_LABELS[currentPhase]}
@@ -588,6 +588,7 @@ export default function PortalProfile() {
               <div
                 className="portal-profile-progress-bar"
                 role="progressbar"
+                aria-label="Onboarding progress"
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-valuenow={todoPercent}
