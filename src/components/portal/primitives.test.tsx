@@ -9,7 +9,7 @@ import ListRow from "@/components/portal/ListRow";
 import Pane from "@/components/portal/Pane";
 import PortalHeader from "@/components/portal/PortalHeader";
 import PortalSubpageHeader from "@/components/portal/PortalSubpageHeader";
-import Segmented, { nextIndex } from "@/components/portal/Segmented";
+import Segmented, { nextIndex, panelAria } from "@/components/portal/Segmented";
 import Sheet from "@/components/portal/Sheet";
 import Skeleton from "@/components/portal/Skeleton";
 import Stepper from "@/components/portal/Stepper";
@@ -387,6 +387,30 @@ describe("Segmented", () => {
     expect(nextIndex(" ", 1, 3)).toBeNull();
   });
 
+  /* The ICA's three jumps cover 3 of its 14 pages and the W-9's two cover 2 of
+     its 6, so on most pages every tab renders aria-selected="false" and the
+     panel must not claim to be labelled by one of them (WCAG 4.1.2). */
+  it("labels the panel by the selected tab, and by its own name when none is", () => {
+    const jumps = [
+      { value: "2", label: "Introduction", id: "host-jump-2" },
+      { value: "12", label: "Signature", id: "host-jump-12" },
+    ];
+
+    expect(panelAria(jumps, "12", "Page 12 of 14")).toEqual({
+      role: "tabpanel",
+      "aria-labelledby": "host-jump-12",
+    });
+    expect(panelAria(jumps, "7", "Page 7 of 14")).toEqual({
+      role: "group",
+      "aria-label": "Page 7 of 14",
+    });
+    // An item with no id cannot label anything, so it falls back too.
+    expect(panelAria([{ value: "2", label: "Introduction" }], "2", "Page 2 of 14")).toEqual({
+      role: "group",
+      "aria-label": "Page 2 of 14",
+    });
+  });
+
   it("is a roving tablist: one tab in the tab order, arrows move focus and value", () => {
     const onChange = vi.fn();
     render(<Segmented items={TABS} value="team" onChange={onChange} label="Profile sections" />);
@@ -478,6 +502,18 @@ describe("Segmented", () => {
 });
 
 describe("PortalHeader", () => {
+  it("steps the masthead title down to a paragraph on a sub-page", () => {
+    render(
+      <MemoryRouter>
+        <PortalHeader name="Porter Gerlach" initials="PG" subpage />
+      </MemoryRouter>,
+    );
+
+    // The sub-page header carries the page's h1, so the masthead must not.
+    expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
+    expect(document.querySelector("p.portal-header-title")).toHaveTextContent("Employee Portal");
+  });
+
   it("shows the photo when there is one and the initials when there is not", () => {
     const { rerender } = render(
       <MemoryRouter>

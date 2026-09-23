@@ -1,0 +1,496 @@
+/* The portal's three forms: the ICA, the W-9 and direct deposit.
+
+   The document itself is a pdf.js canvas stack with AcroForm inputs overlaid on
+   it, and none of that is ours. What is ours is everything around it: the
+   section jumps, the pager, and the sheet the agent signs in.
+
+   Three surfaces, three fills:
+   - .pforms-doc is the pane recipe from docs/DESIGN.md, so the text ladder's
+     measured contrast applies as published (R27: those numbers hold on the pane
+     fill and nowhere else).
+   - .pforms-pager is a bar over scrolling content, so it takes the solid
+     --portal-bar-fill, like every other portal bar.
+   - the signing Sheet is the primitive's own surface.
+
+   .pforms-doc carries overflow: clip rather than hidden. hidden computes
+   overflow-y to auto and makes the element a scrollport that never scrolls,
+   which would stop the pager inside it from ever sticking.
+
+   Direct deposit has no canvas and no pager: a single column of Fields in a
+   pane with one sticky submit bar, which shares the pager's bar recipe. */
+
+.pforms {
+  max-width: none;
+}
+
+/* ── The document ───────────────────────────────────────────────────────── */
+
+.pforms-doc {
+  position: relative;
+  margin: 20px 0 0;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
+  box-shadow: var(--portal-pane-shadow);
+  overflow: clip;
+  font-family: var(--portal-font);
+}
+
+.pforms-jumps {
+  padding: 12px 12px 0;
+}
+
+/* The pdf.js scroll container. max-width keeps a page that has not been refit
+   yet from widening the layout, overflow keeps the overflow inside the
+   container, and the touch-action list is pan plus pinch-zoom: bare pinch-zoom
+   would let two fingers zoom but stop one finger scrolling. */
+.pforms-doc .ica-fillable-pdf-container--paged {
+  max-width: 100%;
+  overflow: auto;
+  touch-action: pan-x pan-y pinch-zoom;
+}
+
+.pforms-doc .ica-fillable-pdf-container--paged .page {
+  max-width: 100%;
+}
+
+.pforms-doc .ica-fillable-pdf-host {
+  min-height: 320px;
+}
+
+.pforms-doc-status {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0;
+  font-size: var(--portal-t-micro);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.pforms-doc-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  animation: pforms-spin 0.75s linear infinite;
+}
+
+@keyframes pforms-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pforms-doc-spinner {
+    animation: none;
+  }
+}
+
+/* ── The pager ──────────────────────────────────────────────────────────── */
+
+/* Sticky at every width, not just on a phone: at page-width scale a letter page
+   is around 1290px tall on a desktop pane, so a pager pinned to the bottom of
+   the frame would sit a screen and a half below the fold, and the Sign button
+   with it. */
+.pforms-pager,
+.pforms-submit-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  border-top: 1px solid var(--portal-rule);
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+}
+
+/* .home2-page carries overflow-x: hidden, which computes overflow-y to auto and
+   makes it a scrollport that never scrolls, so a sticky descendant never
+   sticks. clip gives the same horizontal containment without the scroll
+   container. Scoped with :has() to the pages that carry this bar, per
+   docs/DESIGN.md, and shipped in the same commit as the sticky. */
+.home2-page:has(.pforms-pager, .pforms-submit-bar) {
+  overflow-x: clip;
+}
+
+.pforms-pager-progress {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pforms-pager-progress-fill {
+  height: 100%;
+  background: rgba(255, 255, 255, 0.55);
+  transition: width var(--portal-duration) var(--portal-ease-out);
+}
+
+.pforms-pager-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
+
+.pforms-pager-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--portal-text-strong);
+  font-family: inherit;
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pforms-pager-btn:disabled {
+  color: var(--portal-text-faint);
+  cursor: default;
+}
+
+.pforms-pager-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-inline: auto;
+  font-size: var(--portal-t-body);
+  color: var(--portal-text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 16px, or iOS Safari zooms the whole page the moment it takes focus. */
+.pforms-pager-count input {
+  width: 3.25rem;
+  min-height: 44px;
+  padding: 0 6px;
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--portal-text-strong);
+  font-family: inherit;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.pforms-pager-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The pager only exists once the document has loaded, but the Back control in
+   the actions slot has to outlive both the loading and the error state: on the
+   public onboarding funnel it is the only way out of the contract step. This is
+   that slot on its own row under the document frame.
+   ponytail: :empty because a consumer that passes neither Back nor Sign still
+   hands an element down, and an empty row would leave a visible gap. */
+.pforms-pager-actions--bare {
+  justify-content: flex-end;
+  padding: 12px;
+  border-top: 1px solid var(--portal-rule);
+}
+
+.pforms-pager-actions--bare:empty {
+  display: none;
+}
+
+.pforms-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--portal-text-strong);
+  font-family: inherit;
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pforms-action-quiet {
+  background: rgba(0, 0, 0, 0.28);
+  border-color: var(--portal-border);
+  color: var(--portal-text);
+}
+
+.pforms-action:disabled {
+  color: var(--portal-text-faint);
+  cursor: default;
+}
+
+.pforms-pager-btn:focus-visible,
+.pforms-pager-count input:focus-visible,
+.pforms-action:focus-visible,
+.pforms-submit:focus-visible,
+.pforms-ack input:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+/* ── The page note ───────────────────────────────────── */
+
+/* Guidance the agent needs while filling the document, which rules out the
+   signing sheet: the ICA sheet only unlocks on page 14 and the email field is on
+   page 12. It takes the pane recipe rather than the bare page, so the published
+   text figures apply on both surfaces this step renders on (the portal page and
+   the public onboarding funnel): --portal-text is white 0.80 over the pane's
+   composited rgb(105, 94, 82), which is 4.75:1. */
+.pforms-note {
+  margin: 20px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
+  font-size: var(--portal-t-body);
+  line-height: 1.55;
+  color: var(--portal-text);
+}
+
+.pforms-note strong {
+  color: var(--portal-text-strong);
+}
+
+/* ── The signing sheet ──────────────────────────────────────────────────── */
+
+/* Both are full sentences of body copy, so both take the body rung
+   (--portal-text, 4.76:1 on the bare pane and higher over the sheet's
+   scrim). The faint rung is the 3:1 UI class: labels, counts, index
+   numerals, never a sentence. */
+.pforms-sheet-note,
+.pforms-sheet-fine {
+  margin: 0 0 14px;
+  font-size: var(--portal-t-body);
+  line-height: 1.55;
+  color: var(--portal-text);
+}
+
+/* home2.css strips list markers globally; a numbered legal certification needs
+   its numbers back. */
+.pforms-cert-list {
+  margin: 0 0 14px;
+  padding-left: 22px;
+  list-style: decimal;
+  font-size: var(--portal-t-body);
+  line-height: 1.55;
+  color: var(--portal-text);
+}
+
+.pforms-cert-list li + li {
+  margin-top: 8px;
+}
+
+.pforms-acks {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* 44px of row for a 20px box: the whole label is the target. */
+.pforms-ack {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  align-items: start;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+  color: var(--portal-text);
+  cursor: pointer;
+}
+
+.pforms-ack input {
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  accent-color: rgba(255, 255, 255, 0.9);
+}
+
+.pforms-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--portal-text-strong);
+  font-family: inherit;
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pforms-submit:disabled {
+  color: var(--portal-text-faint);
+  cursor: default;
+}
+
+/* ── The direct deposit form ───────────────────────────────── */
+
+/* No canvas here, so no pager: a single column of Fields and one sticky submit.
+   One control per row at every width, because at 390px a City / State / ZIP row
+   leaves three controls well under the 44px floor. */
+/* One capped column for every state the page can be in, the aside included.
+   The wrap runs to 1320px, which would stretch a five-character ZIP field
+   across the whole screen. */
+.pforms-dd-col {
+  display: grid;
+  gap: var(--portal-gap);
+  max-width: 560px;
+  margin-top: 20px;
+}
+
+.pforms-dd {
+  display: grid;
+  gap: var(--portal-gap);
+  font-family: var(--portal-font);
+}
+
+.pforms-dd-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.pforms-dd-lead,
+.pforms-dd-note {
+  margin: 0;
+  max-width: 68ch;
+  font-size: var(--portal-t-body);
+  line-height: 1.6;
+  color: var(--portal-text);
+}
+
+.pforms-dd-lead {
+  margin-bottom: 16px;
+}
+
+.pforms-dd-lead:last-child {
+  margin-bottom: 0;
+}
+
+/* .home2-page a is 0-1-1 and strips both the colour and the underline, so a
+   link inside body copy has to be declared past it or nothing marks it as a
+   link at all. */
+.pforms-page .pforms-dd-lead a {
+  color: var(--portal-text-strong);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Native grouping: the legend names the set for a screen reader, which is what
+   the checking / savings radio pair needs. Left as a block box rather than a
+   grid, because a legend inside a grid fieldset stops being a legend box and
+   becomes an ordinary grid item. */
+.pforms-dd-group {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.14);
+}
+
+.pforms-dd-group > * + * {
+  margin-top: 16px;
+}
+
+.pforms-dd-group legend {
+  margin-left: -6px;
+  padding: 0 6px;
+  font-size: var(--portal-t-micro);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--portal-text-faint);
+}
+
+/* The bar keeps the action in the thumb zone on a form that runs past two
+   screens. It takes the sticky recipe above, so it is solid, not translucent. */
+.pforms-submit-bar {
+  padding: 10px 0;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+}
+
+/* ── The page around it ─────────────────────────────────────────────────── */
+
+.pforms-loading {
+  display: grid;
+  gap: 10px;
+}
+
+.home2-page .pforms-page .portal-panel-note {
+  padding: 0 0 8px;
+  font-size: var(--portal-t-body);
+  color: var(--portal-text);
+}
+
+.home2-page .pforms-page .portal-panel-note strong {
+  color: var(--portal-text-strong);
+}
+
+.pforms-page .eyebrow {
+  color: var(--portal-text-faint);
+}
+
+.home2-page .pforms-page .h3 {
+  margin: 8px 0 10px;
+}
+
+/* 13px body under a 34px display needs the measure capped, or the line runs
+   the whole width of a desktop pane and the eye loses the return. */
+.home2-page .pforms-page .lead {
+  margin: 0;
+  max-width: 68ch;
+  font-size: var(--portal-t-body);
+  line-height: 1.6;
+  color: var(--portal-text);
+}
+
+@media (max-width: 620px) {
+  /* Above the tab bar on the pages that mount one. */
+  .home2-page:has(> .portal-bottom-nav) .pforms-pager,
+  .home2-page:has(> .portal-bottom-nav) .pforms-submit-bar {
+    bottom: calc(56px + env(safe-area-inset-bottom));
+  }
+
+  .home2-page:has(> .portal-bottom-nav) .pforms-pager-row,
+  .home2-page:has(> .portal-bottom-nav) .pforms-submit-bar {
+    padding-bottom: 8px;
+  }
+
+  .pforms-pager-row {
+    flex-wrap: wrap;
+  }
+
+  /* Prev, the count and Next hold one row; the actions take the next one so
+     nothing drops under 44px wide on a 390px screen. */
+  .pforms-pager-actions {
+    flex: 1 0 100%;
+  }
+
+  .pforms-pager-actions > * {
+    flex: 1;
+  }
+}

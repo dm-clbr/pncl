@@ -213,7 +213,7 @@ export default function IcaFieldCallouts({
           className={`ica-field-callout ica-field-callout--${callout.placement}${callout.filled ? " ica-field-callout--filled" : ""}`}
           style={{ top: callout.top, left: callout.left }}
           onClick={() => handleCalloutClick(callout)}
-          title={callout.hint ? `${callout.label} — ${callout.hint}` : callout.label}
+          title={callout.hint ? `${callout.label}: ${callout.hint}` : callout.label}
         >
           <span className="ica-field-callout-label">{callout.label}</span>
           {callout.hint && !callout.filled && (
