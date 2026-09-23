@@ -100,6 +100,19 @@ describe("PortalIca", () => {
     );
   });
 
+  /* The email AcroForm field is on page 12 and the signing sheet only unlocks on
+     page 14, so a warning that lives in the sheet is unreachable while the field
+     is being filled. That address becomes the account recovery email and the
+     1099 delivery address, so it has to be readable on the page itself. */
+  it("shows the recovery-email warning on the page, not inside the signing sheet", async () => {
+    icaState.loading = false;
+
+    await renderPage();
+
+    const note = await screen.findByText(/personal address you will keep access to/);
+    expect(note.closest("dialog")).toBeNull();
+  });
+
   it("holds the Sign button back until the last page has been reached", async () => {
     icaState.loading = false;
 

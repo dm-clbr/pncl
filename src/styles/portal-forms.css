@@ -244,6 +244,29 @@
   outline-offset: var(--portal-focus-offset);
 }
 
+/* ── The page note ───────────────────────────────────── */
+
+/* Guidance the agent needs while filling the document, which rules out the
+   signing sheet: the ICA sheet only unlocks on page 14 and the email field is on
+   page 12. It takes the pane recipe rather than the bare page, so the published
+   text figures apply on both surfaces this step renders on (the portal page and
+   the public onboarding funnel): --portal-text is white 0.80 over the pane's
+   composited rgb(105, 94, 82), which is 4.75:1. */
+.pforms-note {
+  margin: 20px 0 0;
+  padding: 14px 16px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
+  font-size: var(--portal-t-body);
+  line-height: 1.55;
+  color: var(--portal-text);
+}
+
+.pforms-note strong {
+  color: var(--portal-text-strong);
+}
+
 /* ── The signing sheet ──────────────────────────────────────────────────── */
 
 /* Both are full sentences of body copy, so both take the body rung

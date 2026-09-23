@@ -121,6 +121,17 @@ export default function IcaSigningStep({
       <h2 className="h3">{title}</h2>
       <p className="lead">{lead}</p>
 
+      {/* Guidance, not a signing control: the email AcroForm field sits on page
+          12 and the signing sheet only unlocks on page 14, so this warning has
+          to be readable while the field is being filled. The field's own callout
+          carries no hint and src/lib is read-only, which leaves this paragraph
+          as the only place it can be said. */}
+      <p className="pforms-note">
+        <strong>Email is required.</strong> The address you enter on the signature page becomes
+        your account recovery email and is where PNCL delivers your electronic 1099. Use a
+        personal address you will keep access to, not your @thepncl.com address.
+      </p>
+
       <IcaFillablePdfViewer
         ref={viewerRef}
         prefillLegalName={prefillLegalName}
@@ -148,12 +159,6 @@ export default function IcaSigningStep({
       />
 
       <Sheet open={signOpen} onClose={() => setSignOpen(false)} title="Sign your agreement">
-        <p className="pforms-sheet-note">
-          <strong>Email is required.</strong> The address you enter on the signature page becomes
-          your account recovery email and is where PNCL delivers your electronic 1099. Use a
-          personal address you will keep access to, not your @thepncl.com address.
-        </p>
-
         <div className="pforms-acks">
           <label className="pforms-ack">
             <input
