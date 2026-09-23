@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CLIENT_INTAKE_STEPS } from "@/lib/client-intake";
 import PortalClientIntake from "@/pages/PortalClientIntake";
 
@@ -40,12 +40,17 @@ const answerFor = (key: string) => {
 };
 
 /** Walks the wizard to the review screen, answering whatever control is on
-    screen. "No" on every yes/no keeps the conditional branches out. */
+    screen. "No" on every yes/no keeps the conditional branches out.
+    ponytail: the two per-step probes are DOM queries, not role queries, because
+    they run once for each of the ~64 steps and an accessible-name scan per
+    iteration was over half the runtime of the review test. The assertions that
+    follow still go through roles. */
 const answerEveryStep = () => {
   for (let guard = 0; guard < 300; guard += 1) {
-    if (screen.queryByRole("button", { name: "Save client" })) return;
-    const heading = screen
-      .getAllByRole("heading")
+    const save = Array.from(document.querySelectorAll("button"))
+      .find((node) => node.textContent?.trim() === "Save client");
+    if (save) return;
+    const heading = Array.from(document.querySelectorAll("h1, h2, h3, h4"))
       .map((node) => node.textContent ?? "")
       .find((text) => STEP_BY_QUESTION.has(text));
     const step = heading ? STEP_BY_QUESTION.get(heading)! : null;
@@ -118,8 +123,8 @@ const choiceButtons = () =>
   Array.from(document.querySelectorAll<HTMLButtonElement>(".pintake-option"));
 
 describe("PortalClientIntake", () => {
-  vi.useFakeTimers({ shouldAdvanceTime: true });
-  afterEach(() => vi.clearAllTimers());
+  beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }));
+  afterEach(() => vi.useRealTimers());
 
   it("opens on the intro with the three stages and the start action", () => {
     renderPage();
@@ -283,6 +288,11 @@ describe("PortalClientIntake", () => {
     }
   });
 
+  // This one walks every step in the wizard, one full re-render each, so it
+  // runs an order of magnitude longer than the rest of the file and had no
+  // headroom inside the 5s default on a loaded machine.
+  // ponytail: an explicit budget rather than a shorter walk, since walking the
+  // real step list is what makes the review screen worth asserting on.
   it("reaches the review screen, groups the answers and edits one", () => {
     renderPage();
     fireEvent.click(screen.getByRole("button", { name: "Start intake" }));
@@ -302,5 +312,5 @@ describe("PortalClientIntake", () => {
     fireEvent.click(within(answers).getAllByText("Edit")[0]);
     act(() => void vi.advanceTimersByTime(400));
     expect(screen.getByRole("button", { name: "Back to review" })).toBeInTheDocument();
-  });
+  }, 20000);
 });
