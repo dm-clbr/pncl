@@ -147,9 +147,12 @@
   color: var(--portal-text-strong);
 }
 
+/* The row's second line is body text, not a label, so it takes the 4.5:1 rung
+   and not the 0.60 UI rung, the same call portal-primitives makes for
+   .portal-row-secondary. */
 .pcal .pcal-item-context {
   font-size: var(--portal-t-micro);
-  color: var(--portal-text-faint);
+  color: var(--portal-text);
 }
 
 /* ── Connection ──────────────────────────────────────────────────────────── */
