@@ -47,6 +47,7 @@ describe("PortalReferralPanel", () => {
       </MemoryRouter>,
     );
 
+    expect(screen.getByRole("region", { name: "Referral links" })).toBeInTheDocument();
     expect(screen.getByText("Starting contract")).toBeInTheDocument();
     expect(screen.getByText(/95% starting contract/)).toBeInTheDocument();
     expect(screen.queryByText(/105/)).not.toBeInTheDocument();

@@ -1,47 +1,25 @@
-import { ArrowUpRight } from "lucide-react";
-import {
-  resolveSureLcAccountLinks,
-  type SureLcAccountLink,
-} from "@/lib/surelc-accounts";
+import ListRow from "@/components/portal/ListRow";
+import Pane from "@/components/portal/Pane";
+import { resolveSureLcAccountLinks } from "@/lib/surelc-accounts";
 import type { PortalTodo } from "@/lib/portal-todos";
-
-function SureLcAccountCard({ account }: { account: SureLcAccountLink }) {
-  return (
-    <a
-      href={account.href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="portal-surelc-account-link"
-    >
-      <span>
-        <strong>{account.label}</strong>
-        <small>{account.branch}</small>
-      </span>
-      <ArrowUpRight size={17} aria-hidden="true" />
-    </a>
-  );
-}
 
 export default function PortalSureLcLinks({ todos = [] }: { todos?: PortalTodo[] }) {
   const accounts = resolveSureLcAccountLinks(todos);
 
   return (
-    <section className="carrier-sheet-panel portal-surelc-accounts-panel">
-      <div className="carrier-sheet-panel-head">
-        <div>
-          <h1>SureLC accounts</h1>
-          <p>
-            Reopen any of your three SureLC accounts to update your producer profile or
-            submit carrier applications.
-          </p>
-        </div>
-      </div>
+    <Pane title="SureLC accounts">
+      <p className="portal-profile-lede">
+        Reopen any of your three SureLC accounts to update your producer profile or submit
+        carrier applications.
+      </p>
 
-      <div className="portal-surelc-account-links">
+      <ul className="portal-profile-rows">
         {accounts.map((account) => (
-          <SureLcAccountCard key={account.todoId} account={account} />
+          <li key={account.todoId}>
+            <ListRow href={account.href} label={account.label} secondary={account.branch} />
+          </li>
         ))}
-      </div>
-    </section>
+      </ul>
+    </Pane>
   );
 }

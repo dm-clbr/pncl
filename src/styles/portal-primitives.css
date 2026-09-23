@@ -589,7 +589,14 @@ button.portal-row:hover .portal-row-trail {
   color: var(--portal-text);
 }
 
+/* Usually one action. A state with more than one way out (the saved-documents
+   empty state offers three forms) wraps them centred rather than on one long
+   line the 36ch measure cannot hold. */
 .portal-empty-action {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
   margin-top: calc(var(--portal-unit) * 2);
 }
 

@@ -1,6 +1,9 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { FileCheck2, IdCard, X } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
+import Chip from "@/components/portal/Chip";
+import Field from "@/components/portal/Field";
+import Pane from "@/components/portal/Pane";
 import {
   getDriversLicenseUrl,
   getEoCertificateUrl,
@@ -27,7 +30,6 @@ export default function PortalLicensingSection({
   names: { firstName: string; lastName: string };
   onSaved?: (profile: PortalProfile) => void;
 }) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<PortalLicensingFormValues>({
     npn: "",
     eoPolicyNumber: "",
@@ -35,7 +37,6 @@ export default function PortalLicensingSection({
   });
   const [stateToAdd, setStateToAdd] = useState("");
   const [licenseNumberToAdd, setLicenseNumberToAdd] = useState("");
-  const eoFileInputRef = useRef<HTMLInputElement>(null);
   const [licensePath, setLicensePath] = useState<string | null>(null);
   const [licenseUrl, setLicenseUrl] = useState<string | null>(null);
   const [pendingLicenseFile, setPendingLicenseFile] = useState<File | null>(null);
@@ -190,19 +191,16 @@ export default function PortalLicensingSection({
   };
 
   const displayLicenseUrl = licensePreviewUrl ?? licenseUrl;
+  const stateLicenses = Object.entries(form.stateLicenseNumbers).sort(([a], [b]) =>
+    a.localeCompare(b),
+  );
 
   return (
-    <div className="carrier-sheet-panel portal-profile-panel">
-      <div className="carrier-sheet-panel-head">
-        <div>
-          <h2>Licensing</h2>
-          <p>
-            Record your NPN, E&amp;O policy number, and state licenses as you earn them —
-            your onboarding checklist updates automatically. Upload a clear image of your
-            driver&apos;s license if you haven&apos;t already.
-          </p>
-        </div>
-      </div>
+    <div className="portal-profile-licensing">
+      <p className="portal-profile-lede">
+        Record your NPN, E&amp;O policy number, and state licenses as you earn them. Each one
+        clears a step on your onboarding checklist.
+      </p>
 
       {loading ? (
         <div className="portal-incentives-loading">
@@ -210,160 +208,186 @@ export default function PortalLicensingSection({
           <span>Loading licensing details...</span>
         </div>
       ) : (
-        <form className="admin-form portal-profile-form" onSubmit={(event) => void handleSubmit(event)}>
-          <div className="portal-profile-form-grid">
-            <label className="admin-field">
-              <span>NPN (National Producer Number)</span>
-              <input
-                type="text"
-                value={form.npn}
-                onChange={(event) => setForm((prev) => ({ ...prev, npn: event.target.value }))}
-                placeholder="Your NPN"
-                autoComplete="off"
-              />
-            </label>
+        <form className="portal-profile-form" onSubmit={(event) => void handleSubmit(event)}>
+          <Pane title="Licensing numbers">
+            <Field
+              label="NPN (National Producer Number)"
+              id="licensing-npn"
+              type="text"
+              value={form.npn}
+              onChange={(event) => setForm((prev) => ({ ...prev, npn: event.target.value }))}
+              placeholder="Your NPN"
+              autoComplete="off"
+            />
 
-            <label className="admin-field">
-              <span>E&amp;O policy number</span>
-              <input
-                type="text"
-                value={form.eoPolicyNumber}
-                onChange={(event) =>
-                  setForm((prev) => ({ ...prev, eoPolicyNumber: event.target.value }))
-                }
-                placeholder="Errors & omissions policy number"
-                autoComplete="off"
-              />
-            </label>
-          </div>
+            <Field
+              label="E&O policy number"
+              id="licensing-eo-policy"
+              type="text"
+              value={form.eoPolicyNumber}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, eoPolicyNumber: event.target.value }))
+              }
+              placeholder="Errors and omissions policy number"
+              autoComplete="off"
+            />
+          </Pane>
 
-          <div className="portal-licensing-dl-section">
-            <div className="portal-licensing-dl-preview-wrap">
-              <span className="portal-licensing-dl-placeholder" aria-hidden="true">
-                <FileCheck2 size={28} strokeWidth={1.5} />
+          <Pane title="Uploads">
+            <p className="portal-profile-lede">
+              PNCL needs your E&amp;O certificate to start contracting, and a clear image of your
+              driver&apos;s license for carrier paperwork.
+            </p>
+
+            {/* ponytail: the file input covers the zone at zero opacity, so the
+                browser's own drop target and picker do the work and no drag
+                handlers are needed. */}
+            <label className="portal-dropzone">
+              <span className="portal-dropzone-icon" aria-hidden="true">
+                <FileCheck2 size={22} strokeWidth={1.5} />
               </span>
-            </div>
-            <div className="portal-profile-photo-copy">
-              <strong>E&amp;O certificate</strong>
-              <p>
-                Upload your E&amp;O certificate of coverage (PDF or image, up to 5 MB) so PNCL can
-                initiate contracting.
-              </p>
-              {pendingEoCertificateFile ? (
-                <p className="portal-panel-note">Selected: {pendingEoCertificateFile.name}</p>
-              ) : eoCertificateUrl ? (
-                <p className="portal-panel-note">
-                  <a href={eoCertificateUrl} target="_blank" rel="noopener noreferrer">
-                    View current certificate
-                  </a>
-                </p>
-              ) : null}
+              <span className="portal-dropzone-copy">
+                <strong>E&amp;O certificate</strong>
+                <span>Drop a file here or tap to browse. PDF or image, up to 5 MB.</span>
+              </span>
               <input
-                ref={eoFileInputRef}
                 type="file"
                 accept="application/pdf,image/jpeg,image/png,image/webp"
-                className="portal-profile-photo-input"
+                className="portal-dropzone-input"
                 onChange={handleEoCertificateChange}
               />
-              <button
-                type="button"
-                className="portal-panel-btn portal-profile-photo-btn"
-                onClick={() => eoFileInputRef.current?.click()}
-              >
-                {eoCertificatePath || pendingEoCertificateFile ? "Replace certificate" : "Upload certificate"}
-              </button>
-            </div>
-          </div>
+            </label>
 
-          <div className="admin-field">
-            <span>State license numbers</span>
-            <div className="portal-licensing-state-row">
-              <select
-                value={stateToAdd}
-                onChange={(event) => setStateToAdd(event.target.value)}
-                aria-label="Choose a state to add"
-              >
-                <option value="">Choose a state</option>
-                {US_STATES.filter((state) => !form.stateLicenseNumbers[state]).map((state) => (
-                  <option key={state} value={state}>
-                    {state}
-                  </option>
-                ))}
-              </select>
+            {pendingEoCertificateFile ? (
+              <div className="portal-dropzone-files">
+                <Chip variant="pdf">{pendingEoCertificateFile.name}</Chip>
+              </div>
+            ) : eoCertificateUrl ? (
+              <div className="portal-dropzone-files">
+                <Chip variant="licensed">Certificate on file</Chip>
+                <a
+                  className="portal-profile-btn"
+                  href={eoCertificateUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View certificate
+                </a>
+              </div>
+            ) : null}
+
+            <label className="portal-dropzone">
+              <span className="portal-dropzone-icon" aria-hidden="true">
+                {displayLicenseUrl ? (
+                  <img src={displayLicenseUrl} alt="" className="portal-dropzone-thumb" />
+                ) : (
+                  <IdCard size={22} strokeWidth={1.5} />
+                )}
+              </span>
+              <span className="portal-dropzone-copy">
+                <strong>Driver&apos;s license</strong>
+                <span>Drop a file here or tap to browse. JPG, PNG or WebP, up to 5 MB.</span>
+              </span>
               <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="portal-dropzone-input"
+                onChange={handleLicenseChange}
+              />
+            </label>
+
+            {pendingLicenseFile ? (
+              <div className="portal-dropzone-files">
+                <Chip variant="pdf">{pendingLicenseFile.name}</Chip>
+              </div>
+            ) : licenseUrl ? (
+              <div className="portal-dropzone-files">
+                <Chip variant="licensed">Image on file</Chip>
+                <a
+                  className="portal-profile-btn"
+                  href={licenseUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  View image
+                </a>
+              </div>
+            ) : null}
+          </Pane>
+
+          <Pane
+            title="State licenses"
+            aside={
+              stateLicenses.length > 0 ? (
+                <Chip variant="licensed">{stateLicenses.length} on file</Chip>
+              ) : undefined
+            }
+          >
+            <div className="portal-licensing-add">
+              <Field label="State" id="licensing-state">
+                <select
+                  className="portal-select"
+                  value={stateToAdd}
+                  onChange={(event) => setStateToAdd(event.target.value)}
+                >
+                  <option value="">Choose a state</option>
+                  {US_STATES.filter((state) => !form.stateLicenseNumbers[state]).map((state) => (
+                    <option key={state} value={state}>
+                      {state}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field
+                label="License number"
+                id="licensing-state-number"
                 type="text"
                 value={licenseNumberToAdd}
                 onChange={(event) => setLicenseNumberToAdd(event.target.value)}
                 placeholder="License number"
-                aria-label="License number"
                 autoComplete="off"
               />
+
               <button
                 type="button"
-                className="portal-panel-btn"
+                className="portal-profile-btn"
                 onClick={addStateLicense}
                 disabled={!stateToAdd || !licenseNumberToAdd.trim()}
               >
                 Add license
               </button>
             </div>
-            {Object.keys(form.stateLicenseNumbers).length > 0 ? (
-              <div className="portal-licensing-state-chips">
-                {Object.entries(form.stateLicenseNumbers).sort(([a], [b]) => a.localeCompare(b)).map(([state, licenseNumber]) => (
-                  <span key={state} className="portal-licensing-state-chip">
-                    {state}: {licenseNumber}
+
+            {stateLicenses.length > 0 ? (
+              <ul className="portal-licensing-list">
+                {stateLicenses.map(([state, licenseNumber]) => (
+                  <li key={state}>
+                    <Chip variant="licensed">
+                      {state} {licenseNumber}
+                    </Chip>
                     <button
                       type="button"
+                      className="portal-profile-iconbtn"
                       onClick={() => removeStateLicense(state)}
-                      aria-label={`Remove ${state}`}
+                      aria-label={`Remove ${state} license`}
                     >
-                      <X size={12} aria-hidden="true" />
+                      <X size={16} aria-hidden="true" />
                     </button>
-                  </span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             ) : (
-              <span className="admin-field-hint">
-                Add each state and its active insurance license number, including your resident state.
-              </span>
+              <p className="portal-profile-lede">
+                Add each state you are licensed in, with its license number. Include your
+                resident state.
+              </p>
             )}
-          </div>
+          </Pane>
 
-          <div className="portal-licensing-dl-section">
-            <div className="portal-licensing-dl-preview-wrap">
-              {displayLicenseUrl ? (
-                <img src={displayLicenseUrl} alt="Driver's license" className="portal-licensing-dl-preview" />
-              ) : (
-                <span className="portal-licensing-dl-placeholder" aria-hidden="true">
-                  <IdCard size={28} strokeWidth={1.5} />
-                </span>
-              )}
-            </div>
-            <div className="portal-profile-photo-copy">
-              <strong>Driver&apos;s license</strong>
-              <p>Upload a clear and legible image (JPG, PNG, or WebP, up to 5 MB).</p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="portal-profile-photo-input"
-                onChange={handleLicenseChange}
-              />
-              <button
-                type="button"
-                className="portal-panel-btn portal-profile-photo-btn"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {displayLicenseUrl ? "Replace image" : "Upload image"}
-              </button>
-            </div>
-          </div>
-
-          <div className="admin-form-actions">
-            <button type="submit" className="admin-primary-btn" disabled={submitting}>
-              {submitting ? "Saving..." : "Save licensing details"}
-            </button>
-          </div>
+          <button type="submit" className="portal-profile-btn" disabled={submitting}>
+            {submitting ? "Saving..." : "Save licensing details"}
+          </button>
         </form>
       )}
     </div>

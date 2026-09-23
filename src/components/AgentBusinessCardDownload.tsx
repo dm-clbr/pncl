@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { Download, FileText, LockKeyhole, Share2 } from "lucide-react";
+import { Download, LockKeyhole, Share2 } from "lucide-react";
 import { toast } from "sonner";
+import Pane from "@/components/portal/Pane";
 import {
   canShareAgentBusinessCardPdfFile,
   canGenerateAgentBusinessCard,
@@ -117,22 +118,23 @@ export default function AgentBusinessCardDownload({
   };
 
   return (
-    <section className="portal-profile-business-card" aria-labelledby="digital-business-card-title">
-      <div className="portal-profile-business-card-head">
-        <div>
-          <strong id="digital-business-card-title">PDF business card</strong>
-          <p id="digital-business-card-description">
-            A print-ready 3.5 x 2 inch card with your saved profile photo, name, PNCL affiliation,
-            verified work email, profile phone, and NPN when available. A branded placeholder
-            appears when your photo is unavailable; home address and onboarding data stay private.
-            Share PDF sends only the PDF file, never this portal page.
-          </p>
-        </div>
-        <FileText size={22} aria-hidden="true" />
-      </div>
+    <Pane title="PDF business card">
+      <p className="portal-profile-lede" id="digital-business-card-description">
+        A print-ready 3.5 x 2 inch card with your saved profile photo, name, PNCL affiliation,
+        verified work email, profile phone, and NPN when available. A branded placeholder
+        appears when your photo is unavailable; home address and onboarding data stay private.
+        Share PDF sends only the PDF file, never this portal page.
+      </p>
 
-      <div className="portal-profile-business-card-layout">
-        <div className="portal-business-card-preview" aria-label={`Business card preview for ${agentName}`}>
+      <div className="portal-profile-card">
+        {/* role="group" so the label is on an element ARIA can name: a bare div
+            is generic and browsers drop the name. Not role="img": the card's
+            email, phone and NPN are real text and must stay readable. */}
+        <div
+          className="portal-business-card-preview"
+          role="group"
+          aria-label={`Business card preview for ${agentName}`}
+        >
           <div className="portal-business-card-brand">
             <strong>PNCL</strong>
             <span>Agent network</span>
@@ -171,41 +173,43 @@ export default function AgentBusinessCardDownload({
             </div>
           </div>
         </div>
-
-        <div className="portal-profile-business-card-actions">
-          {!canDownload && (
-            <p className="portal-profile-business-card-required" role="status">
-              <LockKeyhole size={15} aria-hidden="true" />
-              Add a valid phone number below and save your profile to unlock PDF sharing and download.
-            </p>
-          )}
-          <button
-            type="button"
-            className="portal-panel-btn portal-profile-business-card-btn"
-            aria-label={`Share PDF business card for ${agentName}`}
-            aria-describedby="digital-business-card-description digital-business-card-share-fallback"
-            disabled={!canDownload || activeAction !== null}
-            onClick={() => void handleShare()}
-          >
-            <Share2 size={16} aria-hidden="true" />
-            {activeAction === "share" ? "Creating PDF..." : "Share PDF"}
-          </button>
-          <button
-            type="button"
-            className="portal-panel-btn portal-profile-business-card-btn"
-            aria-label={`Download PDF business card for ${agentName}`}
-            aria-describedby="digital-business-card-description"
-            disabled={!canDownload || activeAction !== null}
-            onClick={() => void handleDownload()}
-          >
-            <Download size={16} aria-hidden="true" />
-            {activeAction === "download" ? "Creating PDF..." : "Download PDF"}
-          </button>
-          <p id="digital-business-card-share-fallback" className="portal-profile-business-card-fallback">
-            If this device cannot share files directly, the PDF will download so you can attach it manually.
-          </p>
-        </div>
       </div>
-    </section>
+
+      {!canDownload && (
+        <p className="portal-profile-card-locked" role="status">
+          <LockKeyhole size={15} aria-hidden="true" />
+          Add a valid phone number below and save your profile to unlock PDF sharing and download.
+        </p>
+      )}
+
+      <div className="portal-profile-card-actions">
+        <button
+          type="button"
+          className="portal-profile-btn portal-profile-card-btn"
+          aria-label={`Share PDF business card for ${agentName}`}
+          aria-describedby="digital-business-card-description digital-business-card-share-fallback"
+          disabled={!canDownload || activeAction !== null}
+          onClick={() => void handleShare()}
+        >
+          <Share2 size={16} aria-hidden="true" />
+          {activeAction === "share" ? "Creating PDF..." : "Share PDF"}
+        </button>
+        <button
+          type="button"
+          className="portal-profile-btn portal-profile-card-btn"
+          aria-label={`Download PDF business card for ${agentName}`}
+          aria-describedby="digital-business-card-description"
+          disabled={!canDownload || activeAction !== null}
+          onClick={() => void handleDownload()}
+        >
+          <Download size={16} aria-hidden="true" />
+          {activeAction === "download" ? "Creating PDF..." : "Download PDF"}
+        </button>
+      </div>
+
+      <p id="digital-business-card-share-fallback" className="portal-profile-card-note">
+        If this device cannot share files directly, the PDF will download so you can attach it manually.
+      </p>
+    </Pane>
   );
 }

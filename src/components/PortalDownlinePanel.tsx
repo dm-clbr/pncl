@@ -1,10 +1,14 @@
 import { useMemo } from "react";
 import { Users } from "lucide-react";
+import Chip, { type ChipVariant } from "@/components/portal/Chip";
+import EmptyState from "@/components/portal/EmptyState";
+import ListRow from "@/components/portal/ListRow";
+import Pane from "@/components/portal/Pane";
+import Skeleton from "@/components/portal/Skeleton";
 import {
   getDownlineDisplayLabel,
   getDownlineProgress,
   type DownlineMember,
-  type DownlineProgressSegment,
 } from "@/lib/portal-downline";
 import { usePortalDownline } from "@/hooks/usePortalDownline";
 
@@ -18,48 +22,11 @@ function formatJoinedDate(value: string): string {
   });
 }
 
-function DownlineSegmentedBar({
-  segments,
-  overallPercent,
-  currentLabel,
-}: {
-  segments: DownlineProgressSegment[];
-  overallPercent: number;
-  currentLabel: string;
-}) {
-  return (
-    <div
-      className="portal-downline-segmented-bar"
-      role="progressbar"
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={overallPercent}
-      aria-label={`${currentLabel} progress`}
-    >
-      {segments.map((segment) => (
-        <div
-          key={segment.id}
-          className={`portal-downline-segment${segment.state ? ` ${segment.state}` : ""}${segment.id !== "activation" ? ` phase-${segment.id}` : ""}`}
-          title={segment.detail ? `${segment.label}: ${segment.detail}` : segment.label}
-        >
-          <div className="portal-downline-segment-track">
-            <span
-              className="portal-downline-segment-fill"
-              style={{ width: `${segment.fillPercent}%` }}
-            />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function DownlineMemberRow({ member }: { member: DownlineMember }) {
   const displayLabel = getDownlineDisplayLabel(member);
   const showInviteAlias = member.inviteLabel?.trim() && member.inviteLabel.trim() !== member.name;
   const progress = getDownlineProgress(member);
   const currentSegment = progress.segments.find((segment) => segment.state === "current");
-  const showPhaseBadge = currentSegment && currentSegment.id !== "activation";
 
   const progressCountLabel = currentSegment?.id === "activation"
     ? currentSegment.detail
@@ -67,51 +34,27 @@ function DownlineMemberRow({ member }: { member: DownlineMember }) {
       ? `${progress.completedCount} of ${progress.totalCount} checklist steps complete`
       : currentSegment?.detail ?? null;
 
+  // ponytail: the stage chip reads the segments already computed for the row.
+  // No current segment means every segment is either done (complete, 100) or
+  // upcoming (expired, 0), which is the only pair that share that shape.
+  const stage: ChipVariant = currentSegment
+    ? currentSegment.id === "activation" ? "pending" : "active"
+    : progress.percent === 0 ? "inactive" : "active";
+
+  const secondary = [
+    showInviteAlias ? member.name : null,
+    `Joined ${formatJoinedDate(member.joinedAt)}`,
+    progressCountLabel,
+  ].filter(Boolean).join(" \u00b7 ");
+
   return (
-    <div className="portal-downline-item">
-      <div className="portal-downline-item-copy">
-        <strong>{displayLabel}</strong>
-        {showInviteAlias && <span className="portal-downline-alias">{member.name}</span>}
-        <span>
-          Joined {formatJoinedDate(member.joinedAt)}
-        </span>
-      </div>
-
-      <div className="portal-downline-progress" aria-label={`${displayLabel} onboarding progress`}>
-        <div className="portal-downline-progress-head">
-          {showPhaseBadge ? (
-            <span className={`portal-phase-badge phase-${currentSegment.id}`}>
-              {progress.currentLabel}
-            </span>
-          ) : (
-            <span className="portal-downline-status">{progress.currentLabel}</span>
-          )}
-          {progressCountLabel && (
-            <span className="portal-downline-progress-count">{progressCountLabel}</span>
-          )}
-        </div>
-
-        <DownlineSegmentedBar
-          segments={progress.segments}
-          overallPercent={progress.percent}
-          currentLabel={progress.currentLabel}
-        />
-
-        <div className="portal-downline-segment-labels" aria-hidden="true">
-          {progress.segments.map((segment) => (
-            <span
-              key={segment.id}
-              className={`portal-downline-segment-label ${segment.state}${segment.id !== "activation" ? ` phase-${segment.id}` : ""}`}
-            >
-              <span className="portal-downline-segment-label-text">{segment.label}</span>
-              {segment.detail && segment.state !== "upcoming" && (
-                <span className="portal-downline-segment-label-detail">{segment.detail}</span>
-              )}
-            </span>
-          ))}
-        </div>
-      </div>
-    </div>
+    <li>
+      <ListRow
+        label={displayLabel}
+        secondary={secondary}
+        trailing={<Chip variant={stage}>{progress.currentLabel}</Chip>}
+      />
+    </li>
   );
 }
 
@@ -138,48 +81,49 @@ export default function PortalDownlinePanel({ embedded = false }: PortalDownline
 
   const content = (
     <>
-      <p className="portal-panel-note">
-        Track onboarding progress for agents you&apos;ve referred — from portal activation through
+      <p className="portal-profile-lede">
+        Track onboarding progress for agents you&apos;ve referred, from portal activation through
         each checklist stage.
       </p>
 
       {loading ? (
-        <div className="portal-incentives-loading">
-          <span className="onboarding-spinner" aria-hidden="true" />
-          <span>Loading team…</span>
+        <div className="portal-profile-rows" aria-busy="true">
+          <span className="portal-sr">Loading team...</span>
+          <Skeleton variant="row" />
+          <Skeleton variant="row" />
+          <Skeleton variant="row" />
         </div>
       ) : error ? (
-        <div className="portal-panel-note" role="alert">
+        <div className="portal-profile-error" role="alert">
           <p>We couldn&apos;t load team progress right now.</p>
-          <button type="button" className="portal-inline-action" onClick={() => void reload()}>
+          <button type="button" className="portal-profile-btn" onClick={() => void reload()}>
             Try again
           </button>
         </div>
       ) : members.length === 0 ? (
-        <p className="portal-panel-note">
-          No recruits yet. Create a referral link above to invite your first team member.
-        </p>
+        <EmptyState
+          icon={<Users size={22} aria-hidden="true" />}
+          title="No recruits yet"
+          body="Create a referral link above to invite your first team member."
+        />
       ) : (
-        <div className="portal-downline-list">
+        <ul className="portal-profile-rows">
           {members.map((member, index) => (
             <DownlineMemberRow key={`${member.name}-${member.inviteLabel ?? ""}-${index}`} member={member} />
           ))}
-        </div>
+        </ul>
       )}
     </>
   );
 
   if (embedded) {
     return (
-      <section className="portal-team-section">
-        <div className="portal-team-section-head">
-          <h2>Team progress</h2>
-          {activeCount > 0 && (
-            <span className="portal-team-section-count">{activeCount} in progress</span>
-          )}
-        </div>
+      <Pane
+        title="Team progress"
+        aside={activeCount > 0 ? <Chip variant="active">{activeCount} in progress</Chip> : undefined}
+      >
         {content}
-      </section>
+      </Pane>
     );
   }
 

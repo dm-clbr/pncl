@@ -265,6 +265,31 @@
   margin: 0 0 var(--u);
 }
 
+/* A Pane inside a reveal drops its own glass: the card is already the surface,
+   and one source blur beats N receivers. PortalReferralPanel renders the same
+   Pane on the profile's Team tab, where the pane IS the surface. Same reason
+   .portal-row below is re-driven from the .ptile-link rules. */
+.ptile-reveal-body .portal-pane {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
+/* The tile header above the reveal already carries the title, so the Pane's own
+   would reprint it at 20px right underneath. It stays in the DOM because it
+   names the region through aria-labelledby, which reads a referenced hidden
+   node. The aside beside it is a live count, not a reprint, so it stays
+   visible; with no aside the head has nothing left to show. */
+.ptile-reveal-body .portal-pane-title {
+  display: none;
+}
+
+.ptile-reveal-body .portal-pane-head:not(:has(.portal-pane-aside)) {
+  display: none;
+}
+
 .ptile-reveal-list {
   list-style: none;
   margin: 0;

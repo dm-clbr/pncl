@@ -1,0 +1,727 @@
+/* ==========================================================================
+   Profile page. Only what the Details tab adds on top of the primitives:
+   the photo and meta block, the read-only rows, the apparel grid, the sticky
+   save bar and the page footer. Tokens live in portal-tokens.css; the panes,
+   fields and chips come from portal-primitives.css.
+   ========================================================================== */
+
+/* The save bar is sticky, and .home2-page carries overflow-x: hidden, which
+   computes overflow-y to auto and makes it a scrollport that never scrolls,
+   so a sticky descendant never sticks. clip gives the same horizontal
+   containment without the scroll container (ruling R26, portal-shell.css
+   carries the same fix for the sub-page header). */
+.home2-page:has(.portal-profile-savebar) {
+  overflow-x: clip;
+}
+
+/* Single column always, on a measure a form can be read at. The wrap runs to
+   1400px, which would otherwise stretch every control across the viewport. */
+.home2-page .portal-profile-details,
+.home2-page .portal-profile-team,
+.home2-page .portal-profile-licensing,
+.home2-page .portal-profile-docs {
+  max-width: 680px;
+}
+
+.home2-page .portal-profile-details .portal-pane > * + *,
+.home2-page .portal-profile-team .portal-pane > * + *,
+.home2-page .portal-profile-licensing .portal-pane > * + *,
+.home2-page .portal-profile-docs .portal-pane > * + *,
+.home2-page .portal-profile-carriers .portal-pane > * + * {
+  margin-top: var(--portal-gap);
+}
+
+.home2-page .portal-profile-lede {
+  max-width: 60ch;
+  margin: 0;
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+}
+
+.home2-page .portal-profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--portal-gap);
+}
+
+/* ── Photo and agent meta ───────────────────────────────────────────────── */
+
+.home2-page .portal-profile-identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.home2-page .portal-profile-photo-frame {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  overflow: hidden;
+  border: 1px solid var(--portal-border);
+  border-radius: 50%;
+  /* The initials sit on their own fill, not on the pane. */
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--portal-text-strong);
+  font-size: var(--portal-t-large);
+  font-weight: 600;
+}
+
+.home2-page .portal-profile-photo-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home2-page .portal-profile-identity-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.home2-page .portal-profile-identity-copy p {
+  margin: 0;
+  color: var(--portal-text);
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+}
+
+/* Secondary action: 44px on the same near-black fill the controls use. */
+.home2-page .portal-profile-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 120ms var(--portal-ease-out);
+}
+
+.home2-page .portal-profile-btn:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.home2-page .portal-profile-btn:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.home2-page .portal-profile-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--portal-rule);
+}
+
+.home2-page .portal-profile-meta > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.home2-page .portal-profile-meta span {
+  color: var(--portal-text-faint);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-label);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.home2-page .portal-profile-meta strong {
+  color: var(--portal-text-strong);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The tier toggle ships inside CompensationTierDisclosure at 28px, under the
+   44px floor. Raised here rather than in that component, which other pages
+   still render in their own layout. */
+.home2-page .portal-profile-meta .portal-profile-tier-disclosure {
+  gap: 8px;
+}
+
+.home2-page .portal-profile-meta .portal-profile-tier-toggle {
+  min-height: 44px;
+  border-radius: 10px;
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+}
+
+/* ── Read-only rows ─────────────────────────────────────────────────────── */
+
+/* A value the agent cannot type: same label as a Field, then a chip or a line
+   of text instead of a control. */
+.home2-page .portal-profile-readonly {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.home2-page .portal-profile-readonly p {
+  margin: 0;
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  font-size: 16px;
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+/* ── Apparel ────────────────────────────────────────────────────────────── */
+
+/* Two native selects per row at every width: a size picker is short, and the
+   single-column rule is about typed fields. */
+.home2-page .portal-profile-sizes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* ── PDF business card ──────────────────────────────────────────────────── */
+
+/* The preview stands in for the printed card, so it keeps its 3.5:2 ratio and
+   the .portal-business-card-* internals from home2.css. Capped because the
+   pane's 680px measure would otherwise print a 388px-tall card. */
+.home2-page .portal-profile-card {
+  max-width: 420px;
+}
+
+/* Two equal 44px targets, 8px apart, side by side at every width: the card is
+   one action pair, not a stack, and 175px each still fits "Creating PDF..."
+   inside a 390px viewport. */
+.home2-page .portal-profile-card-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.home2-page .portal-profile-card-btn {
+  justify-content: center;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.home2-page .portal-profile-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* The lock glyph carries the state, not a colour: --portal-accent is a spark
+   for urgent work, and this is a precondition, not an error. */
+.home2-page .portal-profile-card-locked {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  line-height: 1.45;
+}
+
+.home2-page .portal-profile-card-locked svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--portal-text-faint);
+}
+
+.home2-page .portal-profile-card-note {
+  margin: 0;
+  color: var(--portal-text-faint);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-micro);
+  line-height: 1.45;
+}
+
+/* ── Team tab ───────────────────────────────────────────────────────────── */
+
+.home2-page .portal-profile-team,
+.home2-page .portal-profile-licensing,
+.home2-page .portal-profile-docs,
+.home2-page .portal-profile-carriers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--portal-gap);
+}
+
+/* Rows carry the 44px floor themselves, so the list needs no spacer; a
+   hairline is what keeps a long list readable. */
+.home2-page .portal-profile-rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home2-page .portal-profile-rows > li + li {
+  border-top: 1px solid var(--portal-rule);
+}
+
+/* Skeletons carry no hairline of their own, so without a spacer three 44px
+   blocks read as one tall block instead of three rows. */
+.home2-page .portal-profile-rows[aria-busy="true"] {
+  gap: 8px;
+}
+
+.home2-page .portal-profile-invites {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home2-page .portal-profile-subhead {
+  margin: 0;
+  color: var(--portal-text-faint);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-label);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* The referral URL under its row. Manrope, not a mono face: the design system
+   ships one family. user-select: all makes one tap grab the whole link when
+   the clipboard write is blocked. */
+.home2-page .portal-profile-invite-url {
+  display: block;
+  margin: 0 10px 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--portal-border);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  line-height: 1.4;
+  word-break: break-all;
+  user-select: all;
+}
+
+.home2-page .portal-profile-copy,
+.home2-page .portal-profile-iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--portal-text-strong);
+  cursor: pointer;
+  transition: border-color 120ms var(--portal-ease-out);
+}
+
+.home2-page .portal-profile-copy:hover,
+.home2-page .portal-profile-iconbtn:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.home2-page .portal-profile-copy:focus-visible,
+.home2-page .portal-profile-iconbtn:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.home2-page .portal-profile-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.home2-page .portal-profile-error p {
+  margin: 0;
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+}
+
+/* A form's own submit sits at its natural width; the flex column would
+   otherwise stretch it edge to edge. */
+.home2-page .portal-profile-form > .portal-profile-btn {
+  align-self: flex-start;
+}
+
+/* ── Licensing and Documents ────────────────────────────────────────────── */
+
+/* Upload drop zone. The file input covers the zone at zero opacity: a file
+   input is a drop target in its own right, so the drag, the tap and the
+   native picker all work without a single drag handler of ours. The label
+   wraps the input, so the copy inside is the control's name. */
+.home2-page .portal-dropzone {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 72px;
+  padding: 12px;
+  border: 1px dashed var(--portal-border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  transition: border-color 120ms var(--portal-ease-out);
+}
+
+.home2-page .portal-dropzone:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* The input carries the focus, so the ring goes on the zone around it. */
+.home2-page .portal-dropzone:focus-within {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.home2-page .portal-dropzone-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--portal-text-faint);
+}
+
+.home2-page .portal-dropzone-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home2-page .portal-dropzone-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-family: var(--portal-font);
+}
+
+.home2-page .portal-dropzone-copy strong {
+  color: var(--portal-text-strong);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+}
+
+.home2-page .portal-dropzone-copy span {
+  color: var(--portal-text);
+  font-size: var(--portal-t-micro);
+  line-height: 1.4;
+}
+
+.home2-page .portal-dropzone-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* The chosen file, under its zone. */
+.home2-page .portal-dropzone-files {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The queued file's Chip carries a filename, not a status word: a nowrap flex
+   item cannot shrink below its own min-content, so at 390px a long name pushed
+   past the pane's border and was clipped with no ellipsis. max-width caps the
+   automatic minimum size, and the name keeps its own casing. Only the pdf
+   variant, so the "on file" chips beside it keep their glyph and their caps. */
+.home2-page .portal-dropzone-files .portal-chip.is-pdf {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: none;
+}
+
+/* State, number and the Add button on one line, stacked below 620px. The
+   button aligns to the controls, not to the labels above them. */
+.home2-page .portal-licensing-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+}
+
+/* Each license is a Chip plus its own 44px remove target. */
+.home2-page .portal-licensing-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home2-page .portal-licensing-list > li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (max-width: 620px) {
+  .home2-page .portal-licensing-add {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── Sticky save bar ────────────────────────────────────────────────────── */
+
+/* Bars sit over scrolling content, so this takes the solid bar fill, not the
+   translucent pane fill: white 0.95 reads 16.20:1 on it, 13.36:1 under the
+   sheen's maximum. */
+.home2-page .portal-profile-savebar {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  box-shadow: var(--portal-pane-shadow);
+}
+
+.home2-page .portal-profile-savebar-note {
+  margin: 0;
+  color: var(--portal-text-faint);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-micro);
+}
+
+.home2-page .portal-profile-save {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #161616;
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.home2-page .portal-profile-save:disabled {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--portal-text-faint);
+  cursor: not-allowed;
+}
+
+.home2-page .portal-profile-save:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+@media (max-width: 620px) {
+  /* Above the fixed tab bar, which already pads the safe area. */
+  .home2-page .portal-profile-savebar {
+    bottom: calc(56px + env(safe-area-inset-bottom));
+    padding-bottom: 12px;
+  }
+}
+
+/* ── Page footer ────────────────────────────────────────────────────────── */
+
+/* The dashboard's footer markup and classes. The colour is declared on the
+   container because .home2-page a { color: inherit } is 0-1-1 and outranks
+   .portal-bento-footer-link, so the admin link renders whatever this resolves
+   to. White 0.62 on the page's --ink (#161616) reads 7.47:1 (R27: measured
+   against this surface, not against the pane). */
+.home2-page .portal-profile-foot {
+  /* The .portal-bento-* footer rules live outside .portal-bento here, so they
+     inherit none of its variables: without these two, the hover colour is
+     unset (the social glyph's background-color falls back to transparent and
+     the icon vanishes) and the 0.18s transitions have no timing function.
+     Same fix .ptile-menu uses for its portaled-out case, portal-tile.css:579. */
+  --t-primary: var(--portal-text-strong);
+  --ease-out: var(--portal-ease-out);
+  margin-top: 24px;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* ── Carrier logins ─────────────────────────────────────────────────────── */
+
+/* Wider than the 680px form measure: this tab is a five-column record, not
+   something an agent reads line by line. */
+.home2-page .portal-profile-carriers {
+  max-width: 900px;
+}
+
+/* One surface per width. Below 621px the table is gone and the row plus the
+   sheet carry it; above, the table is back and the list is gone. Only one is
+   ever displayed, so assistive tech never meets the pair. */
+.home2-page .portal-carrier-table-wrap {
+  display: none;
+}
+
+@media (min-width: 621px) {
+  .home2-page .portal-carrier-list {
+    display: none;
+  }
+
+  .home2-page .portal-carrier-table-wrap {
+    display: block;
+    min-width: 0;
+    overflow-x: auto;
+  }
+}
+
+.home2-page .portal-carrier-table {
+  width: 100%;
+  min-width: 560px;
+  border-collapse: collapse;
+  font-family: var(--portal-font);
+}
+
+.home2-page .portal-carrier-table th {
+  padding: 0 12px 8px;
+  border-bottom: 1px solid var(--portal-rule);
+  color: var(--portal-text-faint);
+  font-size: var(--portal-t-label);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* 44px rows: the height is a floor, and the cell padding is horizontal only so
+   a 44px control fills the row rather than adding to it. */
+.home2-page .portal-carrier-table td {
+  height: 44px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--portal-rule);
+  color: var(--portal-text-strong);
+  font-size: var(--portal-t-body);
+  vertical-align: middle;
+}
+
+.home2-page .portal-carrier-table th:last-child,
+.home2-page .portal-carrier-table td:last-child {
+  width: 1%;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* The three value columns split what the carrier name leaves, so a short
+   username does not drag its copy target left of the row above it. */
+.home2-page .portal-carrier-table th:nth-child(n + 2):nth-child(-n + 4) {
+  width: 26%;
+}
+
+/* The name never wraps, so the percentage hints below cannot squeeze the
+   column below its own content. The wrapper scrolls if the sum overflows. */
+.home2-page .portal-carrier-table td:first-child {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* The chip trails the name on the same line and needs its own gap. The cell
+   stays a table cell: display: flex on a td makes the browser wrap it in an
+   anonymous cell and the column widths stop agreeing with the header. */
+.home2-page .portal-carrier-table td:first-child .portal-chip {
+  margin-left: 8px;
+}
+
+/* The glyph, not the colour, says the name is a link: .home2-page a wins the
+   colour anyway at 0-1-1, so the name takes the cell's. */
+.home2-page .portal-carrier-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.35);
+  text-underline-offset: 3px;
+}
+
+.home2-page .portal-carrier-link:hover {
+  text-decoration-color: rgba(255, 255, 255, 0.7);
+}
+
+.home2-page .portal-carrier-value {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 2px 0;
+}
+
+/* A username or a writing number can be long and has no natural break, so it
+   wraps inside the cell rather than pushing the table sideways. */
+.home2-page .portal-carrier-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}
+
+.home2-page .portal-carrier-empty {
+  color: var(--portal-text);
+  font-size: var(--portal-t-body);
+}
+
+/* ── Carrier sheet ──────────────────────────────────────────────────────── */
+
+.home2-page .portal-carrier-sheet > * + * {
+  margin-top: var(--portal-gap);
+}
+
+.home2-page .portal-carrier-status {
+  margin: 0;
+}
+
+/* The reveal and copy targets sit beside the control, not over it: aligning
+   the row to its end lines all three 44px boxes up without the padding maths
+   an overlay would need, and the label stays clear of them. */
+.home2-page .portal-carrier-field {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.home2-page .portal-carrier-field .portal-field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.home2-page .portal-carrier-field .portal-profile-iconbtn {
+  flex-shrink: 0;
+}
+
+.home2-page .portal-carrier-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

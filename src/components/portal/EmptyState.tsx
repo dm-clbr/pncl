@@ -8,7 +8,8 @@ type EmptyStateProps = {
   body?: string;
   /** Leading glyph above the title, rendered at 22px. */
   icon?: ReactNode;
-  /** One action: a link or a button. */
+  /** The way out: a link or a button, or a few of them when the state has
+      more than one. They wrap centred under .portal-empty-action. */
   action?: ReactNode;
 };
 
