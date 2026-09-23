@@ -212,6 +212,13 @@
     background-color: rgb(28, 22, 17);
   }
 
+  /* WCAG 2.4.11 Focus Not Obscured: the pinned map card covers the top 60dvh
+     of the scrollport, so anything the browser scrolls to in the directory
+     below it has to clear that height plus the 8px gap. */
+  .home2-page .state-map-board > .portal-pane :is(.portal-row, .portal-input, .state-map-filter) {
+    scroll-margin-top: calc(60dvh + 8px);
+  }
+
   .home2-page .state-map-canvas-shell,
   .home2-page .state-map-canvas-placeholder {
     aspect-ratio: auto;
