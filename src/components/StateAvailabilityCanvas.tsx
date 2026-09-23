@@ -424,8 +424,9 @@ export default function StateAvailabilityCanvas({
     applyViewRef.current = applyView;
 
     const resize = () => {
-      // The canvas box, not the host's: below 640px the shell reserves a right
-      // gutter for the zoom stack, so the two differ by that padding.
+      // The canvas box, not the host's: the shell also holds the zoom stack,
+      // which reserves a right gutter at tablet widths and a row beneath the
+      // canvas on a phone, so the two boxes differ.
       const bounds = canvas.getBoundingClientRect();
       const width = Math.max(bounds.width, 1);
       const height = Math.max(bounds.height, 1);

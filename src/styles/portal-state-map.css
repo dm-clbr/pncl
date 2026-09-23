@@ -173,14 +173,14 @@
   }
 }
 
-/* Requirement 7.4: the canvas keeps 60% of the viewport against the 40% half
-   sheet. The box is sized in dvh rather than by home2.css's 975/610 ratio, so
-   the split holds at 390x844 (506px map, 338px sheet) instead of the 211px the
-   ratio gave. The orthographic camera fits the atlas to the narrower axis, so
-   the extra height letterboxes the map rather than enlarging it; the trade is
-   worth it because the box is also pinned. Pinned: the directory sits below
-   the map, so without sticky a pick made from the list opened the sheet with
-   the map scrolled off screen. */
+/* Requirement 7.4: the canvas keeps the top of the viewport against the 40%
+   half sheet. The card is sized by the atlas ratio and only capped at 60dvh.
+   Forcing it to 60dvh instead letterboxed the map: the orthographic camera
+   fits the atlas to the narrower axis, so the extra height was empty box, and
+   with the zoom gutter also taking 68px the drawn map came out smaller than
+   the one the page had before. Pinned: the directory sits below the map, so
+   without sticky a pick made from the list opened the sheet with the map
+   scrolled off screen. */
 @media (max-width: 620px) {
   /* While the half sheet is open the page cannot scroll, so the hero and the
      lede would hold the top of the viewport and leave the map a sliver. They
@@ -205,24 +205,45 @@
 
   .home2-page .state-map-visual-panel {
     display: flex;
-    height: 60dvh;
+    max-height: 60dvh;
     /* Opaque while pinned: the pane's own 0.68 fill let the directory rows
        scrolling under the map read straight through it. Same hue, alpha 1. */
     background-image: var(--portal-pane-sheen);
     background-color: rgb(28, 22, 17);
   }
 
-  /* WCAG 2.4.11 Focus Not Obscured: the pinned map card covers the top 60dvh
-     of the scrollport, so anything the browser scrolls to in the directory
-     below it has to clear that height plus the 8px gap. */
+  /* WCAG 2.4.11 Focus Not Obscured: the pinned card is the canvas at the atlas
+     ratio plus the 66px zoom row, capped at 60dvh, so a target below it clears
+     whichever is smaller plus the 8px board gap. 100vw overstates the canvas
+     by the page gutters, which errs toward scrolling too far rather than
+     leaving a focused row under the card. */
   .home2-page .state-map-board > .portal-pane :is(.portal-row, .portal-input, .state-map-filter) {
-    scroll-margin-top: calc(60dvh + 8px);
+    scroll-margin-top: calc(min(60dvh, 100vw * 610 / 975 + 66px) + 8px);
   }
 
-  .home2-page .state-map-canvas-shell,
-  .home2-page .state-map-canvas-placeholder {
+  /* The zoom stack comes off the map and sits in a row beneath it. Overlaid,
+     it needed a 68px gutter so it could not swallow a tap on the east coast,
+     and that gutter was the single biggest cut to the drawn map on a phone.
+     Under the canvas it costs 66px of height instead, which the card no longer
+     had to spare when it was letterboxing. */
+  .home2-page .state-map-canvas-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 0;
     aspect-ratio: auto;
     min-height: 0;
-    height: 100%;
+  }
+
+  .home2-page .state-map-canvas {
+    height: auto;
+    aspect-ratio: 975 / 610;
+  }
+
+  .home2-page .state-map-zoom {
+    position: static;
+    flex-direction: row;
+    justify-content: flex-end;
+    padding: 0 12px 12px;
   }
 }
