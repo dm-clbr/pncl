@@ -1,5 +1,6 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
+import { toast } from "sonner";
 import { CarrierCredentialsView } from "@/components/PortalCarrierCredentials";
 import PortalLicensingSection from "@/components/PortalLicensingSection";
 import PortalProfileDocumentsSection from "@/components/PortalProfileDocumentsSection";
@@ -208,6 +209,51 @@ describe("portal carrier credentials", () => {
 
     fireEvent.click(within(sheet).getByLabelText("Show password"));
     expect(password).toHaveAttribute("type", "text");
+  });
+
+  it("round-trips the prefilled sheet through save, then clears the password", async () => {
+    const save = vi.fn().mockResolvedValue(undefined);
+    render(
+      <CarrierCredentialsView
+        credentials={carriers}
+        loading={false}
+        error={null}
+        save={save}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Americo/ }));
+    const sheet = screen.getByRole("dialog", { name: "Americo" });
+    const form = sheet.querySelector("form") as HTMLFormElement;
+
+    // Untouched submit resends the stored values, so the prefill round-trips.
+    fireEvent.submit(form);
+    await waitFor(() =>
+      expect(save).toHaveBeenCalledWith({
+        carrierId: "c1",
+        username: "p.gerlach",
+        password: "sample-value",
+        writingNumber: "AM-4471902",
+      }),
+    );
+    await waitFor(() => expect(toast.success).toHaveBeenCalledWith("Americo credentials saved."));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Americo" })).not.toBeInTheDocument(),
+    );
+
+    // A cleared password still means "keep the current one".
+    fireEvent.click(screen.getByRole("button", { name: /Americo/ }));
+    const reopened = screen.getByRole("dialog", { name: "Americo" });
+    fireEvent.change(within(reopened).getByLabelText(/^Password/), { target: { value: "" } });
+    fireEvent.submit(reopened.querySelector("form") as HTMLFormElement);
+    await waitFor(() =>
+      expect(save).toHaveBeenLastCalledWith({
+        carrierId: "c1",
+        username: "p.gerlach",
+        password: undefined,
+        writingNumber: "AM-4471902",
+      }),
+    );
   });
 
   it("keeps the loading, error and empty states", () => {
