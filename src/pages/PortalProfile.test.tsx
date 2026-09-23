@@ -236,5 +236,14 @@ describe("portal profile details tab", () => {
     fireEvent.click(await screen.findByRole("tab", { name: "Documents" }));
     expect(screen.getByRole("heading", { name: "Saved documents" })).toBeInTheDocument();
     expect(screen.getByText("No documents yet")).toBeInTheDocument();
+
+    // All three routes the paragraph used to carry stay reachable from here.
+    for (const [name, href] of [
+      ["Sign your agreement", "/portal/ica"],
+      ["Submit your W-9", "/portal/w9"],
+      ["Direct deposit form", "/portal/direct-deposit"],
+    ]) {
+      expect(screen.getByRole("link", { name })).toHaveAttribute("href", href);
+    }
   });
 });

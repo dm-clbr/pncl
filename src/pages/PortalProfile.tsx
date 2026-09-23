@@ -1011,9 +1011,17 @@ export default function PortalProfile() {
                     title="No documents yet"
                     body="Forms you sign in the portal show up here, with any comp attachment PNCL assigns."
                     action={
-                      <Link className="portal-profile-btn" to="/portal/ica">
-                        Sign your agreement
-                      </Link>
+                      <>
+                        <Link className="portal-profile-btn" to="/portal/ica">
+                          Sign your agreement
+                        </Link>
+                        <Link className="portal-profile-btn" to="/portal/w9">
+                          Submit your W-9
+                        </Link>
+                        <Link className="portal-profile-btn" to="/portal/direct-deposit">
+                          Direct deposit form
+                        </Link>
+                      </>
                     }
                   />
                 )}
