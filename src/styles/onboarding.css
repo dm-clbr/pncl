@@ -466,6 +466,132 @@ body:has(.onboarding-panel-signing) {
   overflow-x: visible;
 }
 
+.ica-signature-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.ica-signature-modal {
+  width: min(100%, 520px);
+  padding: 1.15rem 1.2rem 1.2rem;
+  border: 1px solid rgba(245, 176, 65, 0.45);
+  border-radius: var(--radius);
+  background: #1a1a1a;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+}
+
+.ica-signature-modal-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.15rem;
+  color: var(--bone);
+}
+
+.ica-signature-modal-copy {
+  margin: 0 0 0.85rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: rgba(240, 237, 228, 0.78);
+}
+
+.ica-signature-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+}
+
+.ica-signature-modal-btn {
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(240, 237, 228, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--bone);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.ica-signature-modal-save {
+  min-width: 9rem;
+}
+
+.ica-signature-pad {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.ica-signature-pad-canvas {
+  display: block;
+  width: 100%;
+  height: 160px;
+  border: 1px dashed rgba(245, 176, 65, 0.55);
+  border-radius: 8px;
+  background: #fff;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.ica-signature-pad-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ica-signature-pad-clear {
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(240, 237, 228, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--bone);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.ica-signature-pad-clear:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ica-signature-pad-hint {
+  font-size: 0.75rem;
+  color: rgba(240, 237, 228, 0.62);
+}
+
+.ica-signature-field-input {
+  color: transparent !important;
+  caret-color: transparent;
+  cursor: pointer;
+}
+
+.ica-initial-field-input {
+  min-width: 3.5rem;
+  overflow: visible !important;
+  text-overflow: clip;
+}
+
+.ica-signature-preview-overlay {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+  background: #fff;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.ica-signature-preview-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
 .onboarding-contract-step {
   text-align: left;
 }

@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { forwardRef, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -40,16 +40,18 @@ vi.mock("@/lib/analytics", () => ({ trackPageView: vi.fn() }));
     stack. The stub keeps the chrome contract, so the pager's action slot stays
     covered. */
 vi.mock("@/components/W9FillablePdfViewer", () => ({
-  default: forwardRef<unknown, { actions?: ReactNode }>(function W9FillablePdfViewerStub(
-    { actions },
-    _ref,
-  ) {
-    return (
-      <div data-testid="w9-viewer">
-        <div data-testid="w9-viewer-actions">{actions}</div>
-      </div>
-    );
-  }),
+  default: forwardRef<unknown, { actions?: ReactNode; onPageChange?: (page: number) => void }>(
+    function W9FillablePdfViewerStub({ actions, onPageChange }, _ref) {
+      return (
+        <div data-testid="w9-viewer">
+          <button type="button" onClick={() => onPageChange?.(1)}>
+            stub: reach the form page
+          </button>
+          <div data-testid="w9-viewer-actions">{actions}</div>
+        </div>
+      );
+    },
+  ),
 }));
 
 /** The page resolves its prefill fetch on mount, so the mount is flushed inside
@@ -96,12 +98,16 @@ describe("PortalW9", () => {
     );
   });
 
-  it("offers the signing sheet from the pager, since the W-9's fields are on page 1", async () => {
+  it("gates the signing sheet on the viewer reporting the W-9's form page", async () => {
     w9State.loading = false;
 
     await renderPage();
 
     await screen.findByTestId("w9-viewer");
+    expect(screen.queryByRole("button", { name: "Sign" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "stub: reach the form page" }));
+
     expect(screen.getByTestId("w9-viewer-actions")).toContainElement(
       screen.getByRole("button", { name: "Sign" }),
     );

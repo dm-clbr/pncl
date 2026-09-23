@@ -33,6 +33,7 @@ interface W9FillablePdfViewerProps {
   prefillLegalName?: string;
   /** Rendered at the end of the pager bar: the Sign button, a Back link. */
   actions?: ReactNode;
+  onPageChange?: (page: number) => void;
 }
 
 const PARSE_TIMEOUT_MS = 30_000;
@@ -100,7 +101,7 @@ function hasRenderedPages(viewer: HTMLElement | null): boolean {
 
 const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfViewerProps>(
   function W9FillablePdfViewer(
-    { className, prefillLegalName = "", actions },
+    { className, prefillLegalName = "", actions, onPageChange },
     ref,
   ) {
     const hostRef = useRef<HTMLDivElement>(null);
@@ -352,6 +353,12 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
 
       void refreshW9SignatureDate(pdfDocumentLocal, container);
     }, [viewerReady, pdfDocument]);
+
+    // Notifies the owner of the page the viewer is showing. pdf.js raises
+    // pagechanging on scroll as well as on a jump, so this follows both.
+    useEffect(() => {
+      onPageChange?.(currentPage);
+    }, [currentPage, onPageChange]);
 
     const progressPercent = Math.round((currentPage / W9_TOTAL_PAGES) * 100);
     const chromeReady = !loading && !error;

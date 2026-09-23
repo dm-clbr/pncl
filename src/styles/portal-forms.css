@@ -226,16 +226,16 @@
 
 /* ── The signing sheet ──────────────────────────────────────────────────── */
 
+/* Both are full sentences of body copy, so both take the body rung
+   (--portal-text, 4.76:1 on the bare pane and higher over the sheet's
+   scrim). The faint rung is the 3:1 UI class: labels, counts, index
+   numerals, never a sentence. */
 .pforms-sheet-note,
 .pforms-sheet-fine {
   margin: 0 0 14px;
   font-size: var(--portal-t-body);
   line-height: 1.55;
   color: var(--portal-text);
-}
-
-.pforms-sheet-fine {
-  color: var(--portal-text-faint);
 }
 
 /* home2.css strips list markers globally; a numbered legal certification needs

@@ -4,10 +4,14 @@ import {
   validateExtractedW9FormValues,
 } from "@/lib/w9-acroform";
 import { W9_CERTIFICATION_ITEMS } from "@/lib/w9-content";
+import { W9_PDF_PAGES } from "@/lib/w9-form";
 import { toast } from "sonner";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import W9FillablePdfViewer, { type W9FillablePdfViewerHandle } from "@/components/W9FillablePdfViewer";
 import Sheet from "@/components/portal/Sheet";
+// The .pforms-* chrome is owned by this step, so it travels with it: the public
+// onboarding flow and the admin preview render it outside the portal pages.
+import "@/styles/portal-forms.css";
 import type { SubmitPortalW9Payload } from "@/lib/portal-w9";
 
 interface W9SigningStepProps {
@@ -35,6 +39,15 @@ export default function W9SigningStep({
   const [certificationAccepted, setCertificationAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [signOpen, setSignOpen] = useState(false);
+  const [reachedFormPage, setReachedFormPage] = useState(false);
+
+  // Same gate as the ICA, on the W-9's last *field* page rather than its last
+  // page: pages 2 to 6 are IRS instructions and every field is on page 1, so
+  // gating on page 6 would put five Next taps between the agent and the only
+  // submit. Unlocks once and stays unlocked.
+  const handlePageChange = useCallback((page: number) => {
+    if (page >= W9_PDF_PAGES.form) setReachedFormPage(true);
+  }, []);
 
   const handleFinishSigning = async () => {
     if (!certificationAccepted) {
@@ -89,6 +102,7 @@ export default function W9SigningStep({
       <W9FillablePdfViewer
         ref={viewerRef}
         prefillLegalName={prefillLegalName}
+        onPageChange={handlePageChange}
         actions={
           <>
             {onBack && (
@@ -96,14 +110,16 @@ export default function W9SigningStep({
                 Back
               </button>
             )}
-            <button
-              type="button"
-              className="pforms-action"
-              onClick={() => setSignOpen(true)}
-              disabled={submitting}
-            >
-              {submitting ? "Submitting\u2026" : "Sign"}
-            </button>
+            {reachedFormPage && (
+              <button
+                type="button"
+                className="pforms-action"
+                onClick={() => setSignOpen(true)}
+                disabled={submitting}
+              >
+                {submitting ? "Submitting\u2026" : "Sign"}
+              </button>
+            )}
           </>
         }
       />

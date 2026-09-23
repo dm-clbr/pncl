@@ -9,6 +9,9 @@ import IcaFillablePdfViewer, {
   type IcaFillablePdfViewerHandle,
 } from "@/components/IcaFillablePdfViewer";
 import Sheet from "@/components/portal/Sheet";
+// The .pforms-* chrome is owned by this step, so it travels with it: the public
+// onboarding flow and the admin preview render it outside the portal pages.
+import "@/styles/portal-forms.css";
 
 export interface IcaSigningSubmitPayload {
   legalName: string;
