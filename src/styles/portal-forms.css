@@ -192,6 +192,22 @@
   gap: 8px;
 }
 
+/* The pager only exists once the document has loaded, but the Back control in
+   the actions slot has to outlive both the loading and the error state: on the
+   public onboarding funnel it is the only way out of the contract step. This is
+   that slot on its own row under the document frame.
+   ponytail: :empty because a consumer that passes neither Back nor Sign still
+   hands an element down, and an empty row would leave a visible gap. */
+.pforms-pager-actions--bare {
+  justify-content: flex-end;
+  padding: 12px;
+  border-top: 1px solid var(--portal-rule);
+}
+
+.pforms-pager-actions--bare:empty {
+  display: none;
+}
+
 .pforms-action {
   display: inline-flex;
   align-items: center;

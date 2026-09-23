@@ -410,6 +410,13 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
             active={viewerReady && !error}
           />
         </div>
+        {!chromeReady && actions && (
+          // The pager is chrome for a loaded document, but the actions slot
+          // carries the step's Back control, and on the public onboarding funnel
+          // that is the only way out of the contract step. So the slot keeps its
+          // own row when the pager is suppressed.
+          <div className="pforms-pager-actions pforms-pager-actions--bare">{actions}</div>
+        )}
         {chromeReady && (
           <div className="pforms-pager">
             <div className="pforms-pager-progress" aria-hidden="true">

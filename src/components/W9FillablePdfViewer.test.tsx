@@ -29,26 +29,30 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+/** The pager goes away while the document is loading or failed, but the
+    actions slot must not go with it: it carries the signing step's Back
+    control, which on the public onboarding funnel is the only way out of the
+    contract step. */
 describe("W9FillablePdfViewer chrome states", () => {
-  it("renders the loading state without the pager or the section jumps", async () => {
+  it("renders the loading state without the pager but keeps the actions slot", async () => {
     // A fetch that never settles holds the component in its loading branch.
     vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})));
 
     await act(async () => {
-      render(<W9FillablePdfViewer actions={<button type="button">Sign</button>} />);
+      render(<W9FillablePdfViewer actions={<button type="button">Back</button>} />);
     });
 
     expect(screen.getByText(/Loading/)).toBeInTheDocument();
     expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Next" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Sign" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
   });
 
-  it("renders the error state without the pager or the section jumps", async () => {
+  it("renders the error state without the pager but keeps the actions slot", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 404 })));
 
     await act(async () => {
-      render(<W9FillablePdfViewer actions={<button type="button">Sign</button>} />);
+      render(<W9FillablePdfViewer actions={<button type="button">Back</button>} />);
     });
 
     await waitFor(() => {
@@ -57,6 +61,6 @@ describe("W9FillablePdfViewer chrome states", () => {
     expect(screen.getByRole("link", { name: /Open PDF in new tab/ })).toBeInTheDocument();
     expect(screen.queryByRole("tablist")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Next" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Sign" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
   });
 });
