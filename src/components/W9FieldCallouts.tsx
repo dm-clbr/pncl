@@ -229,7 +229,7 @@ export default function W9FieldCallouts({
           className={`ica-field-callout ica-field-callout--${callout.placement}${callout.filled ? " ica-field-callout--filled" : ""}`}
           style={{ top: callout.top, left: callout.left }}
           onClick={() => focusField(callout.fieldId)}
-          title={callout.hint ? `${callout.label} — ${callout.hint}` : callout.label}
+          title={callout.hint ? `${callout.label}: ${callout.hint}` : callout.label}
         >
           <span className="ica-field-callout-label">{callout.label}</span>
           {callout.hint && !callout.filled && (

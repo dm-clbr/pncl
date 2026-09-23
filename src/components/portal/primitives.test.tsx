@@ -420,6 +420,18 @@ describe("Segmented", () => {
 });
 
 describe("PortalHeader", () => {
+  it("steps the masthead title down to a paragraph on a sub-page", () => {
+    render(
+      <MemoryRouter>
+        <PortalHeader name="Porter Gerlach" initials="PG" subpage />
+      </MemoryRouter>,
+    );
+
+    // The sub-page header carries the page's h1, so the masthead must not.
+    expect(screen.queryByRole("heading", { level: 1 })).not.toBeInTheDocument();
+    expect(document.querySelector("p.portal-header-title")).toHaveTextContent("Employee Portal");
+  });
+
   it("shows the photo when there is one and the initials when there is not", () => {
     const { rerender } = render(
       <MemoryRouter>

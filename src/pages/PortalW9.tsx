@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowUpRight } from "lucide-react";
-import PNCLLogo from "@/components/PNCLLogo";
+import { useNavigate } from "react-router-dom";
+import { FileCheck2 } from "lucide-react";
 import W9SigningStep from "@/components/W9SigningStep";
+import PortalHeader from "@/components/portal/PortalHeader";
+import PortalSubpageHeader from "@/components/portal/PortalSubpageHeader";
+import BottomNav from "@/components/portal/BottomNav";
+import Pane from "@/components/portal/Pane";
+import ListRow from "@/components/portal/ListRow";
+import Skeleton from "@/components/portal/Skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchPortalProfile } from "@/lib/portal-profile";
 import {
@@ -17,6 +22,7 @@ import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 import "@/styles/home2.css";
 import "@/styles/onboarding.css";
+import "@/styles/portal-forms.css";
 
 export default function PortalW9() {
   const navigate = useNavigate();
@@ -94,6 +100,13 @@ export default function PortalW9() {
   }, [w9?.signedAt]);
 
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Agent";
+  // Presentation only: the masthead avatar falls back to initials, since the
+  // page holds no photo and adding a profile hook here would be a data change.
+  const initials = displayName
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
 
   const handleSubmit = async (payload: SubmitPortalW9Payload) => {
     const token = session?.access_token;
@@ -112,72 +125,56 @@ export default function PortalW9() {
     <div className="home2-page">
       <div className="grain" aria-hidden="true" />
 
-      <main className="portal-dash dark carrier-sheet-dash">
+      <main className="portal-dash dark carrier-sheet-dash pforms-page">
         <div className="wrap carrier-sheet-wrap">
-          <header className="carrier-sheet-header">
-            <Link to="/" className="portal-hero-logo" aria-label="PNCL home">
-              <PNCLLogo height={40} />
-            </Link>
-            <div className="carrier-sheet-header-copy">
-              <p className="portal-welcome">Form W-9</p>
-              <p className="portal-meta">{displayName}</p>
-            </div>
-            <Link to="/portal/profile" className="admin-back-link">
-              <ArrowLeft size={16} aria-hidden="true" />
-              Back to profile
-            </Link>
-          </header>
+          <PortalHeader name={displayName} email={user?.email} initials={initials} subpage />
+          <PortalSubpageHeader
+            title="Form W-9"
+            backTo="/portal/profile"
+            backLabel="Back to profile"
+          />
 
           {loading && (
-            <div className="portal-incentives-loading">
-              <span className="onboarding-spinner" aria-hidden="true" />
-              <span>Loading W-9...</span>
-            </div>
+            <Pane>
+              <div className="pforms-loading" aria-busy="true">
+                <p className="portal-panel-note">Loading W-9...</p>
+                <Skeleton variant="row" />
+                <Skeleton variant="tile" />
+              </div>
+            </Pane>
           )}
 
           {!loading && submitted && w9 && (
-            <div className="carrier-sheet-panel portal-w9-panel">
-              <div className="portal-w9-submitted">
-                <h1 className="h3">W-9 on file</h1>
-                <p className="portal-panel-note">
-                  Your Form W-9 was submitted{signedDate ? ` on ${signedDate}` : ""} for{" "}
-                  <strong>{w9.legalName}</strong>.
-                </p>
-                {pdfUrl ? (
-                  <a
-                    href={pdfUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="portal-w9-aside-pdf"
-                  >
-                    Download signed PDF
-                    <ArrowUpRight size={14} aria-hidden="true" />
-                  </a>
-                ) : (
-                  <button
-                    type="button"
-                    className="portal-w9-aside-pdf"
-                    onClick={() => {
-                      const token = session?.access_token;
-                      if (!token) return;
-                      void fetchPortalW9Document(token)
-                        .then(({ downloadUrl }) => {
-                          window.open(downloadUrl, "_blank", "noopener,noreferrer");
-                        })
-                        .catch((err) => {
-                          toast.error(err instanceof Error ? err.message : "Unable to load PDF.");
-                        });
-                    }}
-                  >
-                    Download signed PDF
-                    <ArrowUpRight size={14} aria-hidden="true" />
-                  </button>
-                )}
-                <p className="portal-panel-note">
-                  Need to update your W-9? Contact PNCL support.
-                </p>
-              </div>
-            </div>
+            <Pane title="W-9 on file">
+              <p className="portal-panel-note">
+                Your Form W-9 was submitted{signedDate ? ` on ${signedDate}` : ""} for{" "}
+                <strong>{w9.legalName}</strong>.
+              </p>
+              {pdfUrl ? (
+                <ListRow
+                  label="Download signed PDF"
+                  icon={<FileCheck2 size={18} strokeWidth={1.75} aria-hidden="true" />}
+                  href={pdfUrl}
+                />
+              ) : (
+                <ListRow
+                  label="Download signed PDF"
+                  icon={<FileCheck2 size={18} strokeWidth={1.75} aria-hidden="true" />}
+                  onClick={() => {
+                    const token = session?.access_token;
+                    if (!token) return;
+                    void fetchPortalW9Document(token)
+                      .then(({ downloadUrl }) => {
+                        window.open(downloadUrl, "_blank", "noopener,noreferrer");
+                      })
+                      .catch((err) => {
+                        toast.error(err instanceof Error ? err.message : "Unable to load PDF.");
+                      });
+                  }}
+                />
+              )}
+              <p className="portal-panel-note">Need to update your W-9? Contact PNCL support.</p>
+            </Pane>
           )}
 
           {!loading && !submitted && prefillReady && (
@@ -193,6 +190,9 @@ export default function PortalW9() {
           )}
         </div>
       </main>
+
+      {/* Outside <main> so the fixed bar never inherits a page containing block. */}
+      <BottomNav />
     </div>
   );
 }

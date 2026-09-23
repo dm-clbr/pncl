@@ -10,27 +10,36 @@ type PortalHeaderProps = {
   photoUrl?: string | null;
   /** Onboarding phase. Shown as the stage badge above 620px. */
   stage?: string;
+  /** Set on a page that also carries PortalSubpageHeader. That header holds the
+      page's h1, so the masthead title steps down to a paragraph and the page
+      keeps exactly one h1. */
+  subpage?: boolean;
 };
 
 /** The portal masthead. Above 620px: logo, "Employee Portal", stage badge, and
     the profile chip on the right. At 620px and below it is a 56px bar of logo
     left and avatar right, with the title kept for assistive tech and the stage
     carried by the progress strip underneath. Styles under .portal-header in
-    src/styles/portal-shell.css. No hooks: the page owns the data. */
+    src/styles/portal-shell.css. No hooks: the page owns the data.
+
+    `subpage` steps the masthead title down to a paragraph, because a page that
+    also carries PortalSubpageHeader already has its h1 there. */
 export default function PortalHeader({
   name,
   email,
   initials,
   photoUrl,
   stage,
+  subpage = false,
 }: PortalHeaderProps) {
+  const Title = subpage ? "p" : "h1";
   return (
     <header className="portal-header">
       <div className="portal-header-brand">
         <Link to="/" className="portal-header-logo" aria-label="PNCL home">
           <PNCLLogo height={44} />
         </Link>
-        <h1 className="portal-header-title">Employee Portal</h1>
+        <Title className="portal-header-title">Employee Portal</Title>
         {stage && <span className="portal-header-stage">{stage}</span>}
       </div>
 

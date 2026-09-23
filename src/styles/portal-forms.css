@@ -1,0 +1,366 @@
+/* Chrome for the portal's PDF forms: the ICA and the W-9.
+
+   The document itself is a pdf.js canvas stack with AcroForm inputs overlaid on
+   it, and none of that is ours. What is ours is everything around it: the
+   section jumps, the pager, and the sheet the agent signs in.
+
+   Three surfaces, three fills:
+   - .pforms-doc is the pane recipe from docs/DESIGN.md, so the text ladder's
+     measured contrast applies as published (R27: those numbers hold on the pane
+     fill and nowhere else).
+   - .pforms-pager is a bar over scrolling content, so it takes the solid
+     --portal-bar-fill, like every other portal bar.
+   - the signing Sheet is the primitive's own surface.
+
+   .pforms-doc carries overflow: clip rather than hidden. hidden computes
+   overflow-y to auto and makes the element a scrollport that never scrolls,
+   which would stop the pager inside it from ever sticking. */
+
+.pforms {
+  max-width: none;
+}
+
+/* ── The document ───────────────────────────────────────────────────────── */
+
+.pforms-doc {
+  position: relative;
+  margin: 20px 0 0;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
+  box-shadow: var(--portal-pane-shadow);
+  overflow: clip;
+  font-family: var(--portal-font);
+}
+
+.pforms-jumps {
+  padding: 12px 12px 0;
+}
+
+/* The pdf.js scroll container. max-width keeps a page that has not been refit
+   yet from widening the layout, overflow keeps the overflow inside the
+   container, and the touch-action list is pan plus pinch-zoom: bare pinch-zoom
+   would let two fingers zoom but stop one finger scrolling. */
+.pforms-doc .ica-fillable-pdf-container--paged {
+  max-width: 100%;
+  overflow: auto;
+  touch-action: pan-x pan-y pinch-zoom;
+}
+
+.pforms-doc .ica-fillable-pdf-container--paged .page {
+  max-width: 100%;
+}
+
+.pforms-doc .ica-fillable-pdf-host {
+  min-height: 320px;
+}
+
+.pforms-doc-status {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0;
+  font-size: var(--portal-t-micro);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.pforms-doc-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  animation: pforms-spin 0.75s linear infinite;
+}
+
+@keyframes pforms-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pforms-doc-spinner {
+    animation: none;
+  }
+}
+
+/* ── The pager ──────────────────────────────────────────────────────────── */
+
+/* Sticky at every width, not just on a phone: at page-width scale a letter page
+   is around 1290px tall on a desktop pane, so a pager pinned to the bottom of
+   the frame would sit a screen and a half below the fold, and the Sign button
+   with it. */
+.pforms-pager {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  border-top: 1px solid var(--portal-rule);
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+}
+
+/* .home2-page carries overflow-x: hidden, which computes overflow-y to auto and
+   makes it a scrollport that never scrolls, so a sticky descendant never
+   sticks. clip gives the same horizontal containment without the scroll
+   container. Scoped with :has() to the pages that carry this bar, per
+   docs/DESIGN.md, and shipped in the same commit as the sticky. */
+.home2-page:has(.pforms-pager) {
+  overflow-x: clip;
+}
+
+.pforms-pager-progress {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.pforms-pager-progress-fill {
+  height: 100%;
+  background: rgba(255, 255, 255, 0.55);
+  transition: width var(--portal-duration) var(--portal-ease-out);
+}
+
+.pforms-pager-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
+
+.pforms-pager-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--portal-text-strong);
+  font-family: inherit;
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pforms-pager-btn:disabled {
+  color: var(--portal-text-faint);
+  cursor: default;
+}
+
+.pforms-pager-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-inline: auto;
+  font-size: var(--portal-t-body);
+  color: var(--portal-text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 16px, or iOS Safari zooms the whole page the moment it takes focus. */
+.pforms-pager-count input {
+  width: 3.25rem;
+  min-height: 44px;
+  padding: 0 6px;
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.45);
+  color: var(--portal-text-strong);
+  font-family: inherit;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.pforms-pager-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pforms-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--portal-text-strong);
+  font-family: inherit;
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pforms-action-quiet {
+  background: rgba(0, 0, 0, 0.28);
+  border-color: var(--portal-border);
+  color: var(--portal-text);
+}
+
+.pforms-action:disabled {
+  color: var(--portal-text-faint);
+  cursor: default;
+}
+
+.pforms-pager-btn:focus-visible,
+.pforms-pager-count input:focus-visible,
+.pforms-action:focus-visible,
+.pforms-submit:focus-visible,
+.pforms-ack input:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+/* ── The signing sheet ──────────────────────────────────────────────────── */
+
+.pforms-sheet-note,
+.pforms-sheet-fine {
+  margin: 0 0 14px;
+  font-size: var(--portal-t-body);
+  line-height: 1.55;
+  color: var(--portal-text);
+}
+
+.pforms-sheet-fine {
+  color: var(--portal-text-faint);
+}
+
+/* home2.css strips list markers globally; a numbered legal certification needs
+   its numbers back. */
+.pforms-cert-list {
+  margin: 0 0 14px;
+  padding-left: 22px;
+  list-style: decimal;
+  font-size: var(--portal-t-body);
+  line-height: 1.55;
+  color: var(--portal-text);
+}
+
+.pforms-cert-list li + li {
+  margin-top: 8px;
+}
+
+.pforms-acks {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* 44px of row for a 20px box: the whole label is the target. */
+.pforms-ack {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  align-items: start;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+  color: var(--portal-text);
+  cursor: pointer;
+}
+
+.pforms-ack input {
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  accent-color: rgba(255, 255, 255, 0.9);
+}
+
+.pforms-submit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--portal-text-strong);
+  font-family: inherit;
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pforms-submit:disabled {
+  color: var(--portal-text-faint);
+  cursor: default;
+}
+
+/* ── The page around it ─────────────────────────────────────────────────── */
+
+.pforms-loading {
+  display: grid;
+  gap: 10px;
+}
+
+.home2-page .pforms-page .portal-panel-note {
+  padding: 0 0 8px;
+  font-size: var(--portal-t-body);
+  color: var(--portal-text);
+}
+
+.home2-page .pforms-page .portal-panel-note strong {
+  color: var(--portal-text-strong);
+}
+
+.pforms-page .eyebrow {
+  color: var(--portal-text-faint);
+}
+
+.home2-page .pforms-page .h3 {
+  margin: 8px 0 10px;
+}
+
+/* 13px body under a 34px display needs the measure capped, or the line runs
+   the whole width of a desktop pane and the eye loses the return. */
+.home2-page .pforms-page .lead {
+  margin: 0;
+  max-width: 68ch;
+  font-size: var(--portal-t-body);
+  line-height: 1.6;
+  color: var(--portal-text);
+}
+
+@media (max-width: 620px) {
+  /* Above the tab bar on the pages that mount one. */
+  .home2-page:has(> .portal-bottom-nav) .pforms-pager {
+    bottom: calc(56px + env(safe-area-inset-bottom));
+  }
+
+  .home2-page:has(> .portal-bottom-nav) .pforms-pager-row {
+    padding-bottom: 8px;
+  }
+
+  .pforms-pager-row {
+    flex-wrap: wrap;
+  }
+
+  /* Prev, the count and Next hold one row; the actions take the next one so
+     nothing drops under 44px wide on a 390px screen. */
+  .pforms-pager-actions {
+    flex: 1 0 100%;
+  }
+
+  .pforms-pager-actions > * {
+    flex: 1;
+  }
+}
