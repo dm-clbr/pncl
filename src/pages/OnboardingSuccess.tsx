@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
+import { ChevronDown } from "lucide-react";
 import PortalAuthLayout from "@/components/portal/PortalAuthLayout";
 import Chip from "@/components/portal/Chip";
 import Skeleton from "@/components/portal/Skeleton";
@@ -358,7 +359,10 @@ export default function OnboardingSuccess() {
           </div>
 
           <details className="pauth-details">
-            <summary>Temporary password not working?</summary>
+            <summary>
+              <ChevronDown size={16} aria-hidden="true" />
+              Temporary password not working?
+            </summary>
             <ul>
               <li>Use the copy button so no extra spaces are added.</li>
               <li>Confirm Google is signing in to <strong>{email}</strong>, not another account.</li>

@@ -95,17 +95,26 @@ export default function PortalSetPassword() {
       <p className="pauth-lede">
         Your account uses a temporary password. Choose a new password before continuing.
       </p>
-      {user.email && (
-        <div className="pauth-note">
-          <span className="pauth-note-label">Portal email</span>
-          <strong className="pauth-note-value">{user.email}</strong>
-        </div>
-      )}
       <form onSubmit={handleSubmit} className="pauth-form">
         {/* ponytail: Chrome and every password manager want a username beside a
-            new password, and say so in the console. The address is already on
-            screen above, so this copy of it is hidden. */}
-        <input type="text" name="username" autoComplete="username" value={user.email ?? ""} readOnly hidden />
+            new password. The address the agent already needs to see IS that
+            field, read-only, so nothing is hidden and no duplicate exists. */}
+        {user.email && (
+          <div className="pauth-note">
+            <label className="pauth-note-label" htmlFor="set-password-username">
+              Portal email
+            </label>
+            <input
+              id="set-password-username"
+              className="pauth-note-value is-static"
+              type="text"
+              name="username"
+              autoComplete="username"
+              value={user.email}
+              readOnly
+            />
+          </div>
+        )}
         <Field
           label="New password"
           id="set-password"

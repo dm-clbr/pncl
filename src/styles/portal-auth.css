@@ -186,6 +186,11 @@
    the inputs sit on: white 0.95 reads 8.88:1 there and the 0.60 label 4.66:1. */
 .portal-auth .pauth-note {
   margin-top: calc(var(--portal-unit) * 4);
+}
+
+/* Inside the form the flex gap already spaces it. */
+.portal-auth .pauth-form > .pauth-note {
+  margin-top: 0;
   padding: calc(var(--portal-unit) * 3);
   border: 1px solid var(--portal-rule);
   border-radius: 10px;
@@ -209,6 +214,22 @@
   line-height: 1.35;
   overflow-wrap: anywhere;
   color: var(--portal-text-strong);
+}
+
+/* The username field on set-password is this value block, read-only, so the
+   password manager sees a real username input instead of a hidden duplicate. */
+.portal-auth input.pauth-note-value.is-static {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  text-overflow: ellipsis;
+}
+
+.portal-auth input.pauth-note-value.is-static:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
 }
 
 /* ponytail: the one place the portal leaves Manrope. A temporary password is
@@ -303,11 +324,27 @@
 .portal-auth .pauth-details > summary {
   display: flex;
   align-items: center;
+  gap: calc(var(--portal-unit) * 2);
   min-height: 44px;
   font-size: var(--portal-t-body);
   font-weight: 600;
   cursor: pointer;
   color: var(--portal-text-strong);
+}
+
+/* display: flex drops the native marker, so the chevron is the affordance. */
+.portal-auth .pauth-details > summary svg {
+  flex: 0 0 auto;
+  color: var(--portal-text-faint);
+  transition: transform var(--portal-duration) var(--portal-ease-out);
+}
+
+.portal-auth .pauth-details[open] > summary svg {
+  transform: rotate(180deg);
+}
+
+.portal-auth .pauth-details > summary::-webkit-details-marker {
+  display: none;
 }
 
 .portal-auth .pauth-details > summary:focus-visible {
