@@ -10,7 +10,7 @@ import {
 } from "pdfjs-dist/legacy/web/pdf_viewer.mjs";
 import "pdfjs-dist/legacy/web/pdf_viewer.css";
 import W9FieldCallouts from "@/components/W9FieldCallouts";
-import Segmented from "@/components/portal/Segmented";
+import Segmented, { panelAria } from "@/components/portal/Segmented";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   forwardRef,
@@ -362,8 +362,11 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
 
     const progressPercent = Math.round((currentPage / W9_TOTAL_PAGES) * 100);
     const chromeReady = !loading && !error;
-    const activeJump =
-      W9_SECTION_JUMPS.find((section) => section.page === currentPage) ?? W9_SECTION_JUMPS[0];
+    // The host is the tabs' panel only on a page a jump owns; on every other
+    // page no tab is selected, so it takes a plain page name instead.
+    const hostAria = chromeReady
+      ? panelAria(W9_JUMP_ITEMS, String(currentPage), `Page ${currentPage} of ${W9_TOTAL_PAGES}`)
+      : {};
 
     return (
       <div className={`pforms-doc${className ? ` ${className}` : ""}`}>
@@ -382,8 +385,7 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
           ref={hostRef}
           id={W9_HOST_ID}
           className="ica-fillable-pdf-host"
-          role={chromeReady ? "tabpanel" : undefined}
-          aria-labelledby={chromeReady ? `${W9_HOST_ID}-jump-${activeJump.page}` : undefined}
+          {...hostAria}
         >
           {loading && !error && (
             <p className="pforms-doc-status">

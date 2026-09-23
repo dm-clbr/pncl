@@ -12,7 +12,7 @@ import {
 import "pdfjs-dist/legacy/web/pdf_viewer.css";
 import IcaFieldCallouts from "@/components/IcaFieldCallouts";
 import IcaSignatureModal from "@/components/IcaSignatureModal";
-import Segmented from "@/components/portal/Segmented";
+import Segmented, { panelAria } from "@/components/portal/Segmented";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   forwardRef,
@@ -590,8 +590,11 @@ const IcaFillablePdfViewer = forwardRef<IcaFillablePdfViewerHandle, IcaFillableP
 
     const progressPercent = Math.round((currentPage / ICA_TOTAL_PAGES) * 100);
     const chromeReady = !loading && !error;
-    const activeJump =
-      ICA_SECTION_JUMPS.find((section) => section.page === currentPage) ?? ICA_SECTION_JUMPS[0];
+    // The host is the tabs' panel only on a page a jump owns; on every other
+    // page no tab is selected, so it takes a plain page name instead.
+    const hostAria = chromeReady
+      ? panelAria(ICA_JUMP_ITEMS, String(currentPage), `Page ${currentPage} of ${ICA_TOTAL_PAGES}`)
+      : {};
 
     // Notifies the owner of the page the viewer is showing. pdf.js raises
     // pagechanging on scroll as well as on a jump, so this follows both.
@@ -616,8 +619,7 @@ const IcaFillablePdfViewer = forwardRef<IcaFillablePdfViewerHandle, IcaFillableP
           ref={hostRef}
           id={ICA_HOST_ID}
           className="ica-fillable-pdf-host"
-          role={chromeReady ? "tabpanel" : undefined}
-          aria-labelledby={chromeReady ? `${ICA_HOST_ID}-jump-${activeJump.page}` : undefined}
+          {...hostAria}
         >
           {loading && !error && (
             <p className="pforms-doc-status">

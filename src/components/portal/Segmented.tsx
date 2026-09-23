@@ -31,6 +31,23 @@ export function nextIndex(key: string, index: number, count: number): number | n
   return null;
 }
 
+/** ARIA for the panel a tablist controls. A tabpanel has to be labelled by a
+    SELECTED tab, and `value` matching no item leaves aria-selected="false" on
+    every tab (the ICA's jumps cover 3 of its 14 pages, the W-9's 2 of 6), so on
+    those pages the panel is nobody's panel: it takes a plain name under a
+    generic role instead of pointing aria-labelledby at an unselected tab
+    (WCAG 4.1.2). Spread onto the panel element. Exported for its unit test. */
+export function panelAria(
+  items: readonly SegmentedItem[],
+  value: string,
+  fallbackLabel: string,
+): { role: "tabpanel" | "group"; "aria-labelledby"?: string; "aria-label"?: string } {
+  const selected = items.find((item) => item.value === value);
+  return selected?.id
+    ? { role: "tabpanel", "aria-labelledby": selected.id }
+    : { role: "group", "aria-label": fallbackLabel };
+}
+
 /** Horizontal tabs. Styles under .portal-segmented in
     src/styles/portal-primitives.css: 44px items, 8px apart, on a recessed
     track that scrolls sideways on a phone with a fade on whichever edge has
