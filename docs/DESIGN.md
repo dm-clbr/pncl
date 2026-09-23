@@ -50,8 +50,10 @@ Measured with the workspace's contrast.mjs: the shipped pncl preset's brightest 
 |---|---|---|
 | Sheet | `src/components/portal/Sheet.tsx` | Native `<dialog>` via showModal(). Bottom sheet to 620px (85vh, drag-handle affordance, safe-area padding), 420px right panel from 621px. Closes on Esc, backdrop and a 44px Close. Focus lands on the title. Mount outside PortalBentoStage. |
 | Stepper | `src/components/portal/Stepper.tsx` | `<ol>` of 5 steps, done / current / todo, `aria-current="step"`, tabular numerals. Static by default; pass `onSelect` for 44px buttons. `done` takes the 1-based numbers that are complete, for a list whose steps can be finished out of order: training's seven modules each carry their own acknowledgment, so "everything before `current`" would claim completions the agent never made. Without it the old rule stands and every step before `current` reads as done. The label is the caller's to fit: training hides it at 620px and below and leans on the badges, because seven titles cannot read at 10px in a 40px column. |
+| Sheet | `src/components/portal/Sheet.tsx` | Native `<dialog>` via showModal(). Bottom sheet to 620px (85vh, drag-handle affordance, safe-area padding), 420px right panel from 621px. Closes on Esc, backdrop, a 44px Close and a swipe down over the drag handle (past 56px; the live offset is skipped under `prefers-reduced-motion`). Focus lands on the title. Mount outside PortalBentoStage. `size="half"` holds the bottom sheet to 40dvh, leaving the surface it explains the other 60%; the default `full` keeps 85vh, and from 621px the side panel ignores both. |
+| Stepper | `src/components/portal/Stepper.tsx` | `<ol>` of 5 steps, done / current / todo, `aria-current="step"`, tabular numerals. Static by default; pass `onSelect` for 44px buttons. |
 | Pane | `src/components/portal/Pane.tsx` | The glass card, non-interactive. Wraps a page section. `title` and `aside` render the optional header (20/600 title, quiet aside for a count or a Chip); `as` picks section (default), aside or div; `id` for a skip link. With a title the pane carries `aria-labelledby` and reads as a region. Padding is 16px to 620px and 20px above. Concentric corners apply to a child flush against the pane's inner edge, whose radius is the pane's outer radius minus that padding. They do not apply to interior elements: rows, row skeletons, hover and active backgrounds and focus outlines carry their own 8px radius, because the flush figure at 620px is 16px minus 16px = 0, which renders those rows as squares inside a rounded pane. The pane does not publish an inherited `--portal-radius-inner`, since a custom property reaches every descendant rather than only the flush ones. |
-| ListRow | `src/components/portal/ListRow.tsx` | One 44px row for tile reveals, carrier sheets, script lists and client lists. `label`, optional `secondary` line (body text, so it sits on `--portal-text`, not the 0.60 UI rung) and an 18px `icon` slot. The destination picks the element: `href` on the site renders a router Link, an offsite `href` a new-tab anchor that says so to a screen reader, `download` a same-tab anchor, `onClick` a button, nothing a div. `trailing` defaults to a chevron or an outbound glyph; pass a node to replace it or `null` to drop it. |
+| ListRow | `src/components/portal/ListRow.tsx` | One 44px row for tile reveals, carrier sheets, script lists and client lists. `label`, optional `secondary` line (body text, so it sits on `--portal-text`, not the 0.60 UI rung) and an 18px `icon` slot. The destination picks the element: `href` on the site renders a router Link, an offsite `href` a new-tab anchor that says so to a screen reader, `download` a same-tab anchor, `onClick` a button, nothing a div. `trailing` defaults to a chevron or an outbound glyph; pass a node to replace it or `null` to drop it. `current` puts `aria-current="true"` on whichever element the row renders, for the one row the rest of the view is showing. |
 | Chip | `src/components/portal/Chip.tsx` | Status tag for the map, tickets and documents. `variant` is active, pending, inactive, licensed, pdf or neutral. One near-black fill for all six, measured at 3.06:1 against the pane, so the border, the text and a leading glyph carry the difference and colour never carries meaning alone: a filled dot for active, a dotted left edge for pending, a ring for licensed, a dash for inactive. |
 | EmptyState | `src/components/portal/EmptyState.tsx` | Shown when a list holds nothing. `title`, one `body` line, an optional 22px `icon` and one `action`. Centred on a 36ch measure. Two body lines means the page is explaining too much here. `titleAs` renders the title as an `h2` instead of the default `p`, for the case where the empty state carries its section's only heading: the calendar's connect state is the whole pane, so its title is the heading a screen reader needs. |
 | Skeleton | `src/components/portal/Skeleton.tsx` | Loading placeholder, `variant` text / row (44px) / tile, `width` for a ragged shape. Compose several into the layout the real content will take and put `aria-busy` on the container; the blocks are hidden from assistive tech. 1.2s opacity pulse, still a block under `prefers-reduced-motion`. Under 10s loads only. |
@@ -59,6 +61,53 @@ Measured with the workspace's contrast.mjs: the shipped pncl preset's brightest 
 | Segmented | `src/components/portal/Segmented.tsx` | Horizontal tabs for the profile, the ICA and W-9 section jumps and the map filters. Items are 44px tall and 8px apart on a recessed track that scrolls sideways on a phone with no scrollbar, fading whichever edge has content behind it and keeping the active item in view. Tab mode is a roving tablist: `role="tab"`, `aria-selected`, one tab in the tab order and Left, Right, Home and End. A `value` matching no item, which a stale `?tab=` in a bookmarked URL produces, leaves index 0 in the tab order; without that fallback every tab is -1 and no key reaches the group. `linkTo(value)` turns the items into router links that keep `?tab=` in the URL, dropping the tab roles for `aria-current="page"`. Active item white 0.95 on a white 0.12 pill, the rest white 0.60, which the darker track holds at 4.66:1. The weight does not change between states: rebolding would re-measure the labels and shift the track. `mode="radiogroup"` (default `"tab"`) swaps the tab roles for `role="radiogroup"` and `role="radio"`/`aria-checked`, for a form choice like the Support ticket type that controls no panel and would otherwise be announced as "tab, selected"; the roving keys and the styling are unchanged. `labelledBy` names the group from a visible label instead of duplicating it in `aria-label`. |
 
 In a tile reveal `portal-tile.css` drives `.portal-row` from the same rules as the `.ptile-link` it replaced, so the 44px floor, the full width and the 8px radius apply on a page but not in a card menu.
+
+## State map canvas
+`src/components/StateAvailabilityCanvas.tsx` paints the Three.js map. It keeps
+its own three fills rather than the swatches in `STATE_AVAILABILITY_META`, which
+sit at 1.48:1 between Active and Pending and 2.31:1 between Active and Inactive:
+a viewer with red-green colour blindness reads those as one colour. Each fill
+here clears 3:1 against the other two, and a second channel repeats the meaning.
+
+| Encoding | Value | Measured |
+|---|---|---|
+| Active fill | `#27865a` | 3.32:1 against Inactive |
+| Pending fill | `#fbdf9d` under a diagonal hatch in `#7a5c14` | 3.48:1 against Active; the hatch 4.79:1 on its own fill |
+| Inactive fill | `#212730` | 11.55:1 against Pending |
+| Licensed | a cream ring inside a near-black halo at the state centre | the cream ring alone reads 1.14:1 on the Pending fill, the halo 14.31:1 |
+| Edge | `#171a20` at 0.85 on a bright fill, `#f4f0df` at 0.55 on a dark one | 3.30:1 on Active, 5.02:1 on Inactive |
+
+One ring colour and one edge colour cannot serve all three fills. The fills sit
+more than 3:1 apart, so any single tone lands inside 3:1 of one of them. The ring
+carries two bands and the edge colour follows the fill it draws.
+
+Layout (`src/styles/portal-state-map.css`): the directory is first in the DOM
+and the map is put back above it with flex `order`, so a screen reader and a
+keyboard reach all 51 states before the canvas neither can use. The legend is
+four filter chips carrying the counts, each a 44px button with `aria-pressed`.
+Pressing one fades the other statuses on the canvas to 0.2 through the `filter`
+prop and filters the directory at the same time, so the map is never the only
+place the filter shows. Pressed is a white ring, because the four chips already
+differ by colour. The detail is a right Pane from 621px and a `size="half"`
+Sheet below it, opened by a pick and never by the selection the page makes on
+load. On a phone the canvas box is 60dvh and pinned to the top of the board,
+and the page intro is hidden while the sheet is open, so the 60/40 split holds
+wherever the directory was scrolled to when the pick was made. The camera fits
+the atlas to the narrower axis, so the taller box letterboxes the map rather
+than enlarging it, and the pinned card is opaque so the rows cannot read
+through it. `matchesFilter` in `src/components/portal/state-map-filter.ts` is
+the single predicate behind the canvas dim and the directory list; it lives
+outside the canvas module because that module is lazy-loaded.
+
+Interaction: `pointerdown` selects on any pointer type, and the hover highlight
+runs under `(pointer: fine)` alone. The +/- and reset buttons are the
+single-pointer alternative to a pinch (WCAG 2.5.1), 44px, top right of the canvas
+and bottom right at 640px and below, which is this page's own breakpoint. Zoom is
+one orthographic number from 1 to 4 in 1.4 steps; a zoomed camera centres on the
+selected state and stops at the map's edge, which is why the map needs no drag.
+Nothing runs on a loop: each frame is asked for, an off-screen canvas
+(IntersectionObserver) or a hidden document drops the ask and replays it once on
+return, and the pixel ratio is 1 under `(pointer: coarse)`.
 
 ## Shell
 The portal carries one header, one nav and one sub-page header. 620px is the only breakpoint: above it the nav is text links in the masthead, below it a fixed tab bar in the thumb zone.

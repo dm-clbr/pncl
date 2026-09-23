@@ -1,0 +1,249 @@
+/* ==========================================================================
+   State map page: board order, filter chips, directory list, detail surfaces.
+   Loaded after home2.css, which still owns the canvas shell, the zoom stack,
+   the status colours and the page hero. Selectors keep the .home2-page prefix
+   so they outrank that sheet's own 0-2-0 rules.
+   ========================================================================== */
+
+/* The directory is first in the DOM, so the 51 states reach a screen reader
+   and a keyboard before the canvas neither can use (MNIT map guidance). order
+   puts the map back above it for a sighted reader. */
+.home2-page .state-map-board {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.home2-page .state-map-board > .state-map-layout {
+  order: 1;
+}
+
+.home2-page .state-map-board > .portal-pane {
+  order: 2;
+}
+
+/* A 260px rail wrapped "District of Columbia" onto three lines at the pane's
+   20px title size. Above 960px only: home2.css drops the map to one column
+   below that, and this sheet loads after it, so an unscoped override would
+   keep reserving the rail's track on a phone and squeeze the canvas to
+   nothing. */
+@media (min-width: 961px) {
+  .home2-page .state-map-layout {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+}
+
+/* Not a <Pane>: it clips a canvas rather than wrapping content. It takes the
+   same glass recipe so the three surfaces on this page read as one system. */
+.home2-page .state-map-visual-panel {
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
+  box-shadow: var(--portal-pane-shadow);
+}
+
+/* ── Detail ──────────────────────────────────────────────────────────────── */
+
+.home2-page .state-map-detail-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.home2-page .state-map-detail-body p {
+  margin: 0;
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  line-height: 1.55;
+}
+
+.home2-page .state-map-detail-code {
+  color: var(--accent-bright);
+  font-family: var(--ff-mono);
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+
+/* ── Filter chips ────────────────────────────────────────────────────────── */
+
+.home2-page .state-map-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+/* A bare 44px target around the Chip: the chip keeps its own fill, border and
+   glyph, so a pressed filter is not carried by colour alone. */
+.home2-page .state-map-filter {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.home2-page .state-map-filter .portal-chip {
+  transition: box-shadow 120ms var(--portal-ease-out), opacity 120ms var(--portal-ease-out);
+}
+
+.home2-page .state-map-filter[aria-pressed="false"] .portal-chip {
+  opacity: .72;
+}
+
+.home2-page .state-map-filter:hover .portal-chip {
+  opacity: 1;
+}
+
+/* Pressed is a ring, not a tint: the four chips already differ by colour, and
+   the ring is the one channel none of them uses. */
+.home2-page .state-map-filter[aria-pressed="true"] .portal-chip {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, .85);
+}
+
+.home2-page .state-map-filter:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+/* ── Directory ───────────────────────────────────────────────────────────── */
+
+.home2-page .state-map-directory-note {
+  max-width: 54ch;
+  margin: 0;
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+}
+
+.home2-page .state-map-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 18px is the icon slot's width; a two-letter code needs the room. The code is
+   meaningful text, not a glyph, so it holds the 4.5:1 body rung (--portal-text
+   is 4.76:1 on the pane) rather than the 0.60 UI rung the slot defaults to. */
+.home2-page .state-map-list .portal-row-icon {
+  width: 26px;
+  color: var(--portal-text);
+  font-family: var(--ff-mono);
+  font-size: var(--portal-t-micro);
+  font-weight: 700;
+  letter-spacing: .06em;
+}
+
+.home2-page .state-map-list .portal-row-trail {
+  gap: 6px;
+}
+
+.home2-page .state-map-list .portal-row[aria-current="true"] {
+  background: rgba(255, 255, 255, .1);
+  box-shadow: inset 2px 0 0 var(--accent-bright);
+}
+
+.home2-page .state-map-profile-note {
+  margin: 16px 0 0;
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+}
+
+@media (min-width: 621px) {
+  /* Two columns of rows above the fold on a desktop; 51 single-file rows would
+     push the map off the top of the screen. */
+  .home2-page .state-map-list {
+    columns: 2;
+    column-gap: 12px;
+  }
+
+  .home2-page .state-map-list > li {
+    break-inside: avoid;
+  }
+}
+
+/* Requirement 7.4: the canvas keeps the top of the viewport against the 40%
+   half sheet. The card is sized by the atlas ratio and only capped at 60dvh.
+   Forcing it to 60dvh instead letterboxed the map: the orthographic camera
+   fits the atlas to the narrower axis, so the extra height was empty box, and
+   with the zoom gutter also taking 68px the drawn map came out smaller than
+   the one the page had before. Pinned: the directory sits below the map, so
+   without sticky a pick made from the list opened the sheet with the map
+   scrolled off screen. */
+@media (max-width: 620px) {
+  /* While the half sheet is open the page cannot scroll, so the hero and the
+     lede would hold the top of the viewport and leave the map a sliver. They
+     are the one block on the page the open detail makes redundant. */
+  body:has(dialog.portal-sheet[open]) .home2-page .state-map-intro {
+    display: none;
+  }
+
+  /* home2.css gives .home2-page overflow-x: hidden, which makes it a scroll
+     container that never scrolls, and a sticky child of one of those never
+     sticks. clip stops the sideways overflow without the scroll container.
+     Scoped to this page by :has so no other home2 page changes. */
+  .home2-page:has(.portal-state-map-page) {
+    overflow-x: clip;
+  }
+
+  .home2-page .state-map-board > .state-map-layout {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  .home2-page .state-map-visual-panel {
+    display: flex;
+    max-height: 60dvh;
+    /* Opaque while pinned: the pane's own 0.68 fill let the directory rows
+       scrolling under the map read straight through it. Same hue, alpha 1. */
+    background-image: var(--portal-pane-sheen);
+    background-color: rgb(28, 22, 17);
+  }
+
+  /* WCAG 2.4.11 Focus Not Obscured: the pinned card is the canvas at the atlas
+     ratio plus the 66px zoom row, capped at 60dvh, so a target below it clears
+     whichever is smaller plus the 8px board gap. 100vw overstates the canvas
+     by the page gutters, which errs toward scrolling too far rather than
+     leaving a focused row under the card. */
+  .home2-page .state-map-board > .portal-pane :is(.portal-row, .portal-input, .state-map-filter) {
+    scroll-margin-top: calc(min(60dvh, 100vw * 610 / 975 + 66px) + 8px);
+  }
+
+  /* The zoom stack comes off the map and sits in a row beneath it. Overlaid,
+     it needed a 68px gutter so it could not swallow a tap on the east coast,
+     and that gutter was the single biggest cut to the drawn map on a phone.
+     Under the canvas it costs 66px of height instead, which the card no longer
+     had to spare when it was letterboxing. */
+  .home2-page .state-map-canvas-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 0;
+    aspect-ratio: auto;
+    min-height: 0;
+  }
+
+  .home2-page .state-map-canvas {
+    height: auto;
+    aspect-ratio: 975 / 610;
+  }
+
+  .home2-page .state-map-zoom {
+    position: static;
+    flex-direction: row;
+    justify-content: flex-end;
+    padding: 0 12px 12px;
+  }
+}

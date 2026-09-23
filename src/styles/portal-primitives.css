@@ -58,6 +58,17 @@
   animation: portal-sheet-up var(--portal-duration) var(--portal-ease-out);
 }
 
+/* size="half": the sheet takes 40% of the viewport and leaves the surface it
+   explains the other 60%, which is what the state map's canvas needs. Bottom
+   sheet widths only; from 621px the sheet is a full-height side panel. */
+@media (max-width: 620px) {
+  .portal-sheet.is-half {
+    height: 40vh;
+    height: 40dvh;
+    max-height: 40dvh;
+  }
+}
+
 /* ::backdrop does not inherit custom properties in every engine, so the
    values are literal here. */
 .portal-sheet::backdrop {
@@ -76,14 +87,21 @@ body:has(dialog.portal-sheet[open]) {
   overflow: hidden;
 }
 
-/* Static drag-handle affordance. A real element, not ::before, so a tap on it
-   does not read as a backdrop click on the dialog itself. */
+/* Drag handle: swipe it down to dismiss (Sheet.tsx). A real element, not
+   ::before, so a tap on it does not read as a backdrop click on the dialog
+   itself. The 36x4 bar is the visible affordance; the padding around it is the
+   grab area, which keeps the bar thin without making it a 4px-tall target. */
 .portal-sheet-handle {
   flex-shrink: 0;
   align-self: center;
+  box-sizing: content-box;
   width: 36px;
   height: 4px;
-  margin: 8px 0 0;
+  padding: 10px 24px;
+  margin: 0;
+  background-clip: content-box;
+  touch-action: none;
+  cursor: grab;
   border-radius: 2px;
   background: rgba(255, 255, 255, 0.28);
 }

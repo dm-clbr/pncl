@@ -18,6 +18,9 @@ type ListRowProps = {
   /** Defaults to a chevron (internal) or an outbound glyph (external).
       Pass null for no trailing element, or a node to replace it. */
   trailing?: ReactNode;
+  /** Marks the row the rest of the view is showing: the selected state on the
+      map, the open record in a list. Sets aria-current so it is announced. */
+  current?: boolean;
 };
 
 const GLYPH = { size: 14, strokeWidth: 1.75 } as const;
@@ -35,6 +38,7 @@ export default function ListRow({
   onClick,
   download,
   trailing,
+  current,
 }: ListRowProps) {
   const external = href !== undefined && download === undefined && isOutbound(href);
   const fallback = href === undefined || download !== undefined ? null : external ? (
@@ -44,6 +48,7 @@ export default function ListRow({
   );
   // undefined means "use the default"; null means "no trailing element".
   const trail = trailing === undefined ? fallback : trailing;
+  const attrs = { className: "portal-row", ...(current && { "aria-current": true as const }) };
 
   const inner = (
     <>
@@ -65,31 +70,31 @@ export default function ListRow({
   // keeps the plain anchor the browser needs for the download attribute.
   if (href !== undefined && download !== undefined) {
     return (
-      <a className="portal-row" href={href} download={download}>
+      <a {...attrs} href={href} download={download}>
         {inner}
       </a>
     );
   }
   if (href !== undefined && external) {
     return (
-      <a className="portal-row" href={href} target="_blank" rel="noreferrer">
+      <a {...attrs} href={href} target="_blank" rel="noreferrer">
         {inner}
       </a>
     );
   }
   if (href !== undefined) {
     return (
-      <Link className="portal-row" to={href}>
+      <Link {...attrs} to={href}>
         {inner}
       </Link>
     );
   }
   if (onClick) {
     return (
-      <button type="button" className="portal-row" onClick={onClick}>
+      <button type="button" {...attrs} onClick={onClick}>
         {inner}
       </button>
     );
   }
-  return <div className="portal-row">{inner}</div>;
+  return <div {...attrs}>{inner}</div>;
 }

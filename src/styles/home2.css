@@ -5775,8 +5775,7 @@ button.portal-todo-link {
   background: rgba(194, 78, 28, .11);
 }
 
-.home2-page .portal-primary-nav-link:focus-visible,
-.home2-page .state-map-state-button:focus-visible {
+.home2-page .portal-primary-nav-link:focus-visible {
   outline: 2px solid var(--accent-bright);
   outline-offset: 3px;
 }
@@ -5848,33 +5847,6 @@ button.portal-todo-link {
   line-height: 1.65;
 }
 
-.home2-page .state-map-counts {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.home2-page .state-map-count {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 6px;
-  padding: 8px 10px;
-  border: 1px solid rgba(240, 237, 228, .1);
-  border-radius: var(--radius);
-  background: rgba(240, 237, 228, .035);
-  color: var(--steel);
-  font-family: var(--ff-mono);
-  font-size: 10px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-
-.home2-page .state-map-count strong {
-  color: var(--bone);
-  font-size: 1rem;
-}
-
 .home2-page .state-map-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 260px;
@@ -5882,56 +5854,9 @@ button.portal-todo-link {
   align-items: stretch;
 }
 
-.home2-page .state-map-visual-panel,
-.home2-page .state-map-detail,
-.home2-page .state-map-list-section {
-  border: 1px solid rgba(240, 237, 228, .1);
-  border-radius: calc(var(--radius) + 4px);
-  background: var(--ink-2);
-}
-
 .home2-page .state-map-visual-panel {
   min-width: 0;
   overflow: hidden;
-}
-
-.home2-page .state-map-legend {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px 18px;
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(240, 237, 228, .08);
-}
-
-.home2-page .state-map-legend span {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  color: var(--steel);
-  font-family: var(--ff-mono);
-  font-size: 9px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-
-.home2-page .state-map-legend i:not(.state-map-license-ring) {
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, .12);
-}
-
-.home2-page .state-map-license-ring {
-  width: 11px;
-  height: 11px;
-  border: 2px solid #f4f0df;
-  border-radius: 50%;
-  background: transparent;
-}
-
-.home2-page .state-map-unavailable-swatch {
-  background: #3d4654;
 }
 
 .home2-page .state-map-canvas-shell,
@@ -5946,6 +5871,61 @@ button.portal-todo-link {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* Single-pointer zoom (WCAG 2.5.1). The buttons float over the canvas, so the
+   surface behind them is the panel wherever the atlas is transparent, and a
+   state fill once the map is zoomed. Both edges are measured against those
+   surfaces, not against the token ladder (R27). The near-black fill is the
+   shell bar's and carries a white 0.95 glyph at 16.20:1. The border is white
+   0.45 over that fill rather than over the surface, because background-clip
+   defaults to border-box, so it composites to rgb(130, 127, 124). One of the
+   two edges then clears the 3:1 non-text floor on each surface: border on the
+   panel 4.43:1, border on Inactive 3.77:1, fill on Active 3.96:1, fill on
+   Pending 13.77:1. The border was white 0.38, which put Inactive at 2.996:1,
+   under the floor. Figures computed from the declared colours; the panel is a
+   pixel sampled beside the button at 1440x900, rgb(28, 24, 21), because its
+   sheen is a gradient (4.34:1 at the lightest pixel in that sample).
+   Known gap: the #3d4654 fill the map falls back to when availability is
+   unavailable clears neither edge (border 2.39:1, fill 1.88:1), and no border
+   alpha fixes it without dropping Pending's border below 3:1. */
+.home2-page .state-map-zoom {
+  position: absolute;
+  inset: 12px 12px auto auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home2-page .state-map-zoom button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .45);
+  border-radius: 8px;
+  background: var(--portal-bar-fill);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .45);
+  color: rgba(255, 255, 255, .95);
+  cursor: pointer;
+  transition: border-color var(--portal-duration) var(--portal-ease-out);
+}
+
+.home2-page .state-map-zoom button:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, .7);
+}
+
+.home2-page .state-map-zoom button:disabled {
+  border-color: rgba(255, 255, 255, .18);
+  color: rgba(255, 255, 255, .45);
+  cursor: default;
+}
+
+.home2-page .state-map-zoom button:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
 }
 
 .home2-page .state-map-canvas-placeholder,
@@ -5975,15 +5955,6 @@ button.portal-todo-link {
   text-align: center;
 }
 
-.home2-page .state-map-detail {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  min-height: 300px;
-  padding: 26px;
-}
-
 .home2-page .state-map-detail-code {
   margin-bottom: 6px;
   color: var(--accent-bright);
@@ -5993,32 +5964,6 @@ button.portal-todo-link {
   letter-spacing: .16em;
 }
 
-.home2-page .state-map-detail h2 {
-  margin: 0 0 14px;
-  color: var(--bone);
-  font-size: clamp(1.35rem, 3vw, 2rem);
-  font-weight: 850;
-  letter-spacing: -.03em;
-}
-
-.home2-page .state-map-detail > p {
-  margin: 16px 0 0;
-  color: var(--steel);
-  font-size: .9rem;
-  line-height: 1.55;
-}
-
-.home2-page .state-map-detail-status {
-  display: inline-flex;
-  padding: 6px 9px;
-  border: 1px solid currentColor;
-  border-radius: 999px;
-  font-family: var(--ff-mono);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-}
 
 .home2-page .state-status-active { color: #55d69b; }
 .home2-page .state-status-pending { color: #f2b84b; }
@@ -6029,100 +5974,6 @@ button.portal-todo-link {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  color: #f4f0df;
-}
-
-.home2-page .state-map-list-section {
-  margin-top: 16px;
-  padding: clamp(18px, 4vw, 30px);
-}
-
-.home2-page .state-map-list-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 20px;
-}
-
-.home2-page .state-map-list-head h2 {
-  margin: 0;
-  color: var(--bone);
-  font-size: 1.5rem;
-  text-transform: uppercase;
-}
-
-.home2-page .state-map-list-head > p {
-  max-width: 470px;
-  margin: 0;
-  color: var(--steel);
-  font-size: .84rem;
-  line-height: 1.5;
-}
-
-.home2-page .state-map-state-grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 9px;
-}
-
-.home2-page .state-map-state-button {
-  position: relative;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  grid-template-areas:
-    "code name license"
-    "code status license";
-  align-items: center;
-  gap: 2px 10px;
-  min-height: 66px;
-  padding: 10px 11px;
-  border: 1px solid rgba(240, 237, 228, .09);
-  border-left: 4px solid currentColor;
-  border-radius: var(--radius);
-  background: rgba(240, 237, 228, .025);
-  color: var(--steel);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color .18s var(--ease), background .18s var(--ease), transform .18s var(--ease);
-}
-
-.home2-page .state-map-state-button:hover,
-.home2-page .state-map-state-button.selected {
-  border-color: var(--accent-bright);
-  background: rgba(194, 78, 28, .09);
-  transform: translateY(-1px);
-}
-
-.home2-page .state-map-state-code {
-  grid-area: code;
-  color: currentColor;
-  font-family: var(--ff-mono);
-  font-size: .86rem;
-  font-weight: 850;
-}
-
-.home2-page .state-map-state-name {
-  grid-area: name;
-  overflow: hidden;
-  color: var(--bone);
-  font-size: .76rem;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.home2-page .state-map-state-status {
-  grid-area: status;
-  color: currentColor;
-  font-family: var(--ff-mono);
-  font-size: 8px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-
-.home2-page .state-map-state-license {
-  grid-area: license;
   color: #f4f0df;
 }
 
@@ -6240,14 +6091,6 @@ button.portal-todo-link {
   .home2-page .state-map-layout {
     grid-template-columns: 1fr;
   }
-
-  .home2-page .state-map-detail {
-    min-height: 0;
-  }
-
-  .home2-page .state-map-state-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 640px) {
@@ -6255,14 +6098,9 @@ button.portal-todo-link {
     width: min(100% - 20px, 1180px);
   }
 
-  .home2-page .state-map-intro,
-  .home2-page .state-map-list-head {
+  .home2-page .state-map-intro {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .home2-page .state-map-counts {
-    justify-content: flex-start;
   }
 
   .home2-page .state-map-canvas-shell,
@@ -6270,23 +6108,17 @@ button.portal-todo-link {
     min-height: 235px;
   }
 
-  .home2-page .state-map-legend {
-    gap: 8px 12px;
-  }
-
-  .home2-page .state-map-state-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  /* The zoom stack gets its own gutter instead of sitting on the map: at this
+     width the right edge of the canvas is the east coast, and an overlaid
+     button would swallow the pointerdown that selects those states. 68px is
+     the 44px target plus the 12px inset and 12px of air. */
+  .home2-page .state-map-canvas-shell {
+    padding-right: 68px;
   }
 
   .home2-page .state-map-error {
     align-items: flex-start;
     flex-wrap: wrap;
-  }
-}
-
-@media (max-width: 420px) {
-  .home2-page .state-map-state-grid {
-    grid-template-columns: 1fr;
   }
 }
 
