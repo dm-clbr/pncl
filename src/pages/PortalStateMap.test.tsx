@@ -116,7 +116,7 @@ describe("portal state map", () => {
     const { container } = render(<MemoryRouter><PortalStateMap /></MemoryRouter>);
 
     expect(await screen.findByTestId("three-state-map")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "PNCL State Map" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "State map" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Agent portal" })).toBeInTheDocument();
     expect(directoryRows(container)).toHaveLength(51);
     // The row carries its status and the licence in its accessible name, so

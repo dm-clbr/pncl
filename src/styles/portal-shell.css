@@ -72,16 +72,19 @@
    reads 1.31:1 there and --steel #BCBFCC reads 1.20:1, so DESIGN.md's rule
    applies here as it does to the masthead. Text over the backdrop sits on a
    fill. These were the runs that had none once the backdrop went in (the
-   sub-page header itself is the seventh, in its own rule below): the
+   sub-page header itself is the sixth, in its own rule below): the
    page lede under the sub-page header, the profile details lede (the child
    combinator keeps the Pane-wrapped documents lede from being backed twice),
-   the state map intro, the profile footer, and the two legacy headers that
+   the profile footer, and the two legacy headers that
    predate PortalHeader. On --portal-bar-fill rgb(28, 22, 17) they read white
    0.62 = 7.43:1, --steel = 9.78:1 and --bone = 15.30:1, and under the sheen's
-   maximum 6.57:1, 8.00:1 and 12.52:1, all clear of the 4.5:1 body floor. */
+   maximum 6.57:1, 8.00:1 and 12.52:1, all clear of the 4.5:1 body floor.
+   The calendar and the state map render inside the dashboard's own frame
+   (.portal-bento, PortalBentoMain) rather than over .portal-backdrop, on the
+   same gradient, so their page lede is listed against that frame first. */
+.home2-page .portal-bento .portal-subhead + .portal-panel-note,
 .home2-page:has(> .portal-backdrop) .portal-subhead + .portal-panel-note,
 .home2-page:has(> .portal-backdrop) .portal-profile-details > .portal-profile-lede,
-.home2-page:has(> .portal-backdrop) .state-map-intro,
 .home2-page:has(> .portal-backdrop) .portal-profile-foot,
 .home2-page:has(> .portal-backdrop) .brand-assets-header,
 .home2-page:has(> .portal-backdrop) .carrier-sheet-header {
@@ -92,7 +95,7 @@
   background: var(--portal-pane-sheen), var(--portal-bar-fill);
 }
 
-/* The sub-page header is the seventh run, and the one that is easiest to miss:
+/* The sub-page header is the sixth run, and the one that is easiest to miss:
    it does carry a fill, but only inside the (max-width: 620px) block, where it
    becomes a sticky bar. Above 620px it had none, so the back link at
    --portal-text-faint rgba(255, 255, 255, 0.6) and the page title sat on the
@@ -101,6 +104,7 @@
    rgb(232, 205, 176) it reads 1.3:1. Scoped to 621px and up so the mobile bar,
    which bleeds edge to edge with a bottom rule and no radius, is left alone. */
 @media (min-width: 621px) {
+  .home2-page .portal-bento .portal-subhead,
   .home2-page:has(> .portal-backdrop) .portal-subhead {
     box-sizing: border-box;
     padding: 12px 16px;

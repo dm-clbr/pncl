@@ -5431,56 +5431,6 @@ button.portal-todo-link {
   }
 }
 
-.home2-page .portal-map-wrap {
-  width: min(1180px, calc(100% - 32px));
-  margin: 0 auto;
-}
-
-.home2-page .portal-map-hero {
-  margin-bottom: 24px;
-}
-
-.home2-page .portal-state-map-page {
-  min-height: 100vh;
-}
-
-.home2-page .state-map-intro {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 28px;
-  margin: 34px 0 24px;
-}
-
-.home2-page .state-map-eyebrow {
-  margin: 0 0 7px;
-  color: var(--accent-bright);
-  font-family: var(--ff-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-}
-
-.home2-page .state-map-intro h1 {
-  margin: 0 0 8px;
-  color: var(--bone);
-  font-size: clamp(2rem, 5vw, 4.25rem);
-  font-style: italic;
-  font-weight: 900;
-  letter-spacing: -.045em;
-  line-height: .95;
-  text-transform: uppercase;
-}
-
-.home2-page .state-map-intro > div > p:last-child {
-  max-width: 660px;
-  margin: 0;
-  color: var(--steel);
-  font-size: .96rem;
-  line-height: 1.65;
-}
-
 .home2-page .state-map-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 260px;
@@ -5728,15 +5678,6 @@ button.portal-todo-link {
 }
 
 @media (max-width: 640px) {
-  .home2-page .portal-map-wrap {
-    width: min(100% - 20px, 1180px);
-  }
-
-  .home2-page .state-map-intro {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
   .home2-page .state-map-canvas-shell,
   .home2-page .state-map-canvas-placeholder {
     min-height: 235px;

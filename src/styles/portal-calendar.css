@@ -9,9 +9,10 @@
    (docs/DESIGN.md, Shell).
    ========================================================================== */
 
-/* An agenda has no business at the marketing pages' 1320px. Three classes
-   deep to clear `.home2-page .wrap`, which this file may load before. */
-.home2-page .wrap.portal-calendar-wrap {
+/* An agenda has no business at the dashboard's 1180px. The masthead and nav
+   keep the full frame so they sit exactly where they do on the dashboard;
+   only the agenda column narrows, held to the frame's left edge. */
+.pcal-column {
   max-width: 880px;
 }
 

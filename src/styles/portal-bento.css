@@ -131,15 +131,35 @@
 }
 
 .portal-bento-wrap {
+  /* Published as --pad so the sub-page header's phone bar, which bleeds
+     through the wrap's gutter by that amount, meets the viewport edge here
+     too. .home2-page's own --pad is wider and would overshoot. */
+  --pad: clamp(14px, 3vw, 28px);
   width: 100%;
   max-width: 1180px;
   margin: 0 auto;
-  padding-inline: clamp(14px, 3vw, 28px);
+  padding-inline: var(--pad);
   box-sizing: border-box;
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
+}
+
+/* A sub-page inside the dashboard frame (calendar, state map): its blocks run
+   on the grid gap under the nav, top and between. Block margins inside are
+   folded into the gap, so the sub-page header's own bottom margin and the
+   limited-availability notice's do not stack on it. 0-2-0 and loaded after
+   home2.css, so it wins the ties there. */
+.portal-bento-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--portal-gap);
+  margin-top: var(--portal-gap);
+}
+
+.home2-page .portal-bento-page > * {
+  margin-block: 0;
 }
 
 /* ── Notice banners ─────────────────────────────────────────────────────── */

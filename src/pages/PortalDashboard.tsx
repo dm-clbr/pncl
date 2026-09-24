@@ -3,7 +3,6 @@ import {
   useEffect,
   useMemo,
   useState,
-  type CSSProperties,
   type MouseEvent,
   type ReactNode,
 } from "react";
@@ -83,8 +82,7 @@ import PortalHeader from "@/components/portal/PortalHeader";
 import BottomNav from "@/components/portal/BottomNav";
 import PortalBentoStage from "@/components/PortalBentoStage";
 import PortalNoticeBanner from "@/components/PortalNoticeBanner";
-import LiquidGradientCanvas from "@/components/ui/liquid-gradient";
-import { usePortalGradientTuner } from "@/components/PortalGradientTuner";
+import PortalBentoMain from "@/components/portal/PortalBentoMain";
 import PortalTile from "@/components/PortalBentoTile";
 import { usePortalIncentives } from "@/hooks/usePortalIncentives";
 import { usePortalBrandAssets } from "@/hooks/usePortalBrandAssets";
@@ -226,13 +224,6 @@ export default function PortalDashboard() {
   const [checklistOpen, setChecklistOpen] = useState(false);
   /** Only one card's menu is open at a time. */
   const [openTile, setOpenTile] = useState<string | null>(null);
-  // Read once: the pointer type does not change while the page is open. Coarse
-  // pointers get the backdrop canvas at 20fps and half resolution; the CSS blur
-  // on .portal-bento-canvas hides the upscale, so it reads the same for a
-  // quarter of the pixels.
-  const [coarsePointer] = useState(
-    () => typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches,
-  );
 
   const { incentives, loading: incentivesLoading } = usePortalIncentives();
   const { assets: brandAssets, loading: brandAssetsLoading } = usePortalBrandAssets();
@@ -543,145 +534,114 @@ export default function PortalDashboard() {
     );
   });
 
-  // Hidden backdrop tuner. Cmd/Ctrl + Shift + G in dev.
-  const {
-    gradient,
-    layerOpacity,
-    blendMode,
-    vignette,
-    staticBase,
-    panel: tunerPanel,
-  } = usePortalGradientTuner();
-
   return (
     <div className="home2-page">
-      <div className="grain" aria-hidden="true" />
-
-      <main
-        className={`portal-bento${staticBase ? " has-static-base" : ""}`}
-        style={{ "--vignette": vignette } as CSSProperties}
+      <PortalBentoMain
+        rail={
+          totalTodos > 0 && (
+            <aside id="onboarding-checklist" className="pcl-rail" aria-label="Onboarding checklist">
+              <PortalOnboardingChecklist
+                todos={resolvedTodos}
+                agentEmail={agentEmail}
+                completingTodoId={completingTodoId}
+                onComplete={(id) => void handleCompleteTodo(id)}
+                previewUnlocked={showAdminLink}
+              />
+            </aside>
+          )
+        }
       >
-        {/* Living backdrop. Pauses itself offscreen, on a hidden tab, and under
-            prefers-reduced-motion; the CSS gradient underneath is the fallback
-            if WebGL2 is unavailable. */}
-        <div
-          className="portal-bento-canvas"
-          style={{ opacity: layerOpacity, mixBlendMode: blendMode as never }}
-          aria-hidden="true"
-        >
-          <LiquidGradientCanvas
-            {...gradient}
-            fps={coarsePointer ? 20 : 30}
-            maxDpr={coarsePointer ? 0.5 : 1}
-            fallbackColor="transparent"
-          />
-        </div>
+        <PortalHeader
+          name={displayName}
+          email={agentEmail}
+          initials={initials}
+          photoUrl={photoUrl}
+          stage={phaseLabel}
+        />
 
-        <div className="portal-bento-wrap">
-          <PortalHeader
-            name={displayName}
-            email={agentEmail}
-            initials={initials}
-            photoUrl={photoUrl}
-            stage={phaseLabel}
-          />
-
-          <PortalPrimaryNav />
-
-          {totalTodos > 0 && (
-            <a href="#onboarding-checklist" className="pstrip" onClick={openChecklist}>
-              <span className="pstrip-stage">{phaseLabel}</span>
-              <span className="pstrip-count">
-                {completedTodoCount} of {totalTodos}
-                <span className="portal-sr"> steps complete, open the checklist</span>
-              </span>
-              <span className="pstrip-bar" aria-hidden="true">
-                <span style={{ transform: `scaleX(${progressPercent / 100})` }} />
-              </span>
-              <ChevronRight size={16} strokeWidth={1.75} aria-hidden="true" />
-            </a>
-          )}
-
-          {resignNotices.map((notice) => (
-            <PortalNoticeBanner
-              key={notice.href}
-              role="alert"
-              icon={<FileSignature size={20} strokeWidth={2.25} />}
-              title={notice.title}
-              body={notice.body}
-              href={notice.href}
-              cta={notice.cta}
-            />
-          ))}
-
-          {recoveryEmailNoticeContent && (
-            <PortalNoticeBanner
-              role={recoveryEmailNotice === "error" ? "alert" : "status"}
-              icon={<Shield size={20} strokeWidth={2.25} />}
-              title={recoveryEmailNoticeContent.title}
-              body={recoveryEmailNoticeContent.description}
-              href="/portal/profile?tab=details"
-              cta={recoveryEmailNoticeContent.action}
-              dismissKey={`portal-notice-dismissed:recovery-${recoveryEmailNotice}`}
-            />
-          )}
-
-          <PortalBentoStage>
-            <div className="portal-bento-grid">{tiles}</div>
-          </PortalBentoStage>
-
-          <div className="portal-bento-footer">
-            {showAdminLink && (
-              <Link to={adminLink} className="portal-bento-footer-link">
-                <Shield size={15} strokeWidth={2} aria-hidden="true" />
-                <span>{adminLinkLabel}</span>
-              </Link>
-            )}
-
-            <button
-              type="button"
-              className="portal-bento-footer-link"
-              onClick={handleSignOut}
-            >
-              <LogOut size={15} strokeWidth={2} aria-hidden="true" />
-              Sign out
-            </button>
-
-            <div className="portal-bento-socials">
-              {PORTAL_SOCIAL_LINKS.map((link) => (
-                <a
-                  key={link.id}
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="portal-bento-social"
-                  aria-label={link.label}
-                >
-                  <span
-                    style={{
-                      WebkitMaskImage: `url(${link.iconSrc})`,
-                      maskImage: `url(${link.iconSrc})`,
-                    }}
-                    aria-hidden="true"
-                  />
-                </a>
-              ))}
-            </div>
-          </div>
-        </div>
+        <PortalPrimaryNav />
 
         {totalTodos > 0 && (
-          <aside id="onboarding-checklist" className="pcl-rail" aria-label="Onboarding checklist">
-            <PortalOnboardingChecklist
-              todos={resolvedTodos}
-              agentEmail={agentEmail}
-              completingTodoId={completingTodoId}
-              onComplete={(id) => void handleCompleteTodo(id)}
-              previewUnlocked={showAdminLink}
-            />
-          </aside>
+          <a href="#onboarding-checklist" className="pstrip" onClick={openChecklist}>
+            <span className="pstrip-stage">{phaseLabel}</span>
+            <span className="pstrip-count">
+              {completedTodoCount} of {totalTodos}
+              <span className="portal-sr"> steps complete, open the checklist</span>
+            </span>
+            <span className="pstrip-bar" aria-hidden="true">
+              <span style={{ transform: `scaleX(${progressPercent / 100})` }} />
+            </span>
+            <ChevronRight size={16} strokeWidth={1.75} aria-hidden="true" />
+          </a>
         )}
-      </main>
+
+        {resignNotices.map((notice) => (
+          <PortalNoticeBanner
+            key={notice.href}
+            role="alert"
+            icon={<FileSignature size={20} strokeWidth={2.25} />}
+            title={notice.title}
+            body={notice.body}
+            href={notice.href}
+            cta={notice.cta}
+          />
+        ))}
+
+        {recoveryEmailNoticeContent && (
+          <PortalNoticeBanner
+            role={recoveryEmailNotice === "error" ? "alert" : "status"}
+            icon={<Shield size={20} strokeWidth={2.25} />}
+            title={recoveryEmailNoticeContent.title}
+            body={recoveryEmailNoticeContent.description}
+            href="/portal/profile?tab=details"
+            cta={recoveryEmailNoticeContent.action}
+            dismissKey={`portal-notice-dismissed:recovery-${recoveryEmailNotice}`}
+          />
+        )}
+
+        <PortalBentoStage>
+          <div className="portal-bento-grid">{tiles}</div>
+        </PortalBentoStage>
+
+        <div className="portal-bento-footer">
+          {showAdminLink && (
+            <Link to={adminLink} className="portal-bento-footer-link">
+              <Shield size={15} strokeWidth={2} aria-hidden="true" />
+              <span>{adminLinkLabel}</span>
+            </Link>
+          )}
+
+          <button
+            type="button"
+            className="portal-bento-footer-link"
+            onClick={handleSignOut}
+          >
+            <LogOut size={15} strokeWidth={2} aria-hidden="true" />
+            Sign out
+          </button>
+
+          <div className="portal-bento-socials">
+            {PORTAL_SOCIAL_LINKS.map((link) => (
+              <a
+                key={link.id}
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="portal-bento-social"
+                aria-label={link.label}
+              >
+                <span
+                  style={{
+                    WebkitMaskImage: `url(${link.iconSrc})`,
+                    maskImage: `url(${link.iconSrc})`,
+                  }}
+                  aria-hidden="true"
+                />
+              </a>
+            ))}
+          </div>
+        </div>
+      </PortalBentoMain>
 
       {/* Outside <main>: .portal-bento > * would set position: relative on the
           bar and on the dialog, and both must sit outside the tilted stage
@@ -704,8 +664,6 @@ export default function PortalDashboard() {
           />
         </Sheet>
       )}
-
-      {tunerPanel}
     </div>
   );
 }

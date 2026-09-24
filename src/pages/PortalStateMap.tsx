@@ -1,15 +1,16 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { CheckCircle2, MapPinned, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
-import PNCLLogo from "@/components/PNCLLogo";
 import PortalPrimaryNav from "@/components/PortalPrimaryNav";
 import BottomNav from "@/components/portal/BottomNav";
+import PortalBentoMain from "@/components/portal/PortalBentoMain";
+import PortalHeader from "@/components/portal/PortalHeader";
+import PortalSubpageHeader from "@/components/portal/PortalSubpageHeader";
 import Chip, { type ChipVariant } from "@/components/portal/Chip";
 import EmptyState from "@/components/portal/EmptyState";
 import Field from "@/components/portal/Field";
 import ListRow from "@/components/portal/ListRow";
 import Pane from "@/components/portal/Pane";
-import PortalBackground from "@/components/portal/PortalBackground";
 import Sheet from "@/components/portal/Sheet";
 import { matchesFilter, type StateMapFilter } from "@/components/portal/state-map-filter";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,6 +25,7 @@ import {
 import { US_STATES, isUsStateCode, type UsStateCode } from "@/lib/us-states";
 import { trackPageView } from "@/lib/analytics";
 import "@/styles/home2.css";
+import "@/styles/portal-bento.css";
 import "@/styles/portal-state-map.css";
 
 const StateAvailabilityCanvas = lazy(() => import("@/components/StateAvailabilityCanvas"));
@@ -152,42 +154,24 @@ export default function PortalStateMap() {
 
   return (
     <div className="home2-page">
-      <PortalBackground />
-      <div className="grain" aria-hidden="true" />
+      <PortalBentoMain>
+        <PortalHeader
+          name={displayName}
+          email={user?.email}
+          initials={initials}
+          photoUrl={photoUrl}
+          subpage
+        />
 
-      <main className="portal-dash dark portal-state-map-page">
-        <div className="wrap portal-map-wrap">
-          <header className="portal-hero portal-map-hero">
-            <Link to="/" className="portal-hero-logo" aria-label="PNCL home">
-              <PNCLLogo height={44} />
-            </Link>
-            <Link to="/portal/profile" className="portal-hero-profile" aria-label="View profile">
-              <span className="portal-hero-profile-avatar" aria-hidden="true">
-                {photoUrl ? (
-                  <img src={photoUrl} alt="" className="portal-hero-profile-photo" />
-                ) : (
-                  <span className="portal-hero-profile-initials">{initials}</span>
-                )}
-              </span>
-              <span className="portal-hero-profile-copy">
-                <span className="portal-welcome">Welcome, {displayName}</span>
-                {user?.email && <span className="portal-meta">{user.email}</span>}
-              </span>
-            </Link>
-          </header>
+        <PortalPrimaryNav />
 
-          <PortalPrimaryNav />
+        <div className="portal-bento-page">
+          <PortalSubpageHeader title="State map" />
 
-          <section className="state-map-intro" aria-labelledby="state-map-title">
-            <div>
-              <p className="state-map-eyebrow">Company availability</p>
-              <h1 id="state-map-title">PNCL State Map</h1>
-              <p>
-                Explore PNCL&apos;s current operating availability. Your licensed states are
-                marked with a light ring and remain separate from the company status color.
-              </p>
-            </div>
-          </section>
+          <p className="portal-panel-note state-map-note">
+            Explore PNCL&apos;s current operating availability. Your licensed states are
+            marked with a light ring and remain separate from the company status color.
+          </p>
 
           {loading && (
             <div className="state-map-loading" role="status">
@@ -335,7 +319,7 @@ export default function PortalStateMap() {
             </>
           )}
         </div>
-      </main>
+      </PortalBentoMain>
 
       {/* Outside <main> so the fixed bar never inherits a page containing
           block. It replaces the primary nav at 620px and below. */}

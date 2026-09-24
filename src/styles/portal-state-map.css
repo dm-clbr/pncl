@@ -182,10 +182,10 @@
    without sticky a pick made from the list opened the sheet with the map
    scrolled off screen. */
 @media (max-width: 620px) {
-  /* While the half sheet is open the page cannot scroll, so the hero and the
-     lede would hold the top of the viewport and leave the map a sliver. They
-     are the one block on the page the open detail makes redundant. */
-  body:has(dialog.portal-sheet[open]) .home2-page .state-map-intro {
+  /* While the half sheet is open the page cannot scroll, so the lede would
+     hold the top of the viewport and leave the map a sliver. It is the one
+     block on the page the open detail makes redundant. */
+  body:has(dialog.portal-sheet[open]) .home2-page .state-map-note {
     display: none;
   }
 
@@ -193,7 +193,7 @@
      container that never scrolls, and a sticky child of one of those never
      sticks. clip stops the sideways overflow without the scroll container.
      Scoped to this page by :has so no other home2 page changes. */
-  .home2-page:has(.portal-state-map-page) {
+  .home2-page:has(.state-map-board) {
     overflow-x: clip;
   }
 

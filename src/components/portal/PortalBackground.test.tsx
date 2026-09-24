@@ -4,25 +4,39 @@ import { describe, expect, it } from "vitest";
 
 // ponytail: a source scan, not a render. The mount is a one-line composition
 // rule across 14 pages, and rendering each one would need its whole hook and
-// auth mock stack to prove a single line. PortalDashboard and
-// PortalAuthLayout carry their own LiquidGradientCanvas and must not gain a
-// second, so they are excluded by name.
-const OWN_CANVAS = new Set(["PortalDashboard.tsx"]);
+// auth mock stack to prove a single line. Pages that render through
+// PortalBentoMain (the dashboard, calendar and state map) carry the
+// dashboard's own canvas and must not gain a second, so they are checked the
+// other way round.
 const pagesDir = path.resolve(__dirname, "../../pages");
+const source = (name: string) => readFileSync(path.join(pagesDir, name), "utf8");
 
-const wrapperPages = readdirSync(pagesDir)
+const homePages = readdirSync(pagesDir)
   .filter((name) => name.startsWith("Portal") && name.endsWith(".tsx") && !name.endsWith(".test.tsx"))
-  .filter((name) => !OWN_CANVAS.has(name))
-  .filter((name) => readFileSync(path.join(pagesDir, name), "utf8").includes('className="home2-page'));
+  .filter((name) => source(name).includes('className="home2-page'));
+const bentoPages = homePages.filter((name) => source(name).includes("<PortalBentoMain"));
+const wrapperPages = homePages.filter((name) => !bentoPages.includes(name));
 
 describe("PortalBackground mounts on every portal page", () => {
   it("covers every home2-page wrapper", () => {
-    expect(wrapperPages.length).toBeGreaterThanOrEqual(14);
+    expect(wrapperPages.length).toBeGreaterThanOrEqual(12);
   });
 
   it.each(wrapperPages)("%s mounts the backdrop as the wrapper's first child", (name) => {
-    const source = readFileSync(path.join(pagesDir, name), "utf8");
-    expect(source).toMatch(/<div className="home2-page[^"]*">\s*<PortalBackground \/>/);
+    expect(source(name)).toMatch(/<div className="home2-page[^"]*">\s*<PortalBackground \/>/);
+  });
+});
+
+describe("the dashboard frame", () => {
+  it("is shared by the dashboard, calendar and state map", () => {
+    expect(bentoPages).toEqual(
+      expect.arrayContaining(["PortalDashboard.tsx", "PortalCalendar.tsx", "PortalStateMap.tsx"]),
+    );
+  });
+
+  it.each(bentoPages)("%s renders it first and mounts no second backdrop", (name) => {
+    expect(source(name)).toMatch(/<div className="home2-page[^"]*">\s*<PortalBentoMain[\s>]/);
+    expect(source(name)).not.toContain("<PortalBackground");
   });
 });
 
