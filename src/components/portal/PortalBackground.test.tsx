@@ -52,3 +52,15 @@ describe("the backdrop paint-through rule", () => {
     expect(ruleBody(".portal-backdrop {")).toMatch(/z-index:\s*0/);
   });
 });
+
+// ponytail: same text assertion, same reason. The sub-page header carried a
+// fill only inside the (max-width: 620px) sticky-bar block, so above 620px the
+// back link and the title sat on the bare gradient on all 14 sub-pages.
+describe("every shell text run over the backdrop carries a fill", () => {
+  it.each([
+    ".home2-page:has(> .portal-backdrop) .portal-subhead {",
+    ".home2-page:has(> .portal-backdrop) .portal-subhead + .portal-panel-note,",
+  ])("%s sits on --portal-bar-fill", (selector) => {
+    expect(ruleBody(selector)).toMatch(/background:.*--portal-bar-fill/);
+  });
+});
