@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 
 export type SegmentedItem = {
@@ -23,6 +23,10 @@ type SegmentedProps = {
   mode?: "tab" | "radiogroup";
   /** Link mode: the href for an item. Drops the tab roles for aria-current. */
   linkTo?: (value: string) => string;
+  /** Opt-in sliding thumb behind the active item, sized from its box and
+      moved on transform and width. Off by default: every existing caller
+      renders exactly as before. */
+  pill?: boolean;
 };
 
 /** Next index for the roving tablist: Left and Right wrap, Home and End jump,
@@ -67,9 +71,11 @@ export default function Segmented({
   labelledBy,
   mode = "tab",
   linkTo,
+  pill = false,
 }: SegmentedProps) {
   const radio = !linkTo && mode === "radiogroup";
   const trackRef = useRef<HTMLDivElement>(null);
+  const thumbRef = useRef<HTMLSpanElement>(null);
   // Roving tabindex needs one tab in the tab order at all times. A stale ?tab=
   // in a bookmarked URL matches nothing, and -1 on every tab would drop the
   // whole group out of the tab order with no keyboard way back in, so index 0
@@ -98,6 +104,30 @@ export default function Segmented({
     return () => window.removeEventListener("resize", syncEdges);
   }, [value, items.length]);
 
+  // The thumb follows the active item's box. Re-measured when the value, the
+  // items or the track's size change; the transition lives in CSS, so the
+  // first placement is marked and lands without sliding in from the left.
+  // Sliding pill after the ddoemonn Segmented Control (21st.dev).
+  useLayoutEffect(() => {
+    if (!pill) return;
+    const track = trackRef.current;
+    const thumb = thumbRef.current;
+    if (!track || !thumb) return;
+    const measure = () => {
+      const active = track.querySelector<HTMLElement>('.portal-segment[data-active="true"]');
+      thumb.style.opacity = active ? "1" : "0";
+      if (!active) return;
+      thumb.style.width = `${active.offsetWidth}px`;
+      thumb.style.transform = `translateX(${active.offsetLeft}px)`;
+      if (!thumb.dataset.placed) requestAnimationFrame(() => { thumb.dataset.placed = "true"; });
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(track);
+    return () => observer.disconnect();
+  }, [pill, value, items]);
+
   const onKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
     const next = nextIndex(event.key, index, items.length);
     if (next === null) return;
@@ -109,12 +139,13 @@ export default function Segmented({
   return (
     <div
       ref={trackRef}
-      className="portal-segmented"
+      className={pill ? "portal-segmented has-pill" : "portal-segmented"}
       role={linkTo ? "navigation" : radio ? "radiogroup" : "tablist"}
       aria-label={labelledBy ? undefined : label}
       aria-labelledby={labelledBy}
       onScroll={syncEdges}
     >
+      {pill && <span ref={thumbRef} className="portal-segmented-pill" aria-hidden="true" />}
       {items.map((item, index) => {
         const active = item.value === value;
         return linkTo ? (

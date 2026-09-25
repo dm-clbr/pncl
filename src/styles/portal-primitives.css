@@ -1,6 +1,6 @@
 /* ==========================================================================
    Portal primitives: Sheet, Stepper, Pane, ListRow, Chip, EmptyState,
-   Skeleton, Field and Segmented.
+   Skeleton, Field, Segmented and SnapSheet.
    Tokens live in portal-tokens.css; nothing here is scoped to a page.
    ========================================================================== */
 
@@ -856,4 +856,121 @@ button.portal-row:hover .portal-row-trail {
 .portal-segment[data-active="true"] {
   background: rgba(255, 255, 255, 0.12);
   color: var(--portal-text-strong);
+}
+
+/* Opt-in sliding thumb (the `pill` prop). The thumb carries the selected
+   fill and a 2px inset white ring, so selection is never the fill alone; the
+   items drop their own active background and sit above it. The transition
+   starts only once the thumb has been placed, so it lands on first paint
+   instead of sliding in from the left. */
+.portal-segmented.has-pill {
+  position: relative;
+}
+
+.portal-segmented-pill {
+  position: absolute;
+  top: var(--portal-unit);
+  bottom: var(--portal-unit);
+  left: 0;
+  width: 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.85);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.portal-segmented-pill[data-placed="true"] {
+  transition:
+    transform 300ms var(--portal-ease-out),
+    width 300ms var(--portal-ease-out);
+}
+
+.portal-segmented.has-pill .portal-segment {
+  position: relative;
+  z-index: 1;
+}
+
+.portal-segmented.has-pill .portal-segment[data-active="true"] {
+  background: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-segmented-pill[data-placed="true"] {
+    transition: none;
+  }
+}
+
+/* ── SnapSheet ───────────────────────────────────────────────────────────── */
+
+/* A persistent, non-modal bottom sheet. The caller places it: fixed, with a
+   `top` that sets its full height and a `bottom` above the tab bar. It sits
+   over moving content, so it takes the solid bar fill rather than the
+   translucent pane, with the pane sheen. It moves by transform only. */
+.snap-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  border-top: 1px solid var(--portal-border);
+  border-radius: 16px 16px 0 0;
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.5);
+  font-family: var(--portal-font);
+  will-change: transform;
+}
+
+/* home2.css sets `.home2-page section { position: relative }` at 0-1-1, which
+   outranks the bare class above and drops the sheet into the page flow. */
+.home2-page section.snap-sheet {
+  position: fixed;
+}
+
+.snap-sheet[data-dragging] {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* A 4x40 pill in a 44px hit strip. A real button: tap or Enter cycles the
+   sheet, the path that needs no drag. */
+.snap-sheet-grabber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 100%;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 16px 16px 0 0;
+  background: none;
+  cursor: grab;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.snap-sheet-grabber span {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.snap-sheet-grabber:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: -4px;
+}
+
+.snap-sheet [data-sheet-handle] {
+  touch-action: none;
+}
+
+.snap-sheet [data-sheet-scroll] {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
