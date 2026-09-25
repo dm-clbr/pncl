@@ -271,6 +271,12 @@
     width: auto;
   }
 
+  /* The 28px mark sits in a 44px target; the bar is 56px, so it fits. */
+  .portal-header-logo {
+    align-items: center;
+    min-height: 44px;
+  }
+
   /* Kept in the DOM, not display: none, so a phone still reaches the page's
      h1. The bar is only wide enough for the logo and the avatar. */
   .portal-header-title {
