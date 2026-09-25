@@ -7,11 +7,11 @@ import {
   notifyLicensingComplete,
   profileToLicensingValues,
   saveLicensingProfile,
-  US_STATES,
   type PortalLicensingFormValues,
   type PortalProfile,
 } from "@/lib/portal-profile";
 import { isReadyForContracting } from "@/lib/licensing-contracting";
+import { US_STATES } from "@/lib/us-states";
 import { toast } from "sonner";
 
 export default function PortalLicensingSection({
@@ -280,13 +280,17 @@ export default function PortalLicensingSection({
             <div className="portal-licensing-state-row">
               <select
                 value={stateToAdd}
-                onChange={(event) => setStateToAdd(event.target.value)}
-                aria-label="Choose a state to add"
+                onChange={(event) => {
+                  const state = event.target.value;
+                  setStateToAdd(state);
+                  setLicenseNumberToAdd(form.stateLicenseNumbers[state] ?? "");
+                }}
+                aria-label="Choose a state to add or update"
               >
                 <option value="">Choose a state</option>
-                {US_STATES.filter((state) => !form.stateLicenseNumbers[state]).map((state) => (
-                  <option key={state} value={state}>
-                    {state}
+                {US_STATES.map(({ code, name }) => (
+                  <option key={code} value={code}>
+                    {name} ({code}){form.stateLicenseNumbers[code] ? " — already added" : ""}
                   </option>
                 ))}
               </select>
@@ -304,7 +308,7 @@ export default function PortalLicensingSection({
                 onClick={addStateLicense}
                 disabled={!stateToAdd || !licenseNumberToAdd.trim()}
               >
-                Add license
+                {form.stateLicenseNumbers[stateToAdd] ? "Update license" : "Add license"}
               </button>
             </div>
             {Object.keys(form.stateLicenseNumbers).length > 0 ? (
@@ -322,11 +326,11 @@ export default function PortalLicensingSection({
                   </span>
                 ))}
               </div>
-            ) : (
-              <span className="admin-field-hint">
-                Add each state and its active insurance license number, including your resident state.
-              </span>
-            )}
+            ) : null}
+            <span className="admin-field-hint">
+              Add each state and its active insurance license number, including your resident state.
+              Select an already added state to update its number, then save your licensing details.
+            </span>
           </div>
 
           <div className="portal-licensing-dl-section">
