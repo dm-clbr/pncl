@@ -8,7 +8,7 @@ PNCL life-insurance agents, from onboarding through selling. Design for a phone 
 - `/portal/profile` (5 tabs): details form with photo, names, phone, recovery email, address and apparel sizes; PDF business card; team (referral links and downline); licensing (NPN, E&O, state licenses, driver license); documents; carrier logins (three SureLC links and a 14-row username, password and writing number table).
 - Onboarding checklist (component): 5 stages, 31 steps, one CTA and a mark-complete per step.
 - `/portal/calendar`: read-only Google Calendar. Connect state, the next 10 events over 14 days, refresh, disconnect.
-- `/portal/state-map`: Three.js US map with a legend, a detail panel, a 51-state directory and the agent's licensed overlay.
+- `/portal/state-map`: SVG US map with a small-state rail, search, status filters, a 51-state list, an answer card per state (PNCL status and the agent's license) and a legend; a snap sheet on a phone, a side panel on a desktop.
 - `/portal/carriers`: read-only carrier table grouped by SureLC account, with e-app links.
 - `/portal/clients`: search and list of intake forms.
 - `/portal/clients/new`: 16-question financial inventory wizard, then the Pinnacle form fields, then review.

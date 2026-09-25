@@ -1,19 +1,21 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
-import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { MemoryRouter, useLocation } from "react-router-dom";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import PortalStateMap from "@/pages/PortalStateMap";
-import { US_STATES, type UsStateCode } from "@/lib/us-states";
+import { US_STATES } from "@/lib/us-states";
 
 const availability = US_STATES.map((state) => ({
   stateCode: state.code,
   stateName: state.name,
   status: state.code === "DC" ? "Active" as const : state.code === "CA" ? "Pending" as const : "Inactive" as const,
   createdAt: "2026-08-19T00:00:00.000Z",
-  updatedAt: "2026-08-19T00:00:00.000Z",
+  updatedAt: "2026-08-19T15:30:00.000Z",
 }));
 const reload = vi.fn();
 let availabilityError: string | null = null;
 let availabilityStates = availability;
+let availabilityLoading = false;
+let licenses: Record<string, string> = { DC: "LIC-DC" };
 
 vi.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({
@@ -23,7 +25,7 @@ vi.mock("@/contexts/AuthContext", () => ({
 
 vi.mock("@/hooks/usePortalProfile", () => ({
   usePortalProfile: () => ({
-    profile: { address_state: "DC", state_license_numbers: { DC: "LIC-DC" } },
+    profile: { address_state: "DC", state_license_numbers: licenses },
     photoUrl: null,
     initials: "TA",
     displayName: "Test Agent",
@@ -34,35 +36,47 @@ vi.mock("@/hooks/usePortalProfile", () => ({
 vi.mock("@/hooks/useStateAvailability", () => ({
   useStateAvailability: () => ({
     states: availabilityStates,
-    loading: false,
+    loading: availabilityLoading,
     error: availabilityError,
     reload,
   }),
 }));
 
-vi.mock("@/components/StateAvailabilityCanvas", () => ({
+// The SVG map is lazy and draws 9,348 points; the page suite reads what the
+// page hands it instead.
+vi.mock("@/components/portal/StateMapSvg", () => ({
   default: ({
-    availabilityUnavailable,
-    licensedStates,
+    unavailable,
+    licensed,
     filter,
+    selected,
+    loading,
+    label,
   }: {
-    availabilityUnavailable?: boolean;
-    licensedStates: Set<string>;
-    filter?: string | null;
+    unavailable: boolean;
+    licensed: Set<string>;
+    filter: string | null;
+    selected: string | null;
+    loading: boolean;
+    label: string;
   }) => (
     <div
-      data-testid="three-state-map"
-      data-availability-unavailable={availabilityUnavailable ? "true" : "false"}
-      data-licensed-states={[...licensedStates].sort().join(",")}
+      data-testid="state-map"
+      role="img"
+      aria-label={label}
+      data-unavailable={unavailable ? "true" : "false"}
+      data-licensed={[...licensed].sort().join(",")}
       data-filter={filter ?? "none"}
-      aria-hidden="true"
+      data-selected={selected ?? "none"}
+      data-loading={loading ? "true" : "false"}
     />
   ),
 }));
 
+vi.mock("@/lib/analytics", () => ({ trackPageView: vi.fn() }));
+
 // jsdom 20 ships HTMLDialogElement without showModal, close or the open
-// reflection, so the mobile detail Sheet needs the same stand-in the primitives
-// suite installs.
+// reflection; the legend is a Sheet.
 beforeAll(() => {
   const proto = HTMLDialogElement.prototype;
   if (!("open" in proto)) {
@@ -86,8 +100,8 @@ beforeAll(() => {
   };
 });
 
-/** Forces the page's (max-width: 620px) branch. Returns the spy to restore. */
-const matchCompactViewport = () => vi.spyOn(window, "matchMedia").mockImplementation(
+/** Forces the (max-width: 620px) branch: the finder moves into the sheet. */
+const matchPhone = () => vi.spyOn(window, "matchMedia").mockImplementation(
   (query: string) => ({
     matches: query === "(max-width: 620px)",
     media: query,
@@ -100,189 +114,261 @@ const matchCompactViewport = () => vi.spyOn(window, "matchMedia").mockImplementa
   }) as unknown as MediaQueryList,
 );
 
-const directoryRows = (container: HTMLElement) =>
-  container.querySelectorAll(".state-map-list > li");
+let location = "";
+function LocationProbe() {
+  const current = useLocation();
+  location = current.pathname + current.search;
+  return null;
+}
 
-vi.mock("@/lib/analytics", () => ({ trackPageView: vi.fn() }));
+const renderPage = (entry = "/portal/state-map") =>
+  render(
+    <MemoryRouter initialEntries={[entry]}>
+      <PortalStateMap />
+      <LocationProbe />
+    </MemoryRouter>,
+  );
+
+const rows = (container: HTMLElement) => container.querySelectorAll(".smap-list > li");
+const card = () => document.querySelector("article.smap-detail");
 
 describe("portal state map", () => {
   beforeEach(() => {
     availabilityError = null;
     availabilityStates = availability;
+    availabilityLoading = false;
+    licenses = { DC: "LIC-DC" };
     reload.mockReset();
   });
 
-  it("renders the Three.js surface and a complete accessible state directory", async () => {
-    const { container } = render(<MemoryRouter><PortalStateMap /></MemoryRouter>);
+  afterEach(() => vi.restoreAllMocks());
 
-    expect(await screen.findByTestId("three-state-map")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "State map" })).toBeInTheDocument();
+  it("renders the map, the nav and a complete accessible state list", async () => {
+    const { container } = renderPage();
+
+    expect(await screen.findByTestId("state-map")).toHaveAccessibleName(
+      "PNCL availability map: 1 active, 1 pending, 49 inactive. Use the state list to pick a state.",
+    );
+    expect(screen.getByRole("heading", { name: "State map", level: 1 })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Agent portal" })).toBeInTheDocument();
-    expect(directoryRows(container)).toHaveLength(51);
-    // The row carries its status and the licence in its accessible name, so
-    // neither is left to the colour on the canvas.
-    expect(screen.getByRole("button", {
-      name: "District of Columbia Active Licensed",
-    })).toHaveAttribute("aria-current", "true");
+    expect(rows(container)).toHaveLength(51);
+    // The digits roll in their own spans; the text read out is the total.
+    expect(container.querySelector(".smap-count")).toHaveTextContent(/^51 results$/);
+    // Each row says its status and the licence in words, so neither is left
+    // to colour on the map.
+    expect(screen.getByRole("button", { name: "District of Columbia Active Licensed" }))
+      .toHaveAttribute("aria-current", "true");
     expect(screen.getByRole("button", { name: "California Pending" })).toBeInTheDocument();
-    expect(screen.getByText("Licensed on your profile", { selector: ".state-map-license-note" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Texas Inactive" })).toBeInTheDocument();
   });
 
-  it("filters the directory, the chips and the canvas together", async () => {
-    const { container } = render(<MemoryRouter><PortalStateMap /></MemoryRouter>);
-    await screen.findByTestId("three-state-map");
-    expect(screen.getByTestId("three-state-map")).toHaveAttribute("data-filter", "none");
+  it("preselects the agent's own state and shows its card on a desktop", async () => {
+    renderPage();
+    await screen.findByTestId("state-map");
+    expect(screen.getByTestId("state-map")).toHaveAttribute("data-selected", "DC");
+    const detail = card() as HTMLElement;
+    expect(within(detail).getByRole("heading", { name: "District of Columbia" })).toBeInTheDocument();
+    expect(detail).toHaveTextContent("PNCL is currently operating in this state.");
+    expect(detail).toHaveTextContent("Licensed on your profile");
+    expect(detail).toHaveTextContent("LIC-DC");
+    expect(detail).toHaveTextContent(/Updated\s*Aug 19, 2026/);
+    // A preselection is not a pick: the URL stays clean.
+    expect(location).toBe("/portal/state-map");
+  });
 
-    const pending = screen.getByRole("button", { name: "1 Pending", pressed: false });
-    fireEvent.click(pending);
-    expect(screen.getByRole("button", { name: "1 Pending", pressed: true })).toBe(pending);
-    expect(directoryRows(container)).toHaveLength(1);
-    expect(screen.getByTestId("three-state-map")).toHaveAttribute("data-filter", "Pending");
+  it("narrows the list and the map together, and keeps the filter in the URL", async () => {
+    const { container } = renderPage();
+    await screen.findByTestId("state-map");
+    expect(screen.getByTestId("state-map")).toHaveAttribute("data-filter", "none");
 
-    // Same chip again clears the filter.
-    fireEvent.click(pending);
-    expect(directoryRows(container)).toHaveLength(51);
+    fireEvent.click(screen.getByRole("radio", { name: "Pending 1" }));
+    expect(screen.getByRole("radio", { name: "Pending 1" })).toHaveAttribute("aria-checked", "true");
+    expect(rows(container)).toHaveLength(1);
+    expect(screen.getByTestId("state-map")).toHaveAttribute("data-filter", "Pending");
+    expect(location).toBe("/portal/state-map?filter=Pending");
+    expect(container.querySelector(".smap-count")).toHaveTextContent(/^1 result$/);
 
-    const search = screen.getByLabelText("Search states");
+    fireEvent.click(screen.getByRole("radio", { name: "All 51" }));
+    expect(rows(container)).toHaveLength(51);
+    expect(screen.getByTestId("state-map")).toHaveAttribute("data-filter", "none");
+    expect(location).toBe("/portal/state-map");
+  });
+
+  it("searches by name or code down to one row, then to nothing", async () => {
+    const { container } = renderPage();
+    await screen.findByTestId("state-map");
+    const search = screen.getByRole("searchbox", { name: "Search states" });
+    expect(search).toHaveAttribute("placeholder", "Search or tap a state");
+    expect(search).toHaveAttribute("enterkeyhint", "search");
+
     fireEvent.change(search, { target: { value: "cali" } });
-    expect(directoryRows(container)).toHaveLength(1);
+    expect(rows(container)).toHaveLength(1);
     expect(screen.getByRole("button", { name: "California Pending" })).toBeInTheDocument();
+
+    fireEvent.change(search, { target: { value: "tx" } });
+    expect(rows(container)).toHaveLength(1);
 
     fireEvent.change(search, { target: { value: "zzz" } });
-    expect(directoryRows(container)).toHaveLength(0);
+    expect(rows(container)).toHaveLength(0);
     expect(screen.getByText("No states match")).toBeInTheDocument();
+    expect(screen.getByText("Clear the search or the status filter.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
+    expect(search).toHaveValue("");
+    expect(rows(container)).toHaveLength(51);
   });
 
-  it("opens the detail in a half-height sheet when a state is picked on a phone", async () => {
-    const matchMedia = matchCompactViewport();
-    render(<MemoryRouter><PortalStateMap /></MemoryRouter>);
-    await screen.findByTestId("three-state-map");
+  it("picks the first match on Enter and mirrors it as ?state=", async () => {
+    renderPage();
+    await screen.findByTestId("state-map");
+    const search = screen.getByRole("searchbox", { name: "Search states" });
+    fireEvent.change(search, { target: { value: "tex" } });
+    fireEvent.keyDown(search, { key: "Enter" });
+    expect(within(card() as HTMLElement).getByRole("heading", { name: "Texas" })).toBeInTheDocument();
+    expect(location).toBe("/portal/state-map?state=TX");
+    expect(screen.getByTestId("state-map")).toHaveAttribute("data-selected", "TX");
 
-    // The selection the page makes on load must not open a modal over the map.
-    expect(document.querySelector("dialog")).not.toHaveAttribute("open");
-
-    fireEvent.click(screen.getByRole("button", { name: "Texas Inactive" }));
-    const sheet = screen.getByRole("dialog", { name: "Texas" });
-    expect(sheet).toHaveAttribute("open");
-    expect(sheet).toHaveClass("is-half");
-    expect(sheet).toHaveTextContent("No license recorded on your profile.");
-
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
-    expect(sheet).not.toHaveAttribute("open");
-    matchMedia.mockRestore();
+    fireEvent.keyDown(search, { key: "Escape" });
+    expect(search).toHaveValue("");
   });
 
-  it("keeps a neutral map and accessible state directory available when live data fails", async () => {
+  it("keeps a neutral map and a usable list when live data fails", async () => {
     availabilityError = "Unable to load state availability.";
     availabilityStates = [];
+    renderPage();
 
-    render(<MemoryRouter><PortalStateMap /></MemoryRouter>);
-
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Live state availability is temporarily unavailable.",
-    );
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "No company status should be inferred from these colors.",
-    );
-    expect(await screen.findByTestId("three-state-map")).toHaveAttribute(
-      "data-availability-unavailable",
-      "true",
-    );
-    expect(screen.getByTestId("three-state-map")).toHaveAttribute("data-licensed-states", "DC");
-    expect(screen.getAllByRole("button", { name: /Unavailable/ })).toHaveLength(51);
-    expect(screen.getByRole("button", {
-      name: "District of Columbia Unavailable Licensed",
-    })).toBeInTheDocument();
-    expect(screen.getByText("Availability unavailable", {
-      selector: ".portal-chip",
-    })).toBeInTheDocument();
+    const notice = screen.getByRole("status");
+    expect(notice).toHaveTextContent("Live state availability is temporarily unavailable.");
+    expect(notice).toHaveTextContent("No company status should be inferred from these colors.");
+    expect(await screen.findByTestId("state-map")).toHaveAttribute("data-unavailable", "true");
+    expect(screen.getByTestId("state-map")).toHaveAttribute("data-licensed", "DC");
+    expect(screen.getAllByRole("button", { name: /Unavailable/ }).length).toBeGreaterThanOrEqual(51);
+    expect(screen.getByRole("button", { name: "District of Columbia Unavailable Licensed" })).toBeInTheDocument();
+    expect(within(card() as HTMLElement).getByText("Availability unavailable")).toBeInTheDocument();
+    // Status filters mean nothing over placeholder data; Licensed still does.
+    expect(screen.queryByRole("radio", { name: /Pending/ })).toBeNull();
+    expect(screen.getByRole("radio", { name: "Licensed 1" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(reload).toHaveBeenCalledOnce();
   });
 
-  it("gives the map a single-pointer zoom alternative to pinch", async () => {
-    // The page mocks the canvas module, so the real one comes in through
-    // importActual. WebGL is unavailable under jsdom: the controls sit outside
-    // that failure path, which is the point of the assertion. The stub keeps
-    // jsdom's not-implemented trace out of the run.
-    const getContext = vi
-      .spyOn(HTMLCanvasElement.prototype, "getContext")
-      .mockReturnValue(null);
-    const { default: StateAvailabilityCanvas } = await vi.importActual<
-      typeof import("@/components/StateAvailabilityCanvas")
-    >("@/components/StateAvailabilityCanvas");
+  it("shows the outline and three placeholder rows while loading", async () => {
+    availabilityLoading = true;
+    availabilityStates = [];
+    renderPage();
+    expect(await screen.findByTestId("state-map")).toHaveAttribute("data-loading", "true");
+    expect(screen.getByRole("status")).toHaveTextContent("Loading state availability…");
+    expect(document.querySelectorAll(".smap-skeleton .portal-skeleton")).toHaveLength(3);
+    expect(screen.queryByRole("group", { name: "Small states" })).toBeNull();
+  });
 
-    render(
-      <StateAvailabilityCanvas
-        states={availability}
-        licensedStates={new Set<UsStateCode>(["DC"])}
-        selectedState="DC"
-        onHover={() => {}}
-        onSelect={() => {}}
-      />,
+  it("offers the licensing tab when the Licensed filter finds no licenses", async () => {
+    licenses = {};
+    renderPage("/portal/state-map?filter=Licensed");
+    await screen.findByTestId("state-map");
+    expect(screen.getByText("No state licenses are currently recorded on your profile.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Add licenses" })).toHaveAttribute(
+      "href",
+      "/portal/profile?tab=licensing",
     );
-
-    const zoomIn = screen.getByRole("button", { name: "Zoom in" });
-    expect(zoomIn).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Zoom out" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Reset zoom" })).toBeDisabled();
-
-    fireEvent.click(zoomIn);
-    expect(screen.getByRole("button", { name: "Zoom out" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Reset zoom" })).toBeEnabled();
-
-    getContext.mockRestore();
   });
 
-  it("keeps the zoomed camera on the map and drops off-screen frames", async () => {
-    const { cameraCenter, canDrawFrame, rendererPixelRatio } = await vi.importActual<
-      typeof import("@/components/StateAvailabilityCanvas")
-    >("@/components/StateAvailabilityCanvas");
-
-    // Frustum halves at zoom 1 for a 1440 wide shell: 530 by 340 map units.
-    // Zoom 1 ignores the selection and pins the map centre.
-    expect(cameraCenter(1, 530, 340, { x: 900, y: -120 })).toEqual({ x: 487.5, y: -305 });
-    // Zoomed in, the camera follows a state inside the margin...
-    expect(cameraCenter(2, 530, 340, { x: 600, y: -260 })).toEqual({ x: 600, y: -260 });
-    // ...and clamps at the edge for one outside it, instead of panning off the
-    // atlas. Margin at zoom 2 is half of each half-frustum: 265 and 170.
-    expect(cameraCenter(2, 530, 340, { x: 1000, y: -20 })).toEqual({ x: 752.5, y: -135 });
-
-    // The render gate: an off-screen or backgrounded ask never reaches the GPU.
-    expect(canDrawFrame(true, false)).toBe(true);
-    expect(canDrawFrame(false, false)).toBe(false);
-    expect(canDrawFrame(true, true)).toBe(false);
-
-    // The filter predicate the canvas dim and the directory both read.
-    const { matchesFilter } = await vi.importActual<
-      typeof import("@/components/portal/state-map-filter")
-    >("@/components/portal/state-map-filter");
-    expect(matchesFilter(null, "Inactive", false)).toBe(true);
-    expect(matchesFilter("Active", "Active", false)).toBe(true);
-    expect(matchesFilter("Active", "Pending", true)).toBe(false);
-    expect(matchesFilter("Licensed", "Inactive", true)).toBe(true);
-    expect(matchesFilter("Licensed", "Active", false)).toBe(false);
-
-    // Touch renders at dpr 1 whatever the screen claims.
-    expect(rendererPixelRatio(true, 3)).toBe(1);
-    expect(rendererPixelRatio(false, 3)).toBe(2);
-    expect(rendererPixelRatio(false, 1)).toBe(1);
+  it("gives the nine small states a named rail button that selects like a map tap", async () => {
+    renderPage();
+    await screen.findByTestId("state-map");
+    const rail = screen.getByRole("group", { name: "Small states" });
+    expect(within(rail).getAllByRole("button")).toHaveLength(9);
+    fireEvent.click(within(rail).getByRole("button", { name: "Rhode Island, Inactive" }));
+    expect(location).toBe("/portal/state-map?state=RI");
+    expect(within(card() as HTMLElement).getByRole("heading", { name: "Rhode Island" })).toBeInTheDocument();
+    expect(within(rail).getByRole("button", { name: "District of Columbia, Active, Licensed" }))
+      .not.toHaveAttribute("aria-current");
   });
 
-  it("commits a map pick on a tap but not on a scroll gesture", async () => {
-    const { isTap } = await vi.importActual<
-      typeof import("@/components/StateAvailabilityCanvas")
-    >("@/components/StateAvailabilityCanvas");
+  it("explains the map in the legend sheet behind the info button", async () => {
+    renderPage();
+    await screen.findByTestId("state-map");
+    fireEvent.click(screen.getByRole("button", { name: "About this map" }));
+    const legend = screen.getByRole("dialog", { name: "About this map" });
+    expect(legend).toHaveAttribute("open");
+    expect(legend).toHaveTextContent("Explore PNCL’s current operating availability.");
+    expect(legend).toHaveTextContent("PNCL availability in this state is in progress.");
+    expect(legend).toHaveTextContent("A license number is on file in your profile for this state.");
+  });
 
-    // A finger never lands and lifts on exactly the same pixel.
-    expect(isTap({ x: 200, y: 400 }, { x: 200, y: 400 })).toBe(true);
-    expect(isTap({ x: 200, y: 400 }, { x: 203, y: 404 })).toBe(true);
-    // 8px is the edge of a tap, inclusive.
-    expect(isTap({ x: 200, y: 400 }, { x: 200, y: 408 })).toBe(true);
-    // A vertical swipe over the pinned map is a scroll, not a pick.
-    expect(isTap({ x: 200, y: 400 }, { x: 200, y: 391 })).toBe(false);
-    expect(isTap({ x: 200, y: 400 }, { x: 200, y: 520 })).toBe(false);
-    expect(isTap({ x: 200, y: 400 }, { x: 260, y: 400 })).toBe(false);
+  describe("on a phone", () => {
+    it("opens no card on load and keeps the sheet at peek", async () => {
+      matchPhone();
+      renderPage();
+      await screen.findByTestId("state-map");
+      const sheet = screen.getByRole("region", { name: "Find a state" });
+      expect(sheet.tagName).toBe("SECTION");
+      expect(card()).toBeNull();
+      // The preselection only outlines the agent's state.
+      expect(screen.getByTestId("state-map")).toHaveAttribute("data-selected", "DC");
+      expect(within(sheet).getByRole("searchbox", { name: "Search states" })).toBeInTheDocument();
+      expect(within(sheet).getByRole("button", { name: "Show all states" })).toHaveAttribute("aria-expanded", "false");
+      // One finder: nothing renders a second copy outside the sheet.
+      expect(screen.getAllByRole("searchbox")).toHaveLength(1);
+    });
+
+    it("opens the card on a pick and closes it back to peek", async () => {
+      matchPhone();
+      renderPage();
+      await screen.findByTestId("state-map");
+
+      fireEvent.click(screen.getByRole("button", { name: "Texas Inactive" }));
+      const detail = card() as HTMLElement;
+      expect(within(detail).getByRole("heading", { name: "Texas" })).toBeInTheDocument();
+      expect(detail).toHaveTextContent("PNCL is not currently operating in this state.");
+      expect(detail).toHaveTextContent("No license recorded on your profile.");
+      expect(within(detail).getByRole("link", { name: "Add a license" })).toHaveAttribute(
+        "href",
+        "/portal/profile?tab=licensing",
+      );
+      // The card replaces search and filters.
+      expect(screen.queryByRole("searchbox")).toBeNull();
+
+      fireEvent.click(within(detail).getByRole("button", { name: "Close" }));
+      expect(card()).toBeNull();
+      expect(screen.getByRole("searchbox", { name: "Search states" })).toBeInTheDocument();
+      expect(screen.getByTestId("state-map")).toHaveAttribute("data-selected", "none");
+      expect(location).toBe("/portal/state-map");
+    });
+
+    it("opens the card for a ?state= deep link on load", async () => {
+      matchPhone();
+      renderPage("/portal/state-map?state=tx");
+      await screen.findByTestId("state-map");
+      expect(within(card() as HTMLElement).getByRole("heading", { name: "Texas" })).toBeInTheDocument();
+      expect(screen.getByTestId("state-map")).toHaveAttribute("data-selected", "TX");
+    });
+
+    it("cycles the sheet from the grabber button without a drag", async () => {
+      matchPhone();
+      renderPage();
+      await screen.findByTestId("state-map");
+      fireEvent.click(screen.getByRole("button", { name: "Show all states" }));
+      expect(screen.getByRole("button", { name: "Show less" })).toHaveAttribute("aria-expanded", "true");
+      fireEvent.click(screen.getByRole("button", { name: "Show less" }));
+      expect(screen.getByRole("button", { name: "Show all states" })).toHaveAttribute("aria-expanded", "false");
+    });
+
+    it("moves focus to the card on a keyboard pick and back to the row on close", async () => {
+      matchPhone();
+      renderPage();
+      await screen.findByTestId("state-map");
+
+      const texas = screen.getByRole("button", { name: "Texas Inactive" });
+      fireEvent.keyDown(texas, { key: "Enter" });
+      fireEvent.click(texas);
+      await act(async () => {});
+      expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Texas" }));
+
+      fireEvent.click(within(card() as HTMLElement).getByRole("button", { name: "Close" }));
+      await act(async () => {});
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: "Texas Inactive" }));
+    });
   });
 });

@@ -27,17 +27,27 @@ describe("PortalBackground mounts on every portal page", () => {
   });
 });
 
+// The state map page is a thin container around StateMapView, which renders
+// the wrapper and the frame, so the frame check follows it there.
+const frameFiles = [
+  ...bentoPages.map((name) => path.join(pagesDir, name)),
+  path.resolve(__dirname, "StateMapView.tsx"),
+];
+
 describe("the dashboard frame", () => {
   it("is shared by the dashboard, calendar and state map", () => {
-    expect(bentoPages).toEqual(
-      expect.arrayContaining(["PortalDashboard.tsx", "PortalCalendar.tsx", "PortalStateMap.tsx"]),
-    );
+    expect(bentoPages).toEqual(expect.arrayContaining(["PortalDashboard.tsx", "PortalCalendar.tsx"]));
+    expect(source("PortalStateMap.tsx")).toContain("<StateMapView");
   });
 
-  it.each(bentoPages)("%s renders it first and mounts no second backdrop", (name) => {
-    expect(source(name)).toMatch(/<div className="home2-page[^"]*">\s*<PortalBentoMain[\s>]/);
-    expect(source(name)).not.toContain("<PortalBackground");
-  });
+  it.each(frameFiles.map((file) => [path.basename(file), file]))(
+    "%s renders it first and mounts no second backdrop",
+    (_name, file) => {
+      const text = readFileSync(file, "utf8");
+      expect(text).toMatch(/<div[^>]*className="home2-page[^"]*"[^>]*>\s*<PortalBentoMain[\s>]/);
+      expect(text).not.toContain("<PortalBackground");
+    },
+  );
 });
 
 // ponytail: a text assertion on the stylesheet, because jsdom does not do

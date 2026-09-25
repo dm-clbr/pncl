@@ -1,249 +1,1199 @@
 /* ==========================================================================
-   State map page: board order, filter chips, directory list, detail surfaces.
-   Loaded after home2.css, which still owns the canvas shell, the zoom stack,
-   the status colours and the page hero. Selectors keep the .home2-page prefix
-   so they outrank that sheet's own 0-2-0 rules.
+   State map: the SVG map card, the small-state rail, the finder (search,
+   filters, count, list), the answer card and the legend. The finder lives in
+   a snap sheet at 620px and below, in normal flow from 621px and in a sticky
+   360px panel from 961px. Loaded after home2.css; selectors that meet a
+   home2.css rule keep the .home2-page prefix so they outrank it.
    ========================================================================== */
 
-/* The directory is first in the DOM, so the 51 states reach a screen reader
-   and a keyboard before the canvas neither can use (MNIT map guidance). order
-   puts the map back above it for a sighted reader. */
-.home2-page .state-map-board {
+/* The desktop panel and card stick, and .home2-page's overflow-x: hidden
+   would make it a scrollport that never scrolls (DESIGN.md, Shell). */
+.home2-page:has(.smap-page) {
+  overflow-x: clip;
+}
+
+.smap-layout {
+  display: grid;
+  gap: var(--portal-gap);
+  min-width: 0;
+}
+
+/* ── Map card ────────────────────────────────────────────────────────────── */
+
+.smap-card {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-}
-
-.home2-page .state-map-board > .state-map-layout {
-  order: 1;
-}
-
-.home2-page .state-map-board > .portal-pane {
-  order: 2;
-}
-
-/* A 260px rail wrapped "District of Columbia" onto three lines at the pane's
-   20px title size. Above 960px only: home2.css drops the map to one column
-   below that, and this sheet loads after it, so an unscoped override would
-   keep reserving the rail's track on a phone and squeeze the canvas to
-   nothing. */
-@media (min-width: 961px) {
-  .home2-page .state-map-layout {
-    grid-template-columns: minmax(0, 1fr) 300px;
-  }
-}
-
-/* Not a <Pane>: it clips a canvas rather than wrapping content. It takes the
-   same glass recipe so the three surfaces on this page read as one system. */
-.home2-page .state-map-visual-panel {
+  min-width: 0;
+  overflow: clip;
   border: 1px solid var(--portal-border);
   border-radius: var(--portal-radius);
   background: var(--portal-pane-sheen), var(--portal-pane-fill);
   box-shadow: var(--portal-pane-shadow);
 }
 
-/* ── Detail ──────────────────────────────────────────────────────────────── */
-
-.home2-page .state-map-detail-body {
+.smap-viz {
+  position: relative;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
+  min-height: 0;
 }
 
-.home2-page .state-map-detail-body p {
-  margin: 0;
-  color: var(--portal-text);
-  font-family: var(--portal-font);
-  font-size: var(--portal-t-body);
-  line-height: 1.55;
+/* The only surface that takes every gesture: pinch, pan, tap. */
+.smap-stage {
+  position: relative;
+  min-height: 0;
+  touch-action: none;
 }
 
-.home2-page .state-map-detail-code {
-  color: var(--accent-bright);
-  font-family: var(--ff-mono);
-  font-size: .72rem;
-  font-weight: 800;
-  letter-spacing: .16em;
-}
-
-/* ── Filter chips ────────────────────────────────────────────────────────── */
-
-.home2-page .state-map-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 14px 0;
-}
-
-/* A bare 44px target around the Chip: the chip keeps its own fill, border and
-   glyph, so a pressed filter is not carried by colour alone. */
-.home2-page .state-map-filter {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: none;
-  cursor: pointer;
-  touch-action: manipulation;
+.smap-svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  -webkit-user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
 
-.home2-page .state-map-filter .portal-chip {
-  transition: box-shadow 120ms var(--portal-ease-out), opacity 120ms var(--portal-ease-out);
+.smap-state {
+  cursor: pointer;
+  transition: opacity 200ms var(--portal-ease-out);
 }
 
-.home2-page .state-map-filter[aria-pressed="false"] .portal-chip {
-  opacity: .72;
+.smap-state[data-dim] {
+  opacity: 0.2;
 }
 
-.home2-page .state-map-filter:hover .portal-chip {
-  opacity: 1;
+.smap-viz[data-loading] .smap-state {
+  cursor: default;
 }
 
-/* Pressed is a ring, not a tint: the four chips already differ by colour, and
-   the ring is the one channel none of them uses. */
-.home2-page .state-map-filter[aria-pressed="true"] .portal-chip {
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, .85);
+/* 1px on screen at every zoom. Two meshes because one edge colour cannot
+   serve fills that sit more than 3:1 apart: dark etched on a bright fill,
+   light on a dark one (DESIGN.md, State map). */
+.smap-edges,
+.smap-hover,
+.smap-selected {
+  fill: none;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
 }
 
-.home2-page .state-map-filter:focus-visible {
+.smap-edges {
+  stroke-width: 1;
+}
+
+.smap-edges.is-dark {
+  stroke: #171a20;
+  stroke-opacity: 0.85;
+}
+
+.smap-edges.is-light {
+  stroke: #f4f0df;
+  stroke-opacity: 0.55;
+}
+
+.smap-hover {
+  stroke: rgba(255, 255, 255, 0.6);
+  stroke-width: 1.5;
+}
+
+.smap-selected {
+  stroke: rgba(255, 255, 255, 0.95);
+  stroke-width: 2.5;
+}
+
+/* Codes and licensed badges. The halo is the state's own fill, drawn under
+   the glyphs by paint-order, so the Pending hatch never cuts a letter. They
+   hide while the camera moves and come back sized for where it stopped. */
+.smap-marks {
+  pointer-events: none;
+  transition: opacity 140ms var(--portal-ease-out);
+}
+
+.smap-viz[data-moving] .smap-marks {
+  opacity: 0;
+  transition: none;
+}
+
+.smap-marks text {
+  font-family: var(--portal-font);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-anchor: middle;
+  dominant-baseline: central;
+  paint-order: stroke;
+  stroke-linejoin: round;
+}
+
+.smap-marks [data-dim] {
+  opacity: 0.2;
+}
+
+/* ── Zoom group ──────────────────────────────────────────────────────────── */
+
+/* In and out fused into one pill with a 1px divider, reset its own square,
+   6px apart, every button 44px. After the mapcn MapControls (21st.dev). The
+   near-black bar fill carries the white glyph at 16.20:1 and the white 0.45
+   border keeps a 3:1 edge on the card and on every state fill. */
+.smap-zoom {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  gap: 6px;
+}
+
+.smap-zoom-pair,
+.smap-zoom-reset {
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 12px;
+  background: var(--portal-bar-fill);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+}
+
+.smap-zoom-pair {
+  display: flex;
+  overflow: clip;
+}
+
+.smap-zoom button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background-color: transparent;
+  color: rgba(255, 255, 255, 0.95);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 150ms var(--portal-ease-out), opacity 150ms var(--portal-ease-out);
+}
+
+/* Two classes deep: `.smap-zoom button` above clears the border and the
+   fill for the buttons inside the pill, and reset is itself a button. */
+.smap-zoom .smap-zoom-reset {
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background-color: var(--portal-bar-fill);
+}
+
+.smap-zoom .smap-zoom-reset:hover {
+  background-color: rgb(42, 36, 31);
+}
+
+.smap-zoom button:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.smap-zoom button:active {
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
+.smap-zoom button:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Inset, so the pill's clip does not cut the ring. */
+.smap-zoom button:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: -4px;
+  border-radius: 10px;
+}
+
+.smap-zoom-divider {
+  flex: none;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* ── Hover readout (fine pointers) ───────────────────────────────────────── */
+
+.smap-readout {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-sizing: border-box;
+  width: 160px;
+  padding: 8px 10px;
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+  font-family: var(--portal-font);
+  pointer-events: none;
+}
+
+.smap-readout-name {
+  color: var(--portal-text-strong);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.smap-readout-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.smap-readout-licensed {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #9ccdf5;
+  font-size: var(--portal-t-micro);
+  font-weight: 600;
+}
+
+/* ── Small-state rail ────────────────────────────────────────────────────── */
+
+.smap-rail {
+  display: flex;
+  flex: none;
+  gap: 6px;
+  padding: 6px 12px 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  touch-action: pan-x;
+}
+
+.smap-rail.is-placeholder {
+  height: 62px;
+  box-sizing: border-box;
+}
+
+.smap-rail::-webkit-scrollbar {
+  display: none;
+}
+
+.smap-rail-item {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  box-sizing: border-box;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.32);
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color 150ms var(--portal-ease-out), background-color 150ms var(--portal-ease-out);
+}
+
+.smap-rail-item:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.smap-rail-item[aria-current="true"] {
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.95);
+}
+
+.smap-rail-item:focus-visible {
   outline: var(--portal-focus-ring);
   outline-offset: var(--portal-focus-offset);
 }
 
-/* ── Directory ───────────────────────────────────────────────────────────── */
-
-.home2-page .state-map-directory-note {
-  max-width: 54ch;
-  margin: 0;
-  color: var(--portal-text);
-  font-family: var(--portal-font);
-  font-size: var(--portal-t-body);
-  line-height: 1.5;
+/* The map fill in miniature. The hairline keeps Inactive's near-black swatch
+   visible on the dark button. */
+.smap-swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
 }
 
-.home2-page .state-map-list {
+.smap-swatch.is-hatched {
+  background-image: repeating-linear-gradient(-45deg, #7a5c14 0 1.6px, transparent 1.6px 4px);
+}
+
+.smap-swatch.is-large {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+}
+
+.smap-swatch.is-large.is-hatched {
+  background-image: repeating-linear-gradient(-45deg, #7a5c14 0 2.4px, transparent 2.4px 6px);
+}
+
+/* ── Licensed glyph: ring-check on, empty ring off ───────────────────────── */
+
+.smap-license-glyph {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  overflow: visible;
+}
+
+.smap-license-glyph circle {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+.smap-license-glyph.is-on circle {
+  fill: #101318;
+  stroke: #f4f0df;
+}
+
+.smap-license-glyph path {
+  fill: none;
+  stroke: #f4f0df;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ── Notice (live data failed) ───────────────────────────────────────────── */
+
+.smap-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 12px;
+  border: 1px solid rgba(242, 184, 75, 0.45);
+  /* Concentric with the pane it sits flush in: the pane's radius less the
+     14px the panel pads it by (the phone card below pads it by 8). */
+  border-radius: calc(var(--portal-radius) - 14px);
+  background: rgba(0, 0, 0, 0.55);
+  color: #f2b84b;
+  font-family: var(--portal-font);
+}
+
+.smap-notice > svg {
+  flex: none;
+}
+
+.smap-notice-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.smap-notice-copy strong {
+  display: block;
+  color: var(--portal-text-strong);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.smap-notice-copy p {
+  text-wrap: pretty;
+  margin: 2px 0 0;
+  color: var(--portal-text);
+  font-size: var(--portal-t-micro);
+  line-height: 1.4;
+}
+
+.smap-notice-retry {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.smap-notice-retry:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.smap-notice-retry:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+/* ── Sub-page bar's info button ──────────────────────────────────────────── */
+
+.smap-info {
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--portal-text);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.smap-info:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--portal-text-strong);
+}
+
+.smap-info:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: -2px;
+}
+
+/* ── Finder: search, filters, count, list ────────────────────────────────── */
+
+.smap-finder-head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Leading icon in a non-interactive slot, the input padded for it and for
+   the 44px clear on the other side. After the Origin UI search input with
+   icon and clear button (21st.dev), the clear scaled from 36 to 44px. */
+.smap-search {
+  position: relative;
+}
+
+.smap-search .portal-field-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.smap-search .portal-input {
+  padding-left: 40px;
+  padding-right: 44px;
+}
+
+/* One clear button, not two. */
+.smap-search .portal-input::-webkit-search-cancel-button,
+.smap-search .portal-input::-webkit-search-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
+.smap-search-icon {
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  z-index: 1;
+  color: var(--portal-text-faint);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.smap-search-clear {
+  touch-action: manipulation;
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--portal-text);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Crosses in and out rather than popping: scale from 0.25, blur from 4px.
+   Hidden with visibility after the fade, so it never takes a click while
+   there is nothing to clear. */
+.smap-search-clear {
+  opacity: 0;
+  filter: blur(4px);
+  transform: scale(0.25);
+  visibility: hidden;
+  transition:
+    opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+    transform 200ms cubic-bezier(0.2, 0, 0, 1),
+    filter 200ms cubic-bezier(0.2, 0, 0, 1),
+    visibility 0s linear 200ms;
+}
+
+.smap-search-clear[data-shown] {
+  opacity: 1;
+  filter: none;
+  transform: none;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.smap-search-clear:hover {
+  color: var(--portal-text-strong);
+}
+
+.smap-search-clear:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: -4px;
+}
+
+/* Counted filters, 32px items with a 44px hit area at every pointer. The
+   row scrolls sideways and takes only horizontal pans, so a vertical drag on
+   it still moves the sheet; 6px of track padding keeps the grown hit areas
+   inside the scroller, which clips on both axes. After the Cnippet Role
+   Filter Chips (21st.dev). */
+.smap-filters .portal-segmented {
+  padding: 6px 4px;
+  gap: 4px;
+  touch-action: pan-x;
+}
+
+.smap-filters .portal-segment {
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+/* Pick 4 grows the target on coarse pointers only; it grows here at every
+   pointer so a mouse gets the 44px floor too. Items are wider than 44px, so
+   only the height grows, into the track's padding, and neighbours never
+   share a pixel. */
+.smap-filters .portal-segment::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
+.smap-filter-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.smap-filter-count {
+  color: var(--portal-text-faint);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.portal-segment[data-active="true"] .smap-filter-count {
+  color: var(--portal-text);
+}
+
+/* The Chip's own glyphs, without the chip. */
+.smap-glyph {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.smap-glyph.is-active {
+  background: #8be7a8;
+}
+
+.smap-glyph.is-pending {
+  width: 0;
+  height: 10px;
+  border-left: 3px dotted #f5c978;
+  border-radius: 0;
+}
+
+.smap-glyph.is-inactive {
+  width: 8px;
+  height: 1.5px;
+  border-radius: 0;
+  background: var(--portal-text-faint);
+}
+
+.smap-glyph.is-licensed {
+  box-sizing: border-box;
+  border: 1.5px solid #9ccdf5;
+}
+
+.smap-count {
+  margin: 0;
+  padding: 10px 10px 6px;
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-micro);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Each changed digit rolls in its own clipped window. The outgoing digit is
+   a pseudo-element with empty alt text, so the text read out is only ever
+   the final number. After the barvian Number Flow (21st.dev). */
+.smap-digits {
+  display: inline-flex;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.smap-digit {
+  display: inline-block;
+  height: 1.25em;
+  overflow: hidden;
+  line-height: 1.25;
+  vertical-align: bottom;
+}
+
+.smap-digit-col {
+  position: relative;
+  display: block;
+}
+
+.smap-digit-col[data-direction]::before {
+  content: attr(data-prev);
+  content: attr(data-prev) / "";
+  position: absolute;
+  left: 0;
+}
+
+.smap-digit-col[data-direction="up"]::before {
+  top: -100%;
+}
+
+.smap-digit-col[data-direction="down"]::before {
+  top: 100%;
+}
+
+.smap-list {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-/* 18px is the icon slot's width; a two-letter code needs the room. The code is
-   meaningful text, not a glyph, so it holds the 4.5:1 body rung (--portal-text
-   is 4.76:1 on the pane) rather than the 0.60 UI rung the slot defaults to. */
-.home2-page .state-map-list .portal-row-icon {
-  width: 26px;
-  color: var(--portal-text);
-  font-family: var(--ff-mono);
-  font-size: var(--portal-t-micro);
-  font-weight: 700;
-  letter-spacing: .06em;
+/* Leading code, name, trailing chips, and a 3px bar in the status fill as a
+   second cue. After the ssych ui Market Watchlist (21st.dev). */
+.smap-row {
+  position: relative;
 }
 
-.home2-page .state-map-list .portal-row-trail {
-  gap: 6px;
+/* A straight bar, not an inset shadow: the row's 8px corners would bend a
+   shadow into a bracket. */
+.smap-row::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  bottom: 10px;
+  left: 0;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--row-accent);
+  pointer-events: none;
 }
 
-.home2-page .state-map-list .portal-row[aria-current="true"] {
-  background: rgba(255, 255, 255, .1);
-  box-shadow: inset 2px 0 0 var(--accent-bright);
+.smap-row .portal-row {
+  padding-left: 14px;
 }
 
-.home2-page .state-map-profile-note {
-  margin: 16px 0 0;
+.smap-row .portal-row[aria-current="true"] {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.smap-row .portal-row-icon {
+  width: auto;
+  height: auto;
+}
+
+.smap-code {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 28px;
+  height: 20px;
+  padding: 0 4px;
+  border: 1px solid var(--portal-border);
+  border-radius: 5px;
+  background: rgba(0, 0, 0, 0.35);
   color: var(--portal-text);
   font-family: var(--portal-font);
+  font-size: var(--portal-t-micro);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.smap-code.is-large {
+  min-width: 38px;
+  height: 28px;
+  border-radius: 7px;
+  color: var(--portal-text-strong);
+  font-size: var(--portal-t-body);
+}
+
+.smap-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 8px;
+}
+
+.home2-page .smap-empty-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+}
+
+.home2-page .smap-empty-link:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.home2-page .smap-empty-link:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+/* ── Answer card ─────────────────────────────────────────────────────────── */
+
+.smap-detail {
+  font-family: var(--portal-font);
+}
+
+.smap-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 10px;
+}
+
+.smap-detail-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  color: var(--portal-text-strong);
+  font-size: var(--portal-t-large);
+  font-weight: 600;
+  line-height: 1.2;
+  text-wrap: balance;
+}
+
+.smap-detail-title:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+  border-radius: 4px;
+}
+
+.smap-detail-close {
+  touch-action: manipulation;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-right: -8px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--portal-text);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.smap-detail-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--portal-text-strong);
+}
+
+.smap-detail-close:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: -2px;
+}
+
+/* Label left, value right, the description under the value. After the corr
+   Key Value List (21st.dev). Values set left in their own column rather than
+   flush right: in the 360px panel a flush-right sentence wraps ragged on
+   both edges. */
+.smap-kv {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.smap-kv-row {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid var(--portal-rule);
+}
+
+.smap-kv-row dt {
+  color: var(--portal-text);
+  font-size: var(--portal-t-body);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.smap-kv-row dd {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  margin: 0;
+}
+
+.smap-kv-note {
+  text-wrap: pretty;
+  margin: 6px 0 0;
+  color: var(--portal-text);
+  font-size: var(--portal-t-body);
+  line-height: 1.45;
+}
+
+.smap-kv-license {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  color: var(--portal-text-strong);
+  font-size: var(--portal-t-body);
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.smap-kv-license .smap-license-glyph {
+  margin-top: 1px;
+  color: var(--portal-text);
+}
+
+.smap-kv-number {
+  display: block;
+  margin-top: 2px;
+  color: var(--portal-text);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.smap-kv-date {
+  color: var(--portal-text-faint);
+  font-size: var(--portal-t-body);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.smap-kv-action {
+  align-self: stretch;
+  margin-top: 8px;
+}
+
+/* A ListRow link would take the page's colour through .home2-page a. */
+.home2-page .smap-kv-action a.portal-row {
+  border: 1px solid var(--portal-border);
+  color: var(--portal-text-strong);
+}
+
+/* ── Legend ──────────────────────────────────────────────────────────────── */
+
+.smap-legend {
+  font-family: var(--portal-font);
+}
+
+.smap-legend p {
+  text-wrap: pretty;
+  margin: 0 0 14px;
+  color: var(--portal-text);
   font-size: var(--portal-t-body);
   line-height: 1.5;
 }
 
+.smap-legend ul {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.smap-legend li {
+  display: grid;
+  grid-template-columns: 22px auto;
+  align-items: center;
+  gap: 6px 12px;
+  color: var(--portal-text);
+  font-size: var(--portal-t-body);
+  line-height: 1.45;
+}
+
+.smap-legend li > span:last-child {
+  grid-column: 2;
+}
+
+.smap-legend li .portal-chip {
+  justify-self: start;
+}
+
+.smap-legend-badge {
+  display: inline-flex;
+  justify-content: center;
+}
+
+.smap-legend-badge .smap-license-glyph {
+  width: 20px;
+  height: 20px;
+}
+
+/* ── Phone: 620px and below ──────────────────────────────────────────────── */
+
+@media (max-width: 620px) {
+  /* The page itself does not scroll: main is exactly the viewport, and the
+     map card fills what the header, the sub-page bar and the sheet's peek
+     leave. The sheet and the tab bar are fixed over the reserved bottom. */
+  .home2-page:has(.smap-page) > main.portal-bento {
+    box-sizing: border-box;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+    padding-bottom: calc(56px + env(safe-area-inset-bottom) + var(--smap-peek, 152px) + var(--portal-gap));
+  }
+
+  .smap-page {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .smap-layout {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .smap-card {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .smap-card > .smap-notice {
+    margin: 8px 8px 0;
+    border-radius: calc(var(--portal-radius) - 8px);
+  }
+
+  /* Decoration only, and the width it takes wraps the copy a line deeper
+     over a map that has no height to give. */
+  .smap-card > .smap-notice > svg {
+    display: none;
+  }
+
+  /* A 56px control band on top holds the zoom group, so nothing sits on the
+     map at zoom 1. */
+  .smap-viz {
+    flex: 1 1 auto;
+    padding-top: 56px;
+  }
+
+  .smap-stage {
+    flex: 1 1 auto;
+  }
+
+  .smap-zoom {
+    top: 6px;
+    right: 12px;
+  }
+
+  .home2-page:has(.smap-page) > .snap-sheet {
+    top: var(--smap-sheet-top, 134px);
+    bottom: calc(56px + env(safe-area-inset-bottom));
+  }
+
+  .snap-sheet .smap-finder-head {
+    padding: 0 16px 12px;
+  }
+
+  .snap-sheet .smap-finder-body {
+    padding: 0 8px calc(16px + env(safe-area-inset-bottom));
+  }
+
+  /* 8px under the last row, not 16: the tallest card (unlicensed, with its
+     Add a license row) lands exactly on the 50dvh cap at 375x667. */
+  .smap-sheet-detail {
+    padding: 0 16px 8px;
+  }
+}
+
+/* ── Tablet and desktop: 621px and up ────────────────────────────────────── */
+
 @media (min-width: 621px) {
-  /* Two columns of rows above the fold on a desktop; 51 single-file rows would
-     push the map off the top of the screen. */
-  .home2-page .state-map-list {
+  .smap-stage {
+    aspect-ratio: 1028 / 606;
+  }
+
+  .smap-zoom {
+    right: 12px;
+    bottom: 12px;
+    flex-direction: column;
+  }
+
+  .smap-zoom-pair {
+    flex-direction: column;
+  }
+
+  .smap-zoom-divider {
+    width: auto;
+    height: 1px;
+  }
+
+  .smap-panel {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: 14px;
+    border: 1px solid var(--portal-border);
+    border-radius: var(--portal-radius);
+    background: var(--portal-pane-sheen), var(--portal-pane-fill);
+    box-shadow: var(--portal-pane-shadow);
+    font-family: var(--portal-font);
+  }
+
+  .smap-panel > .smap-notice {
+    margin-bottom: 12px;
+  }
+
+  .smap-panel .smap-finder-head {
+    padding-bottom: 4px;
+  }
+
+  /* The card sits on a recessed fill inside the translucent pane: that fill
+     is what holds the faint tier on the Updated date at 4.66:1. */
+  .smap-panel-detail {
+    margin: 8px 0 4px;
+    padding: 14px 14px 2px;
+    /* Flush inside the panel's 14px padding: concentric with it. */
+    border-radius: calc(var(--portal-radius) - 14px);
+    background: rgba(0, 0, 0, 0.28);
+  }
+}
+
+/* Tablet: the map card on top, the finder below it in normal flow. */
+@media (min-width: 621px) and (max-width: 960px) {
+  .smap-card {
+    order: -1;
+  }
+
+  .smap-list {
     columns: 2;
     column-gap: 12px;
   }
 
-  .home2-page .state-map-list > li {
+  .smap-list > li {
     break-inside: avoid;
   }
 }
 
-/* Requirement 7.4: the canvas keeps the top of the viewport against the 40%
-   half sheet. The card is sized by the atlas ratio and only capped at 60dvh.
-   Forcing it to 60dvh instead letterboxed the map: the orthographic camera
-   fits the atlas to the narrower axis, so the extra height was empty box, and
-   with the zoom gutter also taking 68px the drawn map came out smaller than
-   the one the page had before. Pinned: the directory sits below the map, so
-   without sticky a pick made from the list opened the sheet with the map
-   scrolled off screen. */
-@media (max-width: 620px) {
-  /* While the half sheet is open the page cannot scroll, so the lede would
-     hold the top of the viewport and leave the map a sliver. It is the one
-     block on the page the open detail makes redundant. */
-  body:has(dialog.portal-sheet[open]) .home2-page .state-map-note {
-    display: none;
+/* Desktop: the finder is a sticky 360px panel, as tall as the viewport,
+   scrolling inside; the map takes the rest, capped at the viewport height. */
+@media (min-width: 961px) {
+  .smap-layout {
+    grid-template-columns: 360px minmax(0, 1fr);
+    align-items: start;
   }
 
-  /* home2.css gives .home2-page overflow-x: hidden, which makes it a scroll
-     container that never scrolls, and a sticky child of one of those never
-     sticks. clip stops the sideways overflow without the scroll container.
-     Scoped to this page by :has so no other home2 page changes. */
-  .home2-page:has(.state-map-board) {
-    overflow-x: clip;
-  }
-
-  .home2-page .state-map-board > .state-map-layout {
+  .smap-panel {
     position: sticky;
-    top: 0;
-    z-index: 1;
+    top: 14px;
+    max-height: calc(100vh - 28px);
+    max-height: calc(100dvh - 28px);
   }
 
-  .home2-page .state-map-visual-panel {
-    display: flex;
-    max-height: 60dvh;
-    /* Opaque while pinned: the pane's own 0.68 fill let the directory rows
-       scrolling under the map read straight through it. Same hue, alpha 1. */
-    background-image: var(--portal-pane-sheen);
-    background-color: rgb(28, 22, 17);
-  }
-
-  /* WCAG 2.4.11 Focus Not Obscured: the pinned card is the canvas at the atlas
-     ratio plus the 66px zoom row, capped at 60dvh, so a target below it clears
-     whichever is smaller plus the 8px board gap. 100vw overstates the canvas
-     by the page gutters, which errs toward scrolling too far rather than
-     leaving a focused row under the card. */
-  .home2-page .state-map-board > .portal-pane :is(.portal-row, .portal-input, .state-map-filter) {
-    scroll-margin-top: calc(min(60dvh, 100vw * 610 / 975 + 66px) + 8px);
-  }
-
-  /* The zoom stack comes off the map and sits in a row beneath it. Overlaid,
-     it needed a 68px gutter so it could not swallow a tap on the east coast,
-     and that gutter was the single biggest cut to the drawn map on a phone.
-     Under the canvas it costs 66px of height instead, which the card no longer
-     had to spare when it was letterboxing. */
-  .home2-page .state-map-canvas-shell {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding-right: 0;
-    aspect-ratio: auto;
+  .smap-panel .smap-finder-body {
+    flex: 1 1 auto;
     min-height: 0;
+    margin: 0 -6px;
+    padding: 0 6px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
-  .home2-page .state-map-canvas {
-    height: auto;
-    aspect-ratio: 975 / 610;
+  .smap-card {
+    position: sticky;
+    top: 14px;
   }
 
-  .home2-page .state-map-zoom {
-    position: static;
-    flex-direction: row;
-    justify-content: flex-end;
-    padding: 0 12px 12px;
+  .smap-stage {
+    max-height: calc(100dvh - 28px - 62px);
+  }
+}
+
+/* Tactile press: 0.96 on the free-standing buttons. The zoom pair keeps its
+   fill change instead, since one half of a fused pill shrinking pulls away
+   from the other. */
+.smap-rail-item,
+.smap-zoom .smap-zoom-reset,
+.smap-info,
+.smap-detail-close,
+.smap-notice-retry {
+  transition-property: background-color, border-color, color, transform;
+  transition-duration: 150ms;
+  transition-timing-function: var(--portal-ease-out);
+}
+
+.smap-rail-item:active,
+.smap-zoom .smap-zoom-reset:active,
+.smap-info:active,
+.smap-detail-close:active,
+.smap-notice-retry:active {
+  transform: scale(0.96);
+}
+
+/* Nothing on this page moves under reduced motion. The camera, the sheet,
+   the card swap and the digit roll check it in script; these are the CSS
+   transitions. */
+@media (prefers-reduced-motion: reduce) {
+  .smap-state,
+  .smap-marks,
+  .smap-zoom button,
+  .smap-rail-item,
+  .smap-info,
+  .smap-detail-close,
+  .smap-notice-retry,
+  .smap-search-clear {
+    transition: none;
+  }
+
+  .smap-rail-item:active,
+  .smap-zoom .smap-zoom-reset:active,
+  .smap-info:active,
+  .smap-detail-close:active,
+  .smap-notice-retry:active {
+    transform: none;
   }
 }
