@@ -213,8 +213,8 @@
   display: flex;
   align-items: center;
   gap: calc(var(--portal-unit) * 2);
-  min-height: 44px;
-  font-size: var(--portal-t-body);
+  min-height: var(--portal-control-h);
+  font-size: var(--portal-control-fs);
   font-weight: 600;
   cursor: pointer;
   color: var(--portal-text-strong);
@@ -254,13 +254,13 @@
   align-items: center;
   justify-content: center;
   gap: calc(var(--portal-unit) * 2);
-  min-height: 44px;
+  min-height: var(--portal-control-h);
   padding: 0 calc(var(--portal-unit) * 4);
   border: 1px solid var(--portal-border);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.06);
   font-family: var(--portal-font);
-  font-size: var(--portal-t-body);
+  font-size: var(--portal-control-fs);
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
@@ -301,8 +301,8 @@
   display: inline-flex;
   align-items: center;
   gap: calc(var(--portal-unit) * 1.5);
-  min-height: 44px;
-  font-size: var(--portal-t-body);
+  min-height: var(--portal-control-h);
+  font-size: var(--portal-control-fs);
   text-decoration: underline;
   text-underline-offset: 3px;
   color: var(--portal-text);

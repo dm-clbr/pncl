@@ -96,14 +96,14 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 44px;
+  min-height: var(--portal-control-h);
   padding: 0 14px;
   border: 1px solid var(--portal-border);
-  border-radius: 10px;
+  border-radius: var(--portal-control-radius);
   background: rgba(0, 0, 0, 0.28);
   color: var(--portal-text-strong);
   font-family: var(--portal-font);
-  font-size: var(--portal-t-body);
+  font-size: var(--portal-control-fs);
   font-weight: 600;
   cursor: pointer;
   transition: border-color 120ms var(--portal-ease-out);
@@ -156,11 +156,27 @@
 }
 
 .home2-page .portal-profile-meta .portal-profile-tier-toggle {
-  min-height: 44px;
-  border-radius: 10px;
+  min-height: var(--portal-control-h);
+  border-radius: var(--portal-control-radius);
   color: var(--portal-text-strong);
   font-family: var(--portal-font);
-  font-size: var(--portal-t-body);
+  font-size: var(--portal-control-fs);
+  gap: 8px;
+  padding: 0 14px;
+}
+
+/* home2.css pins the label at 9px; the button's own size carries it here. */
+.home2-page .portal-profile-meta .portal-profile-tier-toggle span {
+  font-size: inherit;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: inherit;
+}
+
+.home2-page .portal-profile-meta .portal-profile-tier-toggle svg {
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
 }
 
 /* ── Read-only rows ─────────────────────────────────────────────────────── */
@@ -320,10 +336,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: var(--portal-control-h);
+  height: var(--portal-control-h);
   border: 1px solid var(--portal-border);
-  border-radius: 10px;
+  border-radius: var(--portal-control-radius);
   background: rgba(0, 0, 0, 0.28);
   color: var(--portal-text-strong);
   cursor: pointer;
@@ -520,14 +536,14 @@
 
 .home2-page .portal-profile-save {
   flex: 0 0 auto;
-  min-height: 44px;
+  min-height: var(--portal-control-h);
   padding: 0 20px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: var(--portal-control-radius);
   background: rgba(255, 255, 255, 0.92);
   color: #161616;
   font-family: var(--portal-font);
-  font-size: var(--portal-t-body);
+  font-size: var(--portal-control-fs);
   font-weight: 700;
   cursor: pointer;
 }

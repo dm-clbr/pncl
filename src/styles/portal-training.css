@@ -195,13 +195,13 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 44px;
+  min-height: var(--portal-control-h);
   padding: 0 calc(var(--portal-unit) * 4);
   border: 1px solid transparent;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.95);
   font-family: var(--portal-font);
-  font-size: var(--portal-t-body);
+  font-size: var(--portal-control-fs);
   font-weight: 700;
   cursor: pointer;
   touch-action: manipulation;
@@ -227,7 +227,7 @@
 .ptr .ptr-done {
   display: flex;
   align-items: center;
-  min-height: 44px;
+  min-height: var(--portal-control-h);
   margin: 0;
 }
 

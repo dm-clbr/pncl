@@ -131,8 +131,8 @@ body:has(dialog.portal-sheet[open]) {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 44px;
-  height: 44px;
+  width: var(--portal-control-h);
+  height: var(--portal-control-h);
   padding: 0;
   border: 0;
   border-radius: var(--portal-radius-inner);
@@ -382,7 +382,7 @@ button.portal-step-inner:hover .portal-step-num {
   width: 100%;
   /* 44px floor is the tap target; adjacent rows are therefore 8px apart at
      their centres of gravity without a spacer. */
-  min-height: 44px;
+  min-height: var(--portal-control-h);
   margin: 0;
   padding: calc(var(--portal-unit) * 1.5) calc(var(--portal-unit) * 2.5);
   border: 0;
@@ -392,7 +392,7 @@ button.portal-step-inner:hover .portal-step-num {
   background: none;
   color: var(--portal-text-strong);
   font-family: var(--portal-font);
-  font-size: var(--portal-t-body);
+  font-size: var(--portal-control-fs);
   font-weight: 500;
   line-height: 1.35;
   text-align: left;
@@ -422,14 +422,14 @@ button.portal-row:hover {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: 18px;
-  height: 18px;
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
   color: var(--portal-text-faint);
 }
 
 .portal-row-icon svg {
-  width: 18px;
-  height: 18px;
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
 }
 
 .portal-row-copy {
@@ -616,7 +616,7 @@ button.portal-row:hover .portal-row-trail {
 
 .portal-skeleton.is-row {
   width: 100%;
-  height: 44px;
+  height: var(--portal-control-h);
   /* Matches .portal-row, the shape this stands in for. */
   border-radius: 8px;
 }
@@ -681,10 +681,10 @@ button.portal-row:hover .portal-row-trail {
   display: block;
   box-sizing: border-box;
   width: 100%;
-  min-height: 44px;
+  min-height: var(--portal-control-h);
   padding: 0 12px;
   border: 1px solid var(--portal-border);
-  border-radius: 10px;
+  border-radius: var(--portal-control-radius);
   background-color: rgba(0, 0, 0, 0.28);
   color: var(--portal-text-strong);
   font-family: var(--portal-font);
@@ -826,14 +826,14 @@ button.portal-row:hover .portal-row-trail {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  min-height: 44px;
+  min-height: var(--portal-control-h);
   padding: 0 14px;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--portal-control-radius);
   background: none;
   color: var(--portal-text-faint);
   font-family: inherit;
-  font-size: var(--portal-t-body);
+  font-size: var(--portal-control-fs);
   font-weight: 600;
   line-height: 1.2;
   white-space: nowrap;
@@ -973,4 +973,36 @@ button.portal-row:hover .portal-row-trail {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+/* ── Control icons ──────────────────────────────────────────────────────── */
+
+/* Every button family sets its icon's size in the page's JSX (lucide's size
+   prop writes width and height attributes), mostly 14 to 16px. CSS beats a
+   presentation attribute, so one rule puts them all on the control token:
+   18px on a desktop, 20px on a phone, beside 16px text in a 52px control. */
+:is(
+  .portal-profile-btn,
+  .portal-profile-save,
+  .portal-profile-iconbtn,
+  .portal-profile-copy,
+  .ptools-cta,
+  .ptools-search-clear,
+  .pforms-pager-btn,
+  .pforms-action,
+  .pforms-submit,
+  .pcal-btn,
+  .pcal-link,
+  .ptr-btn,
+  .pauth-btn,
+  .pbanner-link,
+  .pbanner-dismiss,
+  .portal-sheet-close,
+  .portal-row-trail,
+  .portal-empty-action a,
+  .portal-empty-action button
+) svg:not(.animate-spin) {
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
+  flex-shrink: 0;
 }

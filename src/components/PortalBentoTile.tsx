@@ -88,7 +88,12 @@ interface MenuBox {
 function measure(card: HTMLElement, menuHeight: number): MenuBox {
   const r = card.getBoundingClientRect();
   const width = Math.max(r.width, MENU_MIN_WIDTH);
-  const roomBelow = window.innerHeight - r.bottom - MENU_GAP - MENU_EDGE_PAD;
+  // On a phone the floating tab bar owns the bottom of the screen, so the
+  // menu's floor is the bar's top edge. Above 620px the bar is display: none
+  // and measures 0 tall, which falls back to the window.
+  const nav = document.querySelector(".portal-bottom-nav")?.getBoundingClientRect();
+  const floor = nav && nav.height > 0 ? nav.top : window.innerHeight;
+  const roomBelow = floor - r.bottom - MENU_GAP - MENU_EDGE_PAD;
   const roomAbove = r.top - MENU_GAP - MENU_EDGE_PAD;
 
   const below = menuHeight <= roomBelow || roomBelow >= roomAbove;

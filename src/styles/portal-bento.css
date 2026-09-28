@@ -231,9 +231,9 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  min-height: 44px;
+  min-height: var(--portal-control-h);
   padding: 0 4px;
-  font-size: 13px;
+  font-size: var(--portal-control-fs);
   font-weight: 600;
   line-height: 1;
   color: rgba(255, 255, 255, 0.95);
@@ -254,12 +254,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: var(--portal-control-h);
+  height: var(--portal-control-h);
   margin-right: -14px;
   padding: 0;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--portal-control-radius);
   background: none;
   color: rgba(255, 255, 255, 0.62);
   cursor: pointer;
@@ -391,25 +391,44 @@
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* Admin console and Sign out read as buttons, outlined rather than filled so
+   the footer stays quiet. They sit on the vignette's darkest region. */
 .portal-bento-footer-link {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 44px;
-  padding: 0;
-  border: none;
-  background: none;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  min-height: var(--portal-control-h);
+  box-sizing: border-box;
+  padding: 0 18px;
+  border: 1px solid var(--portal-border);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--portal-text);
+  font-family: inherit;
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  letter-spacing: 0;
   text-decoration: none;
   cursor: pointer;
-  transition: color 0.18s var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    color 0.18s var(--ease-out),
+    border-color 0.18s var(--ease-out),
+    transform 0.16s var(--ease-out);
+}
+
+.portal-bento-footer-link svg {
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
 }
 
 .portal-bento-footer-link:hover {
+  border-color: rgba(255, 255, 255, 0.32);
   color: var(--t-primary);
+}
+
+.portal-bento-footer-link:active {
+  transform: scale(0.97);
 }
 
 .portal-bento-footer-link:focus-visible {

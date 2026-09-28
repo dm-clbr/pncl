@@ -579,21 +579,45 @@ button.ptile-action {
   gap: calc(var(--u) * 2);
 }
 
+/* The caret is the tile's open affordance, so it reads as a control: a
+   round chip rather than a bare glyph. The glyph turns, the chip stays. */
 .ptile-caret {
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
   align-self: center;
-  color: var(--portal-text-faint);
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--portal-border);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--portal-text);
   flex-shrink: 0;
-  transition: transform 200ms var(--ease-out), color 200ms var(--ease-out);
+  transition:
+    background 200ms var(--ease-out),
+    border-color 200ms var(--ease-out),
+    color 200ms var(--ease-out);
+}
+
+.ptile-caret svg {
+  width: 18px;
+  height: 18px;
+  transition: transform 240ms var(--ease-out);
 }
 
 .ptile.is-actionable:hover .ptile-caret {
+  border-color: rgba(255, 255, 255, 0.32);
   color: var(--portal-text-strong);
 }
 
 .ptile.is-open .ptile-caret {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--portal-text-strong);
+}
+
+.ptile.is-open .ptile-caret svg {
   transform: rotate(180deg);
-  color: var(--portal-accent);
 }
 
 /* ── Menu ───────────────────────────────────────────────────────────────── */
@@ -734,7 +758,7 @@ button.ptile-action {
 }
 
 .ptile-menu-title {
-  font-size: var(--t-label);
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -742,7 +766,7 @@ button.ptile-action {
 }
 
 .ptile-menu-count {
-  font-size: var(--t-label);
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.1em;
   font-variant-numeric: tabular-nums;
@@ -792,14 +816,29 @@ button.ptile-action {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: calc(var(--u) * 2);
-  padding: 9px 10px;
-  border-radius: 9px;
-  font-size: var(--t-body);
+  gap: calc(var(--u) * 3);
+  min-height: var(--portal-control-h);
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border-radius: var(--portal-control-radius);
+  font-size: var(--portal-control-fs);
   font-weight: 500;
   line-height: 1.35;
   color: rgba(255, 255, 255, 0.86);
   transition: background 120ms var(--ease-out), color 120ms var(--ease-out);
+}
+
+/* A row that wraps a link hands its box to the link: the li keeps no
+   padding and no floor of its own, or the two stack into a 70px row. */
+.ptile-menu .ptile-reveal-list li:has(> .ptile-link),
+.ptile-menu .ptile-reveal-list li:has(> .portal-row) {
+  min-height: 0;
+  padding: 0;
+}
+
+.ptile-menu .ptile-reveal-list li > .ptile-link,
+.ptile-menu .ptile-reveal-list li > .portal-row {
+  flex: 1 1 auto;
 }
 
 .ptile-menu .ptile-link:hover,

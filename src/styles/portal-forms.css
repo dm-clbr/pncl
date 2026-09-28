@@ -142,15 +142,15 @@
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  min-height: 44px;
+  min-height: var(--portal-control-h);
   min-width: 44px;
   padding: 0 12px;
   border: 1px solid var(--portal-border);
-  border-radius: 10px;
+  border-radius: var(--portal-control-radius);
   background: rgba(0, 0, 0, 0.28);
   color: var(--portal-text-strong);
   font-family: inherit;
-  font-size: var(--portal-t-body);
+  font-size: var(--portal-control-fs);
   font-weight: 600;
   cursor: pointer;
 }
@@ -212,14 +212,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
+  min-height: var(--portal-control-h);
   padding: 0 18px;
   border: 1px solid rgba(255, 255, 255, 0.24);
-  border-radius: 10px;
+  border-radius: var(--portal-control-radius);
   background: rgba(255, 255, 255, 0.12);
   color: var(--portal-text-strong);
   font-family: inherit;
-  font-size: var(--portal-t-body);
+  font-size: var(--portal-control-fs);
   font-weight: 600;
   cursor: pointer;
 }
@@ -308,12 +308,12 @@
   grid-template-columns: 20px 1fr;
   align-items: start;
   gap: 12px;
-  min-height: 44px;
+  min-height: var(--portal-control-h);
   padding: 10px 12px;
   border: 1px solid var(--portal-rule);
   border-radius: 10px;
   background: rgba(0, 0, 0, 0.28);
-  font-size: var(--portal-t-body);
+  font-size: var(--portal-control-fs);
   line-height: 1.5;
   color: var(--portal-text);
   cursor: pointer;
@@ -331,14 +331,14 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 44px;
+  min-height: var(--portal-control-h);
   padding: 0 18px;
   border: 1px solid rgba(255, 255, 255, 0.24);
-  border-radius: 10px;
+  border-radius: var(--portal-control-radius);
   background: rgba(255, 255, 255, 0.12);
   color: var(--portal-text-strong);
   font-family: inherit;
-  font-size: var(--portal-t-body);
+  font-size: var(--portal-control-fs);
   font-weight: 600;
   cursor: pointer;
 }

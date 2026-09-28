@@ -208,10 +208,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
+  min-height: var(--portal-control-h);
   padding: 0 calc(var(--portal-unit) * 4);
   border: 1px solid var(--portal-border);
-  border-radius: 10px;
+  border-radius: var(--portal-control-radius);
   background: rgba(255, 255, 255, 0.04);
   color: var(--portal-text);
   font-family: var(--portal-font);
@@ -254,11 +254,11 @@
   align-items: center;
   justify-content: space-between;
   gap: calc(var(--portal-unit) * 2);
-  min-height: 44px;
+  min-height: var(--portal-control-h);
   padding: 0 calc(var(--portal-unit) * 2);
   border-radius: 8px;
   font-family: var(--portal-font);
-  font-size: var(--portal-t-body);
+  font-size: var(--portal-control-fs);
   font-weight: 600;
   color: var(--portal-text-strong);
   cursor: pointer;
