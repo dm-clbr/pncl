@@ -7,6 +7,7 @@ import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 import "@/styles/home2.css";
 import "@/styles/onboarding.css";
+import "@/styles/portal-admin.css";
 
 type PreviewPhase = "form" | "complete";
 

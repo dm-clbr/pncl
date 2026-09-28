@@ -32,6 +32,7 @@ import PNCLLogo from "@/components/PNCLLogo";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdminAssist, isGenesisAdmin } from "@/lib/roles";
 import "@/styles/home2.css";
+import "@/styles/portal-admin.css";
 
 const ADMIN_SIDEBAR_STORAGE_KEY = "pncl.admin.sidebar.collapsed";
 const ADMIN_MOBILE_QUERY = "(max-width: 899px)";

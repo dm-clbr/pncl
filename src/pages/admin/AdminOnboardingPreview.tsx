@@ -4,6 +4,7 @@ import { ArrowLeft, RotateCcw } from "lucide-react";
 import AgentOnboarding from "@/pages/AgentOnboarding";
 import { clearAllPreviewContractSessions } from "@/lib/onboarding-contract";
 import { trackPageView } from "@/lib/analytics";
+import "@/styles/portal-admin.css";
 
 export default function AdminOnboardingPreview() {
   const navigate = useNavigate();
