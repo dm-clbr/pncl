@@ -1854,6 +1854,9 @@
     min-height: 44px;
     padding: 10px 0 10px calc(var(--admin-cell-label) + 12px);
     border-bottom: 1px solid var(--portal-rule);
+    /* A step under the 16px control text, so a work email fits the value
+       column on one line. */
+    font-size: 15px;
     text-align: left;
     overflow-wrap: anywhere;
   }
