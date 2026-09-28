@@ -18,52 +18,100 @@
 /* ── Backdrop ────────────────────────────────────────────────── */
 
 /* The shared gradient layer, mounted by PortalBackground as the first child of
-   the page wrapper. Fixed rather than absolute: every portal page scrolls past
-   one viewport and the gradient should not scroll with it. Blur and overscale
-   repeat .portal-bento-canvas so the dashboard and the rest of the portal read
-   as one surface, and the overscale keeps the blurred edge outside the frame. */
+   the page wrapper. It reproduces the dashboard's frame (.portal-bento in
+   portal-bento.css) so a page off the dashboard cannot look different from
+   it: the same base, the same page-tall canvas under the same blur and
+   overscale, the same vignette through --portal-vignette. Absolute over the
+   whole page rather than fixed to the viewport, because that is what the
+   dashboard does, and the gradient's composition follows the layer's shape.
+   It clips its own overscale; .home2-page's overflow-x: hidden makes the
+   wrapper a scroll container, and an overhang left to it would scroll. */
 .portal-backdrop {
-  position: fixed;
+  position: absolute;
   inset: 0;
   z-index: 0;
+  overflow: clip;
   pointer-events: none;
+  background: var(--portal-base);
+}
+
+.portal-backdrop-canvas {
+  position: absolute;
+  inset: 0;
   filter: blur(32px);
   transform: scale(1.16);
+  will-change: transform;
+}
+
+.portal-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--portal-vignette);
 }
 
 /* Half the blur radius on phones and touch devices: the canvas already runs at
    0.5 dpr there and the upscale supplies the softness the radius gives up. */
 @media (pointer: coarse), (max-width: 620px) {
-  .portal-backdrop {
+  .portal-backdrop-canvas {
     filter: blur(16px);
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .portal-backdrop-canvas {
+    will-change: auto;
+  }
+}
+
 /* Mounting the canvas is not enough. A portal page paints an opaque fill twice
-   over the fixed layer: .home2-page:has(.portal-dash) on the wrapper and
+   over the layer: .home2-page:has(.portal-dash) on the wrapper and
    .home2-page .portal-dash on <main>, both in home2.css. Left alone the
    gradient renders into a layer nobody can see. So the wrapper keeps the dark
-   base the gradient's own dark stops sit on (and the fallback when WebGL2 is
-   missing), <main> goes transparent, and the page content is raised over the
-   layer. position: relative carries the raise on its own and there is
-   deliberately NO z-index here: .portal-backdrop is z-index: 0 and precedes
-   <main> in tree order, so the two paint in the same step and tree order puts
-   <main> on top. Adding a z-index would make <main> a stacking context and
-   trap every fixed overlay rendered inside it. The ICA signature modal is one:
-   .ica-signature-modal-backdrop is z-index: 1100 (onboarding.css) but sits
-   inside <main> on PortalIca, so a stacking context here drops it under the
-   z-index: 50 tab bar at 620px and leaves the bar tappable over a legal
-   signature. The selector is 0-2-1 and clears .home2-page .portal-dash at
-   0-2-0. Only <main> is raised: .grain and .portal-bottom-nav are already
-   fixed with their own z-index, and position: relative would break both. */
+   base (the fallback when WebGL2 is missing), holds the absolute layer and
+   stretches to the viewport on a short page, <main> goes transparent, and the
+   page content is raised over the layer. position: relative carries the raise
+   on its own and there is deliberately NO z-index on <main>: .portal-backdrop
+   is z-index: 0 and precedes <main> in tree order, so the two paint in the
+   same step and tree order puts <main> on top. Adding a z-index would make
+   <main> a stacking context and trap every fixed overlay rendered inside it.
+   The ICA signature modal is one: .ica-signature-modal-backdrop is z-index:
+   1100 (onboarding.css) but sits inside <main> on PortalIca, so a stacking
+   context here drops it under the z-index: 50 tab bar at 620px and leaves the
+   bar tappable over a legal signature. The selector is 0-2-1 and clears
+   .home2-page .portal-dash at 0-2-0. Only <main> is raised: .grain and
+   .portal-bottom-nav are already fixed with their own z-index, and position:
+   relative would break both. */
 .home2-page:has(> .portal-backdrop) {
-  background: var(--ink);
+  position: relative;
+  min-height: 100dvh;
+  background: var(--portal-base);
 }
 
 .home2-page:has(> .portal-backdrop) > main,
 .home2-page:has(> .portal-backdrop) > .portal-dash {
   position: relative;
   background: transparent;
+}
+
+/* The dashboard's frame measurements too: its top padding, its 1180px measure
+   and its gutter (.portal-bento and .portal-bento-wrap in portal-bento.css),
+   so the masthead sits in the same place on every page and does not jump
+   when the tab bar switches pages. 0-3-1 clears home2.css's
+   .home2-page .portal-dash and .home2-page .carrier-sheet-wrap at 0-2-0. */
+.home2-page:has(> .portal-backdrop) > main.portal-dash {
+  padding-top: 22px;
+}
+
+.home2-page:has(> .portal-backdrop) > main > .wrap {
+  --pad: clamp(14px, 3vw, 28px);
+  max-width: 1180px;
+}
+
+@media (max-width: 620px) {
+  .home2-page:has(> .portal-backdrop) > main.portal-dash {
+    padding-top: 16px;
+  }
 }
 
 /* Raising the page off the flat --ink moves every fill-less text run onto the
@@ -116,27 +164,21 @@
 
 /* ── Masthead ───────────────────────────────────────────────────────────── */
 
-/* The masthead sits over the gradient's brightest region: the wall light is
-   anchored at 16% 4%, top left, exactly where the logo and the title are. On
-   the bare backdrop (pncl brightest stop rgb(232,205,176)) white measures
-   1.49:1 at 0.95, 1.41:1 at 0.80 and 1.30:1 at 0.60, so DESIGN.md's rule
-   applies here as it does everywhere: text sits on a fill, never on blur. It
-   takes --portal-bar-fill rather than the translucent pane fill because it is
-   the shell's own surface, the same material as the two bars, and because the
-   solid fill clears every tier with headroom: 0.95 = 13.36:1, 0.80 = 9.90:1,
-   0.60 = 6.25:1. Padding matches .pbanner directly below it. */
+/* No container: the logo, the title and the profile sit straight on the
+   backdrop. That is safe because the backdrop darkens the strip they sit on:
+   the gradient's wall light is anchored at 16% 4%, exactly under the logo,
+   and --portal-vignette lays a 0.62 band over the top 150px (fading out by
+   300px). Every text run here is 0.80 or stronger, which holds 5.21:1 at that
+   band over the preset's brightest stop, and 0.95 holds 6.55:1. The faint
+   0.60 tier would read 3.72:1 there, so nothing in the masthead uses it. */
 .portal-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 20px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   flex-shrink: 0;
-  box-sizing: border-box;
-  padding: 12px 16px;
-  border: 1px solid var(--portal-rule);
-  border-radius: var(--portal-radius);
-  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  min-height: 56px;
 }
 
 .portal-header-brand {
@@ -158,7 +200,7 @@
   line-height: 1;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--portal-text-faint);
+  color: var(--portal-text);
 }
 
 .portal-header-stage {
@@ -180,22 +222,19 @@
   flex-shrink: 0;
 }
 
+/* The profile link is the avatar and the identity beside it, no chip. The
+   hover and the press land on the avatar's ring. */
 .portal-header-profile {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 12px;
   min-height: 44px;
-  padding: 7px 7px 7px 14px;
-  border: 1px solid var(--portal-rule);
+  min-width: 44px;
+  justify-content: flex-end;
   border-radius: 999px;
-  background: var(--portal-pane-fill);
   color: inherit;
   text-decoration: none;
-  transition: border-color 0.2s var(--portal-ease-out);
-}
-
-.portal-header-profile:hover {
-  border-color: var(--portal-border);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .portal-header-profile:focus-visible {
@@ -206,7 +245,7 @@
 .portal-header-identity {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   text-align: right;
   min-width: 0;
 }
@@ -219,26 +258,38 @@
 }
 
 .portal-header-mail {
-  font-size: var(--portal-t-label);
-  letter-spacing: 0.06em;
-  color: var(--portal-text-faint);
+  font-size: var(--portal-t-micro);
+  letter-spacing: 0.02em;
+  color: var(--portal-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 190px;
+  max-width: 220px;
 }
 
 .portal-header-avatar {
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   overflow: hidden;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--portal-pane-fill);
   border: 1px solid var(--portal-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  transition:
+    border-color 200ms var(--portal-ease-out),
+    transform 160ms var(--portal-ease-out);
+}
+
+.portal-header-profile:hover .portal-header-avatar {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.portal-header-profile:active .portal-header-avatar {
+  transform: scale(0.94);
 }
 
 .portal-header-avatar img {
@@ -248,16 +299,16 @@
 }
 
 .portal-header-avatar span {
-  font-size: var(--portal-t-micro);
-  color: var(--portal-text);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  color: var(--portal-text-strong);
 }
 
 @media (max-width: 620px) {
   .portal-header {
-    align-items: center;
     height: 56px;
-    padding: 0 12px;
-    margin-bottom: 8px;
+    min-height: 0;
+    margin-bottom: 12px;
   }
 
   .portal-header-brand {
@@ -271,14 +322,14 @@
     width: auto;
   }
 
-  /* The 28px mark sits in a 44px target; the bar is 56px, so it fits. */
+  /* The 28px mark sits in a 44px target; the row is 56px, so it fits. */
   .portal-header-logo {
     align-items: center;
     min-height: 44px;
   }
 
   /* Kept in the DOM, not display: none, so a phone still reaches the page's
-     h1. The bar is only wide enough for the logo and the avatar. */
+     h1. The row is only wide enough for the logo and the avatar. */
   .portal-header-title {
     position: absolute;
     width: 1px;
@@ -291,19 +342,11 @@
     border: 0;
   }
 
-  /* The progress strip directly under the header carries the stage on a
-     phone, and the profile page carries the name and the email. */
+  /* The onboarding capsule carries the stage on a phone, and the profile page
+     carries the name and the email. */
   .portal-header-stage,
   .portal-header-identity {
     display: none;
-  }
-
-  .portal-header-profile {
-    min-width: 44px;
-    padding: 0;
-    justify-content: center;
-    border-color: transparent;
-    background: none;
   }
 }
 
