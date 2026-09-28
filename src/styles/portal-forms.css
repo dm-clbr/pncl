@@ -472,7 +472,7 @@
   /* Above the tab bar on the pages that mount one. */
   .home2-page:has(> .portal-bottom-nav) .pforms-pager,
   .home2-page:has(> .portal-bottom-nav) .pforms-submit-bar {
-    bottom: calc(56px + env(safe-area-inset-bottom));
+    bottom: var(--portal-nav-space);
   }
 
   .home2-page:has(> .portal-bottom-nav) .pforms-pager-row,

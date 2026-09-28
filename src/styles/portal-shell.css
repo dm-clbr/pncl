@@ -309,8 +309,10 @@
 
 /* ── Bottom tab bar ─────────────────────────────────────────────────────── */
 
-/* Four destinations in the thumb zone, phone only. Sign out and the socials
-   stay in the page footer: a bar you tap by accident is no place for either.
+/* Four destinations in the thumb zone, phone only: a frosted pill floating
+   --portal-nav-gap above the safe area, with a thumb that slides to the active
+   tab. Sign out and the socials stay in the page footer: a bar you tap by
+   accident is no place for either.
 
    The quiet tab colour sits on the bar, not on the item. Every portal page is
    wrapped in .home2-page, whose `a { color: inherit }` (home2.css) is 0-1-1 and
@@ -318,25 +320,45 @@
    never lands and it inherits the page's instead: --ink on the dashboard, which
    is black text on a black bar. Declaring it on the container makes that
    `inherit` resolve to the value we want. The active tab is 0-2-0 and still
-   wins outright. */
+   wins outright.
+
+   Contrast: the pill is translucent, so the worst case is the pncl preset's
+   brightest stop rgb(232, 205, 176) scrolled straight under it. Through the
+   0.7 fill that composites to rgb(86, 75, 63); idle labels at white 0.74 read
+   5.54:1 there (4.71:1 under the top sheen) and the active label at 0.95 on
+   the thumb 5.55:1 (4.75:1). Over the panes and the dark stops that actually
+   sit there, both are far higher. */
 .portal-bottom-nav {
   display: none;
-  color: rgba(255, 255, 255, 0.52);
+  color: rgba(255, 255, 255, 0.74);
 }
 
 .portal-bottom-nav-item {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  min-height: 56px;
+  gap: 3px;
   min-width: 44px;
-  padding: 6px 4px;
-  font-size: var(--portal-t-micro);
+  padding: 0 4px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
   letter-spacing: 0.01em;
   text-align: center;
   text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 200ms var(--portal-ease-out), transform 160ms var(--portal-ease-out);
+}
+
+.portal-bottom-nav-item svg {
+  width: 22px;
+  height: 22px;
+}
+
+.portal-bottom-nav-item:active {
+  transform: scale(0.94);
 }
 
 .portal-bottom-nav-item.active {
@@ -348,25 +370,61 @@
   outline-offset: -3px;
 }
 
+/* One quarter of the pill's inner width, moved by transform only. */
+.portal-bottom-nav-thumb {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 6px;
+  width: calc((100% - 12px) / 4);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.13);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  transform: translateX(calc(var(--nav-active, 0) * 100%));
+  transition: transform 420ms var(--portal-ease-out);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-bottom-nav-thumb {
+    transition: none;
+  }
+}
+
 @media (max-width: 620px) {
   .portal-bottom-nav {
     position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset-inline: 16px;
+    bottom: calc(var(--portal-nav-gap) + env(safe-area-inset-bottom));
     z-index: 50;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    padding-bottom: env(safe-area-inset-bottom);
-    border-top: 1px solid var(--portal-border);
-    /* No backdrop-filter: this is a bar over scrolling content, and the blur
-       already lives on the gradient source. */
-    background: var(--portal-pane-sheen), var(--portal-bar-fill);
+    max-width: 440px;
+    height: var(--portal-nav-h);
+    margin-inline: auto;
+    box-sizing: border-box;
+    padding: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 999px;
+    /* A single-instance surface, so it may carry its own blur (DESIGN.md:
+       under 20px, never on multi-instance surfaces). The fill, not the blur,
+       carries the contrast. */
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0) 60%),
+      rgba(24, 19, 15, 0.7);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    backdrop-filter: blur(18px) saturate(160%);
+    box-shadow:
+      0 12px 32px rgba(0, 0, 0, 0.5),
+      0 2px 8px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
 
   /* The bar is fixed, so the page under it has to stop above it. */
   .home2-page:has(> .portal-bottom-nav) > main {
-    padding-bottom: calc(56px + env(safe-area-inset-bottom) + 16px);
+    padding-bottom: calc(var(--portal-nav-space) + 16px);
   }
 }
 

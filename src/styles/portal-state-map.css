@@ -982,7 +982,7 @@
     height: 100vh;
     height: 100dvh;
     min-height: 0;
-    padding-bottom: calc(56px + env(safe-area-inset-bottom) + var(--smap-peek, 152px) + var(--portal-gap));
+    padding-bottom: calc(var(--portal-nav-space) + var(--smap-peek, 152px) + var(--portal-gap));
   }
 
   .smap-page {
@@ -1031,7 +1031,7 @@
 
   .home2-page:has(.smap-page) > .snap-sheet {
     top: var(--smap-sheet-top, 134px);
-    bottom: calc(56px + env(safe-area-inset-bottom));
+    bottom: var(--portal-nav-space);
   }
 
   .snap-sheet .smap-finder-head {

@@ -329,7 +329,7 @@
 @media (max-width: 620px) {
   .pintake-page .pintake-bar {
     position: sticky;
-    bottom: calc(56px + env(safe-area-inset-bottom) + 8px);
+    bottom: calc(var(--portal-nav-space) + 8px);
     z-index: 5;
     flex-wrap: nowrap;
     padding: calc(var(--portal-unit) * 2);

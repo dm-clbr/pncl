@@ -546,7 +546,7 @@
 @media (max-width: 620px) {
   /* Above the fixed tab bar, which already pads the safe area. */
   .home2-page .portal-profile-savebar {
-    bottom: calc(56px + env(safe-area-inset-bottom));
+    bottom: var(--portal-nav-space);
     padding-bottom: 12px;
   }
 }
