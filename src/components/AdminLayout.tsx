@@ -29,6 +29,7 @@ import {
   X,
 } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
+import PortalBackground from "@/components/portal/PortalBackground";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdminAssist, isGenesisAdmin } from "@/lib/roles";
 import "@/styles/home2.css";
@@ -206,6 +207,7 @@ export default function AdminLayout() {
 
   return (
     <div className="home2-page">
+      <PortalBackground />
       <div className="grain" aria-hidden="true" />
 
       <main className="portal-dash dark admin-dash">
