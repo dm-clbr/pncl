@@ -16,74 +16,10 @@
 
 /* ── Not yet reskinned (moved verbatim from home2.css) ──────────────────── */
 
-.home2-page .admin-ticket-modal {
-  max-width: 560px;
-  width: min(560px, calc(100vw - 32px));
-}
-
-.home2-page .admin-ticket-description {
-  margin: 0 0 16px;
-  padding: 12px 14px;
-  font-size: .88rem;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  background: rgba(240, 237, 228, .05);
-  border: 1px solid rgba(240, 237, 228, .1);
-  max-height: 30vh;
-  overflow-y: auto;
-}
-
-.home2-page .admin-ticket-modal-fields {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px 16px;
-  margin-bottom: 12px;
-}
-
-@media (max-width: 640px) {
-  .home2-page .admin-ticket-modal-fields {
-    grid-template-columns: 1fr;
-  }
-}
-
-.home2-page .admin-edit-profile-modal {
-  max-width: 640px;
-  width: min(640px, calc(100vw - 32px));
-}
-
-.home2-page .admin-edit-profile-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px 16px;
-  margin-bottom: 16px;
-  max-height: 55vh;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-@media (max-width: 640px) {
-  .home2-page .admin-edit-profile-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
 .home2-page .admin-hierarchy-view-btn:focus-visible,
 .home2-page .admin-hierarchy-zoom-btn:focus-visible {
   outline: 3px solid rgba(220, 106, 45, .85);
   outline-offset: 3px;
-}
-
-.home2-page .portal-profile-derived-value {
-  margin: 0;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  padding: 0 14px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--ink);
-  font-size: 15px;
 }
 
 .home2-page .admin-user-document-upload-panel {
@@ -113,10 +49,6 @@
 
 .home2-page .admin-user-document-upload-other-label {
   max-width: 420px;
-}
-
-.home2-page .admin-user-email-modal {
-  width: min(520px, 100%);
 }
 
 .home2-page .admin-user-profile-layout {
@@ -356,61 +288,6 @@
   align-items: center;
   gap: 8px;
   justify-content: flex-end;
-}
-
-.home2-page .admin-genesis-details-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 12px 20px;
-  margin: 0;
-}
-
-.home2-page .admin-genesis-details-modal .admin-genesis-details-grid {
-  padding-top: 4px;
-}
-
-.home2-page .admin-genesis-details-modal {
-  width: min(760px, 100%);
-  max-height: min(85vh, 900px);
-  overflow-y: auto;
-}
-
-.home2-page .admin-genesis-details-documents {
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid rgba(240, 237, 228, .08);
-}
-
-.home2-page .admin-genesis-details-documents h3 {
-  margin: 0;
-  font-size: 16px;
-}
-
-.home2-page .admin-genesis-details-documents-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-.home2-page .admin-genesis-details-item {
-  min-width: 0;
-}
-
-.home2-page .admin-genesis-details-item dt {
-  margin: 0 0 4px;
-  font-family: var(--ff-mono);
-  font-size: var(--admin-fs-badge);
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--space);
-}
-
-.home2-page .admin-genesis-details-item dd {
-  margin: 0;
-  color: var(--bone);
-  font-size: var(--admin-fs-body);
-  word-break: break-word;
 }
 
 .home2-page .admin-hierarchy-toolbar {
@@ -699,10 +576,6 @@
   justify-content: flex-start;
 }
 
-.home2-page .admin-hierarchy-partner-modal {
-  max-width: 560px;
-}
-
 .home2-page .admin-hierarchy-partner-members {
   display: grid;
   gap: 14px;
@@ -764,10 +637,6 @@
   font-size: .62rem;
   line-height: 1.25;
   color: var(--steel);
-}
-
-.home2-page .admin-hierarchy-assist-modal {
-  max-width: 480px;
 }
 
 .home2-page .admin-hierarchy-assist-details {
@@ -880,10 +749,6 @@
   background: rgba(0, 0, 0, .12);
   max-height: min(68vh, 720px);
   overflow: auto;
-}
-
-.home2-page .admin-hierarchy-edit-modal {
-  max-width: 520px;
 }
 
 .home2-page .admin-hierarchy-edit-field-form {
@@ -1137,193 +1002,8 @@
   color: var(--space);
 }
 
-.home2-page .admin-todo-completion {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 140px;
-}
-
 .home2-page .admin-todo-row-hidden {
   opacity: .65;
-}
-
-.home2-page .admin-todo-completion-bar {
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(240, 237, 228, .18);
-  overflow: hidden;
-}
-
-.home2-page .admin-todo-completion-fill {
-  display: block;
-  height: 100%;
-  min-width: 4px;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--accent), var(--accent-bright));
-}
-
-.home2-page .admin-todo-completion-label {
-  font-size: 12px;
-  color: var(--space);
-  white-space: nowrap;
-}
-
-.home2-page .admin-todo-completion-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 2px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--steel);
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.home2-page .admin-todo-completion-btn:hover {
-  color: var(--bone);
-}
-
-.home2-page .admin-modal {
-  width: min(760px, 100%);
-  max-height: min(82vh, 720px);
-  overflow: auto;
-  background: var(--ink-2);
-  border: 1px solid rgba(240, 237, 228, .12);
-  border-radius: calc(var(--radius) + 2px);
-  padding: clamp(18px, 4vw, 24px);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, .45);
-}
-
-.home2-page .admin-modal-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.home2-page .admin-modal-head h2 {
-  font-size: 1.05rem;
-  font-weight: 800;
-  font-style: italic;
-  letter-spacing: -.02em;
-  text-transform: uppercase;
-  color: var(--bone);
-  margin-bottom: 6px;
-}
-
-.home2-page .admin-modal-head p {
-  font-size: .9rem;
-  line-height: 1.45;
-  color: var(--steel);
-}
-
-.home2-page .admin-todo-completion-loading {
-  display: flex;
-  justify-content: center;
-  padding: 32px 0;
-}
-
-.home2-page .admin-todo-completion-columns {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.home2-page .admin-todo-completion-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-height: 180px;
-  padding: 14px;
-  border: 1px solid rgba(240, 237, 228, .1);
-  border-radius: var(--radius);
-  background: rgba(0, 0, 0, .18);
-}
-
-.home2-page .admin-todo-completion-list h3 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: .78rem;
-  font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--bone);
-}
-
-.home2-page .admin-todo-completion-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 6px;
-  border-radius: 999px;
-  font-size: 11px;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
-.home2-page .admin-todo-completion-list-completed .admin-todo-completion-count {
-  background: rgba(72, 160, 96, .18);
-  color: #7fd99a;
-}
-
-.home2-page .admin-todo-completion-list-pending .admin-todo-completion-count {
-  background: rgba(194, 78, 28, .16);
-  color: var(--accent-bright);
-}
-
-.home2-page .admin-todo-completion-list ul {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  max-height: 360px;
-  overflow: auto;
-}
-
-.home2-page .admin-todo-completion-list li {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(240, 237, 228, .06);
-}
-
-.home2-page .admin-todo-completion-list li:last-child {
-  padding-bottom: 0;
-  border-bottom: 0;
-}
-
-.home2-page .admin-todo-completion-list li strong {
-  font-size: .92rem;
-  color: var(--bone);
-}
-
-.home2-page .admin-todo-completion-list li span {
-  font-size: .78rem;
-  color: var(--space);
-}
-
-.home2-page .admin-todo-completion-empty {
-  margin: 0;
-  font-size: .84rem;
-  line-height: 1.5;
-  color: var(--space);
-}
-
-@media (max-width: 720px) {
-  .home2-page .admin-todo-completion-columns {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* Full-admin state availability editor */
@@ -3860,6 +3540,443 @@
   .admin-dash .admin-sheet-toolbar-actions {
     flex-direction: column;
     align-items: stretch;
+  }
+}
+
+/* ── Modals ──────────────────────────────────────────────────────────────── */
+
+/* Eleven dialogs share .admin-modal-overlay > .admin-modal. Desktop: a glass
+   pane centred over a 0.55 scrim, fading in over 200ms from 0.98 scale. The
+   pane is a single instance over moving content, so it carries its own
+   backdrop blur (under 20px, as the Sheet does); over the scrim it
+   composites to about rgb(68, 60, 53), where white 0.80 reads 7.59:1. */
+.admin-dash .admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  animation: admin-fade var(--admin-base) var(--portal-ease-out);
+}
+
+.admin-dash .admin-modal {
+  position: relative;
+  box-sizing: border-box;
+  width: min(760px, 100%);
+  max-width: none;
+  max-height: min(86vh, 880px);
+  max-height: min(86dvh, 880px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 24px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--portal-pane-shadow), 0 24px 64px rgba(0, 0, 0, 0.45);
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  line-height: 1.5;
+  animation: admin-modal-in var(--admin-base) var(--portal-ease-out);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .admin-dash .admin-modal {
+    background: var(--portal-pane-sheen), rgba(28, 22, 17, 0.96);
+  }
+}
+
+@keyframes admin-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes admin-modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+.admin-dash .admin-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.admin-dash .admin-modal-head h2 {
+  margin: 0 0 4px;
+  font-size: var(--portal-t-mid);
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  text-transform: none;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-modal-head p {
+  margin: 0;
+  font-size: var(--portal-control-fs);
+  line-height: 1.5;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--portal-control-h);
+  height: var(--portal-control-h);
+  margin: -10px -10px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--portal-control-radius);
+  background: none;
+  color: var(--portal-text);
+  cursor: pointer;
+  transition:
+    background-color var(--admin-fast) var(--portal-ease-out),
+    color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-modal-close svg {
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
+}
+
+.admin-dash .admin-modal-close:hover:not(:disabled) {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-modal-close:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-dash .admin-modal .admin-field {
+  min-width: 0;
+}
+
+.admin-dash .admin-modal .admin-form-actions,
+.admin-dash .admin-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Sizes. */
+.admin-dash .admin-user-email-modal,
+.admin-dash .admin-hierarchy-edit-modal {
+  width: min(520px, 100%);
+}
+
+.admin-dash .admin-ticket-modal,
+.admin-dash .admin-hierarchy-partner-modal {
+  width: min(560px, 100%);
+}
+
+.admin-dash .admin-edit-profile-modal {
+  width: min(640px, 100%);
+}
+
+.admin-dash .admin-hierarchy-assist-modal {
+  width: min(480px, 100%);
+}
+
+/* ── Ticket ──────────────────────────────────────────────────────────────── */
+
+.admin-dash .admin-ticket-description {
+  max-height: 30vh;
+  overflow-y: auto;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 12px;
+  background: var(--admin-inset);
+  font-size: var(--portal-control-fs);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-ticket-modal-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  margin-bottom: 12px;
+}
+
+/* ── Edit profile ────────────────────────────────────────────────────────── */
+
+/* The field grid scrolls on its own on a desktop so the head and the
+   actions stay in view; a phone sheet scrolls as one. */
+.admin-dash .admin-edit-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  max-height: 55vh;
+  margin-bottom: 4px;
+  padding: 2px 4px 2px 2px;
+  overflow-y: auto;
+}
+
+/* A read-only value shown in place of an input. */
+.admin-dash .portal-profile-derived-value {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: var(--portal-control-h);
+  margin: 0;
+  padding: 0 12px;
+  border: 1px solid var(--portal-rule);
+  border-radius: var(--portal-control-radius);
+  background: rgba(0, 0, 0, 0.14);
+  font-size: var(--portal-control-fs);
+  color: var(--portal-text-strong);
+}
+
+/* ── Detail lists (Genesis details, user profile, onboarding details) ──── */
+
+.admin-dash .admin-genesis-details-modal {
+  width: min(760px, 100%);
+}
+
+.admin-dash .admin-genesis-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px 20px;
+  margin: 0;
+}
+
+.admin-dash .admin-genesis-details-modal .admin-genesis-details-grid {
+  padding-top: 4px;
+}
+
+.admin-dash .admin-genesis-details-item {
+  min-width: 0;
+}
+
+.admin-dash .admin-genesis-details-item dt {
+  margin: 0 0 3px;
+  font-family: var(--portal-font);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.3;
+  text-transform: none;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-genesis-details-item dd {
+  margin: 0;
+  font-size: var(--portal-control-fs);
+  font-weight: 500;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-genesis-details-documents {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--portal-rule);
+}
+
+.admin-dash .admin-genesis-details-documents h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-genesis-details-documents-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ── To-do completion ────────────────────────────────────────────────────── */
+
+.admin-dash .admin-todo-completion-loading {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.admin-dash .admin-todo-completion-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-dash .admin-todo-completion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 180px;
+  padding: 14px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 14px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-todo-completion-list h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-todo-completion-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.86);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-todo-completion-list-completed .admin-todo-completion-count {
+  border-color: rgba(59, 214, 107, 0.7);
+  color: #8be7a8;
+}
+
+.admin-dash .admin-todo-completion-list-pending .admin-todo-completion-count {
+  border-color: rgba(245, 201, 120, 0.7);
+  border-style: dotted;
+  color: #f5c978;
+}
+
+.admin-dash .admin-todo-completion-list ul {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 360px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.admin-dash .admin-todo-completion-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--portal-rule);
+}
+
+.admin-dash .admin-todo-completion-list li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.admin-dash .admin-todo-completion-list li strong {
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-todo-completion-list li span {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-todo-completion-empty {
+  margin: 0;
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+  color: var(--portal-text);
+}
+
+/* ── Modals on a phone ───────────────────────────────────────────────────── */
+
+/* A bottom sheet: flush to the bottom edge, 20px top corners, capped at 88dvh
+   with its own scroll, the home indicator's inset below the last control,
+   rising on the portal ease-out. Actions stack full width, primary first. */
+@media (max-width: 620px) {
+  .admin-dash .admin-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .admin-dash .admin-modal-overlay > .admin-modal {
+    width: 100%;
+    max-height: 88vh;
+    max-height: 88dvh;
+    padding: 20px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    border-bottom: 0;
+    border-radius: 20px 20px 0 0;
+    animation-name: admin-sheet-in;
+    animation-duration: var(--admin-slow);
+  }
+
+  .admin-dash .admin-modal-head h2 {
+    font-size: var(--portal-t-mid);
+  }
+
+  .admin-dash .admin-modal .admin-form-actions,
+  .admin-dash .admin-modal-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .admin-dash .admin-ticket-modal-fields,
+  .admin-dash .admin-edit-profile-grid,
+  .admin-dash .admin-todo-completion-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-dash .admin-edit-profile-grid {
+    max-height: none;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .admin-dash .admin-todo-completion-list ul {
+    max-height: none;
+  }
+}
+
+@keyframes admin-sheet-in {
+  from {
+    transform: translateY(100%);
   }
 }
 
