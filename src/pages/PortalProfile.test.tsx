@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import PortalProfile from "@/pages/PortalProfile";
 import type { PortalProfile as PortalProfileRow } from "@/lib/portal-profile";
 import type { PortalTodo } from "@/lib/portal-todos";
@@ -93,6 +93,31 @@ vi.mock("@/components/PortalTeamDashboard", () => ({ default: () => <div /> }));
 vi.mock("@/lib/analytics", () => ({ trackPageView: vi.fn() }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: (...args: unknown[]) => toastError(...args) } }));
 
+// jsdom ships HTMLDialogElement without showModal, close or the open
+// reflection (same stand-in as src/pages/PortalDashboard.test.tsx).
+beforeAll(() => {
+  const proto = HTMLDialogElement.prototype;
+  if (!("open" in proto)) {
+    Object.defineProperty(proto, "open", {
+      configurable: true,
+      get(this: HTMLDialogElement) {
+        return this.hasAttribute("open");
+      },
+      set(this: HTMLDialogElement, value: boolean) {
+        if (value) this.setAttribute("open", "");
+        else this.removeAttribute("open");
+      },
+    });
+  }
+  proto.showModal = function showModal(this: HTMLDialogElement) {
+    this.open = true;
+  };
+  proto.close = function close(this: HTMLDialogElement) {
+    this.open = false;
+    this.dispatchEvent(new Event("close"));
+  };
+});
+
 function renderProfile() {
   return render(
     <MemoryRouter>
@@ -177,7 +202,7 @@ describe("portal profile details tab", () => {
     expect(screen.getByRole("navigation", { name: "Portal sections" })).toBeInTheDocument();
   });
 
-  it("names the onboarding progress bar on the widget, not on its wrapper", async () => {
+  it("shows onboarding as the dock capsule and opens the checklist from it", async () => {
     const todo = (id: string, completed: boolean): PortalTodo => ({
       id,
       title: id,
@@ -193,11 +218,19 @@ describe("portal profile details tab", () => {
     try {
       renderProfile();
 
-      // ARIA cannot name a generic element, so a label on the wrapper div was
-      // dropped and the bar was announced with no name at all.
-      const bar = await screen.findByRole("progressbar", { name: "Onboarding progress" });
+      const capsule = await screen.findByRole("button", {
+        name: /2 of 4 steps complete.*open the checklist/,
+      });
+      expect(capsule).toHaveTextContent("On-Board");
+      expect(capsule).toHaveTextContent("Next: c");
+
+      fireEvent.click(capsule);
+      const panel = document.querySelector("dialog.pdock-panel") as HTMLDialogElement;
+      expect(panel).toHaveAttribute("open");
+      // The checklist's own bar keeps its name on the widget itself: ARIA
+      // cannot name a generic element, so a label on a wrapper div is dropped.
+      const bar = screen.getByRole("progressbar", { name: "Onboarding progress" });
       expect(bar).toHaveAttribute("aria-valuenow", "50");
-      expect(screen.getByText("2 of 4 steps complete")).toBeInTheDocument();
     } finally {
       todoRows = [];
     }

@@ -3,6 +3,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Camera, FileText, LogOut, Shield } from "lucide-react";
 import ProfilePhotoCropModal from "@/components/ProfilePhotoCropModal";
 import BottomNav from "@/components/portal/BottomNav";
+import OnboardingDock from "@/components/portal/OnboardingDock";
+import PortalOnboardingChecklist from "@/components/PortalOnboardingChecklist";
 import Chip from "@/components/portal/Chip";
 import EmptyState from "@/components/portal/EmptyState";
 import Field from "@/components/portal/Field";
@@ -52,6 +54,7 @@ import { usePortalW9 } from "@/hooks/usePortalW9";
 import { usePortalIca } from "@/hooks/usePortalIca";
 import { usePortalTodos } from "@/hooks/usePortalTodos";
 import {
+  completePortalTodo,
   derivePortalPhase,
   isTodoCompleted,
   PORTAL_PHASE_LABELS,
@@ -472,9 +475,22 @@ export default function PortalProfile() {
     [todos, user, icaSubmitted, w9Submitted, directDepositSubmitted],
   );
   const todoTotal = resolvedTodos.length;
-  const todoDone = resolvedTodos.filter((todo) => todo.completed).length;
-  const todoPercent = todoTotal === 0 ? 0 : Math.round((todoDone / todoTotal) * 100);
   const currentPhase = derivePortalPhase(resolvedTodos);
+
+  // The dashboard's checklist handler, so a step checked off here is the same
+  // call with the same messages.
+  const [completingTodoId, setCompletingTodoId] = useState<string | null>(null);
+  const handleCompleteTodo = async (todoId: string) => {
+    setCompletingTodoId(todoId);
+    try {
+      await completePortalTodo(todoId, resolvedTodos);
+      toast.success("To-do marked complete.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to update to-do.");
+    } finally {
+      setCompletingTodoId(null);
+    }
+  };
   const [resolvedCounty, setResolvedCounty] = useState<string | null>(null);
 
   useEffect(() => {
@@ -578,26 +594,15 @@ export default function PortalProfile() {
           />
 
           {!todosLoading && todoTotal > 0 && (
-            <div className="portal-profile-progress">
-              <div className="portal-profile-progress-head">
-                <span className={`portal-phase-badge phase-${currentPhase}`}>
-                  {PORTAL_PHASE_LABELS[currentPhase]}
-                </span>
-                <span className="portal-profile-progress-count">
-                  {todoDone} of {todoTotal} steps complete
-                </span>
-              </div>
-              <div
-                className="portal-profile-progress-bar"
-                role="progressbar"
-                aria-label="Onboarding progress"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={todoPercent}
-              >
-                <span style={{ width: `${todoPercent}%` }} />
-              </div>
-            </div>
+            <OnboardingDock todos={resolvedTodos}>
+              <PortalOnboardingChecklist
+                todos={resolvedTodos}
+                agentEmail={agentEmail}
+                completingTodoId={completingTodoId}
+                onComplete={(id) => void handleCompleteTodo(id)}
+                previewUnlocked={showAdminLink}
+              />
+            </OnboardingDock>
           )}
 
           <Segmented

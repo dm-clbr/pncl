@@ -5,14 +5,14 @@ import { usePortalGradientTuner } from "@/components/PortalGradientTuner";
 /** The dashboard's page frame: grain, the tuned liquid gradient under the
     vignette, and the centred wrap. The dashboard, calendar and state map all
     render through it so the three read as one surface and cannot drift.
-    Render it inside .home2-page; the bottom nav and any sheet stay outside it,
-    since a fixed bar inside the stage would take the page as its containing
-    block. `rail` renders inside <main> beside the wrap.
+    Render it inside .home2-page; the bottom nav, the onboarding dock and any
+    sheet stay outside it, since a fixed bar inside the stage would take the
+    page as its containing block.
 
     The page imports portal-bento.css itself, after home2.css. Importing it
     here would load it ahead of home2.css (component imports come first) and
     flip every same-specificity tie between the two. */
-export default function PortalBentoMain({ rail, children }: { rail?: ReactNode; children: ReactNode }) {
+export default function PortalBentoMain({ children }: { children: ReactNode }) {
   // Read once: the pointer type does not change while the page is open. Coarse
   // pointers get the canvas at 20fps and half resolution; the CSS blur on
   // .portal-bento-canvas hides the upscale, so it reads the same for a
@@ -49,8 +49,6 @@ export default function PortalBentoMain({ rail, children }: { rail?: ReactNode; 
         </div>
 
         <div className="portal-bento-wrap">{children}</div>
-
-        {rail}
       </main>
 
       {panel}

@@ -1,0 +1,412 @@
+/* ==========================================================================
+   Onboarding dock: the capsule and the panel it grows into.
+   Component: src/components/portal/OnboardingDock.tsx. Tokens from
+   portal-tokens.css; the checklist inside the panel keeps its own .pcl rules
+   in portal-bento.css.
+   ========================================================================== */
+
+/* ── Capsule ────────────────────────────────────────────────────────────── */
+
+/* In the page's flow (the profile) the capsule is a pane-shaped card. The
+   floating variant below turns it into frosted glass over the page. */
+.pdock-capsule {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 64px;
+  box-sizing: border-box;
+  padding: 10px 10px 10px 18px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
+  box-shadow: var(--portal-pane-shadow);
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 160ms var(--portal-ease-out),
+    border-color 200ms var(--portal-ease-out),
+    opacity 160ms var(--portal-ease-out),
+    clip-path 420ms var(--portal-ease-out);
+}
+
+.pdock-capsule:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.pdock-capsule:active {
+  transform: scale(0.98);
+}
+
+.pdock-capsule:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+/* The panel grows out of the capsule, so the capsule steps aside while it is
+   open and comes back as the panel shrinks into it. */
+.pdock-capsule[aria-expanded="true"] {
+  opacity: 0;
+}
+
+.pdock-copy {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 3px;
+  min-width: 0;
+  transition: opacity 200ms var(--portal-ease-out);
+}
+
+/* Labels at 0.80: white 0.80 holds 4.76:1 on the pane and 5.5:1 on the
+   floating glass below at the preset's brightest stop. */
+.pdock-eyebrow {
+  display: flex;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: var(--portal-text);
+}
+
+.pdock-count {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.pdock-count::before {
+  content: "·";
+  margin-right: 8px;
+}
+
+.pdock-line {
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--portal-text-strong);
+}
+
+/* In the flow, the card keeps the page's gap to whatever follows it. */
+.pdock:not(.is-floating) {
+  margin-bottom: 16px;
+}
+
+/* ── Ring ───────────────────────────────────────────────────────────────── */
+
+.pdock-ring {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+}
+
+.pdock-ring svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.pdock-ring-track,
+.pdock-ring-fill {
+  fill: none;
+  stroke-width: 3.5;
+}
+
+.pdock-ring-track {
+  stroke: rgba(255, 255, 255, 0.14);
+}
+
+.pdock-ring-fill {
+  stroke: var(--portal-text-strong);
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  transition: stroke-dashoffset 700ms var(--portal-ease-out);
+}
+
+.pdock-ring-label {
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--portal-text-strong);
+}
+
+/* ── Floating ───────────────────────────────────────────────────────────── */
+
+/* A single-instance surface, so it carries its own blur like the tab bar,
+   and the same 0.72 fill carries the contrast, not the blur. Phone: docked
+   above the tab bar in the thumb zone. From 621px: the bottom right corner. */
+.pdock.is-floating .pdock-capsule {
+  position: fixed;
+  z-index: 49;
+  inset-inline: 16px;
+  bottom: calc(var(--portal-nav-space) + 10px);
+  width: auto;
+  max-width: 440px;
+  margin-inline: auto;
+  border-color: rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0) 60%),
+    rgba(24, 19, 15, 0.72);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  clip-path: inset(0 0 0 0 round 999px);
+}
+
+/* Folded while the page scrolls down: the clip keeps only the ring at the
+   right end, so nothing reflows; the hit area folds with it. */
+.pdock.is-floating .pdock-capsule[data-compact] {
+  clip-path: inset(0 0 0 calc(100% - 64px) round 999px);
+}
+
+.pdock.is-floating .pdock-capsule[data-compact] .pdock-copy {
+  opacity: 0;
+}
+
+@media (min-width: 621px) {
+  .pdock.is-floating .pdock-capsule {
+    inset-inline: auto 24px;
+    bottom: 24px;
+    width: 380px;
+    max-width: calc(100vw - 48px);
+    margin: 0;
+  }
+}
+
+/* The page ends clear of the capsule. 0-3-1 clears the tab bar's own
+   padding rule in portal-shell.css. */
+.home2-page:has(> .pdock.is-floating) > main {
+  padding-bottom: 112px;
+}
+
+@media (max-width: 620px) {
+  .home2-page:has(> .pdock.is-floating) > main {
+    padding-bottom: calc(var(--portal-nav-space) + 64px + 26px);
+  }
+}
+
+/* ── Panel ──────────────────────────────────────────────────────────────── */
+
+/* Anchored where the capsule lives: the bottom right corner from 621px, the
+   whole screen below the status bar on a phone. A bar over the page, so it
+   takes the solid --portal-bar-fill (DESIGN.md: a fixed surface never lets
+   what is under it set the contrast). */
+.pdock-panel {
+  position: fixed;
+  inset: auto 24px 24px auto;
+  width: min(460px, calc(100vw - 48px));
+  height: min(820px, calc(100dvh - 48px));
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid var(--portal-border);
+  border-radius: 26px;
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.6),
+    0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+.pdock-panel[open] {
+  display: flex;
+}
+
+.pdock-panel::backdrop {
+  background: rgba(6, 5, 4, 0.55);
+  animation: pdock-backdrop-in 360ms var(--portal-ease-out);
+}
+
+@keyframes pdock-backdrop-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.pdock-panel-inner {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+}
+
+.pdock-grabber {
+  display: none;
+}
+
+.pdock-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 16px 14px 20px;
+}
+
+.pdock-panel-head .pdock-ring {
+  width: 52px;
+  height: 52px;
+}
+
+.pdock-panel-head .pdock-ring-label {
+  font-size: 12px;
+}
+
+.pdock-panel-titles {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pdock-panel-title {
+  margin: 0;
+  font-size: var(--portal-t-large);
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--portal-text-strong);
+}
+
+.pdock-panel-title:focus {
+  outline: none;
+}
+
+.pdock-panel-summary {
+  margin: 3px 0 0;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--portal-text);
+}
+
+.pdock-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--portal-control-h);
+  height: var(--portal-control-h);
+  border: 1px solid var(--portal-border);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--portal-text-strong);
+  cursor: pointer;
+  transition:
+    border-color 200ms var(--portal-ease-out),
+    transform 160ms var(--portal-ease-out);
+}
+
+.pdock-close svg {
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
+}
+
+.pdock-close:hover {
+  border-color: rgba(255, 255, 255, 0.32);
+}
+
+.pdock-close:active {
+  transform: scale(0.94);
+}
+
+.pdock-close:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.pdock-panel .portal-stepper {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 2px 20px 14px;
+  border-bottom: 1px solid var(--portal-rule);
+}
+
+.pdock-panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px 20px calc(24px + env(safe-area-inset-bottom));
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+/* The panel head carries the title and the count, so the checklist's own
+   head would say it twice. */
+.pdock-panel .pcl-head {
+  display: none;
+}
+
+@media (max-width: 620px) {
+  .pdock-panel {
+    inset: calc(env(safe-area-inset-top) + 10px) 0 0 0;
+    width: 100%;
+    height: auto;
+    border-bottom: 0;
+    border-radius: 24px 24px 0 0;
+  }
+
+  /* A 28px strip over the whole width, so a thumb finds it without aiming. */
+  .pdock-grabber {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    height: 28px;
+    touch-action: none;
+    cursor: grab;
+  }
+
+  .pdock-grabber span {
+    width: 40px;
+    height: 5px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.28);
+  }
+
+  .pdock-panel-head {
+    padding: 2px 12px 12px 16px;
+  }
+
+  .pdock-panel .portal-stepper {
+    padding-inline: 16px;
+  }
+
+  .pdock-panel-body {
+    padding-inline: 16px;
+  }
+
+  .pdock-line {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pdock-capsule,
+  .pdock-copy,
+  .pdock-ring-fill,
+  .pdock-close {
+    transition: none;
+  }
+
+  .pdock-panel::backdrop {
+    animation: none;
+  }
+}

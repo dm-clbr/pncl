@@ -1161,41 +1161,6 @@
 
 /* --- Profile page onboarding progress + stage badge --- */
 
-.home2-page .portal-profile-progress {
-  margin: 0 0 18px;
-  padding: 14px 16px;
-  border: 1px solid rgba(240, 237, 228, .12);
-  background: rgba(240, 237, 228, .04);
-}
-
-.home2-page .portal-profile-progress-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
-}
-
-.home2-page .portal-profile-progress-count {
-  font-family: var(--ff-mono);
-  font-size: 11px;
-  letter-spacing: .08em;
-  color: var(--steel);
-}
-
-.home2-page .portal-profile-progress-bar {
-  height: 6px;
-  background: rgba(240, 237, 228, .1);
-  overflow: hidden;
-}
-
-.home2-page .portal-profile-progress-bar span {
-  display: block;
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent-deep), var(--accent-bright));
-  transition: width .4s var(--ease);
-}
-
 .home2-page .portal-readiness-summary {
   display: flex;
   flex-direction: column;
@@ -1322,57 +1287,6 @@
   .home2-page .portal-profile-readiness {
     grid-template-columns: 1fr;
   }
-}
-
-.home2-page .portal-phase-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  font-family: var(--ff-mono);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  border: 1px solid rgba(240, 237, 228, .2);
-  color: var(--bone);
-  background: rgba(240, 237, 228, .06);
-  white-space: nowrap;
-}
-
-.home2-page .portal-phase-badge.phase-on_board {
-  border-color: rgba(200, 149, 108, .45);
-  color: #d9a877;
-  background: rgba(200, 149, 108, .12);
-}
-
-.home2-page .portal-phase-badge.phase-pre_license {
-  border-color: rgba(212, 175, 55, .45);
-  color: #d9c26a;
-  background: rgba(212, 175, 55, .12);
-}
-
-.home2-page .portal-phase-badge.phase-licensing {
-  border-color: rgba(126, 166, 224, .45);
-  color: #9dbdea;
-  background: rgba(126, 166, 224, .12);
-}
-
-.home2-page .portal-phase-badge.phase-new_producer {
-  border-color: rgba(110, 200, 190, .45);
-  color: #7fd4c6;
-  background: rgba(110, 200, 190, .12);
-}
-
-.home2-page .portal-phase-badge.phase-sales_ready {
-  border-color: rgba(176, 148, 255, .45);
-  color: #c0acf5;
-  background: rgba(176, 148, 255, .12);
-}
-
-.home2-page .portal-phase-badge.phase-complete {
-  border-color: rgba(127, 176, 105, .5);
-  color: #9dc98a;
-  background: rgba(127, 176, 105, .14);
 }
 
 .home2-page .portal-checklist-note {
@@ -3678,7 +3592,6 @@ button.portal-todo-link {
 .home2-page .admin-secondary-link:hover {
   color: var(--accent-bright);
 }
-
 
 .home2-page .admin-table-wrap {
   overflow-x: auto;

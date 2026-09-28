@@ -116,52 +116,61 @@ function renderDashboard() {
   const view = render(<MemoryRouter><PortalDashboard /></MemoryRouter>);
   return {
     ...view,
-    strip: screen.getByRole("link", { name: /steps complete, open the checklist/ }),
-    sheet: document.querySelector("dialog.portal-sheet") as HTMLDialogElement,
+    capsule: screen.getByRole("button", { name: /steps complete.*open the checklist/ }),
+    panel: document.querySelector("dialog.pdock-panel") as HTMLDialogElement,
   };
 }
 
-describe("PortalDashboard progress strip", () => {
-  it("stays an anchor to the rail pane above 620px", () => {
-    const { strip, sheet } = renderDashboard();
+describe("PortalDashboard onboarding dock", () => {
+  it("shows the stage, the count and the next step on the capsule", () => {
+    const { capsule, panel } = renderDashboard();
 
-    expect(strip).toHaveAttribute("href", "#onboarding-checklist");
-    expect(strip).toHaveTextContent("On-Board");
-    expect(strip).toHaveTextContent("1 of 3");
-    expect(document.getElementById("onboarding-checklist")).toHaveClass("pcl-rail");
-
-    // Default not prevented: the browser follows the hash to the rail.
-    expect(fireEvent.click(strip)).toBe(true);
-    expect(sheet).not.toHaveAttribute("open");
+    expect(capsule).toHaveAttribute("aria-haspopup", "dialog");
+    expect(capsule).toHaveAttribute("aria-expanded", "false");
+    expect(capsule).toHaveTextContent("On-Board");
+    expect(capsule).toHaveTextContent("1 of 3");
+    expect(capsule).toHaveTextContent("Next: Watch the welcome video");
+    expect(panel).not.toHaveAttribute("open");
+    // The checklist mounts with the panel, not before it.
+    expect(screen.queryByText("Book the state exam")).toBeNull();
   });
 
-  it("opens the checklist sheet at 620px and pins the current stage in the Stepper", () => {
-    narrow = true;
-    const { strip, sheet, rerender } = renderDashboard();
-    const currentStage = () =>
-      within(within(sheet).getByRole("list", { name: "Progress" }))
-        .queryByRole("listitem", { current: "step" });
+  it("opens the panel at every width and pins the current stage in the Stepper", () => {
+    for (const width of [false, true]) {
+      narrow = width;
+      const { capsule, panel, unmount } = renderDashboard();
+      fireEvent.click(capsule);
+      expect(panel).toHaveAttribute("open");
+      expect(capsule).toHaveAttribute("aria-expanded", "true");
+      expect(within(panel).getByRole("heading", { name: "Onboarding" })).toBeInTheDocument();
+      expect(within(panel).getByText("Watch the welcome video")).toBeInTheDocument();
+      unmount();
+    }
+  });
 
-    expect(sheet).not.toHaveAttribute("open");
-    expect(fireEvent.click(strip)).toBe(false);
-    expect(sheet).toHaveAttribute("open");
+  it("follows the stages as steps complete", () => {
+    const { capsule, panel, rerender } = renderDashboard();
+    const stages = () => within(panel).getByRole("list", { name: "Onboarding stages" });
+    const currentStage = () => within(stages()).queryByRole("listitem", { current: "step" });
+
+    fireEvent.click(capsule);
     expect(currentStage()).toHaveTextContent("On-Board");
 
     // First stage done: the next stage with a pending step is current.
     todos = todos.map((item) => (item.phase === "on_board" ? { ...item, completed: true } : item));
     rerender(<MemoryRouter><PortalDashboard /></MemoryRouter>);
     expect(currentStage()).toHaveTextContent("Pre-License");
-    expect(strip).toHaveTextContent("2 of 3");
+    expect(capsule).toHaveTextContent("2 of 3");
+    expect(capsule).toHaveTextContent("Next: Book the state exam");
 
     // Everything done: no stage is current and every stage reads as completed.
     todos = todos.map((item) => ({ ...item, completed: true }));
     rerender(<MemoryRouter><PortalDashboard /></MemoryRouter>);
     expect(currentStage()).toBeNull();
-    expect(
-      within(within(sheet).getByRole("list", { name: "Progress" }))
-        .getAllByRole("listitem")
-        .map((li) => li.className),
-    ).toEqual(Array(5).fill("portal-step is-done"));
-    expect(strip).toHaveTextContent("3 of 3");
+    expect(within(stages()).getAllByRole("listitem").map((li) => li.className)).toEqual(
+      Array(5).fill("portal-step is-done"),
+    );
+    expect(capsule).toHaveTextContent("3 of 3");
+    expect(capsule).toHaveTextContent("You're sales ready");
   });
 });
