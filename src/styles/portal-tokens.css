@@ -51,6 +51,31 @@
   /* Concentric corners: an inner radius is the outer minus the padding. */
   --portal-radius-inner: calc(var(--portal-radius) - var(--portal-inset));
 
+  /* Backdrop. One frame for every portal page: the flat base under the
+     gradient canvas and the vignette over it, read by .portal-bento (the
+     dashboard, calendar and state map) and .portal-backdrop (every other
+     page) so the two cannot drift apart. The top band darkens the strip the
+     masthead sits on, which is the gradient's brightest region (the wall
+     light is anchored at 16% 4%), so the logo, the title and the identity sit
+     on the backdrop itself rather than on a filled bar: at 0.62 over the pncl
+     preset's brightest stop rgb(232, 205, 176), white 0.80 reads 5.21:1 and
+     white 0.95 6.55:1. */
+  --portal-base: #0e0c0b;
+  --portal-vignette:
+    linear-gradient(
+      180deg,
+      rgba(10, 8, 7, 0.62) 0,
+      rgba(10, 8, 7, 0.62) 150px,
+      rgba(10, 8, 7, 0) 300px
+    ),
+    radial-gradient(
+      115% 105% at 20% 6%,
+      transparent 0%,
+      transparent 38%,
+      rgba(10, 8, 7, 0.42) 70%,
+      rgba(8, 6, 5, 0.78) 100%
+    );
+
   /* Spacing: 4px unit. */
   --portal-unit: 4px;
   --portal-gap: 14px;
@@ -85,6 +110,23 @@
   :root {
     --portal-radius: 16px;
     --portal-gap: 10px;
+
+    /* The phone masthead is the logo and the avatar, no text, so the band
+       only has to lift the mark off the wall light. */
+    --portal-vignette:
+      linear-gradient(
+        180deg,
+        rgba(10, 8, 7, 0.45) 0,
+        rgba(10, 8, 7, 0.45) 72px,
+        rgba(10, 8, 7, 0) 180px
+      ),
+      radial-gradient(
+        115% 105% at 20% 6%,
+        transparent 0%,
+        transparent 38%,
+        rgba(10, 8, 7, 0.42) 70%,
+        rgba(8, 6, 5, 0.78) 100%
+      );
 
     --portal-control-h: 52px;
     --portal-control-fs: 16px;

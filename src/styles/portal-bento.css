@@ -46,7 +46,7 @@
   /* Flat base. The wall light is the WebGL canvas above this, so every part of
      the backdrop answers to the tuner. This colour is only what shows if WebGL2
      is unavailable, or behind the canvas at low opacity. */
-  background: #0e0c0b;
+  background: var(--portal-base);
 }
 
 /* The old static gradient, kept behind a class so it can be compared against
@@ -65,7 +65,8 @@
     #0e0c0b;
 }
 
-/* Vignette, darkening the lower right. */
+/* Vignette, darkening the lower right and the masthead strip. Shared with
+   .portal-backdrop through the token, so every portal page is one frame. */
 .portal-bento::after {
   content: "";
   position: absolute;
@@ -73,13 +74,7 @@
   pointer-events: none;
   z-index: 0;
   opacity: var(--vignette, 1);
-  background: radial-gradient(
-    115% 105% at 20% 6%,
-    transparent 0%,
-    transparent 38%,
-    rgba(10, 8, 7, 0.42) 70%,
-    rgba(8, 6, 5, 0.78) 100%
-  );
+  background: var(--portal-vignette);
 }
 
 .portal-bento > * {
