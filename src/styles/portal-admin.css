@@ -14,977 +14,6 @@
    .admin-dash, and leaves the agent pages as they were.
    ========================================================================== */
 
-/* ── Not yet reskinned (moved verbatim from home2.css) ──────────────────── */
-
-.home2-page .admin-user-document-upload-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 20px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--border);
-}
-
-.home2-page .admin-user-document-upload-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 12px;
-}
-
-.home2-page .admin-user-document-upload-item {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.home2-page .admin-user-document-upload-other-label {
-  max-width: 420px;
-}
-
-.home2-page .admin-user-profile-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-.home2-page .admin-user-profile-summary,
-.home2-page .admin-user-profile-section {
-  padding: 24px;
-  border: 1px solid rgba(240, 237, 228, .08);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, .02);
-}
-
-.home2-page .admin-user-profile-identity {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.home2-page .admin-user-profile-identity h2 {
-  margin: 0 0 4px;
-}
-
-.home2-page .admin-user-profile-photo {
-  width: 72px;
-  height: 72px;
-  border-radius: 999px;
-  object-fit: cover;
-  flex-shrink: 0;
-}
-
-.home2-page .admin-user-profile-photo-fallback {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(194, 78, 28, .18);
-  color: var(--bone);
-  font-family: var(--ff-mono);
-  font-size: 24px;
-}
-
-.home2-page .admin-user-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  overflow: hidden;
-  flex-shrink: 0;
-  background: rgba(240, 237, 228, .08);
-  border: 1px solid rgba(240, 237, 228, .14);
-}
-
-.home2-page .admin-user-avatar-sm {
-  width: 28px;
-  height: 28px;
-}
-
-.home2-page .admin-user-avatar-md {
-  width: 52px;
-  height: 52px;
-}
-
-.home2-page .admin-user-avatar-lg {
-  width: 72px;
-  height: 72px;
-}
-
-.home2-page .admin-user-avatar-photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.home2-page .admin-user-avatar-initials {
-  font-family: var(--ff-mono);
-  font-weight: 700;
-  letter-spacing: .08em;
-  color: var(--bone);
-}
-
-.home2-page .admin-user-avatar-sm .admin-user-avatar-initials {
-  font-size: .62rem;
-}
-
-.home2-page .admin-user-avatar-md .admin-user-avatar-initials {
-  font-size: .82rem;
-}
-
-.home2-page .admin-user-avatar-lg .admin-user-avatar-initials {
-  font-size: 1.35rem;
-}
-
-.home2-page .admin-user-profile-meta {
-  margin-top: 8px;
-}
-
-.home2-page .admin-user-profile-section h2 {
-  margin: 0;
-  font-size: 18px;
-}
-
-.home2-page .admin-user-form-status {
-  margin-bottom: 16px;
-}
-
-.home2-page .admin-user-todo-phases {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 20px;
-  margin-top: 16px;
-}
-
-.home2-page .admin-user-todo-phase-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.home2-page .admin-user-todo-phase-head h3 {
-  margin: 0;
-  font-size: 13px;
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  color: var(--steel);
-}
-
-.home2-page .admin-user-todo-phase-head span {
-  font-family: var(--ff-mono);
-  font-size: 12px;
-  color: var(--steel);
-}
-
-.home2-page .admin-user-todo-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.home2-page .admin-user-todo-list li {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.home2-page .admin-user-todo-list li.done .admin-user-todo-title {
-  color: var(--steel);
-  text-decoration: line-through;
-  text-decoration-color: rgba(240, 237, 228, .35);
-}
-
-.home2-page .admin-user-todo-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1px 0 0;
-  border: none;
-  background: transparent;
-  color: var(--steel);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.home2-page .admin-user-todo-list li.done .admin-user-todo-toggle {
-  color: #7fb069;
-}
-
-.home2-page .admin-user-todo-toggle:disabled {
-  cursor: default;
-  opacity: .7;
-}
-
-.home2-page .admin-user-todo-body {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.home2-page .admin-user-todo-title {
-  font-size: 14px;
-  color: var(--bone);
-}
-
-.home2-page .admin-user-todo-note {
-  font-family: var(--ff-mono);
-  font-size: 12px;
-  letter-spacing: .06em;
-  color: var(--steel);
-}
-
-.home2-page .admin-todo-phase {
-  display: block;
-  font-size: 13px;
-  white-space: nowrap;
-}
-
-.home2-page .admin-user-documents {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.home2-page .admin-user-document-item {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 18px;
-  border: 1px solid rgba(240, 237, 228, .08);
-  border-radius: 12px;
-  background: rgba(0, 0, 0, .12);
-}
-
-.home2-page .admin-user-document-item strong {
-  display: block;
-  margin-bottom: 4px;
-}
-
-.home2-page .admin-user-document-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  justify-content: flex-end;
-}
-
-.home2-page .admin-incentive-form {
-  margin-bottom: 24px;
-  padding-bottom: 24px;
-  border-bottom: 1px solid rgba(240, 237, 228, .1);
-}
-
-.home2-page .admin-incentive-form-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(180px, 220px);
-  gap: 24px;
-  align-items: start;
-}
-
-.home2-page .admin-incentive-form-fields {
-  display: grid;
-  gap: 14px;
-}
-
-.home2-page .admin-incentive-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.home2-page .admin-incentive-preview-label {
-  font-family: var(--ff-mono);
-  font-size: 10px;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: var(--space);
-}
-
-.home2-page .admin-incentive-preview-empty {
-  aspect-ratio: 2 / 3;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 18px;
-  text-align: center;
-  background: rgba(240, 237, 228, .04);
-  border: 1px dashed rgba(240, 237, 228, .16);
-  color: var(--steel);
-  font-size: .78rem;
-}
-
-.home2-page .admin-incentive-thumb {
-  width: 72px;
-}
-
-.home2-page .admin-incentive-thumb .portal-incentive-poster figcaption {
-  display: none;
-}
-
-.home2-page .admin-incentive-slug {
-  display: block;
-  margin-top: 4px;
-  font-family: var(--ff-mono);
-  font-size: var(--admin-fs-label);
-  letter-spacing: .06em;
-  color: var(--space);
-}
-
-.home2-page .admin-todo-slug {
-  display: block;
-  margin-top: 4px;
-  font-family: var(--ff-mono);
-  font-size: var(--admin-fs-label);
-  letter-spacing: .06em;
-  color: var(--space);
-}
-
-.home2-page .admin-todo-row-hidden {
-  opacity: .65;
-}
-
-/* Full-admin state availability editor */
-.home2-page .state-availability-admin-stats {
-  margin-top: 22px;
-}
-
-.home2-page .state-availability-admin-note {
-  margin: 0 0 18px;
-  padding: 12px 14px;
-  border-left: 3px solid var(--accent);
-  background: rgba(194, 78, 28, .07);
-  color: var(--steel);
-  font-size: var(--admin-fs-body);
-  line-height: 1.5;
-}
-
-.home2-page .state-availability-admin-table th[scope="row"] {
-  min-width: 190px;
-}
-
-.home2-page .state-admin-name,
-.home2-page .state-admin-code,
-.home2-page .state-admin-unsaved,
-.home2-page .state-admin-status-description {
-  display: block;
-}
-
-.home2-page .state-admin-code,
-.home2-page .state-admin-unsaved {
-  margin-top: 3px;
-  color: var(--space);
-  font-family: var(--ff-mono);
-  font-size: 9px;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-}
-
-.home2-page .state-admin-unsaved {
-  color: var(--accent-bright);
-}
-
-.home2-page .state-row-changed {
-  background: rgba(194, 78, 28, .055);
-}
-
-.home2-page .state-admin-status-control {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.home2-page .state-admin-status-control select {
-  max-width: 180px;
-}
-
-.home2-page .state-status-dot {
-  width: 10px;
-  height: 10px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 0 3px rgba(240, 237, 228, .045);
-}
-
-.home2-page .state-admin-status-description {
-  margin: 6px 0 0 20px;
-  color: var(--space);
-  font-size: .74rem;
-}
-
-@media (max-width: 720px) {
-  .home2-page .admin-header {
-    grid-template-columns: 1fr;
-    text-align: center;
-  }
-
-  .home2-page .admin-header-copy {
-    text-align: center;
-  }
-
-  .home2-page .admin-incentive-form-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .home2-page .admin-incentive-preview {
-    max-width: 220px;
-  }
-}
-
-.home2-page .admin-comp-attachment-panel {
-  display: grid;
-  gap: 1rem;
-}
-
-.home2-page .admin-upload-preview {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
-  background: rgba(240, 237, 228, .04);
-  border: 1px solid rgba(240, 237, 228, .1);
-  border-radius: var(--radius);
-}
-
-.home2-page .admin-upload-preview-image {
-  width: 88px;
-  height: 88px;
-  object-fit: contain;
-  border-radius: calc(var(--radius) - 2px);
-  background: rgba(8, 8, 8, .35);
-}
-
-.home2-page .admin-upload-preview-placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 88px;
-  height: 88px;
-  border-radius: calc(var(--radius) - 2px);
-  background: rgba(8, 8, 8, .35);
-  color: var(--steel);
-}
-
-.home2-page .admin-upload-preview-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-}
-
-.home2-page .admin-upload-preview-copy strong {
-  font-size: .92rem;
-  color: var(--bone);
-  word-break: break-word;
-}
-
-.home2-page .admin-upload-preview-copy span {
-  font-family: var(--ff-mono);
-  font-size: 10px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--space);
-}
-
-.home2-page .admin-brand-asset-cell {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.home2-page .admin-brand-asset-thumb {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-  border-radius: 6px;
-  background: rgba(240, 237, 228, .06);
-  flex-shrink: 0;
-}
-
-.home2-page .admin-brand-asset-thumb-file {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--steel);
-}
-
-.home2-page .admin-dashboard-tabs-list {
-  display: grid;
-  gap: 18px;
-}
-
-.home2-page .admin-dashboard-tab-card {
-  border: 1px solid rgba(240, 237, 228, .1);
-  border-radius: calc(var(--radius) + 2px);
-  background: var(--ink);
-  padding: 16px;
-}
-
-.home2-page .admin-dashboard-tab-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
-}
-
-.home2-page .admin-dashboard-tab-head-main {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  min-width: 0;
-}
-
-.home2-page .admin-dashboard-tab-drag-handle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  margin-top: 2px;
-  padding: 4px;
-  border-radius: 6px;
-  color: var(--steel);
-  cursor: grab;
-  touch-action: none;
-}
-
-.home2-page .admin-dashboard-tab-drag-handle:active {
-  cursor: grabbing;
-}
-
-.home2-page .admin-dashboard-tab-card.dragging {
-  opacity: .45;
-}
-
-.home2-page .admin-dashboard-tab-card-overlay {
-  min-width: min(100%, 520px);
-  padding: 16px;
-  border: 1px solid var(--gold);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, .35);
-  cursor: grabbing;
-}
-
-.home2-page .admin-dashboard-tab-card-overlay strong {
-  display: block;
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: -.01em;
-  color: var(--bone);
-}
-
-.home2-page .admin-dashboard-tab-head h2 {
-  margin: 0 0 4px;
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: -.01em;
-}
-
-.home2-page .admin-dashboard-add-link-btn {
-  height: 36px;
-  padding: 0 12px;
-}
-
-.home2-page .admin-dashboard-system-tab {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  border: 1px dashed rgba(240, 237, 228, .14);
-  border-radius: 0;
-  background: rgba(240, 237, 228, .03);
-}
-
-.home2-page .admin-dashboard-link-form {
-  margin-top: 8px;
-  padding-top: 18px;
-  border-top: 1px solid rgba(240, 237, 228, .08);
-}
-
-.home2-page .admin-draft-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 16px;
-  padding: 12px 14px;
-  border-radius: var(--radius);
-  border: 1px solid rgba(194, 78, 28, .28);
-  background: rgba(194, 78, 28, .08);
-}
-
-.home2-page .admin-draft-bar p {
-  margin: 0;
-  font-size: .88rem;
-  font-weight: 700;
-  color: var(--bone);
-}
-
-.home2-page .admin-draft-bar-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.home2-page .admin-dashboard-links-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
-  gap: 10px;
-}
-
-.home2-page .admin-dashboard-link-tile {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 72px;
-  padding: 12px 14px;
-  border-radius: var(--radius);
-  border: 1px solid rgba(240, 237, 228, .1);
-  background: var(--ink);
-  user-select: none;
-  cursor: grab;
-  touch-action: none;
-  transition: border-color .2s var(--ease), box-shadow .2s var(--ease), opacity .2s var(--ease);
-}
-
-.home2-page .admin-dashboard-link-tile:active,
-.home2-page .admin-dashboard-link-tile.dragging {
-  cursor: grabbing;
-}
-
-.home2-page .admin-dashboard-link-tile.unpublished {
-  opacity: .55;
-}
-
-.home2-page .admin-dashboard-link-tile-grip {
-  flex-shrink: 0;
-  display: inline-flex;
-  color: var(--steel);
-  opacity: .75;
-}
-
-.home2-page .admin-dashboard-link-tile-title {
-  flex: 1;
-  min-width: 0;
-  font-size: .84rem;
-  font-weight: 700;
-  line-height: 1.35;
-  letter-spacing: -.01em;
-  color: var(--bone);
-  text-align: center;
-  word-break: break-word;
-}
-
-.home2-page .admin-dashboard-link-tile-menu {
-  position: absolute;
-  right: 6px;
-  bottom: 6px;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  padding: 3px 4px;
-  border-radius: 7px;
-  border: 1px solid rgba(240, 237, 228, .12);
-  background: rgba(10, 10, 12, .94);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .15s var(--ease);
-}
-
-.home2-page .admin-dashboard-link-tile:hover .admin-dashboard-link-tile-menu,
-.home2-page .admin-dashboard-link-tile:focus-within .admin-dashboard-link-tile-menu {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.home2-page .admin-dashboard-link-tile-menu-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  border: 0;
-  border-radius: 5px;
-  background: transparent;
-  color: var(--sand);
-  cursor: pointer;
-}
-
-.home2-page .admin-dashboard-link-tile-menu-btn:hover:not(:disabled) {
-  background: rgba(240, 237, 228, .1);
-}
-
-.home2-page .admin-dashboard-link-tile-menu-btn:disabled {
-  opacity: .45;
-  cursor: not-allowed;
-}
-
-.home2-page .admin-dashboard-link-tile.dragging {
-  opacity: .45;
-}
-
-.home2-page .admin-dashboard-link-tile.drop-target {
-  border-color: var(--gold);
-  box-shadow: inset 0 0 0 1px rgba(212, 175, 55, .35);
-}
-
-.home2-page .admin-dashboard-link-drop-zone {
-  justify-content: center;
-  cursor: default;
-  border-style: dashed;
-  border-color: rgba(240, 237, 228, .12);
-  padding-bottom: 12px;
-}
-
-.home2-page .admin-dashboard-link-drop-zone .admin-dashboard-link-tile-title {
-  flex: unset;
-  color: var(--steel);
-  font-weight: 600;
-}
-
-.home2-page .admin-dashboard-link-drop-zone.active {
-  border-color: var(--gold);
-  background: rgba(212, 175, 55, .06);
-}
-
-.home2-page .admin-dashboard-link-drop-zone.active .admin-dashboard-link-tile-title {
-  color: var(--sand);
-}
-
-.home2-page .admin-dashboard-tabs-list-dragging .admin-dashboard-tab-card:not(:has(.admin-dashboard-link-tile.dragging)) {
-  outline: 1px dashed rgba(240, 237, 228, .1);
-  outline-offset: 4px;
-}
-
-.home2-page .admin-dashboard-links-grid.is-drop-over {
-  outline: 1px dashed rgba(212, 175, 55, .35);
-  outline-offset: 2px;
-  border-radius: var(--radius);
-}
-
-.home2-page .admin-dashboard-link-tile-overlay-card {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 72px;
-  min-width: 148px;
-  padding: 12px 14px 22px;
-  border-radius: var(--radius);
-  border: 1px solid var(--gold);
-  background: var(--ink);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, .35);
-  cursor: grabbing;
-}
-
-.home2-page .admin-dashboard-files {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.home2-page .admin-dashboard-files-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.home2-page .admin-dashboard-files-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.home2-page .admin-dashboard-file-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.home2-page .admin-dashboard-file-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  min-width: 0;
-}
-
-.home2-page .admin-dashboard-file-copy strong {
-  font-size: 0.95rem;
-}
-
-.home2-page .admin-dashboard-file-copy span {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.55);
-}
-
-.home2-page .admin-dashboard-file-edit {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-}
-
-.home2-page .admin-dashboard-file-edit input {
-  flex: 1 1 12rem;
-  min-width: 0;
-}
-
-.home2-page .admin-brand-asset-thumb-color {
-  border: 1px solid rgba(240, 237, 228, .18);
-}
-
-.home2-page .admin-color-preview {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px;
-  border-radius: var(--radius);
-  border: 1px solid rgba(240, 237, 228, .1);
-  background: var(--ink);
-}
-
-.home2-page .admin-color-swatch {
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
-  border: 1px solid rgba(240, 237, 228, .18);
-  flex-shrink: 0;
-}
-
-.home2-page .admin-color-input-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.home2-page .admin-color-picker {
-  width: 52px;
-  height: 44px;
-  padding: 4px;
-  border: 1px solid rgba(240, 237, 228, .12);
-  border-radius: var(--radius);
-  background: var(--ink);
-  cursor: pointer;
-}
-
-/* Full-screen admin preview routes (onboarding and W-9) */
-.admin-onboarding-preview-shell .home2-page.onboarding-page .onboarding-main {
-  padding-top: clamp(128px, 16vh, 150px);
-  overflow: visible;
-}
-
-.admin-onboarding-preview-shell .home2-page.onboarding-page:has(.onboarding-panel-signing) {
-  overflow-x: visible;
-}
-
-.admin-onboarding-preview-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1002;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.85rem clamp(16px, 4vw, 28px);
-  background: rgba(18, 18, 18, 0.96);
-  border-bottom: 1px solid rgba(194, 78, 28, 0.45);
-  backdrop-filter: blur(10px);
-}
-
-.admin-onboarding-preview-bar-copy {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  min-width: 0;
-}
-
-.admin-onboarding-preview-bar-copy p {
-  margin: 0;
-  font-size: 0.875rem;
-  color: rgba(240, 237, 228, 0.78);
-}
-
-.admin-onboarding-preview-badge {
-  flex-shrink: 0;
-  padding: 0.25rem 0.6rem;
-  border-radius: 999px;
-  background: rgba(194, 78, 28, 0.18);
-  color: #ffb089;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.admin-onboarding-preview-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
-}
-
-.admin-onboarding-preview-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.45rem 0.75rem;
-  border-radius: 999px;
-  border: 1px solid rgba(240, 237, 228, 0.16);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--bone);
-  font-size: 0.8125rem;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.admin-onboarding-preview-btn:hover {
-  border-color: rgba(240, 237, 228, 0.28);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-@media (max-width: 720px) {
-  .admin-onboarding-preview-bar {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .admin-onboarding-preview-bar-copy {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .admin-onboarding-preview-actions {
-    justify-content: flex-end;
-  }
-}
-
 /* ── Scope ───────────────────────────────────────────────────────────────── */
 
 /* Everything below is scoped to the admin <main> (or the preview shell at the
@@ -2180,6 +1209,12 @@
   color: var(--portal-text);
 }
 
+/* As a block of its own (a second line under a name) it takes a line. */
+.admin-dash div.admin-inline-note,
+.admin-dash p.admin-inline-note {
+  display: flex;
+}
+
 .admin-dash .admin-user-subtext {
   display: block;
   font-family: var(--portal-font);
@@ -2466,8 +1501,9 @@
     width: 100%;
   }
 
+  /* Two long labels share a row badly at 326px, so each takes the width. */
   .admin-dash :is(.admin-panel-head-actions, .admin-action-row) > * {
-    flex: 1 1 0;
+    flex: 1 1 200px;
   }
 
   .admin-dash .admin-stats {
@@ -4053,3 +3089,1242 @@
   }
 }
 
+/* ── User detail ─────────────────────────────────────────────────────────── */
+
+.admin-dash .admin-user-profile-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Sections inside the page pane: recessed, not a second pane of glass. */
+.admin-dash .admin-user-profile-summary,
+.admin-dash .admin-user-profile-section {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.admin-dash .admin-user-profile-section h2 {
+  margin: 0 0 4px;
+}
+
+.admin-dash .admin-user-profile-identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.admin-dash .admin-user-profile-identity h2 {
+  margin: 0 0 2px;
+  font-size: var(--portal-t-mid);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-user-profile-photo {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.admin-dash .admin-user-profile-photo-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 1px solid var(--portal-border);
+  background: rgba(255, 255, 255, 0.08);
+  font-family: var(--portal-font);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-user-profile-meta {
+  margin-top: 4px;
+}
+
+.admin-dash .admin-user-form-status {
+  margin-bottom: 16px;
+}
+
+.admin-dash .admin-user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid var(--portal-border);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.admin-dash .admin-user-avatar-sm {
+  width: 28px;
+  height: 28px;
+}
+
+.admin-dash .admin-user-avatar-md {
+  width: 52px;
+  height: 52px;
+}
+
+.admin-dash .admin-user-avatar-lg {
+  width: 72px;
+  height: 72px;
+}
+
+.admin-dash .admin-user-avatar-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-dash .admin-user-avatar-initials {
+  font-family: var(--portal-font);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-user-avatar-sm .admin-user-avatar-initials {
+  font-size: 11px;
+}
+
+.admin-dash .admin-user-avatar-md .admin-user-avatar-initials {
+  font-size: 14px;
+}
+
+.admin-dash .admin-user-avatar-lg .admin-user-avatar-initials {
+  font-size: 22px;
+}
+
+/* Checklists: onboarding steps and carrier applications. */
+.admin-dash .admin-user-todo-phases {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  margin-top: 12px;
+}
+
+.admin-dash .admin-user-todo-phase-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.admin-dash .admin-user-todo-phase-head h3 {
+  margin: 0;
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-user-todo-phase-head span {
+  font-family: var(--portal-font);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--portal-text-faint);
+}
+
+.admin-dash .admin-user-todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-dash .admin-user-todo-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+/* The toggle is the row's control: control-sized, a circle or a filled
+   check, so the state is a shape and not only a colour. */
+.admin-dash .admin-user-todo-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--portal-control-h);
+  height: var(--portal-control-h);
+  margin: 0 0 0 -12px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--portal-control-radius);
+  background: none;
+  color: var(--portal-text-faint);
+  cursor: pointer;
+  transition:
+    background-color var(--admin-fast) var(--portal-ease-out),
+    color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-user-todo-toggle svg {
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
+}
+
+.admin-dash .admin-user-todo-toggle:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-user-todo-list li.done .admin-user-todo-toggle {
+  color: #8be7a8;
+}
+
+.admin-dash .admin-user-todo-toggle:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.admin-dash .admin-user-todo-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+  min-height: var(--portal-control-h);
+}
+
+.admin-dash .admin-user-todo-title {
+  font-size: var(--portal-control-fs);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-user-todo-list li.done .admin-user-todo-title {
+  color: var(--portal-text);
+  text-decoration: line-through;
+  text-decoration-color: rgba(255, 255, 255, 0.35);
+}
+
+.admin-dash .admin-user-todo-note {
+  font-family: var(--portal-font);
+  font-size: 12px;
+  letter-spacing: 0;
+  line-height: 1.4;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-todo-phase {
+  display: block;
+  font-size: var(--portal-t-body);
+  white-space: nowrap;
+}
+
+/* Saved documents and the upload slots. */
+.admin-dash .admin-user-documents {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-dash .admin-user-document-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 14px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-user-document-item strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-user-document-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-dash .admin-user-document-upload-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--portal-rule);
+}
+
+.admin-dash .admin-user-document-upload-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.admin-dash .admin-user-document-upload-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 14px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-user-document-upload-item strong {
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-user-document-upload-other-label {
+  max-width: 420px;
+}
+
+.admin-dash .admin-comp-attachment-panel {
+  display: grid;
+  gap: 16px;
+}
+
+/* ── Incentives and to-dos ───────────────────────────────────────────────── */
+
+.admin-dash .admin-incentive-form {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--portal-rule);
+}
+
+.admin-dash .admin-incentive-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(180px, 220px);
+  align-items: start;
+  gap: 24px;
+}
+
+.admin-dash .admin-incentive-form-fields {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-dash .admin-incentive-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-dash .admin-incentive-preview-label {
+  margin: 0;
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-incentive-preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  aspect-ratio: 2 / 3;
+  padding: 18px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  background: var(--admin-inset);
+  font-size: var(--portal-t-body);
+  text-align: center;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-incentive-thumb {
+  width: 72px;
+}
+
+.admin-dash .admin-incentive-thumb .portal-incentive-poster figcaption {
+  display: none;
+}
+
+.admin-dash .admin-incentive-slug,
+.admin-dash .admin-todo-slug {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--portal-font);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--portal-text-faint);
+}
+
+.admin-dash .admin-todo-row-hidden {
+  opacity: 0.7;
+}
+
+.admin-dash .admin-todo-completion {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 140px;
+}
+
+.admin-dash .admin-todo-completion-bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.admin-dash .admin-todo-completion-fill {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.admin-dash .admin-todo-completion-label {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-todo-completion-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--portal-text-strong);
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.35);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.admin-dash .admin-todo-completion-btn:hover {
+  text-decoration-color: currentColor;
+}
+
+/* ── State availability ──────────────────────────────────────────────────── */
+
+.admin-dash .state-availability-admin-stats {
+  margin-top: 4px;
+}
+
+.admin-dash .state-availability-admin-note {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 12px;
+  background: var(--admin-inset);
+  font-size: var(--portal-control-fs);
+  line-height: 1.5;
+  color: var(--portal-text);
+}
+
+.admin-dash .state-availability-admin-table th[scope="row"] {
+  min-width: 190px;
+}
+
+.admin-dash .state-admin-name,
+.admin-dash .state-admin-code,
+.admin-dash .state-admin-status-description {
+  display: block;
+}
+
+.admin-dash .state-admin-code {
+  margin-top: 2px;
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-label);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--portal-text-faint);
+}
+
+/* Unsaved: the pending chip, dotted edge and all. */
+.admin-dash .state-admin-unsaved {
+  display: inline-flex;
+  margin-top: 6px;
+  padding: 3px 6px 2px 5px;
+  border: 1px solid rgba(245, 201, 120, 0.7);
+  border-left: 3px dotted currentColor;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.86);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-label);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  color: #f5c978;
+}
+
+.admin-dash .state-row-changed {
+  background: rgba(245, 201, 120, 0.06);
+}
+
+.admin-dash .state-admin-status-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-dash .state-admin-status-control select {
+  max-width: 200px;
+}
+
+/* The map's own encodings: a filled dot for Active, a ring for Pending, a
+   dash for Inactive, beside a select that names the status in words. */
+.admin-dash .state-status-dot {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  color: var(--portal-text-faint);
+}
+
+.admin-dash .state-status-dot.state-status-active {
+  color: #5fd88a;
+}
+
+.admin-dash .state-status-dot.state-status-pending {
+  border: 2px solid #f5c978;
+  background: none;
+}
+
+.admin-dash .state-status-dot.state-status-inactive {
+  height: 2px;
+  border-radius: 1px;
+}
+
+.admin-dash .state-admin-status-description {
+  margin: 6px 0 0 20px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--portal-text);
+}
+
+/* ── Brand assets and uploads ────────────────────────────────────────────── */
+
+.admin-dash .admin-upload-preview {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 14px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-upload-preview-image,
+.admin-dash .admin-upload-preview-placeholder {
+  flex-shrink: 0;
+  width: 88px;
+  height: 88px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.admin-dash .admin-upload-preview-image {
+  object-fit: contain;
+}
+
+.admin-dash .admin-upload-preview-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--portal-text-faint);
+}
+
+.admin-dash .admin-upload-preview-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-dash .admin-upload-preview-copy strong {
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-upload-preview-copy span {
+  font-family: var(--portal-font);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-brand-asset-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-dash .admin-brand-asset-thumb {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  object-fit: contain;
+}
+
+.admin-dash .admin-brand-asset-thumb-file {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--portal-text-faint);
+}
+
+.admin-dash .admin-brand-asset-thumb-color {
+  border: 1px solid var(--portal-border);
+}
+
+.admin-dash .admin-color-preview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 14px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-color-swatch {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--portal-border);
+  border-radius: 12px;
+}
+
+.admin-dash .admin-color-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* The field control rule would stretch the picker to the row. */
+.admin-dash .admin-field .admin-color-picker {
+  flex: 0 0 auto;
+  width: var(--portal-control-h);
+  padding: 4px;
+  cursor: pointer;
+}
+
+/* ── Dashboard tabs ──────────────────────────────────────────────────────── */
+
+.admin-dash .admin-dashboard-tabs-list {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-dash .admin-dashboard-tab-card {
+  padding: 16px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.admin-dash .admin-dashboard-tab-card.dragging {
+  opacity: 0.45;
+}
+
+.admin-dash .admin-dashboard-tab-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-bottom: 14px;
+}
+
+.admin-dash .admin-dashboard-tab-head-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-dash .admin-dashboard-tab-head h2 {
+  margin: 0 0 2px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-dashboard-tab-head .admin-incentive-actions {
+  align-items: center;
+}
+
+.admin-dash .admin-dashboard-tab-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  margin: -8px 0 0 -8px;
+  border-radius: var(--portal-control-radius);
+  color: var(--portal-text-faint);
+  cursor: grab;
+  touch-action: none;
+}
+
+.admin-dash .admin-dashboard-tab-drag-handle:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-dashboard-tab-drag-handle:active {
+  cursor: grabbing;
+}
+
+.admin-dash .admin-dashboard-tab-card-overlay {
+  min-width: min(100%, 520px);
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 18px;
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  cursor: grabbing;
+}
+
+.admin-dash .admin-dashboard-tab-card-overlay strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-dashboard-system-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.admin-dash .admin-dashboard-link-form {
+  margin-top: 8px;
+  padding-top: 18px;
+  border-top: 1px solid var(--portal-rule);
+}
+
+/* Unsaved order: an amber dotted edge, the pending cue, not an accent field. */
+.admin-dash .admin-draft-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-bottom: 16px;
+  padding: 10px 12px 10px 14px;
+  border: 1px solid rgba(245, 201, 120, 0.5);
+  border-left: 3px dotted #f5c978;
+  border-radius: 14px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-draft-bar p {
+  margin: 0;
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-draft-bar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-dash .admin-dashboard-links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.admin-dash .admin-dashboard-links-grid.is-drop-over {
+  border-radius: 14px;
+  outline: 1px dashed rgba(255, 255, 255, 0.4);
+  outline-offset: 2px;
+}
+
+.admin-dash .admin-dashboard-link-tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  min-height: 72px;
+  padding: 12px 14px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 14px;
+  background: var(--admin-inset);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  transition:
+    border-color var(--admin-fast) var(--portal-ease-out),
+    opacity var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-dashboard-link-tile:hover {
+  border-color: var(--portal-border);
+}
+
+.admin-dash .admin-dashboard-link-tile:active,
+.admin-dash .admin-dashboard-link-tile.dragging {
+  cursor: grabbing;
+}
+
+.admin-dash .admin-dashboard-link-tile.dragging {
+  opacity: 0.45;
+}
+
+/* Unpublished: dimmed and dashed, so it does not rest on the dim alone. */
+.admin-dash .admin-dashboard-link-tile.unpublished {
+  border-style: dashed;
+  opacity: 0.6;
+}
+
+.admin-dash .admin-dashboard-link-tile.drop-target {
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.admin-dash .admin-dashboard-link-tile-grip {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--portal-text-faint);
+}
+
+.admin-dash .admin-dashboard-link-tile-title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  overflow-wrap: anywhere;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-dashboard-link-tile-menu {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  background: var(--portal-bar-fill);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-dashboard-link-tile:hover .admin-dashboard-link-tile-menu,
+.admin-dash .admin-dashboard-link-tile:focus-within .admin-dashboard-link-tile-menu {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.admin-dash .admin-dashboard-link-tile-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--portal-text);
+  cursor: pointer;
+}
+
+.admin-dash .admin-dashboard-link-tile-menu-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-dashboard-link-tile-menu-btn:has(> .lucide-trash2) {
+  color: var(--admin-danger);
+}
+
+.admin-dash .admin-dashboard-link-tile-menu-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* No hover on a touch screen: the edit and delete buttons stay in view and
+   grow to a thumb target, and the tile makes room under its title. */
+@media (hover: none) {
+  .admin-dash .admin-dashboard-link-tile {
+    padding-bottom: 52px;
+  }
+
+  .admin-dash .admin-dashboard-link-tile-menu {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .admin-dash .admin-dashboard-link-tile-menu-btn {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+.admin-dash .admin-dashboard-link-drop-zone {
+  justify-content: center;
+  border-style: dashed;
+  cursor: default;
+}
+
+.admin-dash .admin-dashboard-link-drop-zone .admin-dashboard-link-tile-title {
+  flex: unset;
+  font-weight: 500;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-dashboard-link-drop-zone.active {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-dash .admin-dashboard-link-drop-zone.active .admin-dashboard-link-tile-title {
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-dashboard-tabs-list-dragging .admin-dashboard-tab-card:not(:has(.admin-dashboard-link-tile.dragging)) {
+  outline: 1px dashed rgba(255, 255, 255, 0.14);
+  outline-offset: 4px;
+}
+
+.admin-dash .admin-dashboard-link-tile-overlay-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  min-width: 160px;
+  min-height: 72px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 14px;
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  cursor: grabbing;
+}
+
+.admin-dash .admin-dashboard-files {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-dash .admin-dashboard-files-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-dash .admin-dashboard-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-dash .admin-dashboard-file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 12px 10px 16px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 14px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-dashboard-file-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-dash .admin-dashboard-file-copy strong {
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-dashboard-file-copy span {
+  font-size: 12px;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-dashboard-file-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.admin-dash .admin-dashboard-file-edit input {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+/* ── Pages on a phone ────────────────────────────────────────────────────── */
+
+@media (max-width: 720px) {
+  .admin-dash .admin-incentive-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-dash .admin-incentive-preview {
+    max-width: 220px;
+  }
+}
+
+@media (max-width: 620px) {
+  .admin-dash .admin-user-profile-summary,
+  .admin-dash .admin-user-profile-section {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .admin-dash .admin-genesis-details-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px 16px;
+  }
+
+  .admin-dash .admin-user-document-item,
+  .admin-dash .admin-dashboard-file-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-dash :is(.admin-user-document-actions, .admin-dashboard-file-row .admin-incentive-actions) {
+    justify-content: stretch;
+  }
+
+  .admin-dash :is(.admin-user-document-actions, .admin-dashboard-file-row .admin-incentive-actions) > * {
+    flex: 1 1 0;
+  }
+
+  .admin-dash .admin-upload-preview {
+    align-items: flex-start;
+  }
+
+  .admin-dash .admin-draft-bar,
+  .admin-dash .admin-draft-bar-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-dash .admin-dashboard-tab-head .admin-incentive-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .admin-dash .state-admin-status-control select {
+    max-width: none;
+  }
+
+  .admin-dash .admin-todo-completion-btn {
+    min-height: 44px;
+  }
+
+  .admin-onboarding-preview-shell .home2-page.onboarding-page .onboarding-main {
+    padding-top: 212px;
+  }
+}
+
+/* ── Full-screen preview routes ──────────────────────────────────────────── */
+
+/* The onboarding and W-9 previews render outside AdminLayout, under a fixed
+   bar that says nothing is saved. The bar sits over scrolling content, so it
+   takes the solid bar fill with the sheen. */
+.admin-onboarding-preview-shell {
+  --admin-fast: 150ms;
+  --admin-inset: rgba(0, 0, 0, 0.28);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-onboarding-preview-shell {
+    --admin-fast: 0ms;
+  }
+}
+
+.admin-onboarding-preview-shell .home2-page.onboarding-page .onboarding-main {
+  padding-top: clamp(128px, 16vh, 150px);
+  overflow: visible;
+}
+
+.admin-onboarding-preview-shell .home2-page.onboarding-page:has(.onboarding-panel-signing) {
+  overflow-x: visible;
+}
+
+.admin-onboarding-preview-shell .admin-onboarding-preview-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1002;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-sizing: border-box;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) clamp(16px, 4vw, 28px) 10px;
+  border-bottom: 1px solid var(--portal-border);
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+}
+
+.admin-onboarding-preview-shell .admin-onboarding-preview-bar-copy {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.admin-onboarding-preview-shell .admin-onboarding-preview-bar-copy p {
+  margin: 0;
+  font-size: var(--portal-control-fs);
+  line-height: 1.45;
+  color: var(--portal-text);
+}
+
+/* A pending chip: the preview is a state, not an alert. */
+.admin-onboarding-preview-shell .admin-onboarding-preview-badge {
+  flex-shrink: 0;
+  padding: 4px 7px 3px 6px;
+  border: 1px solid rgba(245, 201, 120, 0.7);
+  border-left: 3px dotted currentColor;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.86);
+  font-size: var(--portal-t-label);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #f5c978;
+}
+
+.admin-onboarding-preview-shell .admin-onboarding-preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.admin-onboarding-preview-shell .admin-onboarding-preview-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  min-height: var(--portal-control-h);
+  padding: 0 14px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-control-radius);
+  background: var(--admin-inset);
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--admin-fast) var(--portal-ease-out),
+    border-color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-onboarding-preview-shell .admin-onboarding-preview-btn svg {
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
+}
+
+.admin-onboarding-preview-shell .admin-onboarding-preview-btn:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.admin-onboarding-preview-shell .admin-onboarding-preview-btn:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+@media (max-width: 720px) {
+  .admin-onboarding-preview-shell .admin-onboarding-preview-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .admin-onboarding-preview-shell .admin-onboarding-preview-bar-copy {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .admin-onboarding-preview-shell .admin-onboarding-preview-actions > * {
+    flex: 1 1 0;
+  }
+}
