@@ -161,6 +161,8 @@ export default function AgentBusinessCardDownload({
               <img
                 src={profilePhotoUrl ?? undefined}
                 alt={`Profile portrait of ${agentName}`}
+                width={56}
+                height={56}
                 onError={() => setPreviewPhotoFailed(true)}
               />
             ) : (
@@ -187,7 +189,7 @@ export default function AgentBusinessCardDownload({
           onClick={() => void handleShare()}
         >
           <Share2 size={16} aria-hidden="true" />
-          {activeAction === "share" ? "Creating PDF..." : "Share PDF"}
+          {activeAction === "share" ? "Creating PDF…" : "Share PDF"}
         </button>
         <button
           type="button"
@@ -198,7 +200,7 @@ export default function AgentBusinessCardDownload({
           onClick={() => void handleDownload()}
         >
           <Download size={16} aria-hidden="true" />
-          {activeAction === "download" ? "Creating PDF..." : "Download PDF"}
+          {activeAction === "download" ? "Creating PDF…" : "Download PDF"}
         </button>
       </div>
 

@@ -25,6 +25,7 @@
   font-family: var(--portal-font);
   text-align: left;
   cursor: pointer;
+  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   transition:
     transform 160ms var(--portal-ease-out),
@@ -190,14 +191,23 @@
 }
 
 /* The page ends clear of the capsule. 0-3-1 clears the tab bar's own
-   padding rule in portal-shell.css. */
+   padding rule in portal-shell.css. The scroll padding keeps a control that
+   takes keyboard focus from landing under it (WCAG 2.4.11). */
 .home2-page:has(> .pdock.is-floating) > main {
   padding-bottom: 112px;
+}
+
+html:has(.pdock.is-floating) {
+  scroll-padding-bottom: 112px;
 }
 
 @media (max-width: 620px) {
   .home2-page:has(> .pdock.is-floating) > main {
     padding-bottom: calc(var(--portal-nav-space) + 64px + 26px);
+  }
+
+  html:has(.pdock.is-floating) {
+    scroll-padding-bottom: calc(var(--portal-nav-space) + 64px + 26px);
   }
 }
 
@@ -308,6 +318,7 @@
   background: rgba(255, 255, 255, 0.06);
   color: var(--portal-text-strong);
   cursor: pointer;
+  touch-action: manipulation;
   transition:
     border-color 200ms var(--portal-ease-out),
     transform 160ms var(--portal-ease-out);
@@ -371,6 +382,7 @@
     flex-shrink: 0;
     height: 28px;
     touch-action: none;
+    user-select: none;
     cursor: grab;
   }
 

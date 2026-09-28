@@ -391,6 +391,7 @@
   letter-spacing: 0.01em;
   text-align: center;
   text-decoration: none;
+  touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   transition: color 200ms var(--portal-ease-out), transform 160ms var(--portal-ease-out);
 }
@@ -465,9 +466,14 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
 
-  /* The bar is fixed, so the page under it has to stop above it. */
+  /* The bar is fixed, so the page under it has to stop above it, and a
+     focused control scrolled into view has to stop above it too. */
   .home2-page:has(> .portal-bottom-nav) > main {
     padding-bottom: calc(var(--portal-nav-space) + 16px);
+  }
+
+  html:has(.portal-bottom-nav) {
+    scroll-padding-bottom: calc(var(--portal-nav-space) + 16px);
   }
 }
 
