@@ -63,12 +63,39 @@
   /* Focus: keyboard only, through :focus-visible. */
   --portal-focus-ring: 2px solid rgba(255, 255, 255, 0.8);
   --portal-focus-offset: 2px;
+
+  /* Controls: one knob for every button, select, menu row and tab, so a
+     phone gets thumb-sized controls without each page restating the sizes.
+     Icons follow through CSS, which overrides lucide's width attribute. */
+  --portal-control-h: 44px;
+  --portal-control-fs: 14px;
+  --portal-control-icon: 18px;
+  --portal-control-radius: 12px;
+
+  /* Floating tab bar. Only phones carry it, so the space it reserves is
+     zero above 620px. Anything that docks above the bar (sticky pagers,
+     save bars, the state map sheet, the onboarding capsule) reads
+     --portal-nav-space and nothing else. */
+  --portal-nav-h: 0px;
+  --portal-nav-gap: 0px;
+  --portal-nav-space: 0px;
 }
 
 @media (max-width: 620px) {
   :root {
     --portal-radius: 16px;
     --portal-gap: 10px;
+
+    --portal-control-h: 52px;
+    --portal-control-fs: 16px;
+    --portal-control-icon: 20px;
+    --portal-control-radius: 14px;
+
+    --portal-nav-h: 64px;
+    --portal-nav-gap: 12px;
+    --portal-nav-space: calc(
+      var(--portal-nav-h) + var(--portal-nav-gap) + env(safe-area-inset-bottom)
+    );
   }
 }
 
