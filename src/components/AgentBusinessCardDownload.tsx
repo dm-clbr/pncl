@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Download, LockKeyhole, Share2 } from "lucide-react";
+import PNCLLogo from "@/components/PNCLLogo";
 import { toast } from "sonner";
 import Pane from "@/components/portal/Pane";
 import {
@@ -120,10 +121,8 @@ export default function AgentBusinessCardDownload({
   return (
     <Pane title="PDF business card">
       <p className="portal-profile-lede" id="digital-business-card-description">
-        A print-ready 3.5 x 2 inch card with your saved profile photo, name, PNCL affiliation,
-        verified work email, profile phone, and NPN when available. A branded placeholder
-        appears when your photo is unavailable; home address and onboarding data stay private.
-        Share PDF sends only the PDF file, never this portal page.
+        A print-ready 3.5 x 2 inch card with your photo, name, work email, phone and NPN. Your
+        home address and onboarding data stay private.
       </p>
 
       <div className="portal-profile-card">
@@ -135,42 +134,38 @@ export default function AgentBusinessCardDownload({
           role="group"
           aria-label={`Business card preview for ${agentName}`}
         >
-          <div className="portal-business-card-brand">
-            <strong>PNCL</strong>
-            <span>Agent network</span>
-          </div>
-          <div className="portal-business-card-main">
-            <div className="portal-business-card-copy">
-              <div className="portal-business-card-name">{agentName}</div>
-              <div className="portal-business-card-affiliation">PNCL agent</div>
-              <dl>
-                <div>
-                  <dt>Email</dt>
-                  <dd>{workEmailVerified && workEmail ? workEmail : "Verified work email required"}</dd>
-                </div>
-                <div>
-                  <dt>Phone</dt>
-                  <dd>{hasValidPhone ? phoneNumber : "Phone required"}</dd>
-                </div>
-                {normalizedNpn && (
-                  <div>
-                    <dt>NPN</dt>
-                    <dd>{normalizedNpn}</dd>
-                  </div>
-                )}
-              </dl>
+          {/* A scaled replica of the PDF: same logo, positions and type. */}
+          <span className="portal-business-card-logo" aria-hidden="true">
+            <PNCLLogo />
+          </span>
+          <div className="portal-business-card-name">{agentName}</div>
+          <div className="portal-business-card-affiliation">PNCL agent</div>
+          <dl className={normalizedNpn ? undefined : "is-short"}>
+            <div>
+              <dt>Email</dt>
+              <dd>{workEmailVerified && workEmail ? workEmail : "Verified work email required"}</dd>
             </div>
-            <div className="portal-business-card-portrait">
-              {showProfilePhoto ? (
-                <img
-                  src={profilePhotoUrl ?? undefined}
-                  alt={`Profile portrait of ${agentName}`}
-                  onError={() => setPreviewPhotoFailed(true)}
-                />
-              ) : (
-                <span aria-label={`Branded initials placeholder for ${agentName}`}>{initials}</span>
-              )}
+            <div>
+              <dt>Phone</dt>
+              <dd>{hasValidPhone ? phoneNumber : "Phone required"}</dd>
             </div>
+            {normalizedNpn && (
+              <div>
+                <dt>NPN</dt>
+                <dd>{normalizedNpn}</dd>
+              </div>
+            )}
+          </dl>
+          <div className="portal-business-card-portrait">
+            {showProfilePhoto ? (
+              <img
+                src={profilePhotoUrl ?? undefined}
+                alt={`Profile portrait of ${agentName}`}
+                onError={() => setPreviewPhotoFailed(true)}
+              />
+            ) : (
+              <span aria-label={`Branded initials placeholder for ${agentName}`}>{initials}</span>
+            )}
           </div>
         </div>
       </div>
@@ -196,7 +191,7 @@ export default function AgentBusinessCardDownload({
         </button>
         <button
           type="button"
-          className="portal-profile-btn portal-profile-card-btn"
+          className="portal-profile-btn portal-profile-card-btn is-primary"
           aria-label={`Download PDF business card for ${agentName}`}
           aria-describedby="digital-business-card-description"
           disabled={!canDownload || activeAction !== null}
@@ -208,7 +203,7 @@ export default function AgentBusinessCardDownload({
       </div>
 
       <p id="digital-business-card-share-fallback" className="portal-profile-card-note">
-        If this device cannot share files directly, the PDF will download so you can attach it manually.
+        Share PDF sends only the file. If this device cannot share files directly, the PDF will download so you can attach it manually.
       </p>
     </Pane>
   );

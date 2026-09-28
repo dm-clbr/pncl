@@ -1,16 +1,24 @@
 import {
+  appendBezierCurve,
   clip,
+  closePath,
   endPath,
+  moveTo,
+  PDFDict,
   PDFDocument,
+  PDFName,
+  PDFOperator,
+  PDFOperatorNames,
   popGraphicsState,
   pushGraphicsState,
-  rectangle,
+  setCharacterSpacing,
   StandardFonts,
   rgb,
   type PDFFont,
   type PDFImage,
   type PDFPage,
 } from "pdf-lib";
+import { LOGO_PATH, LOGO_VIEWBOX } from "@/components/pncl-logo-path";
 import { requireValidAgentPhoneNumber } from "@/lib/agent-phone";
 
 export const BUSINESS_CARD_WIDTH_POINTS = 3.5 * 72;
@@ -39,7 +47,79 @@ export interface AgentBusinessCardContent {
 }
 
 const PNCL_EMAIL_PATTERN = /^[^\s@]+@thepncl\.com$/i;
-const PORTRAIT_FRAME = { x: 179, y: 24, width: 54, height: 76 } as const;
+
+/* The card follows the agent portal: a warm near-black base with the
+   gradient's wall light in the top left, white type on three opacity tiers
+   instead of a second colour, and the portal accent as a single spark. */
+const CARD = {
+  margin: 18,
+  white: rgb(1, 1, 1),
+  accent: rgb(1, 0.227, 0.118),
+  paneFill: rgb(0.14, 0.115, 0.095),
+} as const;
+const PORTRAIT = { cx: 206, cy: 90, r: 28 } as const;
+
+/** A closed circle for the clip path: four cubic arcs, kappa 0.5523. */
+function circlePath(cx: number, cy: number, r: number) {
+  const k = r * 0.5523;
+  return [
+    moveTo(cx + r, cy),
+    appendBezierCurve(cx + r, cy + k, cx + k, cy + r, cx, cy + r),
+    appendBezierCurve(cx - k, cy + r, cx - r, cy + k, cx - r, cy),
+    appendBezierCurve(cx - r, cy - k, cx - k, cy - r, cx, cy - r),
+    appendBezierCurve(cx + k, cy - r, cx + r, cy - k, cx + r, cy),
+    closePath(),
+  ];
+}
+
+/** The gradient's wall light in the top left corner, as a real PDF radial
+    shading (type 3), which pdf-lib has no helper for. A vector paint, so the
+    card still embeds no image unless the agent has a photo. The centre is
+    the light at 0.22 over the ink, falling to the ink by 190pt. */
+function drawWallLight(pdf: PDFDocument, page: PDFPage): void {
+  const mix = (light: number, ink: number) => ink + 0.22 * (light - ink);
+  const ink = [0.055, 0.047, 0.043];
+  const shading = pdf.context.register(
+    pdf.context.obj({
+      ShadingType: 3,
+      ColorSpace: "DeviceRGB",
+      Coords: [24, 150, 0, 24, 150, 190],
+      Function: {
+        FunctionType: 2,
+        Domain: [0, 1],
+        C0: [mix(0.91, ink[0]), mix(0.8, ink[1]), mix(0.69, ink[2])],
+        C1: ink,
+        N: 1.4,
+      },
+      Extend: [true, true],
+    }),
+  );
+  const { Resources } = page.node.normalizedEntries();
+  let shadings = Resources.lookupMaybe(PDFName.of("Shading"), PDFDict);
+  if (!shadings) {
+    shadings = pdf.context.obj({});
+    Resources.set(PDFName.of("Shading"), shadings);
+  }
+  shadings.set(PDFName.of("WallLight"), shading);
+  page.pushOperators(
+    pushGraphicsState(),
+    PDFOperator.of(PDFOperatorNames.ShadingFill, [PDFName.of("WallLight")]),
+    popGraphicsState(),
+  );
+}
+
+/** Tracked caps, which pdf-lib's drawText cannot set: the character spacing
+    lives in the graphics state that drawText inherits. */
+function drawTracked(
+  page: PDFPage,
+  text: string,
+  options: { x: number; y: number; size: number; font: PDFFont; opacity: number; tracking: number },
+) {
+  const { tracking, ...rest } = options;
+  page.pushOperators(pushGraphicsState(), setCharacterSpacing(tracking));
+  page.drawText(text, { ...rest, color: CARD.white });
+  page.pushOperators(popGraphicsState());
+}
 
 function cleanSingleLine(value: string): string {
   return value.replace(/[\r\n]+/g, " ").replace(/\s+/g, " ").trim();
@@ -99,18 +179,11 @@ function drawContactLine({
   labelFont: PDFFont;
   valueFont: PDFFont;
 }) {
-  const steel = rgb(0.58, 0.59, 0.59);
-  const bone = rgb(0.94, 0.93, 0.89);
-  const valueSize = fitTextSize(valueFont, value, 8.25, 6.25, 116);
+  const x = CARD.margin + 30;
+  const valueSize = fitTextSize(valueFont, value, 8, 6.25, BUSINESS_CARD_WIDTH_POINTS - CARD.margin - x);
 
-  page.drawText(label, { x: 20, y, size: 5.25, font: labelFont, color: steel });
-  page.drawText(value, {
-    x: 48,
-    y: y - 1,
-    size: valueSize,
-    font: valueFont,
-    color: bone,
-  });
+  drawTracked(page, label, { x: CARD.margin, y: y + 0.75, size: 5, font: labelFont, opacity: 0.55, tracking: 0.9 });
+  page.drawText(value, { x, y, size: valueSize, font: valueFont, color: CARD.white, opacity: 0.92 });
 }
 
 function getInitials(name: string): string {
@@ -134,78 +207,42 @@ async function embedProfilePhoto(
   }
 }
 
-function drawPortraitFallback(page: PDFPage, bold: PDFFont, name: string): void {
-  const accent = rgb(0.76, 0.31, 0.11);
-  const bone = rgb(0.94, 0.93, 0.89);
-  const frame = PORTRAIT_FRAME;
-  const initials = getInitials(name);
-  const initialsSize = fitTextSize(bold, initials, 20, 13, frame.width - 12);
+/** The portal's avatar: a round portrait with a quiet ring. */
+function drawPortraitRing(page: PDFPage): void {
+  const { cx, cy, r } = PORTRAIT;
+  page.drawCircle({ x: cx, y: cy, size: r + 3.5, borderColor: CARD.white, borderWidth: 0.5, borderOpacity: 0.14 });
+  page.drawCircle({ x: cx, y: cy, size: r, borderColor: CARD.white, borderWidth: 0.75, borderOpacity: 0.32 });
+}
 
-  page.drawRectangle({ ...frame, color: rgb(0.13, 0.12, 0.13) });
-  page.drawRectangle({ x: frame.x, y: frame.y + frame.height - 5, width: frame.width, height: 5, color: accent });
-  page.drawCircle({
-    x: frame.x + frame.width / 2,
-    y: frame.y + frame.height / 2 + 5,
-    size: 19,
-    color: accent,
-    opacity: 0.18,
-  });
+function drawPortraitFallback(page: PDFPage, bold: PDFFont, name: string): void {
+  const { cx, cy, r } = PORTRAIT;
+  const initials = getInitials(name);
+  const initialsSize = fitTextSize(bold, initials, 19, 12, r * 1.3);
+
+  page.drawCircle({ x: cx, y: cy, size: r, color: CARD.paneFill });
   page.drawText(initials, {
-    x: frame.x + (frame.width - bold.widthOfTextAtSize(initials, initialsSize)) / 2,
-    y: frame.y + 36,
+    x: cx - bold.widthOfTextAtSize(initials, initialsSize) / 2,
+    y: cy - initialsSize * 0.36,
     size: initialsSize,
     font: bold,
-    color: bone,
+    color: CARD.white,
+    opacity: 0.95,
   });
-  page.drawText("PNCL", {
-    x: frame.x + 18.5,
-    y: frame.y + 9,
-    size: 5,
-    font: bold,
-    color: accent,
-  });
-  page.drawRectangle({
-    ...frame,
-    borderColor: bone,
-    borderWidth: 0.7,
-    borderOpacity: 0.24,
-    opacity: 0,
-  });
+  drawPortraitRing(page);
 }
 
 function drawPortraitPhoto(page: PDFPage, image: PDFImage): void {
-  const frame = PORTRAIT_FRAME;
-  const scale = Math.max(frame.width / image.width, frame.height / image.height);
+  const { cx, cy, r } = PORTRAIT;
+  const side = r * 2;
+  // Cover-crop into the circle's square, then clip to the circle.
+  const scale = Math.max(side / image.width, side / image.height);
   const width = image.width * scale;
   const height = image.height * scale;
 
-  page.drawRectangle({
-    x: frame.x - 2,
-    y: frame.y - 2,
-    width: frame.width + 4,
-    height: frame.height + 4,
-    color: rgb(0.76, 0.31, 0.11),
-  });
-  page.pushOperators(
-    pushGraphicsState(),
-    rectangle(frame.x, frame.y, frame.width, frame.height),
-    clip(),
-    endPath(),
-  );
-  page.drawImage(image, {
-    x: frame.x + (frame.width - width) / 2,
-    y: frame.y + (frame.height - height) / 2,
-    width,
-    height,
-  });
+  page.pushOperators(pushGraphicsState(), ...circlePath(cx, cy, r), clip(), endPath());
+  page.drawImage(image, { x: cx - width / 2, y: cy - height / 2, width, height });
   page.pushOperators(popGraphicsState());
-  page.drawRectangle({
-    ...frame,
-    borderColor: rgb(0.94, 0.93, 0.89),
-    borderWidth: 0.7,
-    borderOpacity: 0.35,
-    opacity: 0,
-  });
+  drawPortraitRing(page);
 }
 
 export async function buildAgentBusinessCardPdf(data: AgentBusinessCardData): Promise<Uint8Array> {
@@ -214,60 +251,41 @@ export async function buildAgentBusinessCardPdf(data: AgentBusinessCardData): Pr
   const page = pdf.addPage([BUSINESS_CARD_WIDTH_POINTS, BUSINESS_CARD_HEIGHT_POINTS]);
   const regular = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const boldOblique = await pdf.embedFont(StandardFonts.HelveticaBoldOblique);
   const profilePhoto = await embedProfilePhoto(pdf, data.profilePhoto);
-  const ink = rgb(0.075, 0.075, 0.078);
-  const inkRaised = rgb(0.105, 0.102, 0.112);
-  const bone = rgb(0.94, 0.93, 0.89);
-  const steel = rgb(0.58, 0.59, 0.59);
-  const accent = rgb(0.76, 0.31, 0.11);
+  const { margin } = CARD;
+  const top = BUSINESS_CARD_HEIGHT_POINTS - margin;
 
   pdf.setTitle(`${content.name} - PNCL Business Card`);
   pdf.setAuthor("PNCL");
   pdf.setSubject("PNCL agent business card");
   pdf.setCreator("PNCL Agent Portal");
 
-  page.drawRectangle({
-    x: 0,
-    y: 0,
-    width: BUSINESS_CARD_WIDTH_POINTS,
-    height: BUSINESS_CARD_HEIGHT_POINTS,
-    color: ink,
-  });
-  page.drawRectangle({ x: 0, y: 0, width: 7, height: BUSINESS_CARD_HEIGHT_POINTS, color: accent });
-  page.drawRectangle({
-    x: 178,
-    y: 0,
-    width: 74,
-    height: BUSINESS_CARD_HEIGHT_POINTS,
-    color: inkRaised,
-    opacity: 0.55,
-  });
-  page.drawCircle({ x: 240, y: 132, size: 44, color: accent, opacity: 0.08 });
-  page.drawRectangle({
-    x: 0.75,
-    y: 0.75,
-    width: BUSINESS_CARD_WIDTH_POINTS - 1.5,
-    height: BUSINESS_CARD_HEIGHT_POINTS - 1.5,
-    borderColor: bone,
-    borderWidth: 0.5,
-    borderOpacity: 0.12,
+  // The shading extends past both ends, so it paints the whole page: the
+  // light in the corner and the flat ink everywhere past 190pt.
+  drawWallLight(pdf, page);
+
+  // The wordmark, drawn from the site's own logo path as vectors.
+  const logoHeight = 13;
+  page.drawSvgPath(LOGO_PATH, {
+    x: margin,
+    y: top,
+    scale: logoHeight / LOGO_VIEWBOX.height,
+    color: CARD.white,
   });
 
-  page.drawText("PNCL", { x: 20, y: 114, size: 16, font: boldOblique, color: bone });
-  page.drawText("AGENT NETWORK", { x: 69, y: 117.5, size: 5.25, font: bold, color: steel });
-  page.drawRectangle({ x: 20, y: 108, width: 20, height: 1.75, color: accent });
-  page.drawRectangle({ x: 224, y: 113, width: 11, height: 11, color: accent });
+  const nameSize = fitTextSize(bold, content.name, 18, 10.5, PORTRAIT.cx - PORTRAIT.r - margin - 10);
+  page.drawText(content.name, { x: margin, y: 70, size: nameSize, font: bold, color: CARD.white, opacity: 0.95 });
 
-  const nameSize = fitTextSize(bold, content.name, 18, 10.5, 146);
-  page.drawText(content.name, { x: 20, y: 75, size: nameSize, font: bold, color: bone });
-  page.drawText(content.affiliation, { x: 20, y: 61.5, size: 6.25, font: bold, color: accent });
+  // The accent is a spark, as in the portal: one 3pt dot before the role.
+  page.drawCircle({ x: margin + 1.6, y: 59.9, size: 1.6, color: CARD.accent });
+  drawTracked(page, content.affiliation, { x: margin + 7, y: 58, size: 6, font: bold, opacity: 0.7, tracking: 1.2 });
+
   page.drawLine({
-    start: { x: 20, y: 52 },
-    end: { x: 163, y: 52 },
-    color: bone,
+    start: { x: margin, y: 47 },
+    end: { x: BUSINESS_CARD_WIDTH_POINTS - margin, y: 47 },
+    color: CARD.white,
     thickness: 0.5,
-    opacity: 0.16,
+    opacity: 0.12,
   });
 
   const contactLines = [
@@ -277,7 +295,7 @@ export async function buildAgentBusinessCardPdf(data: AgentBusinessCardData): Pr
   ];
 
   contactLines.forEach(({ label, value }, index) => {
-    const y = content.npn ? 39 - index * 14 : 35 - index * 17;
+    const y = content.npn ? 34 - index * 11 : 32 - index * 13;
     drawContactLine({
       page,
       label,
@@ -288,13 +306,6 @@ export async function buildAgentBusinessCardPdf(data: AgentBusinessCardData): Pr
     });
   });
 
-  page.drawLine({
-    start: { x: 170, y: 20 },
-    end: { x: 170, y: 103 },
-    color: bone,
-    thickness: 0.5,
-    opacity: 0.12,
-  });
   if (profilePhoto) drawPortraitPhoto(page, profilePhoto);
   else drawPortraitFallback(page, bold, content.name);
 
