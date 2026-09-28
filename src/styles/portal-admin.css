@@ -16,12 +16,6 @@
 
 /* ── Not yet reskinned (moved verbatim from home2.css) ──────────────────── */
 
-.home2-page .admin-hierarchy-view-btn:focus-visible,
-.home2-page .admin-hierarchy-zoom-btn:focus-visible {
-  outline: 3px solid rgba(220, 106, 45, .85);
-  outline-offset: 3px;
-}
-
 .home2-page .admin-user-document-upload-panel {
   display: flex;
   flex-direction: column;
@@ -143,12 +137,6 @@
 
 .home2-page .admin-user-avatar-lg .admin-user-avatar-initials {
   font-size: 1.35rem;
-}
-
-.home2-page .admin-hierarchy-assist-identity {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 18px;
 }
 
 .home2-page .admin-user-profile-meta {
@@ -288,645 +276,6 @@
   align-items: center;
   gap: 8px;
   justify-content: flex-end;
-}
-
-.home2-page .admin-hierarchy-toolbar {
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-}
-
-.home2-page .admin-hierarchy-preview {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 16px;
-  padding: 12px 14px;
-  border: 1px solid rgba(194, 78, 28, .42);
-  border-radius: calc(var(--radius) + 2px);
-  background: rgba(194, 78, 28, .12);
-  color: var(--accent-bright);
-}
-
-.home2-page .admin-hierarchy-preview div {
-  display: grid;
-  gap: 3px;
-}
-
-.home2-page .admin-hierarchy-preview strong {
-  color: var(--bone);
-  font-family: var(--ff-mono);
-  font-size: var(--admin-fs-badge);
-  letter-spacing: .08em;
-  text-transform: uppercase;
-}
-
-.home2-page .admin-hierarchy-preview span {
-  color: var(--steel);
-  font-size: var(--admin-fs-body);
-  line-height: 1.45;
-}
-
-.home2-page .admin-hierarchy-view-toggle {
-  display: inline-flex;
-  gap: 4px;
-  padding: 4px;
-  border-radius: calc(var(--radius) + 2px);
-  border: 1px solid rgba(240, 237, 228, .1);
-  background: rgba(0, 0, 0, .18);
-}
-
-.home2-page .admin-hierarchy-view-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: var(--radius);
-  background: transparent;
-  color: var(--steel);
-  font-family: var(--ff-mono);
-  font-size: var(--admin-fs-badge);
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition: background .2s var(--ease), color .2s var(--ease);
-}
-
-.home2-page .admin-hierarchy-view-btn:hover {
-  color: var(--bone);
-}
-
-.home2-page .admin-hierarchy-view-btn-active {
-  background: rgba(194, 78, 28, .18);
-  color: var(--bone);
-}
-
-.home2-page .admin-hierarchy-shell {
-  margin-top: 8px;
-  border-radius: calc(var(--radius) + 4px);
-  border: 1px solid rgba(240, 237, 228, .1);
-  background:
-    radial-gradient(circle at 1px 1px, rgba(240, 237, 228, .07) 1px, transparent 0) 0 0 / 20px 20px,
-    linear-gradient(180deg, rgba(240, 237, 228, .02), rgba(240, 237, 228, .01));
-  overflow: hidden;
-}
-
-.home2-page .admin-hierarchy-zoom-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(240, 237, 228, .08);
-}
-
-.home2-page .admin-hierarchy-zoom-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  min-width: 32px;
-  height: 32px;
-  padding: 0 8px;
-  border: 1px solid rgba(240, 237, 228, .12);
-  border-radius: var(--radius);
-  background: rgba(12, 12, 14, .72);
-  color: var(--steel);
-  font-family: var(--ff-mono);
-  font-size: var(--admin-fs-badge);
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-
-.home2-page .admin-hierarchy-zoom-btn:hover:not(:disabled) {
-  color: var(--bone);
-  border-color: rgba(240, 237, 228, .22);
-}
-
-.home2-page .admin-hierarchy-zoom-btn:disabled {
-  opacity: .35;
-  cursor: not-allowed;
-}
-
-.home2-page .admin-hierarchy-zoom-label {
-  min-width: 44px;
-  text-align: center;
-  font-family: var(--ff-mono);
-  font-size: var(--admin-fs-badge);
-  letter-spacing: .08em;
-  color: var(--steel);
-}
-
-.home2-page .admin-hierarchy-viewport {
-  position: relative;
-  height: min(68vh, 720px);
-  overflow: hidden;
-  cursor: grab;
-  touch-action: none;
-}
-
-.home2-page .admin-hierarchy-viewport-panning {
-  cursor: grabbing;
-}
-
-.home2-page .admin-hierarchy-transform {
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
-.home2-page .admin-hierarchy-scroll {
-  margin-top: 8px;
-  overflow: auto;
-  border-radius: calc(var(--radius) + 4px);
-  border: 1px solid rgba(240, 237, 228, .1);
-  background:
-    radial-gradient(circle at 1px 1px, rgba(240, 237, 228, .07) 1px, transparent 0) 0 0 / 20px 20px,
-    linear-gradient(180deg, rgba(240, 237, 228, .02), rgba(240, 237, 228, .01));
-}
-
-.home2-page .admin-hierarchy-canvas {
-  position: relative;
-  min-width: 100%;
-}
-
-.home2-page .admin-hierarchy-lines {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.home2-page .admin-hierarchy-line {
-  fill: none;
-  stroke: rgba(194, 78, 28, .45);
-  stroke-width: 1.5;
-}
-
-.home2-page .admin-hierarchy-node {
-  position: absolute;
-}
-
-.home2-page .admin-hierarchy-tile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  height: 100%;
-  padding: 12px 10px 10px;
-  border-radius: var(--radius);
-  border: 1px solid rgba(240, 237, 228, .12);
-  background: rgba(12, 12, 14, .92);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, .28);
-  text-align: center;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-  transition: border-color .25s var(--ease), transform .25s var(--ease), box-shadow .25s var(--ease);
-}
-
-.home2-page .admin-hierarchy-tile-selected {
-  border-color: rgba(194, 78, 28, .65);
-  box-shadow: 0 0 0 1px rgba(194, 78, 28, .25), 0 14px 32px rgba(0, 0, 0, .34);
-}
-
-.home2-page .admin-hierarchy-tile:hover {
-  border-color: rgba(194, 78, 28, .45);
-  transform: translateY(-2px);
-  box-shadow: 0 14px 32px rgba(0, 0, 0, .34);
-}
-
-.home2-page .admin-hierarchy-tile-avatar {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  overflow: hidden;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(240, 237, 228, .08);
-  border: 1px solid rgba(240, 237, 228, .14);
-}
-
-.home2-page .admin-hierarchy-tile-photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.home2-page .admin-hierarchy-tile-initials {
-  font-family: var(--ff-mono);
-  font-size: .82rem;
-  font-weight: 700;
-  letter-spacing: .08em;
-  color: var(--bone);
-}
-
-.home2-page .admin-hierarchy-tile-name {
-  margin: 0;
-  width: 100%;
-  flex-shrink: 0;
-  font-size: .78rem;
-  font-weight: 700;
-  line-height: 1.35;
-  letter-spacing: -.01em;
-  color: var(--bone);
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-}
-
-.home2-page .admin-hierarchy-tile-foot {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 4px 6px;
-  margin-top: auto;
-}
-
-.home2-page .admin-hierarchy-tile-meta {
-  font-family: var(--ff-mono);
-  font-size: 8px;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--steel);
-}
-
-.home2-page .admin-hierarchy-tile-assist {
-  justify-content: flex-start;
-  gap: 6px;
-}
-
-.home2-page .admin-hierarchy-tile-partner {
-  min-height: 100%;
-}
-
-.home2-page .admin-hierarchy-tile-avatars {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
-.home2-page .admin-tree-avatars {
-  justify-content: flex-start;
-}
-
-.home2-page .admin-hierarchy-partner-members {
-  display: grid;
-  gap: 14px;
-  margin-bottom: 18px;
-}
-
-.home2-page .admin-hierarchy-partner-member {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.home2-page .admin-hierarchy-partner-member strong {
-  display: block;
-  color: var(--bone);
-}
-
-.home2-page .admin-hierarchy-partner-member p {
-  margin: 2px 0 6px;
-  color: var(--steel);
-  font-size: .82rem;
-}
-
-.home2-page .admin-hierarchy-partner-section {
-  margin-top: 8px;
-}
-
-.home2-page .admin-hierarchy-partner-current,
-.home2-page .admin-hierarchy-partner-link-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.home2-page .admin-hierarchy-partner-link-row select {
-  flex: 1 1 220px;
-}
-
-.home2-page .admin-hierarchy-tile-email {
-  margin: 0;
-  font-size: .72rem;
-  font-weight: 700;
-  line-height: 1.35;
-  color: var(--bone);
-  word-break: break-word;
-}
-
-.home2-page .admin-hierarchy-tile-npn {
-  margin: 0;
-  font-family: var(--ff-mono);
-  font-size: .68rem;
-  letter-spacing: .04em;
-  color: var(--steel);
-}
-
-.home2-page .admin-hierarchy-tile-effective {
-  margin: 0;
-  font-size: .62rem;
-  line-height: 1.25;
-  color: var(--steel);
-}
-
-.home2-page .admin-hierarchy-assist-details {
-  display: grid;
-  gap: 12px;
-  margin: 0;
-}
-
-.home2-page .admin-hierarchy-assist-details > div {
-  display: grid;
-  gap: 4px;
-}
-
-.home2-page .admin-hierarchy-assist-details dt {
-  font-family: var(--ff-mono);
-  font-size: var(--admin-fs-badge);
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--steel);
-}
-
-.home2-page .admin-hierarchy-assist-details dd {
-  margin: 0;
-  color: var(--bone);
-  word-break: break-word;
-}
-
-.home2-page .admin-hierarchy-assist-people {
-  display: grid;
-  gap: 14px;
-}
-
-.home2-page .admin-hierarchy-assist-person {
-  padding: 14px;
-  border: 1px solid rgba(240, 237, 228, .1);
-  border-radius: var(--radius);
-  background: rgba(0, 0, 0, .14);
-}
-
-.home2-page .admin-hierarchy-assist-person .admin-hierarchy-assist-identity {
-  justify-content: flex-start;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.home2-page .admin-hierarchy-assist-person h3 {
-  margin: 0 0 3px;
-  color: var(--bone);
-  font-size: .95rem;
-}
-
-.home2-page .admin-hierarchy-assist-person p {
-  margin: 0;
-  color: var(--steel);
-  font-size: .78rem;
-  word-break: break-word;
-}
-
-.home2-page .admin-hierarchy-assist-downline {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid rgba(240, 237, 228, .1);
-}
-
-.home2-page .admin-hierarchy-assist-direct-list {
-  grid-column: 1 / -1;
-}
-
-.home2-page .admin-hierarchy-assist-direct-list ul {
-  display: grid;
-  gap: 8px;
-  margin: 4px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.home2-page .admin-hierarchy-assist-direct-list li {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: rgba(240, 237, 228, .04);
-}
-
-.home2-page .admin-hierarchy-assist-direct-list strong {
-  color: var(--bone);
-  font-size: .82rem;
-}
-
-.home2-page .admin-hierarchy-assist-direct-list span {
-  color: var(--steel);
-  font-size: .72rem;
-  word-break: break-word;
-}
-
-.home2-page .admin-tree-meta {
-  font-family: var(--ff-mono);
-  font-size: .72rem;
-  letter-spacing: .04em;
-  color: var(--steel);
-}
-
-.home2-page .admin-hierarchy-tree-wrap {
-  margin-top: 8px;
-  padding: 8px 12px 16px;
-  border-radius: calc(var(--radius) + 4px);
-  border: 1px solid rgba(240, 237, 228, .1);
-  background: rgba(0, 0, 0, .12);
-  max-height: min(68vh, 720px);
-  overflow: auto;
-}
-
-.home2-page .admin-hierarchy-edit-field-form {
-  margin: 0 0 18px;
-  padding: 14px;
-  border-radius: var(--radius);
-  border: 1px solid rgba(240, 237, 228, .1);
-  background: rgba(0, 0, 0, .12);
-}
-
-.home2-page .admin-hierarchy-edit-field {
-  min-width: 0;
-  width: 100%;
-}
-
-.home2-page .admin-hierarchy-edit-field-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.home2-page .admin-hierarchy-edit-field-row select,
-.home2-page .admin-hierarchy-edit-field-row .admin-hierarchy-partner-current {
-  flex: 1;
-  min-width: 0;
-}
-
-.home2-page .admin-hierarchy-edit-field-row .admin-hierarchy-partner-current {
-  display: flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 0 14px;
-  border-radius: var(--radius);
-  border: 1px solid rgba(240, 237, 228, .12);
-  background: var(--ink);
-  color: var(--bone);
-}
-
-.home2-page .admin-hierarchy-edit-save-btn {
-  flex-shrink: 0;
-  white-space: nowrap;
-  min-height: 44px;
-}
-
-.home2-page .admin-hierarchy-edit-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin: 0 0 18px;
-}
-
-.home2-page .admin-hierarchy-edit-stat {
-  min-width: 0;
-  padding: 12px;
-  border-radius: var(--radius);
-  border: 1px solid rgba(240, 237, 228, .1);
-  background: rgba(0, 0, 0, .16);
-}
-
-.home2-page .admin-hierarchy-edit-stat dt {
-  margin: 0 0 4px;
-  font-family: var(--ff-mono);
-  font-size: 9px;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--space);
-}
-
-.home2-page .admin-hierarchy-edit-stat dd {
-  margin: 0;
-  color: var(--bone);
-  font-size: .88rem;
-  font-weight: 700;
-}
-
-.home2-page .admin-hierarchy-edit-link {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: #e8a07a;
-  font: inherit;
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.home2-page .admin-hierarchy-edit-link:hover {
-  color: var(--bone);
-}
-
-.home2-page .admin-tree {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.home2-page .admin-tree-children {
-  list-style: none;
-  margin: 0;
-  padding: 0 0 0 calc(var(--depth, 0) * 12px + 18px);
-  border-left: 1px solid rgba(240, 237, 228, .08);
-  margin-left: 10px;
-}
-
-.home2-page .admin-tree-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 0;
-  border-radius: var(--radius);
-}
-
-.home2-page .admin-tree-row-selected {
-  background: rgba(194, 78, 28, .12);
-}
-
-.home2-page .admin-tree-toggle,
-.home2-page .admin-tree-toggle-spacer {
-  flex-shrink: 0;
-  width: 24px;
-  height: 24px;
-}
-
-.home2-page .admin-tree-toggle {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(240, 237, 228, .1);
-  border-radius: 6px;
-  background: rgba(240, 237, 228, .04);
-  color: var(--steel);
-  cursor: pointer;
-}
-
-.home2-page .admin-tree-toggle:hover {
-  color: var(--bone);
-  border-color: rgba(240, 237, 228, .2);
-}
-
-.home2-page .admin-tree-select {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  padding: 6px 8px;
-  border: 0;
-  border-radius: var(--radius);
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.home2-page .admin-tree-select:hover .admin-tree-name {
-  color: #e8a07a;
-}
-
-.home2-page .admin-tree-name {
-  font-weight: 700;
-  color: var(--bone);
-}
-
-.home2-page .admin-tree-meta {
-  font-family: var(--ff-mono);
-  font-size: var(--admin-fs-label);
-  letter-spacing: .08em;
-  color: var(--space);
-}
-
-.home2-page .admin-tree-count {
-  font-family: var(--ff-mono);
-  font-size: var(--admin-fs-badge);
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--steel);
 }
 
 .home2-page .admin-incentive-form {
@@ -3977,6 +3326,730 @@
 @keyframes admin-sheet-in {
   from {
     transform: translateY(100%);
+  }
+}
+
+/* ── Hierarchy ───────────────────────────────────────────────────────────── */
+
+/* "Viewing as admin assist": a notice, so the recessed fill, not the accent. */
+.admin-dash .admin-hierarchy-preview {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--portal-border);
+  border-radius: 14px;
+  background: var(--admin-inset);
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-hierarchy-preview > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.admin-dash .admin-hierarchy-preview div {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-dash .admin-hierarchy-preview strong {
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-hierarchy-preview span {
+  font-size: var(--portal-t-body);
+  line-height: 1.45;
+  color: var(--portal-text);
+}
+
+/* Canvas or tree: the portal Segmented with its pill, control-sized items
+   on a recessed track; the pill carries a fill and a 2px inner ring, so the
+   choice is never the fill alone. */
+.admin-dash .admin-hierarchy-view-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 0;
+  border-radius: calc(var(--portal-control-radius) + 4px);
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-hierarchy-view-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--portal-control-h);
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--portal-control-radius);
+  background: none;
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text-faint);
+  cursor: pointer;
+  transition:
+    background-color var(--admin-fast) var(--portal-ease-out),
+    color var(--admin-fast) var(--portal-ease-out),
+    box-shadow var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-hierarchy-view-btn svg {
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
+}
+
+.admin-dash .admin-hierarchy-view-btn:hover {
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-hierarchy-view-btn-active,
+.admin-dash .admin-hierarchy-view-btn-active:hover {
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.85);
+  color: var(--portal-text-strong);
+}
+
+/* The canvas: a recessed frame with a dot grid, glass tiles on it. */
+.admin-dash .admin-hierarchy-shell,
+.admin-dash .admin-hierarchy-scroll {
+  margin-top: 4px;
+  overflow: hidden;
+  border: 1px solid var(--portal-rule);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.08) 1px, transparent 0) 0 0 / 20px 20px,
+    var(--admin-inset);
+}
+
+.admin-dash .admin-hierarchy-scroll {
+  overflow: auto;
+}
+
+.admin-dash .admin-hierarchy-zoom-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border-bottom: 1px solid var(--portal-rule);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.admin-dash .admin-hierarchy-zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+  min-width: var(--portal-control-h);
+  height: var(--portal-control-h);
+  padding: 0 12px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-control-radius);
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text-strong);
+  cursor: pointer;
+  transition: border-color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-hierarchy-zoom-btn svg {
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
+}
+
+.admin-dash .admin-hierarchy-zoom-btn:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.admin-dash .admin-hierarchy-zoom-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.admin-dash .admin-hierarchy-zoom-label {
+  min-width: 52px;
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-align: center;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-hierarchy-viewport {
+  position: relative;
+  height: min(68vh, 720px);
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.admin-dash .admin-hierarchy-viewport-panning {
+  cursor: grabbing;
+}
+
+.admin-dash .admin-hierarchy-transform {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.admin-dash .admin-hierarchy-canvas {
+  position: relative;
+  min-width: 100%;
+}
+
+.admin-dash .admin-hierarchy-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.admin-dash .admin-hierarchy-line {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.3);
+  stroke-width: 1.5;
+}
+
+.admin-dash .admin-hierarchy-node {
+  position: absolute;
+}
+
+/* A tile is a button of a fixed size the layout computes (148 by 172, 220
+   wide for partners, 132 tall in the assist view), so the contents are sized
+   to fit it rather than to the control tokens. */
+.admin-dash .admin-hierarchy-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 12px 10px 10px;
+  overflow: hidden;
+  border: 1px solid var(--portal-border);
+  border-radius: 16px;
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
+  box-shadow: var(--portal-pane-shadow);
+  color: var(--portal-text);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color var(--admin-fast) var(--portal-ease-out),
+    box-shadow var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-hierarchy-tile:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.admin-dash .admin-hierarchy-tile-selected,
+.admin-dash .admin-hierarchy-tile-selected:hover {
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow: var(--portal-pane-shadow), 0 0 0 1px rgba(255, 255, 255, 0.85);
+}
+
+.admin-dash .admin-hierarchy-tile-assist {
+  justify-content: flex-start;
+}
+
+.admin-dash .admin-hierarchy-tile-partner {
+  min-height: 100%;
+}
+
+.admin-dash .admin-hierarchy-tile-avatars {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+
+.admin-dash .admin-hierarchy-tile .admin-hierarchy-tile-avatar {
+  width: 44px;
+  height: 44px;
+}
+
+.admin-dash .admin-hierarchy-tile-assist .admin-hierarchy-tile-avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.admin-dash .admin-hierarchy-tile-name {
+  display: -webkit-box;
+  flex-shrink: 0;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.3;
+  color: var(--portal-text-strong);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.admin-dash .admin-hierarchy-tile-npn,
+.admin-dash .admin-hierarchy-tile-email {
+  margin: 0;
+  font-family: var(--portal-font);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums lining-nums;
+  overflow-wrap: anywhere;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-hierarchy-tile-effective {
+  margin: 0;
+  font-size: var(--portal-t-micro);
+  line-height: 1.25;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-hierarchy-tile-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 6px;
+  margin-top: auto;
+}
+
+.admin-dash .admin-hierarchy-tile-meta,
+.admin-dash .admin-tree-count {
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-label);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--portal-text-faint);
+}
+
+/* ── Tree ────────────────────────────────────────────────────────────────── */
+
+.admin-dash .admin-hierarchy-tree-wrap {
+  max-height: min(68vh, 720px);
+  margin-top: 4px;
+  padding: 8px;
+  overflow: auto;
+  border: 1px solid var(--portal-rule);
+  border-radius: 16px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-tree,
+.admin-dash .admin-tree-children {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* One indent per level, the rule under the parent's toggle. The inline
+   --depth the component writes compounded with every nested list, which on a
+   phone pushed the fifth level off the screen. */
+.admin-dash .admin-tree-children {
+  margin-left: calc(var(--portal-control-h) / 2);
+  padding-left: 10px;
+  border-left: 1px solid var(--portal-rule);
+}
+
+.admin-dash .admin-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: var(--portal-control-h);
+  border-radius: var(--portal-control-radius);
+}
+
+.admin-dash .admin-tree-row-selected {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.admin-dash .admin-tree-toggle,
+.admin-dash .admin-tree-toggle-spacer {
+  flex: 0 0 auto;
+  width: var(--portal-control-h);
+  height: var(--portal-control-h);
+}
+
+.admin-dash .admin-tree-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--portal-control-radius);
+  background: none;
+  color: var(--portal-text);
+  cursor: pointer;
+  transition: background-color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-tree-toggle svg {
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
+}
+
+.admin-dash .admin-tree-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-tree-select {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-width: 0;
+  min-height: var(--portal-control-h);
+  padding: 6px 10px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: var(--portal-control-radius);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-tree-select:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.admin-dash .admin-tree-avatars {
+  justify-content: flex-start;
+}
+
+.admin-dash .admin-tree-name {
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-tree-meta {
+  font-family: var(--portal-font);
+  font-size: 12px;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--portal-text);
+}
+
+/* ── Hierarchy dialogs ───────────────────────────────────────────────────── */
+
+.admin-dash .admin-hierarchy-edit-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 16px;
+}
+
+.admin-dash .admin-hierarchy-edit-stat {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 12px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-hierarchy-edit-stat dt {
+  margin: 0 0 2px;
+  font-family: var(--portal-font);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text-faint);
+}
+
+.admin-dash .admin-hierarchy-edit-stat dd {
+  margin: 0;
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums lining-nums;
+  overflow-wrap: anywhere;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-hierarchy-edit-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--portal-text-strong);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.4);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.admin-dash .admin-hierarchy-edit-link:hover {
+  color: var(--portal-text-strong);
+  text-decoration-color: currentColor;
+}
+
+.admin-dash .admin-hierarchy-edit-field-form {
+  margin: 0 0 12px;
+  padding: 14px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 14px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-hierarchy-edit-field {
+  width: 100%;
+  min-width: 0;
+}
+
+.admin-dash .admin-hierarchy-edit-field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-dash .admin-hierarchy-edit-field-row :is(select, .admin-role-select, .admin-hierarchy-partner-current) {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+.admin-dash .admin-hierarchy-edit-field-row .admin-hierarchy-partner-current {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: var(--portal-control-h);
+  padding: 0 12px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-control-radius);
+  background: rgba(0, 0, 0, 0.14);
+  font-size: var(--portal-control-fs);
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-hierarchy-edit-save-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.admin-dash .admin-hierarchy-partner-members {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-dash .admin-hierarchy-partner-member {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.admin-dash .admin-hierarchy-partner-member strong {
+  display: block;
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-hierarchy-partner-member p {
+  margin: 2px 0 4px;
+  font-size: var(--portal-t-body);
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-hierarchy-partner-section {
+  margin-top: 8px;
+}
+
+.admin-dash .admin-hierarchy-partner-current,
+.admin-dash .admin-hierarchy-partner-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-dash .admin-hierarchy-partner-link-row select {
+  flex: 1 1 220px;
+}
+
+.admin-dash .admin-hierarchy-assist-identity {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.admin-dash .admin-hierarchy-assist-details {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.admin-dash .admin-hierarchy-assist-details > div {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-dash .admin-hierarchy-assist-details dt {
+  font-family: var(--portal-font);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-hierarchy-assist-details dd {
+  margin: 0;
+  font-size: var(--portal-control-fs);
+  overflow-wrap: anywhere;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-hierarchy-assist-people {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-dash .admin-hierarchy-assist-person {
+  padding: 14px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 14px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-hierarchy-assist-person .admin-hierarchy-assist-identity {
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-dash .admin-hierarchy-assist-person h3 {
+  margin: 0 0 2px;
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-hierarchy-assist-person p {
+  margin: 0;
+  font-size: var(--portal-t-body);
+  overflow-wrap: anywhere;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-hierarchy-assist-downline {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--portal-rule);
+}
+
+.admin-dash .admin-hierarchy-assist-direct-list {
+  grid-column: 1 / -1;
+}
+
+.admin-dash .admin-hierarchy-assist-direct-list ul {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-dash .admin-hierarchy-assist-direct-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-dash .admin-hierarchy-assist-direct-list strong {
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-hierarchy-assist-direct-list span {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  color: var(--portal-text);
+}
+
+@media (max-width: 620px) {
+  .admin-dash .admin-hierarchy-view-toggle {
+    display: flex;
+  }
+
+  .admin-dash .admin-hierarchy-view-btn {
+    flex: 1 1 0;
+  }
+
+  .admin-dash .admin-hierarchy-viewport {
+    height: 60vh;
+    height: 60dvh;
+  }
+
+  /* Five controls in one row: scroll sideways rather than wrap. */
+  .admin-dash .admin-hierarchy-zoom-toolbar {
+    flex-wrap: nowrap;
+    gap: 4px;
+    padding: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .admin-dash .admin-hierarchy-zoom-btn {
+    flex: 0 0 auto;
+    padding: 0 10px;
+  }
+
+  .admin-dash .admin-hierarchy-zoom-label {
+    min-width: 44px;
+  }
+
+  .admin-dash .admin-tree-children {
+    margin-left: 14px;
+    padding-left: 6px;
+  }
+
+  .admin-dash .admin-hierarchy-edit-field-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-dash .admin-hierarchy-edit-field-row :is(select, .admin-role-select, .admin-hierarchy-partner-current) {
+    width: 100%;
   }
 }
 
