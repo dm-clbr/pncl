@@ -84,19 +84,19 @@ export default function AdminClients() {
               ) : (
                 filteredClients.map((client) => (
                   <tr key={client.id}>
-                    <td>
+                    <td data-label="Client">
                       {client.primaryFirstName} {client.primaryLastName}
                       {client.address ? (
                         <div className="portal-meta">{client.address}</div>
                       ) : null}
                     </td>
-                    <td>{client.primaryPhone || "—"}</td>
-                    <td>
+                    <td data-label="Phone">{client.primaryPhone || "—"}</td>
+                    <td data-label="Agent">
                       {client.agentName}
                       <div className="portal-meta">{client.agentEmail}</div>
                     </td>
-                    <td>{formatDate(client.dateMet)}</td>
-                    <td>{formatDate(client.createdAt.slice(0, 10))}</td>
+                    <td data-label="Date met">{formatDate(client.dateMet)}</td>
+                    <td data-label="Submitted">{formatDate(client.createdAt.slice(0, 10))}</td>
                   </tr>
                 ))
               )}

@@ -338,15 +338,15 @@ export default function AdminGenesis() {
 
                 return (
                   <tr key={agent.id}>
-                    <td>{agent.name}</td>
-                    <td>{agent.email}</td>
-                    <td>{formatGenesisDateTime(agent.createdAt)}</td>
-                    <td>
+                    <td data-label="Name">{agent.name}</td>
+                    <td data-label="Email">{agent.email}</td>
+                    <td data-label="Account created">{formatGenesisDateTime(agent.createdAt)}</td>
+                    <td data-label="Genesis status">
                       <span className={`admin-status${genesisStatusClass(genesisStatus)}`}>
                         {formatGenesisStatusLabel(agent)}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Actions">
                       <div className="admin-row-actions">
                         <button
                           type="button"

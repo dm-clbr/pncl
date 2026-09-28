@@ -651,18 +651,18 @@ export default function AdminSetterCloser() {
             <tbody>
               {policies.map((policy) => (
                 <tr key={policy.id}>
-                  <td>
+                  <td data-label="Policy">
                     <strong>{policy.policyNumber}</strong>
                     {policy.carrier && <p className="admin-table-sub">{policy.carrier}</p>}
                   </td>
-                  <td>{formatPolicyDate(policy.policyDate)}</td>
-                  <td>
+                  <td data-label="Date">{formatPolicyDate(policy.policyDate)}</td>
+                  <td data-label="Split">
                     <span className="admin-badge">{policy.splitLabel}</span>
                   </td>
-                  <td>{agentCell(policy.setterNpn, policy.setterName)}</td>
-                  <td>{agentCell(policy.closerNpn, policy.closerName)}</td>
-                  <td>{policy.clientName ?? "—"}</td>
-                  <td>
+                  <td data-label="Setter">{agentCell(policy.setterNpn, policy.setterName)}</td>
+                  <td data-label="Closer">{agentCell(policy.closerNpn, policy.closerName)}</td>
+                  <td data-label="Client">{policy.clientName ?? "—"}</td>
+                  <td data-label="Actions">
                     <div className="admin-table-actions">
                       <button
                         type="button"

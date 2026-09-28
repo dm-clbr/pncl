@@ -502,7 +502,7 @@ export default function AdminUsers() {
 
                 return (
                   <tr key={agent.id}>
-                    <td>
+                    <td data-label="Name">
                       <div className="admin-user-name-cell">
                         {assistView && (
                           <AdminUserAvatar
@@ -525,12 +525,12 @@ export default function AdminUsers() {
                         )}
                       </div>
                     </td>
-                    <td>{agent.email}</td>
-                    <td>{agent.referrerName ?? agent.uplineNetwork ?? "—"}</td>
-                    <td>{agent.npn ?? "—"}</td>
-                    <td>{phaseBadge(agent.phase)}</td>
+                    <td data-label="Email">{agent.email}</td>
+                    <td data-label="Upline">{agent.referrerName ?? agent.uplineNetwork ?? "—"}</td>
+                    <td data-label="NPN">{agent.npn ?? "—"}</td>
+                    <td data-label="Stage">{phaseBadge(agent.phase)}</td>
                     {!assistView && (
-                      <td>
+                      <td data-label="Comp">
                         <AdminCompLevelSelect
                           agent={agent}
                           agentsById={agentsById}
@@ -540,12 +540,12 @@ export default function AdminUsers() {
                         />
                       </td>
                     )}
-                    <td>
+                    <td data-label="Status">
                       <span className={`admin-status${agent.emailConfirmed ? " active" : ""}`}>
                         {statusLabel(agent)}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Google">
                       <span
                         className={`admin-status${googleStatusClass(agent.googleWorkspaceStatus)}`}
                         title={agent.googleSuspensionReason ?? undefined}
@@ -553,13 +553,13 @@ export default function AdminUsers() {
                         {googleStatusLabel(agent.googleWorkspaceStatus)}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Role">
                       <span className={roleBadgeClass(agent.role)}>
                         {formatRoleLabel(agent.role)}
                       </span>
                     </td>
                     {!assistView && (
-                      <td>
+                      <td data-label="Actions">
                         <AdminUserRowActionsMenu
                           agent={agent}
                           isSelf={isSelf}

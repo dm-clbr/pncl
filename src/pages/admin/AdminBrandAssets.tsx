@@ -473,7 +473,7 @@ export default function AdminBrandAssets() {
 
                 return (
                   <tr key={asset.id}>
-                    <td>
+                    <td data-label="Asset">
                       <div className="admin-brand-asset-cell">
                         {isColorAsset(asset) ? (
                           <span
@@ -491,14 +491,14 @@ export default function AdminBrandAssets() {
                         <span>{asset.title}</span>
                       </div>
                     </td>
-                    <td>{isColorAsset(asset) ? asset.hexColor ?? "—" : asset.fileName}</td>
-                    <td>{assetTypeLabel(asset.contentType, asset.assetType)}</td>
-                    <td>
+                    <td data-label="File / Hex">{isColorAsset(asset) ? asset.hexColor ?? "—" : asset.fileName}</td>
+                    <td data-label="Type">{assetTypeLabel(asset.contentType, asset.assetType)}</td>
+                    <td data-label="Status">
                       <span className={`admin-status${asset.published ? " active" : ""}`}>
                         {asset.published ? "Published" : "Hidden"}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Actions">
                       <div className="admin-incentive-actions">
                         <button
                           type="button"

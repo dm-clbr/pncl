@@ -149,12 +149,12 @@ export default function AdminStateAvailability() {
                   const changed = status !== state.status;
                   return (
                     <tr key={state.stateCode} className={changed ? "state-row-changed" : undefined}>
-                      <th scope="row">
+                      <th scope="row" data-label="State / jurisdiction">
                         <span className="state-admin-name">{state.stateName}</span>
                         <span className="state-admin-code">{state.stateCode}</span>
                         {changed && <span className="state-admin-unsaved">Unsaved</span>}
                       </th>
-                      <td>
+                      <td data-label="Company status">
                         <label className="state-admin-status-control">
                           <span
                             className={`state-status-dot state-status-${status.toLowerCase()}`}
@@ -179,7 +179,7 @@ export default function AdminStateAvailability() {
                           {STATE_AVAILABILITY_META[status].description}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="Last updated">
                         {state.updatedAt
                           ? new Intl.DateTimeFormat(undefined, {
                             dateStyle: "medium",

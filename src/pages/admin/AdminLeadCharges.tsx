@@ -378,15 +378,15 @@ export default function AdminLeadCharges() {
               <tbody>
                 {repSummaries.map((rep) => (
                   <tr key={rep.key}>
-                    <td>{rep.name}</td>
-                    <td>{rep.email ?? "—"}</td>
-                    <td>
+                    <td data-label="Agent">{rep.name}</td>
+                    <td data-label="Email">{rep.email ?? "—"}</td>
+                    <td data-label="Matched">
                       <span className={`admin-status${rep.matched ? " active" : " error"}`}>
                         {rep.matched ? "Matched" : "Unmatched"}
                       </span>
                     </td>
-                    <td>{rep.count}</td>
-                    <td>{formatCents(rep.totalCents)}</td>
+                    <td data-label="Charges">{rep.count}</td>
+                    <td data-label="Total">{formatCents(rep.totalCents)}</td>
                   </tr>
                 ))}
               </tbody>

@@ -253,17 +253,17 @@ export default function AdminTickets() {
             <tbody>
               {filtered.map((ticket) => (
                 <tr key={ticket.id}>
-                  <td>{ticket.subject}</td>
-                  <td>{ticket.agentName}</td>
-                  <td>{TYPE_LABELS[ticket.type]}</td>
-                  <td>
+                  <td data-label="Subject">{ticket.subject}</td>
+                  <td data-label="Agent">{ticket.agentName}</td>
+                  <td data-label="Type">{TYPE_LABELS[ticket.type]}</td>
+                  <td data-label="Status">
                     <span className={statusClass(ticket.status)}>
                       {STATUS_LABELS[ticket.status]}
                     </span>
                   </td>
-                  <td>{ticket.assignedToName ?? "—"}</td>
-                  <td>{formatDate(ticket.createdAt)}</td>
-                  <td>
+                  <td data-label="Assigned">{ticket.assignedToName ?? "—"}</td>
+                  <td data-label="Submitted">{formatDate(ticket.createdAt)}</td>
+                  <td data-label="Actions">
                     <button
                       type="button"
                       className="admin-icon-btn"

@@ -243,15 +243,15 @@ export default function AdminPayPolicy() {
             <tbody>
               {entries.map((entry) => (
                 <tr key={entry.id}>
-                  <td>{entry.title}</td>
-                  <td>{CATEGORY_LABELS[entry.category]}</td>
-                  <td>{entry.sort_order}</td>
-                  <td>
+                  <td data-label="Title">{entry.title}</td>
+                  <td data-label="Type">{CATEGORY_LABELS[entry.category]}</td>
+                  <td data-label="Order">{entry.sort_order}</td>
+                  <td data-label="Status">
                     <span className={entry.published ? "admin-status active" : "admin-status"}>
                       {entry.published ? "Published" : "Draft"}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Actions">
                     <div className="admin-row-actions">
                       <button
                         type="button"

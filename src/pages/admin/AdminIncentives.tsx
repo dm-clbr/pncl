@@ -487,22 +487,22 @@ export default function AdminIncentives() {
 
                 return (
                   <tr key={incentive.id}>
-                    <td>
+                    <td data-label="Preview">
                       <div className="admin-incentive-thumb">
                         <PortalIncentivePoster item={incentive} />
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Title">
                       <strong>{incentive.title}</strong>
                       <span className="admin-incentive-slug">{incentive.slug}</span>
                     </td>
-                    <td>{incentive.type}</td>
-                    <td>
+                    <td data-label="Type">{incentive.type}</td>
+                    <td data-label="Status">
                       <span className={`admin-status${incentive.published ? " active" : ""}`}>
                         {incentive.published ? "Published" : "Hidden"}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Actions">
                       <div className="admin-incentive-actions">
                         <button
                           type="button"

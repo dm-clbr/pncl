@@ -266,15 +266,15 @@ export default function AdminGmailVerification() {
                 const reactivateAllowed = canReactivateGoogle(candidate);
                 return (
                   <tr key={candidate.onboardingId}>
-                    <td>{candidate.legalName}</td>
-                    <td>{candidate.workspaceEmail}</td>
-                    <td>{candidate.personalEmail}</td>
-                    <td>{formatStatus(candidate.status)}</td>
-                    <td title={candidate.googleSuspensionReason ?? undefined}>
+                    <td data-label="Name">{candidate.legalName}</td>
+                    <td data-label="PNCL email">{candidate.workspaceEmail}</td>
+                    <td data-label="Personal email">{candidate.personalEmail}</td>
+                    <td data-label="Onboarding status">{formatStatus(candidate.status)}</td>
+                    <td data-label="Google status" title={candidate.googleSuspensionReason ?? undefined}>
                       {googleStatusLabel(candidate.googleWorkspaceStatus)}
                     </td>
-                    <td>{formatDateTime(candidate.gmailVerificationEmailSentAt)}</td>
-                    <td>
+                    <td data-label="Verification email sent">{formatDateTime(candidate.gmailVerificationEmailSentAt)}</td>
+                    <td data-label="Actions">
                       <div className="admin-action-row">
                         {candidate.supabaseUserId && (
                           <Link
