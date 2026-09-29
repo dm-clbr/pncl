@@ -30,8 +30,9 @@ const ENABLE_KEY = "pncl:tuner";
 export const TUNER_DEFAULTS: TunerState = {
   ...LIQUID_GRADIENT_PRESETS.pncl,
   layerOpacity: 1,
-  blendMode: "normal",
-  vignette: 1,
+  // Mirrored on .portal-backdrop and .portal-auth-canvas so every page matches.
+  blendMode: "screen",
+  vignette: 0.36,
   staticBase: false,
 };
 

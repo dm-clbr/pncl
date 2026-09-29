@@ -35,18 +35,22 @@
   background: var(--portal-base);
 }
 
+/* Blend and vignette strength match the dashboard's (TUNER_DEFAULTS in
+   PortalGradientTuner.tsx). */
 .portal-backdrop-canvas {
   position: absolute;
   inset: 0;
   filter: blur(32px);
   transform: scale(1.16);
   will-change: transform;
+  mix-blend-mode: screen;
 }
 
 .portal-backdrop::after {
   content: "";
   position: absolute;
   inset: 0;
+  opacity: 0.36;
   background: var(--portal-vignette);
 }
 

@@ -96,31 +96,33 @@ export const LIQUID_GRADIENT_PRESETS = {
     saturation: 1.0,
     distBias: 0,
   },
-  /** PNCL: living orange light moving over a black page. */
+  /** PNCL: small orange wisps drifting over a black page. Tuned in the
+      dashboard tuner; every layer shows it through mix-blend-mode: screen
+      with the vignette at 0.36 (TUNER_DEFAULTS, portal-shell.css,
+      portal-auth.css). */
   pncl: {
     ...LIQUID_GRADIENT_DEFAULTS,
-    // Dark to light. The palette maps val 0..1 across the stops in order, so a
-    // light-first array meant a low val picked the brightest colour and any
-    // attempt to darken the distribution made the page brighter.
-    colors: ["#060403", "#241004", "#5e2207", "#a8420c", "#f06a16", "#ffa048"],
-    speed: 0.3,
-    scale: 0.45,
-    seed: 19,
-    turbAmp: 0.5,
-    turbFreq: 0.5,
-    turbIter: 6,
-    waveFreq: 1.4,
-    // Positive bias weights the field toward the low, dark stops; at 0 the
-    // orange stops get their share, so the light reads as moving colour.
-    distBias: -0.1,
+    // One orange stop among near-blacks, with a strong bias toward the dark
+    // stops, so the orange only shows as thin wisps.
+    colors: ["#050505", "#0f0f0f", "#0a0a0a", "#c2501c", "#141414", "#141414"],
+    speed: 0.68,
+    scale: 1.21,
+    seed: 39,
+    turbAmp: 0.29,
+    turbFreq: 0.63,
+    turbIter: 10,
+    waveFreq: 0.95,
+    distBias: 0.8,
+    jellify: 0,
     ditherMode: "grain" as LiquidDitherMode,
-    dither: 0.1,
-    ditherAnim: 0.35,
-    ditherSize: 3,
-    ditherFlat: 0.22,
-    exposure: 1.15,
-    contrast: 1.1,
-    saturation: 1.1,
+    dither: 0.03,
+    ditherAnim: 1.62,
+    ditherSize: 1,
+    ditherFlat: 0.61,
+    exposure: 1.7,
+    contrast: 1.73,
+    saturation: 1.13,
+    loop: 0,
   },
   vibrant: {
     ...LIQUID_GRADIENT_DEFAULTS,

@@ -13,7 +13,9 @@
 
 .portal-auth {
   min-height: 100svh;
-  background: var(--ink);
+  /* The dashboard's base: the canvas screens over it, so --ink would show
+     through as charcoal. */
+  background: var(--portal-base);
   color: var(--portal-text);
   font-family: var(--portal-font);
 }
@@ -29,6 +31,7 @@
   pointer-events: none;
   filter: blur(32px);
   transform: scale(1.16);
+  mix-blend-mode: screen;
 }
 
 /* Half the blur radius on phones and touch devices: the canvas already runs at
