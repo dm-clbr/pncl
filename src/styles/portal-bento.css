@@ -69,7 +69,7 @@
    .portal-backdrop through the token, so every portal page is one frame. */
 .portal-bento::after {
   content: "";
-  position: absolute;
+  position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
@@ -91,9 +91,13 @@
    the filter's soft edge outside .portal-bento, which clips it: a blur
    fades over about two sigma, so the overhang has to be 64px on a 900px
    tall page and 32px on a 390px wide one (16px blur there). 1.16 gives 72
-   and 31; 1.08 left a measurable 20 to 30 percent dip in the edge pixels. */
+   and 31; 1.08 left a measurable 20 to 30 percent dip in the edge pixels.
+
+   Fixed to the viewport, as is the vignette above: the shader scales its
+   pattern by the canvas height, so a page-tall canvas zoomed the gradient in
+   on a long dashboard. */
 .portal-bento-canvas {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;

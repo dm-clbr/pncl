@@ -20,14 +20,14 @@
 /* The shared gradient layer, mounted by PortalBackground as the first child of
    the page wrapper. It reproduces the dashboard's frame (.portal-bento in
    portal-bento.css) so a page off the dashboard cannot look different from
-   it: the same base, the same page-tall canvas under the same blur and
-   overscale, the same vignette through --portal-vignette. Absolute over the
-   whole page rather than fixed to the viewport, because that is what the
-   dashboard does, and the gradient's composition follows the layer's shape.
-   It clips its own overscale; .home2-page's overflow-x: hidden makes the
-   wrapper a scroll container, and an overhang left to it would scroll. */
+   it: the same base, the same viewport-sized canvas under the same blur and
+   overscale, the same vignette through --portal-vignette. Fixed to the
+   viewport, like the dashboard's and the auth screens': the shader scales its
+   pattern by the canvas height, so a page-tall layer blew the gradient up on
+   long pages until one screen showed a single flat wash. It clips its own
+   overscale. */
 .portal-backdrop {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 0;
   overflow: clip;
