@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useAdminModal } from "@/components/admin/useAdminModal";
 import { X } from "lucide-react";
 import {
   updateUserProfileFields,
@@ -113,11 +114,17 @@ export default function AdminEditProfileModal({
     }
   };
 
+  const modalRef = useRef<HTMLFormElement>(null);
+  useAdminModal(modalRef, true, saving ? undefined : onClose);
+
   return (
     <div className="admin-modal-overlay" role="presentation" onClick={saving ? undefined : onClose}>
       <form
         className="admin-modal admin-edit-profile-modal"
         role="dialog"
+        ref={modalRef}
+        tabIndex={-1}
+        aria-modal="true"
         aria-labelledby="admin-edit-profile-title"
         onClick={(event) => event.stopPropagation()}
         onSubmit={(event) => void handleSubmit(event)}

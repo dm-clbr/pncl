@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAdminModal } from "@/components/admin/useAdminModal";
 import { Link } from "react-router-dom";
 import { Check, FileSignature, FileUp, RotateCcw, X } from "lucide-react";
 import AdminCompAttachmentPanel from "@/components/admin/AdminCompAttachmentPanel";
@@ -61,11 +62,17 @@ function CompAttachmentModal({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  useAdminModal(modalRef, true, onClose);
+
   return (
     <div className="admin-modal-overlay" role="presentation" onClick={onClose}>
       <div
         className="admin-modal"
         role="dialog"
+        ref={modalRef}
+        tabIndex={-1}
+        aria-modal="true"
         aria-labelledby="admin-comp-attachment-title"
         onClick={(event) => event.stopPropagation()}
       >

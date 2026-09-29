@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useAdminModal } from "@/components/admin/useAdminModal";
 import { X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
@@ -67,11 +68,17 @@ export function HierarchyPartnerEditModal({
     }
   }
 
+  const modalRef = useRef<HTMLDivElement>(null);
+  useAdminModal(modalRef, true, unlinking ? undefined : onClose);
+
   return (
     <div className="admin-modal-overlay" role="presentation" onClick={onClose}>
       <div
         className="admin-modal admin-hierarchy-partner-modal"
         role="dialog"
+        ref={modalRef}
+        tabIndex={-1}
+        aria-modal="true"
         aria-labelledby="admin-hierarchy-partner-title"
         onClick={(event) => event.stopPropagation()}
       >

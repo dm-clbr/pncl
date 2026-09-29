@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useAdminModal } from "@/components/admin/useAdminModal";
 import { Link } from "react-router-dom";
 import { ArrowDownAZ, ArrowUpAZ, Check, CheckCircle2, ClipboardList, GraduationCap, Mail, SkipForward, X } from "lucide-react";
 import AdminOnboardingDetailsPanel from "@/components/admin/AdminOnboardingDetailsPanel";
@@ -141,6 +142,9 @@ export default function AdminGenesis() {
       cancelled = true;
     };
   }, [detailAgent, session?.access_token]);
+
+  const detailModalRef = useRef<HTMLDivElement>(null);
+  useAdminModal(detailModalRef, Boolean(detailAgent), () => setDetailAgent(null));
 
   const refreshDetailDocuments = async () => {
     const token = session?.access_token;
@@ -414,6 +418,9 @@ export default function AdminGenesis() {
           <div
             className="admin-modal admin-genesis-details-modal"
             role="dialog"
+            ref={detailModalRef}
+            tabIndex={-1}
+            aria-modal="true"
             aria-labelledby="admin-genesis-details-title"
             onClick={(event) => event.stopPropagation()}
           >

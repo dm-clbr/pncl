@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useAdminModal } from "@/components/admin/useAdminModal";
 import { DollarSign, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -63,11 +64,17 @@ function EntryModal({
     }
   };
 
+  const modalRef = useRef<HTMLDivElement>(null);
+  useAdminModal(modalRef, true, saving ? undefined : onClose);
+
   return (
     <div className="admin-modal-overlay" role="presentation" onClick={saving ? undefined : onClose}>
       <div
         className="admin-modal admin-ticket-modal"
         role="dialog"
+        ref={modalRef}
+        tabIndex={-1}
+        aria-modal="true"
         aria-labelledby="admin-pay-policy-title"
         onClick={(event) => event.stopPropagation()}
       >
