@@ -513,7 +513,7 @@ export default function AdminTodos() {
                       <div className="admin-incentive-actions">
                         <button
                           type="button"
-                          className="admin-icon-btn"
+                          className="admin-icon-btn admin-icon-only"
                           disabled={index === 0 || isReordering}
                           onClick={() => void moveTodo(index, -1)}
                           aria-label={`Move ${rowLabel(todo)} up`}
@@ -522,7 +522,7 @@ export default function AdminTodos() {
                         </button>
                         <button
                           type="button"
-                          className="admin-icon-btn"
+                          className="admin-icon-btn admin-icon-only"
                           disabled={index === todos.length - 1 || isReordering}
                           onClick={() => void moveTodo(index, 1)}
                           aria-label={`Move ${rowLabel(todo)} down`}

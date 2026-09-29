@@ -530,7 +530,7 @@ export default function AdminCarriers() {
                         <div className="admin-incentive-actions">
                           <button
                             type="button"
-                            className="admin-icon-btn"
+                            className="admin-icon-btn admin-icon-only"
                             disabled={index === 0 || savingSheet}
                             onClick={() => moveCarrier(index, -1)}
                             aria-label={`Move ${rowLabel(carrier)} up`}
@@ -539,7 +539,7 @@ export default function AdminCarriers() {
                           </button>
                           <button
                             type="button"
-                            className="admin-icon-btn"
+                            className="admin-icon-btn admin-icon-only"
                             disabled={index === rows.length - 1 || savingSheet}
                             onClick={() => moveCarrier(index, 1)}
                             aria-label={`Move ${rowLabel(carrier)} down`}

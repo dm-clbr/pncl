@@ -666,7 +666,7 @@ export default function AdminSetterCloser() {
                     <div className="admin-table-actions">
                       <button
                         type="button"
-                        className="admin-icon-btn"
+                        className="admin-icon-btn admin-icon-only"
                         aria-label={`Edit ${policy.policyNumber}`}
                         onClick={() => setDraft(policyToDraft(policy))}
                       >
@@ -674,7 +674,7 @@ export default function AdminSetterCloser() {
                       </button>
                       <button
                         type="button"
-                        className="admin-icon-btn"
+                        className="admin-icon-btn admin-icon-only"
                         aria-label={`Delete ${policy.policyNumber}`}
                         disabled={deletingId === policy.id}
                         onClick={() => void handleDelete(policy)}

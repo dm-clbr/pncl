@@ -506,7 +506,7 @@ export default function AdminIncentives() {
                       <div className="admin-incentive-actions">
                         <button
                           type="button"
-                          className="admin-icon-btn"
+                          className="admin-icon-btn admin-icon-only"
                           disabled={index === 0 || isReordering}
                           onClick={() => void moveIncentive(index, -1)}
                           aria-label={`Move ${incentive.title} up`}
@@ -515,7 +515,7 @@ export default function AdminIncentives() {
                         </button>
                         <button
                           type="button"
-                          className="admin-icon-btn"
+                          className="admin-icon-btn admin-icon-only"
                           disabled={index === incentives.length - 1 || isReordering}
                           onClick={() => void moveIncentive(index, 1)}
                           aria-label={`Move ${incentive.title} down`}

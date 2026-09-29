@@ -255,7 +255,7 @@ export default function AdminPayPolicy() {
                     <div className="admin-row-actions">
                       <button
                         type="button"
-                        className="admin-icon-btn"
+                        className="admin-icon-btn admin-icon-only"
                         aria-label={`Edit ${entry.title}`}
                         onClick={() =>
                           setDraft({
@@ -272,7 +272,7 @@ export default function AdminPayPolicy() {
                       </button>
                       <button
                         type="button"
-                        className="admin-icon-btn danger"
+                        className="admin-icon-btn admin-icon-only danger"
                         aria-label={`Delete ${entry.title}`}
                         disabled={deletingId === entry.id}
                         onClick={() => void handleDelete(entry)}

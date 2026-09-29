@@ -261,7 +261,7 @@ export function DashboardSectionFiles({
                   <div className="admin-incentive-actions">
                     <button
                       type="button"
-                      className="admin-icon-btn"
+                      className="admin-icon-btn admin-icon-only"
                       disabled={index === 0 || busyId === file.id}
                       onClick={() => void handleReorder(file.id, "up")}
                       aria-label={`Move ${file.title} up`}
@@ -270,7 +270,7 @@ export function DashboardSectionFiles({
                     </button>
                     <button
                       type="button"
-                      className="admin-icon-btn"
+                      className="admin-icon-btn admin-icon-only"
                       disabled={index === section.files.length - 1 || busyId === file.id}
                       onClick={() => void handleReorder(file.id, "down")}
                       aria-label={`Move ${file.title} down`}

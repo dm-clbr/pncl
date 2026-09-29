@@ -502,7 +502,7 @@ export default function AdminBrandAssets() {
                       <div className="admin-incentive-actions">
                         <button
                           type="button"
-                          className="admin-icon-btn"
+                          className="admin-icon-btn admin-icon-only"
                           disabled={index === 0 || isReordering}
                           onClick={() => void moveAsset(index, -1)}
                           aria-label={`Move ${rowLabel(asset)} up`}
@@ -511,7 +511,7 @@ export default function AdminBrandAssets() {
                         </button>
                         <button
                           type="button"
-                          className="admin-icon-btn"
+                          className="admin-icon-btn admin-icon-only"
                           disabled={index === assets.length - 1 || isReordering}
                           onClick={() => void moveAsset(index, 1)}
                           aria-label={`Move ${rowLabel(asset)} down`}
