@@ -69,6 +69,7 @@ export default function PortalClients() {
       <main className="portal-dash dark carrier-sheet-dash">
         <div className="wrap carrier-sheet-wrap">
           <PortalHeader
+            subpage
             name={displayName}
             email={user?.email}
             initials={initials}

@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { CalendarDays, LayoutDashboard, MapPinned, UserRound } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -18,6 +18,11 @@ function activeIndex(pathname: string) {
   );
 }
 
+/** Every page mounts its own bar, so a route change mounts a new one. The
+    last tab shown is kept here, outside React, so the new bar can start its
+    thumb where the old one stopped and slide it to the new tab. */
+let lastShown: number | null = null;
+
 /** Floating tab bar, rendered only at 620px and below (CSS, not JS, so the
     markup is identical at every width). A frosted pill in the thumb zone with
     a thumb that slides to the active tab. Sign out and the socials stay in the
@@ -29,11 +34,22 @@ function activeIndex(pathname: string) {
     the safe spot. */
 export default function BottomNav() {
   const active = activeIndex(useLocation().pathname);
+  const [shown, setShown] = useState(() =>
+    lastShown !== null && lastShown >= 0 && active >= 0 ? lastShown : active,
+  );
+  useEffect(() => {
+    lastShown = active;
+    if (shown === active) return;
+    // One frame at the old tab, then the transition carries it over.
+    const frame = requestAnimationFrame(() => setShown(active));
+    return () => cancelAnimationFrame(frame);
+  }, [active, shown]);
+
   return (
     <nav
       className="portal-bottom-nav"
       aria-label="Portal sections"
-      style={{ "--nav-active": active } as CSSProperties}
+      style={{ "--nav-active": shown } as CSSProperties}
     >
       {active >= 0 && <span className="portal-bottom-nav-thumb" aria-hidden="true" />}
       {ITEMS.map(({ to, label, icon: Icon, end }) => (

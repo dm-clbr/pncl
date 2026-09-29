@@ -581,6 +581,7 @@ export default function PortalProfile() {
       <main className="portal-dash dark carrier-sheet-dash portal-profile-dash">
         <div className="wrap carrier-sheet-wrap">
           <PortalHeader
+            subpage
             name={displayName}
             email={agentEmail}
             initials={initials}

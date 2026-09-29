@@ -284,12 +284,15 @@ button.portal-step-inner:hover .portal-step-num {
   line-height: 1;
   font-variant-numeric: tabular-nums lining-nums;
   color: var(--portal-text-faint);
+  /* Opaque, so the connector drawn to this badge's centre stops at its edge
+     instead of striking through the numeral. */
+  background: var(--portal-bar-fill);
   transition: border-color 120ms var(--portal-ease-out);
 }
 
 .portal-step.is-done .portal-step-num {
   border-color: var(--portal-text-faint);
-  background: rgba(255, 255, 255, 0.14);
+  background: linear-gradient(rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.14)), var(--portal-bar-fill);
   color: var(--portal-text-strong);
 }
 

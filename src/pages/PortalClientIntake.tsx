@@ -288,6 +288,7 @@ export default function PortalClientIntake() {
       <main className="portal-dash dark">
         <div className={`wrap pintake-wrap${isReviewStep ? " pintake-wrap-wide" : ""}`}>
           <PortalHeader
+            subpage
             name={displayName}
             email={user?.email}
             initials={initials}

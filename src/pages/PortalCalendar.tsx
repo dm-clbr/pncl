@@ -82,6 +82,7 @@ export default function PortalCalendar() {
     <div className="home2-page">
       <PortalBentoMain>
         <PortalHeader
+          subpage
           name={displayName}
           email={user?.email}
           initials={initials}

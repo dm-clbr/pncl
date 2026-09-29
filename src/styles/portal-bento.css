@@ -290,7 +290,7 @@
 
 .pbanner-link:focus-visible,
 .pbanner-dismiss:focus-visible {
-  outline: 2px solid var(--portal-accent);
+  outline: var(--portal-focus-ring);
   outline-offset: 2px;
   border-radius: 6px;
 }
@@ -432,7 +432,7 @@
 }
 
 .portal-bento-footer-link:focus-visible {
-  outline: 2px solid var(--portal-accent);
+  outline: var(--portal-focus-ring);
   outline-offset: 3px;
 }
 
@@ -470,7 +470,7 @@
 }
 
 .portal-bento-social:focus-visible {
-  outline: 2px solid var(--portal-accent);
+  outline: var(--portal-focus-ring);
   outline-offset: -4px;
 }
 
@@ -669,7 +669,7 @@
 }
 
 .portal-bento .portal-sub-link:focus-visible {
-  outline: 2px solid var(--portal-accent);
+  outline: var(--portal-focus-ring);
   outline-offset: -2px;
 }
 
@@ -729,7 +729,7 @@
 }
 
 .portal-bento .portal-primary-nav-link:focus-visible {
-  outline: 2px solid var(--portal-accent);
+  outline: var(--portal-focus-ring);
   outline-offset: 3px;
 }
 
@@ -1033,7 +1033,7 @@
 
 .pcl-note {
   margin: 0 0 10px;
-  font-size: var(--portal-t-micro);
+  font-size: var(--portal-t-body);
   line-height: 1.5;
   color: var(--portal-text);
 }
@@ -1088,7 +1088,7 @@
   justify-content: space-between;
   gap: 8px;
   width: 100%;
-  min-height: 44px;
+  min-height: var(--portal-control-h);
   margin: 0;
   padding: 0;
   border: 0;
@@ -1110,7 +1110,7 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
-  font-size: var(--portal-t-label);
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1188,7 +1188,7 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  min-height: 44px;
+  min-height: var(--portal-control-h);
   margin: 0;
   padding: 6px 0;
   box-sizing: border-box;
@@ -1289,7 +1289,7 @@ div.pcl-step-row .pcl-step-mark {
 }
 
 .pcl-step-tag {
-  font-size: var(--portal-t-label);
+  font-size: var(--portal-t-micro);
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1343,12 +1343,13 @@ div.pcl-step-row .pcl-step-mark {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  min-height: 44px;
-  margin: -8px 0;
+  min-height: var(--portal-control-h);
+  margin: 0;
   padding: 0;
   border: 0;
   background: none;
   font: inherit;
+  font-size: var(--portal-control-fs);
   font-weight: 600;
   color: var(--portal-text-strong);
   text-decoration: underline;

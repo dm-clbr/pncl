@@ -182,6 +182,7 @@ export default function PortalDisclosures() {
       <main className="portal-dash dark">
         <div className="wrap portal-training-wrap">
           <PortalHeader
+            subpage
             name={displayName}
             email={user?.email}
             initials={initials}
