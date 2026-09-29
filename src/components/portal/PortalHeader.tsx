@@ -43,7 +43,10 @@ export default function PortalHeader({
         {stage && <span className="portal-header-stage">{stage}</span>}
       </div>
 
-      <Link to="/portal/profile" className="portal-header-profile" aria-label="View profile">
+      {/* The name leads the label, so a speech user saying the visible name
+          reaches the link (WCAG 2.5.3); on a phone, where only the avatar
+          shows, the label still says where it goes. */}
+      <Link to="/portal/profile" className="portal-header-profile" aria-label={`${name}, view profile`}>
         <span className="portal-header-identity">
           <span className="portal-header-name">{name}</span>
           {email && <span className="portal-header-mail">{email}</span>}

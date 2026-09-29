@@ -526,7 +526,7 @@ describe("PortalHeader", () => {
     expect(document.querySelector(".portal-header-avatar img")).toBeNull();
     expect(screen.getByRole("heading", { level: 1, name: "Employee Portal" })).toBeInTheDocument();
     expect(screen.getByText("Licensing")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "View profile" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Porter Gerlach, view profile" })).toHaveAttribute(
       "href",
       "/portal/profile",
     );

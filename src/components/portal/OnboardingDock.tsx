@@ -14,8 +14,18 @@ import { getCurrentStageIndex, PORTAL_TODO_PHASES, type PortalTodo } from "@/lib
 import "@/styles/portal-onboarding.css";
 
 const STAGES = PORTAL_TODO_PHASES.map((phase) => phase.label);
-const EASE_OUT = "cubic-bezier(0.22, 1, 0.36, 1)";
-const EASE_IN_OUT = "cubic-bezier(0.65, 0, 0.35, 1)";
+/** The portal's motion token, read once from CSS so the morph cannot drift
+    from the rest of the portal. Surfaces run 300 to 420ms (DESIGN.md). */
+const easeOut = () =>
+  getComputedStyle(document.documentElement).getPropertyValue("--portal-ease-out").trim() ||
+  "cubic-bezier(0.22, 1, 0.36, 1)";
+const OPEN_MS = 420;
+const CLOSE_MS = 360;
+
+/** A phone under 700px tall, or any screen under 500px tall (a phone in
+    landscape): the capsule starts folded to its ring so the floating bars
+    never take a quarter of the screen. */
+const SHORT_SCREEN = "(max-width: 620px) and (max-height: 700px), (max-height: 500px)";
 
 type OnboardingDockProps = {
   /** Resolved todos, each with its server `completed` flag. */
@@ -86,7 +96,11 @@ export default function OnboardingDock({ todos, children, floating = false }: On
   const titleId = useId();
   const summaryId = useId();
   const [open, setOpen] = useState(false);
-  const [compact, setCompact] = useState(false);
+  const [scrolledDown, setScrolledDown] = useState(false);
+  const [shortScreen] = useState(
+    () => typeof window.matchMedia === "function" && window.matchMedia(SHORT_SCREEN).matches,
+  );
+  const compact = floating && (shortScreen || scrolledDown);
 
   const total = todos.length;
   const done = todos.filter((todo) => todo.completed).length;
@@ -110,7 +124,7 @@ export default function OnboardingDock({ todos, children, floating = false }: On
       frame = requestAnimationFrame(() => {
         const y = window.scrollY;
         if (Math.abs(y - last) < 8) return;
-        setCompact(y > last && y > 120);
+        setScrolledDown(y > last && y > 120);
         last = y;
       });
     };
@@ -136,21 +150,22 @@ export default function OnboardingDock({ todos, children, floating = false }: On
     if (!dialog || dialog.open) return;
     const from = capsuleBox();
     setOpen(true);
-    setCompact(false);
+    setScrolledDown(false);
     dialog.showModal();
     titleRef.current?.focus({ preventScroll: true });
     if (reducedMotion() || typeof dialog.animate !== "function" || !from) return;
     const panel = dialog.getBoundingClientRect();
+    const easing = easeOut();
     dialog.animate([{ clipPath: insetTo(from, panel) }, { clipPath: panelShape(dialog) }], {
-      duration: 560,
-      easing: EASE_OUT,
+      duration: OPEN_MS,
+      easing,
     });
     innerRef.current?.animate(
       [
         { opacity: 0, transform: "translateY(12px)" },
         { opacity: 1, transform: "none" },
       ],
-      { duration: 360, delay: 140, easing: EASE_OUT, fill: "backwards" },
+      { duration: 300, delay: 120, easing, fill: "backwards" },
     );
   };
 
@@ -164,17 +179,18 @@ export default function OnboardingDock({ todos, children, floating = false }: On
       dialog.close();
       return;
     }
+    const easing = easeOut();
     const fade = innerRef.current?.animate([{ opacity: 1 }, { opacity: 0 }], {
       duration: 140,
-      easing: EASE_OUT,
+      easing,
       fill: "forwards",
     });
     const panel = dialog.getBoundingClientRect();
     const shrink = dialog.animate(
       [{ clipPath: panelShape(dialog) }, { clipPath: insetTo(to, panel) }],
-      { duration: 420, easing: EASE_IN_OUT, fill: "forwards" },
+      { duration: CLOSE_MS, easing, fill: "forwards" },
     );
-    const backdrop = fadeBackdrop(dialog, 420);
+    const backdrop = fadeBackdrop(dialog, CLOSE_MS);
     // The forwards fills hold the closed frame until the dialog is gone, then
     // drop, or the next open would start from an invisible panel.
     shrink.onfinish = () => {
@@ -220,11 +236,18 @@ export default function OnboardingDock({ todos, children, floating = false }: On
     if (dy <= 80 || typeof dialog.animate !== "function") {
       dialog.style.removeProperty("transform");
       if (dy > 80) dialog.close();
+      // Short of the threshold the panel settles back rather than snapping.
+      else if (dy > 0 && typeof dialog.animate === "function") {
+        dialog.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], {
+          duration: 240,
+          easing: easeOut(),
+        });
+      }
       return;
     }
     const drop = dialog.animate(
       [{ transform: `translateY(${dy}px)` }, { transform: "translateY(100%)" }],
-      { duration: 260, easing: EASE_OUT, fill: "forwards" },
+      { duration: 260, easing: easeOut(), fill: "forwards" },
     );
     const backdrop = fadeBackdrop(dialog, 260);
     drop.onfinish = () => {
@@ -316,7 +339,7 @@ function fadeBackdrop(dialog: HTMLDialogElement, duration: number): Animation | 
   try {
     return dialog.animate([{ opacity: 1 }, { opacity: 0 }], {
       duration,
-      easing: EASE_OUT,
+      easing: easeOut(),
       fill: "forwards",
       pseudoElement: "::backdrop",
     });

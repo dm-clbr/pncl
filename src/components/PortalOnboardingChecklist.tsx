@@ -66,12 +66,22 @@ function PortalVideoModal({
   onClose: () => void;
 }) {
   const [loadState, setLoadState] = useState<"loading" | "ready" | "error">("loading");
-  const portalTarget = document.querySelector<HTMLElement>(".home2-page") ?? document.body;
+  // An open modal <dialog> (the onboarding dock's panel) makes everything
+  // outside it inert, so the video has to render inside that dialog to be
+  // seen and reached. Otherwise it goes into the page wrapper as before.
+  const portalTarget =
+    document.querySelector<HTMLElement>("dialog[open]") ??
+    document.querySelector<HTMLElement>(".home2-page") ??
+    document.body;
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key !== "Escape") return;
+      // Handled here, so the dialog under it does not also take the Escape
+      // as its own close request.
+      event.preventDefault();
+      onClose();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => {

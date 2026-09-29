@@ -435,6 +435,11 @@
   .portal-bottom-nav-thumb {
     transition: none;
   }
+
+  .portal-bottom-nav-item:active,
+  .portal-header-profile:active .portal-header-avatar {
+    transform: none;
+  }
 }
 
 @media (max-width: 620px) {
@@ -586,4 +591,15 @@
   .portal-subhead-aside {
     margin-left: auto;
   }
+}
+
+/* ── Sticky bottom bars and keyboard focus ─────────────────────────────── */
+
+/* A page with a sticky bar at its foot (the profile save bar, the ICA and
+   W-9 pager, the direct deposit submit bar, the intake bar) has to keep a
+   focused field clear of that bar as well as of the tab bar, or the field
+   scrolls in behind it (WCAG 2.4.11). The bars run about 78px; 96px leaves
+   a gap. Last in the file so it wins over the tab bar's own padding. */
+html:has(.portal-profile-savebar, .pforms-pager, .pforms-submit-bar, .pintake-bar) {
+  scroll-padding-bottom: calc(var(--portal-nav-space) + 96px);
 }

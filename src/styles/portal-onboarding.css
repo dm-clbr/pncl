@@ -47,6 +47,15 @@
   outline-offset: var(--portal-focus-offset);
 }
 
+/* The floating capsule clips itself (the fold is a clip-path), which would
+   clip an outline too, so its ring is drawn inside the edge instead. */
+.pdock.is-floating .pdock-capsule:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
 /* The panel grows out of the capsule, so the capsule steps aside while it is
    open and comes back as the panel shrinks into it. */
 .pdock-capsule[aria-expanded="true"] {
@@ -133,7 +142,7 @@
   stroke: var(--portal-text-strong);
   stroke-linecap: round;
   stroke-dasharray: 100;
-  transition: stroke-dashoffset 700ms var(--portal-ease-out);
+  transition: stroke-dashoffset 420ms var(--portal-ease-out);
 }
 
 .pdock-ring-label {
@@ -244,7 +253,7 @@ html:has(.pdock.is-floating) {
 
 .pdock-panel::backdrop {
   background: rgba(6, 5, 4, 0.55);
-  animation: pdock-backdrop-in 360ms var(--portal-ease-out);
+  animation: pdock-backdrop-in 420ms var(--portal-ease-out);
 }
 
 @keyframes pdock-backdrop-in {
