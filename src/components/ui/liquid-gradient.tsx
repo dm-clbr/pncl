@@ -96,31 +96,31 @@ export const LIQUID_GRADIENT_PRESETS = {
     saturation: 1.0,
     distBias: 0,
   },
-  /** PNCL: the warm wall light the dashboard already uses, made to drift. */
+  /** PNCL: living orange light moving over a black page. */
   pncl: {
     ...LIQUID_GRADIENT_DEFAULTS,
     // Dark to light. The palette maps val 0..1 across the stops in order, so a
     // light-first array meant a low val picked the brightest colour and any
     // attempt to darken the distribution made the page brighter.
-    colors: ["#12100e", "#1d1916", "#332b24", "#5f4e3f", "#a3866a", "#e8cdb0"],
-    speed: 0.12,
-    scale: 0.32,
+    colors: ["#060403", "#241004", "#5e2207", "#a8420c", "#f06a16", "#ffa048"],
+    speed: 0.3,
+    scale: 0.45,
     seed: 19,
-    turbAmp: 0.34,
+    turbAmp: 0.5,
     turbFreq: 0.5,
     turbIter: 6,
     waveFreq: 1.4,
-    // Positive bias now weights the field toward the low, dark stops, so the
-    // light reads as a region on a dark page rather than the page itself.
-    distBias: 0.55,
+    // Positive bias weights the field toward the low, dark stops; at 0 the
+    // orange stops get their share, so the light reads as moving colour.
+    distBias: -0.1,
     ditherMode: "grain" as LiquidDitherMode,
     dither: 0.1,
     ditherAnim: 0.35,
     ditherSize: 3,
     ditherFlat: 0.22,
-    exposure: 1.0,
-    contrast: 1.06,
-    saturation: 0.92,
+    exposure: 1.15,
+    contrast: 1.1,
+    saturation: 1.1,
   },
   vibrant: {
     ...LIQUID_GRADIENT_DEFAULTS,
