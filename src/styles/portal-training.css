@@ -223,6 +223,79 @@
   opacity: 0.55;
 }
 
+/* Admin-only "Check for new videos". It sits in the sub-page header, outside
+   .ptr, so it scopes to .portal-subhead. Same shape as the tools pages' CTA. */
+.portal-subhead .ptr-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--portal-unit) * 2);
+  min-height: var(--portal-control-h);
+  padding: 0 calc(var(--portal-unit) * 4);
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-control-radius);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 120ms var(--portal-ease-out);
+}
+
+.portal-subhead .ptr-refresh:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.portal-subhead .ptr-refresh:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.portal-subhead .ptr-refresh:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.portal-subhead .ptr-refresh .is-spinning {
+  animation: ptr-spin 0.8s linear infinite;
+}
+
+@keyframes ptr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-subhead .ptr-refresh .is-spinning {
+    animation: none;
+  }
+}
+
+/* The sub-page header is a 44px bar here and the label would wrap out of it,
+   so the button goes icon only. The label stays in the accessibility tree. */
+@media (max-width: 620px) {
+  .portal-subhead .ptr-refresh {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0;
+    border-color: transparent;
+    background: none;
+  }
+
+  .portal-subhead .ptr-refresh-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
 /* Where the button was, so the pane keeps its rhythm once the module is done. */
 .ptr .ptr-done {
   display: flex;

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { Play, PlaySquare } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Play, PlaySquare, RefreshCw } from "lucide-react";
 import PortalPrimaryNav from "@/components/PortalPrimaryNav";
 import BottomNav from "@/components/portal/BottomNav";
 import Chip from "@/components/portal/Chip";
@@ -19,10 +19,12 @@ import {
   getDisclosureAcknowledgmentKey,
   hasDisclosureVideo,
   isDisclosureCompleted,
+  syncPortalTrainingVideos,
   toEmbedUrl,
   type PortalDisclosure,
 } from "@/lib/portal-disclosures";
 import { trackPageView } from "@/lib/analytics";
+import { isAdmin, isGenesisAdmin } from "@/lib/roles";
 import { toast } from "sonner";
 import "@/styles/home2.css";
 import "@/styles/portal-training.css";
@@ -98,48 +100,48 @@ export function DisclosureVideo({
 }
 
 export default function PortalDisclosures() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
+  const userId = user?.id;
+  const canRefreshTraining = isAdmin(user) || isGenesisAdmin(user);
   const { photoUrl, initials, displayName } = usePortalProfile(user);
   const [disclosures, setDisclosures] = useState<PortalDisclosure[]>([]);
   const [acknowledgedKeys, setAcknowledgedKeys] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [acknowledgingId, setAcknowledgingId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    document.title = "PNCL Training — PNCL Portal";
+    document.title = "Video Trainings — PNCL Portal";
     trackPageView("portal_training");
     window.scrollTo(0, 0);
   }, []);
 
-  useEffect(() => {
-    if (!user) {
+  const loadTraining = useCallback(async () => {
+    if (!userId) {
       setLoading(false);
       return;
     }
 
-    let cancelled = false;
     setLoading(true);
+    try {
+      const [modules, acked] = await Promise.all([
+        fetchPortalDisclosures(),
+        fetchAcknowledgedDisclosureKeys(userId),
+      ]);
+      setDisclosures(modules);
+      setAcknowledgedKeys(acked);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load training videos.");
+    } finally {
+      setLoading(false);
+    }
+  }, [userId]);
 
-    void Promise.all([fetchPortalDisclosures(), fetchAcknowledgedDisclosureKeys(user.id)])
-      .then(([modules, acked]) => {
-        if (cancelled) return;
-        setDisclosures(modules);
-        setAcknowledgedKeys(acked);
-        setError(null);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Unable to load disclosures.");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
+  useEffect(() => {
+    void loadTraining();
+  }, [loadTraining]);
 
   /* Nothing stops an agent acknowledging module 7 first, so the stepper reads
      each module's own state instead of assuming everything before the current
@@ -156,12 +158,35 @@ export default function PortalDisclosures() {
   // findIndex returns -1 once everything is done, which leaves no current step.
   const currentStep = disclosures.findIndex((_, index) => !doneSteps.includes(index + 1)) + 1;
 
+  const handleRefresh = async () => {
+    const accessToken = session?.access_token;
+    if (!accessToken) {
+      toast.error("Your portal session expired. Sign in again.");
+      return;
+    }
+
+    setRefreshing(true);
+    try {
+      const result = await syncPortalTrainingVideos(accessToken);
+      await loadTraining();
+      toast.success(
+        result.added === 0
+          ? "Video trainings are already up to date."
+          : `${result.added} new training video${result.added === 1 ? "" : "s"} added.`,
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Unable to refresh training videos.");
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handleAcknowledge = async (disclosure: PortalDisclosure) => {
-    if (!user || !hasDisclosureVideo(disclosure)) return;
+    if (!userId || !hasDisclosureVideo(disclosure)) return;
 
     setAcknowledgingId(disclosure.id);
     try {
-      await acknowledgeDisclosure(user.id, disclosure.id, disclosure.content_version);
+      await acknowledgeDisclosure(userId, disclosure.id, disclosure.content_version);
       setAcknowledgedKeys((prev) => new Set([
         ...prev,
         getDisclosureAcknowledgmentKey(disclosure),
@@ -191,7 +216,28 @@ export default function PortalDisclosures() {
 
           <PortalPrimaryNav />
 
-          <PortalSubpageHeader title="PNCL Training" />
+          <PortalSubpageHeader
+            title="Video Trainings"
+            aside={
+              canRefreshTraining ? (
+                <button
+                  type="button"
+                  className="ptr-refresh"
+                  disabled={refreshing || loading}
+                  onClick={() => void handleRefresh()}
+                >
+                  <RefreshCw
+                    size={16}
+                    aria-hidden="true"
+                    className={refreshing ? "is-spinning" : undefined}
+                  />
+                  <span className="ptr-refresh-label">
+                    {refreshing ? "Checking..." : "Check for new videos"}
+                  </span>
+                </button>
+              ) : undefined
+            }
+          />
 
           <p className="portal-panel-note">
             Complete each module in order, then confirm you understand the material.

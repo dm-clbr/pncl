@@ -87,7 +87,7 @@ export const PORTAL_SECTIONS: PortalLinkSection[] = [
     links: [
       {
         id: "pncl-training",
-        title: "PNCL Training",
+        title: "Video Trainings",
         description: "Complete the PNCL onboarding training curriculum.",
         href: "/portal/disclosures",
         external: false,

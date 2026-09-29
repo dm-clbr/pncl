@@ -10,11 +10,11 @@ import {
   notifyLicensingComplete,
   profileToLicensingValues,
   saveLicensingProfile,
-  US_STATES,
   type PortalLicensingFormValues,
   type PortalProfile,
 } from "@/lib/portal-profile";
 import { isReadyForContracting } from "@/lib/licensing-contracting";
+import { US_STATES } from "@/lib/us-states";
 import { toast } from "sonner";
 
 export default function PortalLicensingSection({
@@ -328,12 +328,16 @@ export default function PortalLicensingSection({
                 <select
                   className="portal-select"
                   value={stateToAdd}
-                  onChange={(event) => setStateToAdd(event.target.value)}
+                  onChange={(event) => {
+                    const state = event.target.value;
+                    setStateToAdd(state);
+                    setLicenseNumberToAdd(form.stateLicenseNumbers[state] ?? "");
+                  }}
                 >
                   <option value="">Choose a state</option>
-                  {US_STATES.filter((state) => !form.stateLicenseNumbers[state]).map((state) => (
-                    <option key={state} value={state}>
-                      {state}
+                  {US_STATES.map(({ code, name }) => (
+                    <option key={code} value={code}>
+                      {name} ({code}){form.stateLicenseNumbers[code] ? " — already added" : ""}
                     </option>
                   ))}
                 </select>
@@ -355,7 +359,7 @@ export default function PortalLicensingSection({
                 onClick={addStateLicense}
                 disabled={!stateToAdd || !licenseNumberToAdd.trim()}
               >
-                Add license
+                {form.stateLicenseNumbers[stateToAdd] ? "Update license" : "Add license"}
               </button>
             </div>
 
@@ -364,7 +368,7 @@ export default function PortalLicensingSection({
                 {stateLicenses.map(([state, licenseNumber]) => (
                   <li key={state}>
                     <Chip variant="licensed">
-                      {state} {licenseNumber}
+                      {state}: {licenseNumber}
                     </Chip>
                     <button
                       type="button"
@@ -377,12 +381,11 @@ export default function PortalLicensingSection({
                   </li>
                 ))}
               </ul>
-            ) : (
-              <p className="portal-profile-lede">
-                Add each state you are licensed in, with its license number. Include your
-                resident state.
-              </p>
-            )}
+            ) : null}
+            <p className="portal-profile-lede">
+              Add each state you are licensed in, with its license number. Include your
+              resident state. Pick a state already on file to update its number, then save.
+            </p>
           </Pane>
 
           <button type="submit" className="portal-profile-btn" disabled={submitting}>
