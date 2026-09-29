@@ -155,6 +155,17 @@ export default function AdminUserRowActionsMenu({
         {isDeleting ? "Deleting…" : isUpdating ? "Updating…" : isSyncingRecovery ? "Syncing…" : isSendingGmailVerification ? "Sending…" : isResending ? "Sending…" : "Actions"}
       </button>
 
+      {/* Phone only (CSS): the sheet's scrim. Inside rootRef, so the outside
+          press handler leaves it alone and its own click closes the sheet and
+          is consumed here instead of landing on the row underneath. */}
+      {open && (
+        <div
+          className="admin-actions-menu-backdrop"
+          aria-hidden="true"
+          onClick={() => setOpen(false)}
+        />
+      )}
+
       {open && menuStyle && (
         <div
           id={menuId}

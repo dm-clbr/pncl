@@ -116,6 +116,7 @@ export default function AdminLayout() {
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const mobileCloseButtonRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
   const isMobile = useIsMobileAdminViewport();
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Admin";
   const adminAssistOnly = isAdminAssist(user);
@@ -144,6 +145,9 @@ export default function AdminLayout() {
     } else {
       sidebar.removeAttribute("inert");
     }
+    // The open drawer is modal: the page behind it leaves the tab order and
+    // the accessibility tree until it closes.
+    mainRef.current?.toggleAttribute("inert", isMobile && mobileNavOpen);
   }, [isMobile, mobileNavOpen]);
 
   useEffect(() => {
@@ -216,7 +220,8 @@ export default function AdminLayout() {
             type="button"
             className={`admin-sidebar-backdrop${mobileNavOpen ? " open" : ""}`}
             aria-label="Close admin navigation"
-            tabIndex={mobileNavOpen ? 0 : -1}
+            aria-hidden="true"
+            tabIndex={-1}
             onClick={() => closeMobileNavigation()}
           />
 
@@ -302,7 +307,7 @@ export default function AdminLayout() {
             </div>
           </aside>
 
-          <section className="admin-main">
+          <section className="admin-main" ref={mainRef}>
             <header className="admin-mobile-bar">
               <button
                 ref={mobileMenuButtonRef}
