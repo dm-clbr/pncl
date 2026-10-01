@@ -89,7 +89,9 @@ async function listWorkspaceUsers(
   do {
     const url = new URL("https://admin.googleapis.com/admin/directory/v1/users");
     url.searchParams.set("customer", customerId);
-    url.searchParams.set("query", query);
+    // Google rejects query together with showDeleted=true (400 Invalid Input:
+    // query). Fetch every deleted page and let callers match primaryEmail.
+    if (!showDeleted) url.searchParams.set("query", query);
     url.searchParams.set("maxResults", "100");
     url.searchParams.set("showDeleted", showDeleted ? "true" : "false");
     if (pageToken) url.searchParams.set("pageToken", pageToken);
@@ -173,7 +175,15 @@ export async function listWorkspaceEmailsForLocalPart(
   localPartPrefix: string,
   domain: string,
 ): Promise<WorkspaceEmailInventory> {
-  const query = `email:${localPartPrefix}*@${domain}`;
+  // Directory search supports a trailing prefix wildcard. Restrict the domain
+  // locally, including for deleted users which cannot be searched server-side.
+  const query = `email:${localPartPrefix}*`;
+  const normalizedPrefix = localPartPrefix.toLowerCase();
+  const normalizedDomain = domain.toLowerCase();
+  const matchesEmail = (email: string): boolean => {
+    const [localPart, emailDomain] = email.split("@");
+    return localPart.startsWith(normalizedPrefix) && emailDomain === normalizedDomain;
+  };
   const [activeUsers, deletedUsers] = await Promise.all([
     listWorkspaceUsers(query, false),
     listWorkspaceUsers(query, true),
@@ -181,11 +191,11 @@ export async function listWorkspaceEmailsForLocalPart(
 
   const active = activeUsers
     .map((user) => user.primaryEmail?.toLowerCase())
-    .filter((value): value is string => Boolean(value));
+    .filter((value): value is string => typeof value === "string" && matchesEmail(value));
   const deleted = deletedUsers
     .filter((user) => user.deletionTime)
     .map((user) => user.primaryEmail?.toLowerCase())
-    .filter((value): value is string => Boolean(value));
+    .filter((value): value is string => typeof value === "string" && matchesEmail(value));
 
   return {
     active: [...new Set(active)],
