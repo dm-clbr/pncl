@@ -20,10 +20,13 @@ import {
   isTodoGateLocked,
   PORTAL_TODO_PHASES,
   SUBMIT_NEW_PRODUCER_TODO_ID,
+  SURELC_TUTORIAL_TODO_ID,
+  type TodoCompletionOptions,
   type PortalTodo,
 } from "@/lib/portal-todos";
 import { isSureLcAccountTodo } from "@/lib/surelc-accounts";
 import PortalNewProducerModal from "@/components/PortalNewProducerModal";
+import PortalTutorialVideoModal from "@/components/PortalTutorialVideoModal";
 
 export function PortalUrgentIcon({ size = 22 }: { size?: number }) {
   return (
@@ -175,7 +178,7 @@ function parseDescriptionBlocks(description: string): DescriptionBlock[] {
   return blocks;
 }
 
-function TodoDescription({ description }: { description: string }) {
+function TodoDescription({ description, mandatory = false }: { description: string; mandatory?: boolean }) {
   const blocks = parseDescriptionBlocks(description);
   return (
     <>
@@ -188,7 +191,9 @@ function TodoDescription({ description }: { description: string }) {
           </ul>
         ) : (
           <p key={index} className="portal-todo-desc">
-            {block.text}
+            {mandatory && block.text.startsWith("MANDATORY - ") ? (
+              <><strong className="portal-todo-mandatory-warning">{block.text.split(". ")[0]}.</strong>{" "}{block.text.split(". ").slice(1).join(". ")}</>
+            ) : block.text}
           </p>
         ),
       )}
@@ -210,7 +215,7 @@ function PortalTodoItem({
   locked?: boolean;
   /** Gated step: visible but disabled until every earlier step in the stage is done. */
   gateLocked?: boolean;
-  onComplete: (todoId: string) => void;
+  onComplete: (todoId: string, options?: TodoCompletionOptions) => void;
 }) {
   const isRequiredForm = isRequiredFormTodo(todo.id);
   const isAdminManaged = todo.completionType === "admin";
@@ -218,6 +223,7 @@ function PortalTodoItem({
   const videoEmbedUrl = getVideoEmbedUrl(todo.href);
   const [videoOpen, setVideoOpen] = useState(false);
   const needsNewProducerConfirmation = todo.id === SUBMIT_NEW_PRODUCER_TODO_ID;
+  const requiresVideoPlayback = todo.id === SURELC_TUTORIAL_TODO_ID;
   const [confirmingNewProducer, setConfirmingNewProducer] = useState(false);
   const keepCompletedLink = isSureLcAccountTodo(todo.id) && Boolean(todo.href);
 
@@ -255,9 +261,9 @@ function PortalTodoItem({
   const disabled = locked || gateLocked;
 
   return (
-    <div className={`portal-todo-item urgent${disabled ? " portal-todo-item-locked" : ""}`}>
+    <div className={`portal-todo-item urgent${needsNewProducerConfirmation ? " portal-todo-item-mandatory" : ""}${disabled ? " portal-todo-item-locked" : ""}`}>
       {isAgentCheckable && (
-        needsNewProducerConfirmation ? (
+        needsNewProducerConfirmation || requiresVideoPlayback ? (
           // Checks itself off once the submission goes through, so the circle
           // is only an indicator here.
           <span className="portal-todo-check portal-todo-check-static" aria-hidden="true">
@@ -287,8 +293,10 @@ function PortalTodoItem({
       <div className={`portal-todo-copy${isAgentCheckable ? "" : " portal-todo-copy-required"}`}>
         <div className="portal-todo-title-row">
           {isRequiredForm && !disabled && <PortalUrgentIcon size={16} />}
+          {needsNewProducerConfirmation && <PortalUrgentIcon size={20} />}
           {disabled && <Lock size={14} aria-hidden="true" />}
           <strong>{todo.title}</strong>
+          {needsNewProducerConfirmation && <span className="portal-todo-urgent-tag">Mandatory</span>}
           {isRequiredForm && !disabled && (
             <span className="portal-todo-urgent-tag">Required — top priority</span>
           )}
@@ -300,9 +308,11 @@ function PortalTodoItem({
           <p className="portal-todo-desc">Complete the previous stage to unlock this step.</p>
         ) : (
           <>
-            <TodoDescription description={todo.description} />
+            <TodoDescription description={todo.description} mandatory={needsNewProducerConfirmation} />
             {gateLocked && (
-              <p className="portal-todo-desc">Complete the steps above to unlock this step.</p>
+              <p className="portal-todo-desc">{needsNewProducerConfirmation
+                ? "Complete every step above to unlock this submission."
+                : "Watch the full SureLC tutorial above to unlock this step."}</p>
             )}
           </>
         )}
@@ -314,7 +324,7 @@ function PortalTodoItem({
         {!disabled && needsNewProducerConfirmation && (
           <button
             type="button"
-            className="portal-todo-link"
+            className="portal-todo-link portal-todo-submit-button"
             onClick={() => setConfirmingNewProducer(true)}
             disabled={completing}
           >
@@ -323,7 +333,7 @@ function PortalTodoItem({
           </button>
         )}
         {!disabled && todo.href && (
-          videoEmbedUrl ? (
+          videoEmbedUrl || requiresVideoPlayback ? (
             <button
               type="button"
               className="portal-todo-link"
@@ -347,7 +357,17 @@ function PortalTodoItem({
             </Link>
           )
         )}
-        {videoOpen && videoEmbedUrl && (
+        {videoOpen && requiresVideoPlayback && (
+          <PortalTutorialVideoModal
+            title={todo.title}
+            sourceUrl={todo.href}
+            progressKey={`pncl-tutorial:${agentEmail}:${todo.href}`}
+            completing={completing}
+            onComplete={() => onComplete(todo.id, { videoPlaybackVerified: true })}
+            onClose={() => setVideoOpen(false)}
+          />
+        )}
+        {videoOpen && videoEmbedUrl && !requiresVideoPlayback && (
           <PortalVideoModal
             title={todo.title}
             embedUrl={videoEmbedUrl}
@@ -374,7 +394,7 @@ interface PortalOnboardingChecklistProps {
   todos: PortalTodo[];
   agentEmail: string;
   completingTodoId: string | null;
-  onComplete: (todoId: string) => void;
+  onComplete: (todoId: string, options?: TodoCompletionOptions) => void;
   /**
    * Admin preview: renders every stage/step unlocked so admins can review
    * locked steps. Visual only — completion guards still apply.

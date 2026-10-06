@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import PortalOnboardingChecklist from "@/components/PortalOnboardingChecklist";
@@ -74,6 +74,47 @@ describe("PortalOnboardingChecklist completed SureLC links", () => {
   });
 });
 
+describe("SureLC playback and final submission", () => {
+  const tutorial = todo({ id: "surelc_tutorial", title: "Watch the SureLC tutorial video", href: "https://example.com/tutorial.mp4", actionLabel: "Watch SureLC walkthrough" });
+  const account = todo({ id: "surelc_account_1", title: "Create SureLC account #1", href: "https://example.com/account", external: true, actionLabel: "Open SureLC #1", gated: true });
+  const submission = todo({ id: "submit_new_producer", title: "Submit for New Producer", actionLabel: "Submit for New Producer", gated: true, description: "MANDATORY - YOU WILL NOT GET ANY CARRIER CONTRACTS WITHOUT COMPLETING THIS STEP. Once every step above is complete, submit for New Producer. This notifies the PNCL team so your profile can be built in PLG's back-end system." });
+
+  it("verifies actual played ranges, prevents skipping, and offers no manual tutorial check-off", () => {
+    const onComplete = vi.fn();
+    render(<MemoryRouter><PortalOnboardingChecklist todos={[tutorial, account, submission]} agentEmail="agent@thepncl.com" completingTodoId={null} onComplete={onComplete} /></MemoryRouter>);
+    expect(screen.queryByRole("button", { name: 'Mark "Watch the SureLC tutorial video" as complete' })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Open SureLC #1" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Watch SureLC walkthrough" }));
+    const video = screen.getByLabelText("Watch the SureLC tutorial video", { selector: "video" });
+    let ranges: [number, number][] = [];
+    Object.defineProperty(video, "played", { configurable: true, get: () => ({ length: ranges.length, start: (i: number) => ranges[i][0], end: (i: number) => ranges[i][1] }) });
+    Object.defineProperty(video, "duration", { configurable: true, value: 10 });
+    fireEvent.ended(video);
+    expect(onComplete).not.toHaveBeenCalled();
+    (video as HTMLVideoElement).currentTime = 9;
+    fireEvent.seeking(video);
+    expect((video as HTMLVideoElement).currentTime).toBe(0);
+    ranges = [[0, 10]];
+    fireEvent.timeUpdate(video);
+    fireEvent.ended(video);
+    expect(onComplete).toHaveBeenCalledExactlyOnceWith("surelc_tutorial", { videoPlaybackVerified: true });
+    fireEvent.ended(video);
+    expect(onComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows the mandatory producer step last in Licensing and makes the submission actionable", () => {
+    render(<MemoryRouter><PortalOnboardingChecklist todos={[{ ...tutorial, completed: true }, { ...account, completed: true }, submission, { ...todo({ id: "sales" }), phase: "sales_ready" }]} agentEmail="" completingTodoId={null} onComplete={vi.fn()} /></MemoryRouter>);
+    expect(screen.queryByRole("button", { name: /Stage 4 New Producer/ })).toBeNull();
+    const submit = screen.getByRole("button", { name: "Submit for New Producer" });
+    expect(submit).toBeEnabled();
+    const card = submit.closest(".portal-todo-item") as HTMLElement;
+    expect(card).toHaveClass("portal-todo-item-mandatory");
+    expect(within(card).getByText("Mandatory")).toBeInTheDocument();
+    expect(within(card).getByText(/MANDATORY - YOU WILL NOT GET/)).toHaveClass("portal-todo-mandatory-warning");
+    expect(card.parentElement?.lastElementChild).toBe(card);
+  });
+});
+
 describe("PortalOnboardingChecklist tutorial video", () => {
   const tutorialUrl = "https://player.mediadelivery.net/play/687293/tutorial-video-id";
 
@@ -85,7 +126,7 @@ describe("PortalOnboardingChecklist tutorial video", () => {
             <PortalOnboardingChecklist
               todos={[
                 todo({
-                  id: "surelc_tutorial",
+                  id: "other_tutorial",
                   title: "Watch the SureLC tutorial video",
                   href: tutorialUrl,
                   actionLabel: "Watch tutorial video",

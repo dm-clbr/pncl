@@ -26,6 +26,7 @@ import {
   isRequiredFormTodo,
   isTodoCompleted,
   PORTAL_PHASE_LABELS,
+  type TodoCompletionOptions,
 } from "@/lib/portal-todos";
 import { usePortalTodos } from "@/hooks/usePortalTodos";
 import { usePortalCarriers } from "@/hooks/usePortalCarriers";
@@ -316,10 +317,10 @@ export default function PortalDashboard() {
     }
   };
 
-  const handleCompleteTodo = async (todoId: string) => {
+  const handleCompleteTodo = async (todoId: string, options?: TodoCompletionOptions) => {
     setCompletingTodoId(todoId);
     try {
-      await completePortalTodo(todoId, resolvedTodos);
+      await completePortalTodo(todoId, resolvedTodos, options);
       toast.success("To-do marked complete.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Unable to update to-do.");
@@ -598,7 +599,7 @@ export default function PortalDashboard() {
                   todos={resolvedTodos}
                   agentEmail={agentEmail}
                   completingTodoId={completingTodoId}
-                  onComplete={(id) => void handleCompleteTodo(id)}
+                  onComplete={(id, options) => void handleCompleteTodo(id, options)}
                   previewUnlocked={showAdminLink}
                 />
               </aside>
@@ -635,7 +636,7 @@ export default function PortalDashboard() {
                 todos={resolvedTodos}
                 agentEmail={agentEmail}
                 completingTodoId={completingTodoId}
-                onComplete={(id) => void handleCompleteTodo(id)}
+                onComplete={(id, options) => void handleCompleteTodo(id, options)}
                 previewUnlocked={showAdminLink}
               />
             </div>

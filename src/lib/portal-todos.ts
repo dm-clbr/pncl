@@ -32,7 +32,6 @@ export const PORTAL_TODO_PHASES: { id: PortalTodoPhase; label: string }[] = [
   { id: "on_board", label: "On-Board" },
   { id: "pre_license", label: "Pre-License" },
   { id: "licensing", label: "Licensing" },
-  { id: "new_producer", label: "New Producer" },
   { id: "sales_ready", label: "Sales Ready" },
 ];
 
@@ -83,7 +82,12 @@ export function isTodoGateLocked(todos: PortalTodo[], todoId: string): boolean {
   const index = todos.findIndex((entry) => entry.id === todoId);
   if (index < 0) return false;
   const todo = todos[index];
-  if (!todo.gated || todo.completed) return false;
+  if (todo.completed) return false;
+  if (SURELC_VIDEO_DEPENDENT_TODO_IDS.includes(todoId)) {
+    const tutorial = todos.find((entry) => entry.id === SURELC_TUTORIAL_TODO_ID);
+    return Boolean(tutorial && !tutorial.completed);
+  }
+  if (!todo.gated) return false;
   return todos.some(
     (entry, entryIndex) =>
       entryIndex < index && entry.phase === todo.phase && !entry.completed,
@@ -218,7 +222,7 @@ function mapPortalTodo(row: PortalTodoResponse): PortalTodo {
     external: row.external,
     actionLabel: row.actionLabel,
     showEmailHint: row.showEmailHint,
-    phase: row.phase ?? "on_board",
+    phase: row.phase === "new_producer" ? "licensing" : row.phase ?? "on_board",
     completionType: row.completionType ?? "agent",
     gated: row.gated ?? false,
     completed: row.completed,
@@ -333,6 +337,14 @@ export function groupTodosByPhase(todos: PortalTodo[]): Map<PortalTodoPhase, Por
 }
 
 export const SUBMIT_NEW_PRODUCER_TODO_ID = "submit_new_producer";
+export const SURELC_TUTORIAL_TODO_ID = "surelc_tutorial";
+const SURELC_VIDEO_DEPENDENT_TODO_IDS = [
+  "surelc_account_1", "surelc_account_2", "surelc_account_3", "carrier_applications",
+];
+
+export interface TodoCompletionOptions {
+  videoPlaybackVerified?: boolean;
+}
 
 /**
  * Best-effort ping so admins get a "New Producer submission" email when the
@@ -360,7 +372,10 @@ async function notifyNewProducerSubmission(): Promise<void> {
   }
 }
 
-export async function completePortalTodo(todoId: string, todos: PortalTodo[]): Promise<void> {
+export async function completePortalTodo(todoId: string, todos: PortalTodo[], options?: TodoCompletionOptions): Promise<void> {
+  if (todoId === SURELC_TUTORIAL_TODO_ID && !options?.videoPlaybackVerified) {
+    throw new Error("Watch the full SureLC tutorial before completing this step.");
+  }
   if (isTodoGateLocked(todos, todoId)) {
     throw new Error("Complete the steps above before submitting this one.");
   }

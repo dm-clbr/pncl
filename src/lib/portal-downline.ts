@@ -90,7 +90,6 @@ const PORTAL_JOURNEY_PHASES = [
   { id: "on_board", label: "On-Board" },
   { id: "pre_license", label: "Pre-License" },
   { id: "licensing", label: "Licensing" },
-  { id: "new_producer", label: "New Producer" },
   { id: "sales_ready", label: "Sales Ready" },
 ] as const;
 
@@ -191,7 +190,8 @@ export function getDownlineProgress(member: DownlineMember): DownlineProgress {
   }
 
   const portalReady = member.hasPortalAccount || Boolean(member.todoProgress?.totalCount);
-  const portalPhase: AgentPhase = member.portalPhase ?? "on_board";
+  const portalPhase: AgentPhase = member.portalPhase === "new_producer"
+    ? "licensing" : member.portalPhase ?? "on_board";
   const portalPhases = resolvePortalPhaseProgress(member);
   const portalPhaseIndex = portalPhase === "complete"
     ? PORTAL_JOURNEY_PHASES.length
