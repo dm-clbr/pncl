@@ -335,3 +335,6 @@ verify_jwt = true
 # Integration verifies its own server secret.
 [functions.export-leadspply-reps]
 verify_jwt = false
+
+[functions.get-leadspply-snapshot]
+verify_jwt = true

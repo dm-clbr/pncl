@@ -19,6 +19,7 @@ import { usePortalDashboardTabs } from "@/hooks/usePortalDashboardTabs";
 import { isLinksDashboardSection, isDownloadsDashboardSection } from "@/lib/portal-dashboard-section-types";
 import type { PortalDashboardSection } from "@/lib/portal-dashboard-tabs";
 import PortalReferralPanel from "@/components/PortalReferralPanel";
+import PortalLeadSpplySnapshot from "@/components/PortalLeadSpplySnapshot";
 import { hasAdminConsoleAccess, isAdminAssist, isGenesisAdmin } from "@/lib/roles";
 import {
   completePortalTodo,
@@ -493,6 +494,7 @@ export default function PortalDashboard() {
 
           <div className="portal-columns">
             <div className="portal-main">
+              <PortalLeadSpplySnapshot userId={authUser?.id} />
               <PortalReferralPanel />
 
               <div className="portal-tiles">
