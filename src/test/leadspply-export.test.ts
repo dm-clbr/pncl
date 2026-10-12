@@ -1,5 +1,5 @@
 import { describe,it,expect } from 'vitest';
-import { buildLeadSpplyExport } from '../../supabase/functions/_shared/leadspplyExport';
+import { buildLeadSpplyExport, buildLeadSpplyPartners } from '../../supabase/functions/_shared/leadspplyExport';
 describe('LeadSpply export',()=>{
  const user={id:'u1',email:'jane@thepncl.com',app_metadata:{onboarding_id:'o1'}};
  const onboarding=[{id:'o1',supabase_user_id:'u1',first_name:'Jane',last_name:'Doe',personal_email:'jane@gmail.com',workspace_email:user.email,referrer_user_id:'parent',npn:'1234',status:'ready',created_at:'2026-10-01',ssn_encrypted:'secret',temporary_password_encrypted:'secret'}];
@@ -15,5 +15,14 @@ describe('LeadSpply export',()=>{
  it('does not invent the date of an unknown or cleared tier',()=>{
   expect(buildLeadSpplyExport([user],[{user_id:'u1',comp_level:95}],[],[{user_id:'u1',comp_level:90,effective_at:'2026-10-01'}])[0].comp_effective_at).toBeNull();
   expect(buildLeadSpplyExport([user],[{user_id:'u1',comp_level:null}],[],[{user_id:'u1',comp_level:90,effective_at:'2026-10-01'}])[0].comp_effective_at).toBeNull();
+ });
+});
+describe('shared hierarchy export',()=>{
+ it('exports only canonical partner UUID pairs and no admin metadata',()=>{
+  expect(buildLeadSpplyPartners([{id:'a'},{id:'b'}],[{id:'private-row',user_id_a:'b',user_id_b:'a',created_by_admin_id:'private-admin'}]))
+    .toEqual([{user_id_a:'a',user_id_b:'b'}]);
+ });
+ it('omits pairs outside the exported identity allowlist',()=>{
+  expect(buildLeadSpplyPartners([{id:'a'}],[{user_id_a:'a',user_id_b:'private-user'}])).toEqual([]);
  });
 });
