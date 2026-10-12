@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
-import { buildLeadSpplyExport, type ExportUser } from '../_shared/leadspplyExport.ts';
+import { buildLeadSpplyExport, buildLeadSpplyPartners, type ExportUser } from '../_shared/leadspplyExport.ts';
 
 // Deliberately a server-only endpoint with an explicit field allowlist.
 // Never export onboarding documents, SSNs, passwords, or service credentials.
@@ -21,17 +21,18 @@ Deno.serve(async req => {
     async function allRows(table: string, columns: string) {
       const rows: Record<string, unknown>[] = [];
       for (let from = 0; ; from += 500) {
-        const { data, error } = await db.from(table).select(columns).order(table === 'onboarding_records' ? 'id' : table === 'portal_profile_comp_level_history' ? 'id' : 'user_id').range(from, from + 499);
+        const { data, error } = await db.from(table).select(columns).order(['onboarding_records', 'portal_profile_comp_level_history', 'hierarchy_partner_links'].includes(table) ? 'id' : 'user_id').range(from, from + 499);
         if (error) throw error;
         rows.push(...data);
         if (data.length < 500) break;
       }
       return rows;
     }
-    const [profiles, onboarding, history] = await Promise.all([
+    const [profiles, onboarding, history, partnerLinks] = await Promise.all([
       allRows('portal_profiles','user_id,first_name,last_name,npn,agent_number,comp_level'),
       allRows('onboarding_records','id,supabase_user_id,referrer_user_id,personal_email,workspace_email,first_name,last_name,npn,status,released_at,created_at'),
       allRows('portal_profile_comp_level_history','id,user_id,comp_level,effective_at,created_at'),
+      allRows('hierarchy_partner_links','id,user_id_a,user_id_b'),
     ]);
     const users: ExportUser[] = [];
     const domain = Deno.env.get('PNCL_EMAIL_DOMAIN') ?? 'thepncl.com';
@@ -42,7 +43,7 @@ Deno.serve(async req => {
       if (data.users.length < 500) break;
     }
     const reps = buildLeadSpplyExport(users,profiles,onboarding,history).sort((a,b)=>a.id.localeCompare(b.id));
-    return json(200, { version: 1, reps });
+    return json(200, { version: 2, reps, partners: buildLeadSpplyPartners(reps, partnerLinks) });
   } catch (error) {
     console.error('pncl_export_failed', error instanceof Error ? error.message : 'Unknown error');
     return json(500, { error: 'PNCL export failed' });

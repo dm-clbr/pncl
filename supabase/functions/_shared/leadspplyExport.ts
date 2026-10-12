@@ -1,4 +1,13 @@
 type Row = Record<string, unknown>;
+// Partner pairs share a hierarchy; they remain two distinct user identities.
+export function buildLeadSpplyPartners(reps: { id: string }[], links: Row[]) {
+  const ids = new Set(reps.map(rep => rep.id));
+  return links.filter(link => ids.has(String(link.user_id_a)) && ids.has(String(link.user_id_b)))
+    .map(link => {
+      const [user_id_a, user_id_b] = [String(link.user_id_a), String(link.user_id_b)].sort();
+      return { user_id_a, user_id_b };
+    }).sort((a, b) => a.user_id_a.localeCompare(b.user_id_a));
+}
 export interface ExportUser { id: string; email?: string; app_metadata?: { onboarding_id?: string }; user_metadata?: { first_name?: string; last_name?: string } }
 export function buildLeadSpplyExport(users: ExportUser[], profiles: Row[], onboarding: Row[], history: Row[]) {
   return users.map(user => {
