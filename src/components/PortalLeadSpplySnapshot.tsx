@@ -1,4 +1,5 @@
 import { ExternalLink, RefreshCw } from "lucide-react";
+import { Link } from "react-router-dom";
 import { usePortalLeadSpplySnapshot } from "@/hooks/usePortalLeadSpplySnapshot";
 import type { LeadSpplySnapshot } from "@/lib/portal-leadspply-snapshot";
 
@@ -83,7 +84,7 @@ export default function PortalLeadSpplySnapshot({ userId }: { userId: string | u
   const disconnected = snapshot?.state === "not_linked" || snapshot?.state === "account_unavailable";
   const unavailableMessage = snapshot?.state === "account_unavailable"
     ? "Your LeadSpply account is unavailable. Contact PNCL support to review the connection."
-    : "Your PNCL profile is not linked to a LeadSpply account yet. Contact PNCL support if this looks wrong.";
+    : "Connect your LeadSpply account to view your sales data here.";
 
   return (
     <section className="portal-leadspply-card" aria-labelledby="leadspply-snapshot-title">
@@ -97,6 +98,7 @@ export default function PortalLeadSpplySnapshot({ userId }: { userId: string | u
           <a href={LEADSPPLY_DASHBOARD_URL} target="_blank" rel="noopener noreferrer" className="portal-leadspply-open">
             Open LeadSpply <ExternalLink size={15} aria-hidden="true" />
           </a>
+          <Link to="/portal/leadspply" className="portal-leadspply-refresh">Connect / manage</Link>
         </div>
       </header>
       {loading && !snapshot ? <p className="portal-leadspply-state" role="status">Loading your LeadSpply snapshot…</p> : null}

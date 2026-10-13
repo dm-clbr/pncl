@@ -338,3 +338,6 @@ verify_jwt = false
 
 [functions.get-leadspply-snapshot]
 verify_jwt = true
+
+[functions.manage-leadspply-integration]
+verify_jwt = true

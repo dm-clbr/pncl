@@ -20,6 +20,7 @@ import OnboardingActivate from "./pages/OnboardingActivate.tsx";
 import PortalLogin from "./pages/PortalLogin.tsx";
 import PortalSetPassword from "./pages/PortalSetPassword.tsx";
 import PortalDashboard from "./pages/PortalDashboard.tsx";
+import PortalLeadSpply from "./pages/PortalLeadSpply.tsx";
 import PortalStateMap from "./pages/PortalStateMap.tsx";
 import PortalCalendar from "./pages/PortalCalendar.tsx";
 import PortalCarrierSheet from "./pages/PortalCarrierSheet.tsx";
@@ -60,6 +61,7 @@ import AdminDashboardTabs from "./pages/admin/AdminDashboardTabs.tsx";
 import AdminTodos from "./pages/admin/AdminTodos.tsx";
 import AdminOnboardingPreview from "./pages/admin/AdminOnboardingPreview.tsx";
 import AdminW9Preview from "./pages/admin/AdminW9Preview.tsx";
+import AdminLeadSpplyIntegration from "./pages/admin/AdminLeadSpplyIntegration.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -114,6 +116,7 @@ const App = () => (
               </ProtectedRoute>
             }
           />
+          <Route path="/portal/leadspply" element={<ProtectedRoute><PortalLeadSpply /></ProtectedRoute>} />
           <Route
             path="/portal/carriers"
             element={
@@ -249,6 +252,7 @@ const App = () => (
             <Route path="setter-closer" element={<AdminFullRoute><AdminSetterCloser /></AdminFullRoute>} />
             <Route path="tickets" element={<AdminFullRoute><AdminTickets /></AdminFullRoute>} />
             <Route path="pay-policy" element={<AdminFullRoute><AdminPayPolicy /></AdminFullRoute>} />
+            <Route path="leadspply" element={<AdminFullRoute><AdminLeadSpplyIntegration /></AdminFullRoute>} />
           </Route>
           <Route
             path="/portal/admin/w9-preview"
