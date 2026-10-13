@@ -88,7 +88,11 @@ describe("admin sidebar layout", () => {
     );
     expect(within(navigation).queryByRole("link", { name: "Genesis" })).not.toBeInTheDocument();
     expect(within(navigation).getByRole("link", { name: "W-9 preview" })).toBeInTheDocument();
-    expect(within(navigation).getAllByRole("link")).toHaveLength(21);
+    expect(within(navigation).getByRole("link", { name: "Onboarding steps" })).toHaveAttribute(
+      "href",
+      "/portal/admin/onboarding-steps",
+    );
+    expect(within(navigation).getAllByRole("link")).toHaveLength(23);
     expect(screen.getByRole("link", { name: "Agent portal" })).toHaveAttribute("href", "/portal");
   });
 

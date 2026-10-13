@@ -1,3 +1,5 @@
+import { resolveAgentDesignation } from "@/lib/agent-designation";
+import { filterPortalTodosForAgent } from "@/lib/portal-todos";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -172,7 +174,7 @@ export default function PortalDashboard() {
   const resolvedTodos = useMemo(() => {
     const carrierApplicationsDescription = buildCarrierApplicationsDescription(portalCarriers);
 
-    return portalTodos.map((todo) => ({
+    return filterPortalTodosForAgent(portalTodos, profile?.agent_designation).map((todo) => ({
       ...todo,
       description:
         todo.id === CARRIER_APPLICATIONS_TODO_ID && carrierApplicationsDescription
@@ -187,6 +189,7 @@ export default function PortalDashboard() {
   }, [
     portalUser,
     portalTodos,
+    profile?.agent_designation,
     portalCarriers,
     icaSubmitted,
     w9Submitted,
@@ -202,10 +205,10 @@ export default function PortalDashboard() {
     ? 0
     : Math.round((completedTodoCount / resolvedTodos.length) * 100);
   const pendingRequiredForms = pendingTodos.some((todo) => isRequiredFormTodo(todo.id));
-  const showIcaResignNotice = shouldShowIcaResignNotice(portalUser) && !icaSubmitted;
-  const showW9ResignNotice = shouldShowW9ResignNotice(portalUser) && !w9Submitted;
+  const showIcaResignNotice = resolvedTodos.some((todo) => todo.id === "ica_setup") && shouldShowIcaResignNotice(portalUser) && !icaSubmitted;
+  const showW9ResignNotice = resolvedTodos.some((todo) => todo.id === "w9_setup") && shouldShowW9ResignNotice(portalUser) && !w9Submitted;
   const showDirectDepositResignNotice =
-    shouldShowDirectDepositResignNotice(portalUser) && !directDepositSubmitted;
+    resolvedTodos.some((todo) => todo.id === "direct_deposit_setup") && shouldShowDirectDepositResignNotice(portalUser) && !directDepositSubmitted;
   const recoveryEmailNotice = getRecoveryEmailDashboardNotice(profile, profileLoading);
   const recoveryEmailNoticeContent = recoveryEmailNotice === "missing"
     ? {
@@ -384,6 +387,7 @@ export default function PortalDashboard() {
                 <span className="portal-readiness-summary-count">
                   {completedTodoCount} of {resolvedTodos.length} steps complete
                 </span>
+                <span className="portal-progress-tier">{resolveAgentDesignation(profile?.agent_designation).toUpperCase()}</span>
               </div>
               <div
                 className="portal-readiness-summary-bar"

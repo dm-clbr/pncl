@@ -8,6 +8,7 @@ import {
   waitForWorkspaceMailboxReady,
 } from "./googleWorkspace.ts";
 import type { OnboardingImagePayload } from "./onboarding.ts";
+import { initializePortalAgentDesignation } from "./portalAgentDesignations.ts";
 import { markPortalEnrollmentReady, provisionPortalAccount } from "./portalAuth.ts";
 import { syncOnboardingProfileAssets } from "./portalProfileSetup.ts";
 import {
@@ -55,6 +56,7 @@ interface EnrollmentRow {
   referral_invite_id: string | null;
   contract_signature_id: string | null;
   invited_comp_level: number | null;
+  invited_agent_designation?: "loa" | "ibo";
   npn: string | null;
   address_line1: string | null;
   address_city: string | null;
@@ -351,6 +353,8 @@ export async function provisionEnrollment(
         county: row.county,
       },
     });
+
+    await initializePortalAgentDesignation(supabase, supabaseUserId, row.invited_agent_designation);
 
     if (row.referral_invite_id) {
       await attachOnboardingToReferralInvite(supabase, row.referral_invite_id, onboardingId);

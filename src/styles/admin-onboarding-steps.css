@@ -1,0 +1,25 @@
+.home2-page .admin-onboarding-toolbar,
+.home2-page .admin-onboarding-save {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin: 24px 0;
+}
+.home2-page .admin-onboarding-counts { display: flex; gap: 24px; flex-wrap: wrap; }
+.home2-page .admin-onboarding-counts strong { color: var(--orange); margin-right: 8px; }
+.home2-page .admin-onboarding-table th[scope="row"] { text-transform: none; letter-spacing: normal; font-weight: 400; min-width: 260px; }
+.home2-page .admin-onboarding-table th[scope="row"] strong { display: block; font-size: 14px; color: #f5f3ed; }
+.home2-page .admin-onboarding-table .admin-todo-slug { max-width: 650px; line-height: 1.5; }
+.home2-page .admin-onboarding-stage { display: block; color: var(--orange); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; margin: 8px 0 14px; }
+.home2-page .admin-onboarding-table input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--orange); cursor: pointer; }
+.home2-page .admin-onboarding-table input:focus-visible { outline: 2px solid #f5f3ed; outline-offset: 4px; }
+.home2-page .admin-onboarding-save { position: sticky; bottom: 0; background: #1e1e23; padding: 18px 20px; border: 1px solid #38383e; z-index: 2; }
+.home2-page .admin-onboarding-save .admin-form-actions { margin: 0; }
+@media (max-width: 640px) {
+  .home2-page .admin-onboarding-save { padding: 14px; gap: 12px; }
+  .home2-page .admin-onboarding-save .admin-form-actions { width: 100%; justify-content: space-between; }
+}
+
+.home2-page .admin-onboarding-stage-filter { min-width: 180px; margin: 0; }

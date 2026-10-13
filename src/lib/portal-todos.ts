@@ -1,6 +1,11 @@
+import { isTodoApplicableToAgent } from "@/lib/agent-designation";
 import type { User } from "@supabase/supabase-js";
 import { fetchPortalCompAttachments } from "@/lib/portal-comp-attachments";
 import { getSupabaseClient, getSupabaseConfig, isSupabaseAuthConfigured } from "@/lib/supabase";
+
+export function filterPortalTodosForAgent(todos: PortalTodo[], designation: unknown): PortalTodo[] {
+  return todos.filter((todo) => isTodoApplicableToAgent(todo.id, designation, todo));
+}
 
 export const COMP_AGREEMENT_TODO_ID = "comp_agreement";
 
@@ -20,6 +25,8 @@ export interface PortalTodo {
   external: boolean;
   actionLabel: string;
   showEmailHint?: boolean;
+  showLoa?: boolean;
+  showIbo?: boolean;
   phase: PortalTodoPhase;
   completionType: PortalTodoCompletionType;
   /** Gated steps stay visible but locked until every earlier step in the same stage is complete. */
@@ -49,7 +56,7 @@ export const PORTAL_PHASE_LABELS: Record<PortalPhaseId, string> = {
 
 /** Derives the current stage from todos whose `completed` is already resolved. */
 export function derivePortalPhase(todos: PortalTodo[]): PortalPhaseId {
-  if (todos.length === 0) return "on_board";
+  if (todos.length === 0) return "complete";
   for (const { id } of PORTAL_TODO_PHASES) {
     const items = todos.filter((todo) => todo.phase === id);
     if (items.some((todo) => !todo.completed)) return id;
@@ -207,6 +214,8 @@ interface PortalTodoResponse {
   external: boolean;
   actionLabel: string;
   showEmailHint: boolean;
+  showLoa?: boolean;
+  showIbo?: boolean;
   phase?: PortalTodoPhase;
   completionType?: PortalTodoCompletionType;
   gated?: boolean;
@@ -222,6 +231,8 @@ function mapPortalTodo(row: PortalTodoResponse): PortalTodo {
     external: row.external,
     actionLabel: row.actionLabel,
     showEmailHint: row.showEmailHint,
+    showLoa: row.showLoa,
+    showIbo: row.showIbo,
     phase: row.phase === "new_producer" ? "licensing" : row.phase ?? "on_board",
     completionType: row.completionType ?? "agent",
     gated: row.gated ?? false,
@@ -249,7 +260,8 @@ export async function fetchPortalTodos(accessToken: string): Promise<PortalTodo[
   }
 
   const todos = (data.todos ?? []) as PortalTodoResponse[];
-  const mapped = todos.length > 0 ? todos.map(mapPortalTodo) : FALLBACK_PORTAL_TODOS;
+  // An empty configured checklist is intentional; do not resurrect fallback steps.
+  const mapped = todos.map(mapPortalTodo);
   return filterCompAgreementTodo(accessToken, mapped);
 }
 

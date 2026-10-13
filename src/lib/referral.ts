@@ -1,3 +1,4 @@
+import { resolveAgentDesignation, type AgentDesignation } from "./agent-designation";
 import { isSupabaseConfigured } from "./onboarding-api";
 
 export const REFERRAL_PARAM = "ref";
@@ -7,6 +8,7 @@ export interface ReferralInviteInfo {
   inviteId: string;
   referrerId: string;
   referrerName: string;
+  agentDesignation: AgentDesignation;
 }
 
 export function buildReferralLink(inviteId: string): string {
@@ -68,5 +70,6 @@ export async function getReferralInviteInfo(inviteId: string): Promise<ReferralI
     inviteId: data.inviteId,
     referrerId: data.id,
     referrerName: data.name,
+    agentDesignation: resolveAgentDesignation(data.agentDesignation),
   };
 }

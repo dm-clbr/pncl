@@ -1,3 +1,5 @@
+import { isTodoApplicableToAgent } from "../_shared/agentDesignation.ts";
+import { loadAgentDesignations } from "../_shared/portalAgentDesignations.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requireAdmin } from "../_shared/adminAuth.ts";
 import { buildAgentSummaries, listPortalUsers } from "../_shared/adminAgents.ts";
@@ -56,10 +58,12 @@ serve(async (req) => {
       autoKeys,
       users.map((user) => user.id),
     );
+    const designations = await loadAgentDesignations(adminClient, users.map((user) => user.id));
     const completed = [];
     const pending = [];
 
     for (const agent of agents) {
+      if (!isTodoApplicableToAgent(todoRecord.slug, designations.get(agent.id), todoRecord)) continue;
       const user = usersById.get(agent.id);
       const entry = {
         id: agent.id,
@@ -96,7 +100,7 @@ serve(async (req) => {
       },
       completed,
       pending,
-      totalUsers: agents.length,
+      totalUsers: completed.length + pending.length,
     });
   } catch (error) {
     if (error instanceof AdminAuthError) {

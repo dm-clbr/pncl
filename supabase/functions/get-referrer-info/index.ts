@@ -26,6 +26,7 @@ serve(async (req) => {
       inviteId: resolved.invite.id,
       id: resolved.referrerId,
       name: resolved.referrerName,
+      agentDesignation: resolved.agentDesignation,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to load referrer";

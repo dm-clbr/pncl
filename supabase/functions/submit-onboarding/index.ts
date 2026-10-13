@@ -1,3 +1,4 @@
+import { resolveAgentDesignation, type AgentDesignation } from "../_shared/agentDesignation.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { generateAvailableWorkspaceEmail } from "../_shared/email.ts";
@@ -232,6 +233,7 @@ serve(async (req) => {
     let referrerUserId: string | null = null;
     let referralInviteId: string | null = null;
     let invitedCompLevel: number | null = null;
+    let invitedAgentDesignation: AgentDesignation = "loa";
 
     if (payload.referralInviteId) {
       const resolvedInvite = await resolveReferralInviteForOnboarding(
@@ -247,7 +249,9 @@ serve(async (req) => {
       claimedInviteId = claimedInvite.id;
       referralInviteId = claimedInvite.id;
       referrerUserId = resolvedInvite.referrerId;
-      invitedCompLevel = resolvedInvite.compLevel;
+      invitedCompLevel = claimedInvite.comp_level;
+      // Trust the stored invite claimed by the server, never browser input.
+      invitedAgentDesignation = resolveAgentDesignation(claimedInvite.agent_designation);
       uplineNetwork = resolvedInvite.referrerName;
     }
 
@@ -290,6 +294,7 @@ serve(async (req) => {
         referrer_user_id: referrerUserId,
         referral_invite_id: referralInviteId,
         invited_comp_level: invitedCompLevel,
+        invited_agent_designation: invitedAgentDesignation,
         workspace_email: workspaceEmail,
         status: "pending",
         enrollment_status: "saving_application",

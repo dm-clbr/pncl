@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requirePortalUser } from "../_shared/adminAuth.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
+import { validateAgentDesignation, type AgentDesignation } from "../_shared/agentDesignation.ts";
 import { isValidCompLevel } from "../_shared/compLevel.ts";
 import {
   createReferralInvite,
@@ -10,9 +11,10 @@ import {
 interface CreateReferralInvitePayload {
   compLevel?: unknown;
   recipientLabel?: unknown;
+  agentDesignation?: unknown;
 }
 
-function validatePayload(body: unknown): { compLevel: number; recipientLabel: string } {
+function validatePayload(body: unknown): { compLevel: number; recipientLabel: string; agentDesignation: AgentDesignation } {
   if (!body || typeof body !== "object") {
     throw new Error("Invalid request body");
   }
@@ -40,7 +42,9 @@ function validatePayload(body: unknown): { compLevel: number; recipientLabel: st
     throw new Error("Nickname is too long.");
   }
 
-  return { compLevel, recipientLabel };
+  // Older portal clients retain the existing LOA behavior.
+  const agentDesignation = validateAgentDesignation(data.agentDesignation === undefined ? "loa" : data.agentDesignation);
+  return { compLevel, recipientLabel, agentDesignation };
 }
 
 serve(async (req) => {
@@ -59,6 +63,7 @@ serve(async (req) => {
       user.id,
       payload.compLevel,
       payload.recipientLabel,
+      payload.agentDesignation,
     );
 
     return jsonResponse({

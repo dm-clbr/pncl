@@ -1,3 +1,5 @@
+import { filterAgentTodos, resolveAgentDesignation } from "../_shared/agentDesignation.ts";
+import { loadAgentDesignations } from "../_shared/portalAgentDesignations.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requireGenesisAdminOrAdmin } from "../_shared/adminAuth.ts";
 import { buildAgentSummaryForUser } from "../_shared/adminAgents.ts";
@@ -180,7 +182,9 @@ serve(async (req) => {
       };
     });
 
-    const todoRecords = (todoRows ?? []) as PortalTodoRecord[];
+    const designations = await loadAgentDesignations(adminClient, [userId]);
+    const agentDesignation = resolveAgentDesignation(designations.get(userId));
+    const todoRecords = filterAgentTodos((todoRows ?? []) as PortalTodoRecord[], agentDesignation);
     const autoKeys = new Set(
       todoRecords
         .filter((row) => row.completion_type === "auto" && row.auto_key)
@@ -266,6 +270,7 @@ serve(async (req) => {
       googleWorkspace,
       portalProfile: profile
         ? {
+            agentDesignation,
             firstName: profile.first_name,
             lastName: profile.last_name,
             shirtSize: profile.shirt_size,

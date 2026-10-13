@@ -1,3 +1,4 @@
+import { resolveAgentDesignation, validateAgentDesignation, type AgentDesignation } from "./agentDesignation.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import {
   assertAdminCompAllowed,
@@ -15,6 +16,7 @@ export interface ReferralInviteRow {
   id: string;
   referrer_user_id: string;
   comp_level: number;
+  agent_designation?: AgentDesignation;
   recipient_label: string | null;
   status: ReferralInviteStatus;
   consumed_at: string | null;
@@ -28,11 +30,13 @@ export interface ResolvedReferralInvite {
   referrerId: string;
   referrerName: string;
   compLevel: number;
+  agentDesignation: AgentDesignation;
 }
 
 export interface ReferralInviteSummary {
   id: string;
   compLevel: number;
+  agentDesignation: AgentDesignation;
   recipientLabel: string | null;
   status: ReferralInviteStatus;
   expiresAt: string;
@@ -69,6 +73,7 @@ export function toReferralInviteSummary(
   return {
     id: invite.id,
     compLevel: invite.comp_level,
+    agentDesignation: resolveAgentDesignation(invite.agent_designation),
     recipientLabel: invite.recipient_label,
     status: invite.status,
     expiresAt: invite.expires_at,
@@ -161,6 +166,7 @@ export async function resolveReferralInviteForOnboarding(
     referrerId: referrer.id,
     referrerName: referrer.name,
     compLevel: invite.comp_level,
+    agentDesignation: resolveAgentDesignation(invite.agent_designation),
   };
 }
 
@@ -190,7 +196,9 @@ export async function createReferralInvite(
   referrerUserId: string,
   compLevel: number,
   recipientLabel: string,
+  agentDesignation: AgentDesignation = "loa",
 ): Promise<ReferralInviteRow> {
+  const designation = validateAgentDesignation(agentDesignation);
   if (!isValidCompLevel(compLevel)) {
     throw new Error("Invalid starting contract.");
   }
@@ -212,6 +220,7 @@ export async function createReferralInvite(
     .insert({
       referrer_user_id: referrerUserId,
       comp_level: compLevel,
+      agent_designation: designation,
       recipient_label: label,
       expires_at: getReferralInviteExpiresAt(),
     })

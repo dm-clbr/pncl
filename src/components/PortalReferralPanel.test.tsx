@@ -1,55 +1,54 @@
-import { render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import PortalReferralPanel from "@/components/PortalReferralPanel";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import PortalReferralPanel from "./PortalReferralPanel";
 import { usePortalReferrals } from "@/hooks/usePortalReferrals";
 
-vi.mock("@/hooks/usePortalReferrals", () => ({
-  usePortalReferrals: vi.fn(),
-}));
+vi.mock("@/hooks/usePortalReferrals", () => ({ usePortalReferrals: vi.fn() }));
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+const createInvite = vi.fn();
+beforeEach(() => {
+  Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: vi.fn().mockResolvedValue(undefined) } });
+  createInvite.mockResolvedValue({ link: "https://thepncl.com/onboarding?ref=sample" });
+  vi.mocked(usePortalReferrals).mockReturnValue({ compLevel: 100, compOptions: [95, 90], invites: [], loading: false, creating: false, error: null, reload: vi.fn(), createInvite });
+});
+afterEach(() => { cleanup(); vi.clearAllMocks(); });
 
-vi.mock("sonner", () => ({
-  toast: {
-    error: vi.fn(),
-    success: vi.fn(),
-  },
-}));
-
-describe("PortalReferralPanel", () => {
-  beforeEach(() => {
-    vi.mocked(usePortalReferrals).mockReturnValue({
-      compLevel: 105,
-      compOptions: [100, 95],
-      invites: [{
-        id: "invite-1",
-        compLevel: 95,
-        recipientLabel: "Avery",
-        status: "pending",
-        expiresAt: "2099-01-01T00:00:00.000Z",
-        consumedAt: null,
-        createdAt: "2026-09-20T00:00:00.000Z",
-        link: "https://example.com/onboarding?ref=invite-1",
-        referrerUserId: "agent-1",
-        sharedFromPartner: false,
-      }],
-      loading: false,
-      creating: false,
-      error: null,
-      reload: vi.fn(),
-      createInvite: vi.fn(),
-    });
+function show() { render(<MemoryRouter><PortalReferralPanel embedded /></MemoryRouter>); }
+describe("Referral onboarding choice", () => {
+  it.each(["loa", "ibo"])("creates a %s invite with the recruit nickname and compensation", async (designation) => {
+    show();
+    expect(screen.getByLabelText("Agent designation")).toBeRequired();
+    expect(screen.getByLabelText("Agent designation")).toHaveValue("");
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Jordan" } });
+    fireEvent.change(screen.getByLabelText("Agent designation"), { target: { value: designation } });
+    fireEvent.click(screen.getByRole("button", { name: "Create & copy link" }));
+    await waitFor(() => expect(createInvite).toHaveBeenCalledWith({ compLevel: 95, recipientLabel: "Jordan", agentDesignation: designation }));
+    await waitFor(() => expect(screen.getByLabelText("Agent designation")).toHaveValue(""));
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith("https://thepncl.com/onboarding?ref=sample");
   });
-
-  it("uses contract language without exposing the agent's own tier in referral copy", () => {
-    const { container } = render(
-      <MemoryRouter>
-        <PortalReferralPanel embedded />
-      </MemoryRouter>,
-    );
-
+  it("blocks creation without a designation", () => {
+    show();
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Jordan" } });
+    fireEvent.submit(screen.getByRole("button", { name: "Create & copy link" }).closest("form")!);
+    expect(createInvite).not.toHaveBeenCalled();
+  });
+  it("labels IBO and legacy LOA links in the shared list", () => {
+    const state = vi.mocked(usePortalReferrals)();
+    vi.mocked(usePortalReferrals).mockReturnValue({ ...state, invites: [
+      { id: "new", recipientLabel: "IBO recruit", agentDesignation: "ibo", compLevel: 95, status: "pending", expiresAt: "2099-01-01", link: "https://example.com/new", sharedFromPartner: true },
+      { id: "old", recipientLabel: "Existing recruit", compLevel: 90, status: "pending", expiresAt: "2099-01-01", link: "https://example.com/old" },
+    ] as ReturnType<typeof usePortalReferrals>["invites"] });
+    show();
+    expect(screen.getByText(/IBO · 95% starting contract/)).toHaveTextContent("Business partner link");
+    expect(screen.getByText(/LOA · 90% starting contract/)).toBeInTheDocument();
+  });
+  it("does not expose the referring agent's own tier", () => {
+    const state = vi.mocked(usePortalReferrals)();
+    vi.mocked(usePortalReferrals).mockReturnValue({ ...state, compLevel: 105 });
+    show();
     expect(screen.getByText("Starting contract")).toBeInTheDocument();
-    expect(screen.getByText(/95% starting contract/)).toBeInTheDocument();
     expect(screen.queryByText(/105/)).not.toBeInTheDocument();
-    expect(container).not.toHaveTextContent(/\b(comp|compensation|tier)\b/i);
+    expect(document.body).not.toHaveTextContent(/\b(comp|compensation|tier)\b/i);
   });
 });

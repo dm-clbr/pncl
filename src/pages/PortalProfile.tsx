@@ -1,3 +1,5 @@
+import { resolveAgentDesignation } from "@/lib/agent-designation";
+import { filterPortalTodosForAgent } from "@/lib/portal-todos";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, ArrowUpRight, Camera } from "lucide-react";
@@ -390,11 +392,11 @@ export default function PortalProfile() {
 
   const resolvedTodos = useMemo(
     () =>
-      todos.map((todo) => ({
+      filterPortalTodosForAgent(todos, profileRow?.agent_designation).map((todo) => ({
         ...todo,
         completed: isTodoCompleted(user, todo, { icaSubmitted, w9Submitted, directDepositSubmitted }),
       })),
-    [todos, user, icaSubmitted, w9Submitted, directDepositSubmitted],
+    [todos, profileRow?.agent_designation, user, icaSubmitted, w9Submitted, directDepositSubmitted],
   );
   const todoTotal = resolvedTodos.length;
   const todoDone = resolvedTodos.filter((todo) => todo.completed).length;
@@ -560,6 +562,10 @@ export default function PortalProfile() {
               <div>
                 <span>Agent ID</span>
                 <strong>{agentNumber ?? "Pending assignment"}</strong>
+              </div>
+              <div>
+                <span>Agent designation</span>
+                <strong>{resolveAgentDesignation(profileRow?.agent_designation).toUpperCase()}</strong>
               </div>
               <CompensationTierDisclosure tier={profileRow?.comp_level} />
               {todoTotal > 0 && (
@@ -974,7 +980,7 @@ export default function PortalProfile() {
                     )}
                   </div>
                 )}
-                {pendingCompAttachment && (
+                {pendingCompAttachment && resolvedTodos.some((todo) => todo.id === "comp_agreement") && (
                   <div className="portal-profile-document-item">
                     <div>
                       <strong>{pendingCompAttachment.title}</strong>

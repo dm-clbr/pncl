@@ -1,3 +1,5 @@
+import { filterAgentTodos, isTodoApplicableToAgent } from "./agentDesignation.ts";
+import { loadAgentDesignations } from "./portalAgentDesignations.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { lookupCountyFromZip } from "./usZipCounty.ts";
 import { listIcaSignedUserIds } from "./portalIca.ts";
@@ -41,6 +43,8 @@ export interface PortalTodoRecord {
   external: boolean;
   action_label: string;
   show_email_hint: boolean;
+  show_loa?: boolean;
+  show_ibo?: boolean;
   sort_order: number;
   published: boolean;
   phase: PortalTodoPhase;
@@ -60,6 +64,8 @@ export interface UpsertPortalTodoPayload {
   external?: boolean;
   actionLabel: string;
   showEmailHint?: boolean;
+  showLoa?: boolean;
+  showIbo?: boolean;
   published?: boolean;
   sortOrder?: number;
   phase: PortalTodoPhase;
@@ -125,6 +131,13 @@ export function validateUpsertPortalTodoPayload(body: unknown): UpsertPortalTodo
   }
   const autoKey = completionType === "auto" ? autoKeyInput : null;
   const gated = typeof data.gated === "boolean" ? data.gated : false;
+  for (const field of ["showLoa", "showIbo"]) {
+    if (data[field] !== undefined && typeof data[field] !== "boolean") {
+      throw new Error(`${field} must be a boolean`);
+    }
+  }
+  const showLoa = data.showLoa as boolean | undefined;
+  const showIbo = data.showIbo as boolean | undefined;
 
   return {
     id,
@@ -135,6 +148,8 @@ export function validateUpsertPortalTodoPayload(body: unknown): UpsertPortalTodo
     external,
     actionLabel,
     showEmailHint,
+    showLoa,
+    showIbo,
     published,
     sortOrder,
     phase,
@@ -154,6 +169,8 @@ export function mapPortalTodoRecord(row: PortalTodoRecord) {
     external: row.external,
     actionLabel: row.action_label,
     showEmailHint: row.show_email_hint,
+    showLoa: isTodoApplicableToAgent(row.slug, "loa", row),
+    showIbo: isTodoApplicableToAgent(row.slug, "ibo", row),
     sortOrder: row.sort_order,
     published: row.published,
     phase: row.phase ?? "on_board",
@@ -175,6 +192,8 @@ export function mapPortalTodoForUser(row: PortalTodoRecord, completed: boolean) 
     external: row.external,
     actionLabel: row.action_label,
     showEmailHint: row.show_email_hint,
+    showLoa: isTodoApplicableToAgent(row.slug, "loa", row),
+    showIbo: isTodoApplicableToAgent(row.slug, "ibo", row),
     phase: row.phase ?? "on_board",
     completionType: row.completion_type ?? "agent",
     gated: row.gated ?? false,
@@ -458,6 +477,7 @@ export async function computePortalTodoProgressByUserId(
   }
 
   const userIds = users.map((user) => user.id);
+  const designations = await loadAgentDesignations(adminClient, userIds);
   const hasCompTodo = todos.some((row) => row.slug === compAgreementSlug);
   let usersWithCompAttachment = new Set<string>();
 
@@ -484,9 +504,10 @@ export async function computePortalTodoProgressByUserId(
   const autoSets = await computeAutoCompletionSets(adminClient, autoKeys, userIds);
 
   for (const user of users) {
+    const applicableTodos = filterAgentTodos(todos, designations.get(user.id));
     const visibleTodos = hasCompTodo && !usersWithCompAttachment.has(user.id)
-      ? todos.filter((row) => row.slug !== compAgreementSlug)
-      : todos;
+      ? applicableTodos.filter((row) => row.slug !== compAgreementSlug)
+      : applicableTodos;
     const completedMetadata = getCompletedTodosFromMetadata(user.user_metadata ?? undefined);
 
     const phases = PORTAL_TODO_PHASES.map((phaseId) => {

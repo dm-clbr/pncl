@@ -1,3 +1,4 @@
+import { resolveAgentDesignation } from "@/lib/agent-designation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { X } from "lucide-react";
 import {
@@ -8,6 +9,7 @@ import { resolveCountyForZip, US_STATES } from "@/lib/portal-profile";
 import { toast } from "sonner";
 
 interface FormState {
+  agentDesignation: string;
   firstName: string;
   lastName: string;
   addressLine1: string;
@@ -21,6 +23,7 @@ interface FormState {
 
 function toFormState(profile: AdminUserPortalProfile | null): FormState {
   return {
+    agentDesignation: resolveAgentDesignation(profile?.agentDesignation),
     firstName: profile?.firstName ?? "",
     lastName: profile?.lastName ?? "",
     addressLine1: profile?.addressLine1 ?? "",
@@ -93,6 +96,8 @@ export default function AdminEditProfileModal({
       const result = await updateUserProfileFields(accessToken, {
         userId,
         fields: {
+          ...(form.agentDesignation !== resolveAgentDesignation(profile?.agentDesignation)
+            ? { agentDesignation: resolveAgentDesignation(form.agentDesignation) } : {}),
           firstName: form.firstName,
           lastName: form.lastName,
           addressLine1: form.addressLine1 || null,
@@ -142,6 +147,14 @@ export default function AdminEditProfileModal({
         </div>
 
         <div className="admin-edit-profile-grid">
+          <div className="admin-field">
+            <label htmlFor="admin-agent-designation">Agent designation</label>
+            <select id="admin-agent-designation" aria-describedby="admin-agent-designation-help" value={form.agentDesignation} onChange={(event) => updateField("agentDesignation", event.target.value)}>
+              <option value="loa">LOA</option>
+              <option value="ibo">IBO</option>
+            </select>
+            <small id="admin-agent-designation-help">IBOs skip PNCL W-9, direct deposit, and comp agreement steps.</small>
+          </div>
           <label className="admin-field">
             <span>First name</span>
             <input

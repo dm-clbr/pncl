@@ -1,3 +1,4 @@
+import { resolveAgentDesignation } from "@/lib/agent-designation";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, CheckCircle2, Circle, ExternalLink, Pencil, UserRound } from "lucide-react";
@@ -466,6 +467,10 @@ export default function AdminUserDetail() {
               <div className="admin-genesis-details-item">
                 <dt>Status</dt>
                 <dd>{agent.status?.replace(/_/g, " ") ?? "—"}</dd>
+              </div>
+              <div className="admin-genesis-details-item">
+                <dt>Agent designation</dt>
+                <dd>{resolveAgentDesignation(profile.portalProfile?.agentDesignation).toUpperCase()}</dd>
               </div>
               <div className="admin-genesis-details-item">
                 <dt>Comp level</dt>
