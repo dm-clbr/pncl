@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import AdminLeadSpplyIntegration from "@/pages/admin/AdminLeadSpplyIntegration";
@@ -19,6 +19,37 @@ const preview = { matches: [{ source: { id: "pncl-1", email: "jane@thepncl.com",
 afterEach(() => { vi.clearAllMocks(); own.status = null; own.error = null; own.loading = false; auth.userId = "agent-1"; auth.token = "portal-token"; });
 
 describe("LeadSpply integration controls", () => {
+  it("keeps a reviewed preview on a same-user token refresh and displays a completed sync", async () => {
+    manage.mockImplementation(async (_token, body) => body.action === "preview" ? preview : { linked: 1, synced: 1, unresolved: 0 });
+    const view = render(<AdminLeadSpplyIntegration />);
+    await screen.findByText("Email + NPN");
+    fireEvent.change(screen.getByRole("combobox", { name: /LeadSpply profile/i }), { target: { value: "lead-1" } });
+    fireEvent.click(screen.getByRole("checkbox"));
+    auth.token = "refreshed-token";
+    view.rerender(<AdminLeadSpplyIntegration />);
+    expect(manage).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("checkbox")).toBeChecked();
+    fireEvent.click(screen.getByRole("button", { name: /Sync 1 linked reps/i }));
+    expect(await screen.findByText("Linked 1 accounts. Synced 1 reps. 0 need follow-up.")).toBeInTheDocument();
+    expect(manage).toHaveBeenCalledWith("refreshed-token", { action: "sync", token: "preview-token", links: [{ pncl_user_id: "pncl-1", leadspply_user_id: "lead-1" }] });
+    expect(screen.getByRole("checkbox")).not.toBeChecked();
+  });
+
+  it("does not expose a previous user's code or completed redemption after an account switch", async () => {
+    own.status = { state: "not_linked", account: null };
+    let finish: (value: unknown) => void;
+    manage.mockReturnValue(new Promise(resolve => { finish = resolve; }));
+    const view = render(<MemoryRouter><PortalLeadSpply /></MemoryRouter>);
+    fireEvent.change(screen.getByPlaceholderText("Paste code from LeadSpply"), { target: { value: "old-private-code" } });
+    fireEvent.click(screen.getByRole("button", { name: /Submit connection code/i }));
+    auth.userId = "agent-2"; auth.token = "second-user-token";
+    view.rerender(<MemoryRouter><PortalLeadSpply /></MemoryRouter>);
+    expect(screen.getByPlaceholderText("Paste code from LeadSpply")).toHaveValue("");
+    await act(async () => { finish({ state: "connected", pending: true, account: null }); });
+    expect(screen.queryByText(/Account connected\. Your hierarchy/)).not.toBeInTheDocument();
+    expect(own.reload).not.toHaveBeenCalled();
+    expect(manage).toHaveBeenCalledTimes(1);
+  });
   it("never auto-syncs and invalidates reviewed selection after a stale 409", async () => {
     manage.mockImplementation(async (_token: string, body: { action: string }) => {
       if (body.action === "preview") return preview;

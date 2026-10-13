@@ -84,7 +84,7 @@ export default function PortalLeadSpplySnapshot({ userId }: { userId: string | u
   const disconnected = snapshot?.state === "not_linked" || snapshot?.state === "account_unavailable";
   const unavailableMessage = snapshot?.state === "account_unavailable"
     ? "Your LeadSpply account is unavailable. Contact PNCL support to review the connection."
-    : "Your PNCL profile is not linked to a LeadSpply account yet. Contact PNCL support if this looks wrong.";
+    : "Connect your LeadSpply account to view your sales data here.";
 
   return (
     <section className="portal-leadspply-card" aria-labelledby="leadspply-snapshot-title">

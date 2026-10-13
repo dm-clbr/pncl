@@ -25,6 +25,9 @@ export async function manageLeadSpplyIntegration<T>(accessToken: string, body: R
     error.code = isRecord(data) && typeof data.error === "string" ? data.error : undefined;
     throw error;
   }
+  if (body.action === "preview" && isRecord(data) && data.partners === null) {
+    return { ...data, partners: [] } as T;
+  }
   return data as T;
 }
 

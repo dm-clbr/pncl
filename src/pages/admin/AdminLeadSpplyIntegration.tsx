@@ -26,11 +26,12 @@ export default function AdminLeadSpplyIntegration() {
   const requestRef = useRef(0);
   const controllerRef = useRef<AbortController | null>(null);
   const userId = user?.id; const sessionUserId = session?.user?.id;
+  const currentUserRef = useRef(userId); currentUserRef.current = userId;
   const pageSize = 25;
 
   const load = useCallback(async () => {
     const generation = ++requestRef.current; controllerRef.current?.abort();
-    setPreview(null); ownerRef.current = null; setSelected({}); setReviewed(false); setStalePreview(false); setMessage(null); setError(null); setPage(1);
+    setPreview(null); ownerRef.current = null; setBusy(false); setSelected({}); setReviewed(false); setStalePreview(false); setMessage(null); setError(null); setPage(1);
     const token = tokenRef.current;
     if (!userId || userId !== sessionUserId || !token) { setLoading(false); return; }
     const controller = new AbortController(); controllerRef.current = controller; setLoading(true);
@@ -53,26 +54,35 @@ export default function AdminLeadSpplyIntegration() {
   }), [filter, safePreview?.matches, query]);
   const pageCount = Math.max(1, Math.ceil(visible.length / pageSize));
   const matches = visible.slice((Math.min(page, pageCount) - 1) * pageSize, Math.min(page, pageCount) * pageSize);
-  const label = (id: string | null | undefined) => { const target = safePreview?.targets.find((item) => item.id === id); return target ? integrationName(target) : "Unlinked upline"; };
+  const label = (id: string | null | undefined) => { if (!id) return "No upline"; const target = safePreview?.targets.find((item) => item.id === id); return target ? integrationName(target) : "Unlinked upline"; };
+  const actorLabel = (pnclId: string | null, leadspplyId?: string | null) => {
+    const source = safePreview?.matches.find(match => match.source.id === pnclId)?.source;
+    if (source) return integrationName(source);
+    const target = safePreview?.targets.find(rep => rep.id === leadspplyId);
+    return target ? integrationName(target) : pnclId ? "PNCL administrator" : leadspplyId ? "LeadSpply administrator" : "System";
+  };
   const selectedCount = Object.values(selected).filter(Boolean).length;
 
   const sync = async () => {
     const token = tokenRef.current;
     if (!token || !safePreview || !reviewed || stalePreview || userId !== sessionUserId) return;
+    const actor = userId;
     setBusy(true); setError(null); setMessage(null);
     try {
       const result = await manageLeadSpplyIntegration<{ linked: number; synced: number; unresolved: number }>(token, {
         action: "sync", token: safePreview.token,
         links: Object.entries(selected).filter(([, id]) => id).map(([pncl_user_id, leadspply_user_id]) => ({ pncl_user_id, leadspply_user_id })),
       });
-      setMessage(`Linked ${result.linked} accounts. Synced ${result.synced} reps. ${result.unresolved} need follow-up.`);
+      if (currentUserRef.current !== actor) return;
       await load();
+      if (currentUserRef.current === actor) setMessage(`Linked ${result.linked} accounts. Synced ${result.synced} reps. ${result.unresolved} need follow-up.`);
     } catch (err) {
+      if (currentUserRef.current !== actor) return;
       const stale = (err as Error & { code?: string }).code === "preview_stale";
       setReviewed(false);
       setStalePreview(stale);
       setError(stale ? "This preview is stale. Refresh and review changes before syncing." : err instanceof Error ? err.message : "Unable to sync the integration.");
-    } finally { setBusy(false); }
+    } finally { if (currentUserRef.current === actor) setBusy(false); }
   };
 
   return <section className="admin-panel leadspply-admin-panel">
@@ -86,7 +96,7 @@ export default function AdminLeadSpplyIntegration() {
     {error ? <p className="admin-error" role="alert">{error}</p> : null}
     {message ? <p className="admin-success" role="status">{message}</p> : null}
     {safePreview && <>
-      <div className="leadspply-summary" aria-label="Integration summary">{statuses.slice(1).map((status) => <span key={status}>{status.replace(/_/g, " ")}: <strong>{safePreview.matches.filter((match) => match.status === status).length}</strong></span>)}<span>Pending links: <strong>{selectedCount}</strong></span><span>Uplines needing review: <strong>{safePreview.links.filter((item) => item.sync_status === "upline_unlinked").length}</strong></span></div>
+      <div className="leadspply-summary" aria-label="Integration summary">{statuses.slice(1).map((status) => <span key={status}>{status.replace(/_/g, " ")}: <strong>{safePreview.matches.filter((match) => match.status === status).length}</strong></span>)}<span>Awaiting manual sync: <strong>{safePreview.links.filter(item => item.sync_status === "pending").length}</strong></span><span>Uplines needing review: <strong>{safePreview.links.filter((item) => item.sync_status === "upline_unlinked").length}</strong></span></div>
       <div className="admin-table-wrap"><table className="admin-table leadspply-review-table"><thead><tr><th>PNCL rep</th><th>Match</th><th>LeadSpply profile</th><th>Tier</th><th>Hierarchy after sync</th><th>Last sync</th></tr></thead><tbody>{matches.map((match) => {
         const existing = linked.get(match.source.id); const targetId = existing ?? selected[match.source.id] ?? "";
         const newParent = match.source.parent_id ? proposed.get(match.source.parent_id) : null;
@@ -97,7 +107,7 @@ export default function AdminLeadSpplyIntegration() {
       })}</tbody></table></div>
       {visible.length > pageSize && <div className="leadspply-pagination"><button type="button" className="admin-secondary-btn" disabled={page <= 1} onClick={() => setPage((value) => value - 1)}>Previous</button><span>Page {Math.min(page, pageCount)} of {pageCount} · {visible.length} reps</span><button type="button" className="admin-secondary-btn" disabled={page >= pageCount} onClick={() => setPage((value) => value + 1)}>Next</button></div>}
       <section className="leadspply-sync-review"><p>Sync is manual. It applies PNCL tiers and hierarchy to linked accounts. Name-only matches and conflicts need an administrator’s explicit selection. Carrier commission mapping is separate.</p><label><input type="checkbox" checked={reviewed} disabled={busy || loading || stalePreview} onChange={(event) => setReviewed(event.target.checked)} /> I reviewed the selected identities, uplines, co-manager pairs, and pay tiers.</label><button type="button" className="admin-primary-btn" disabled={busy || loading || stalePreview || !reviewed || proposed.size === 0} onClick={() => void sync()}>{busy ? "Syncing…" : `Sync ${proposed.size} linked reps (${selectedCount} new links)`}</button></section>
-      <section className="leadspply-audit"><h2>Co-manager pairs</h2>{safePreview.partners.length === 0 ? <p>No co-manager pairs exported.</p> : <ul>{safePreview.partners.map((pair) => <li key={`${pair.user_id_a}-${pair.user_id_b}`}>{safePreview.matches.find((match) => match.source.id === pair.user_id_a) ? integrationName(safePreview.matches.find((match) => match.source.id === pair.user_id_a)!.source) : "PNCL rep"} + {safePreview.matches.find((match) => match.source.id === pair.user_id_b) ? integrationName(safePreview.matches.find((match) => match.source.id === pair.user_id_b)!.source) : "PNCL rep"} · shared hierarchy</li>)}</ul>}<h2>Recent manual runs</h2>{safePreview.recentRuns.length === 0 ? <p>No manual sync runs yet.</p> : <ul>{safePreview.recentRuns.slice(0, 8).map((run) => <li key={run.id}>{date(run.created_at)} · revision {run.revision} · {run.linked_count} linked, {run.synced_count} synced, {run.unresolved_count} unresolved · PNCL actor {run.pncl_actor_id ? label(run.pncl_actor_id) : "system"}</li>)}</ul>}<h2>Recent audit events</h2>{safePreview.events.length === 0 ? <p>No audit events yet.</p> : <ul>{safePreview.events.slice(0, 8).map((event) => <li key={event.id}>{date(event.created_at)} · {event.kind.replace(/_/g, " ")} · {event.pncl_user_id ? label(event.pncl_user_id) : "system"}</li>)}</ul>}</section>
+      <section className="leadspply-audit"><h2>Co-manager pairs</h2>{safePreview.partners.length === 0 ? <p>No co-manager pairs exported.</p> : <ul>{safePreview.partners.map((pair) => <li key={`${pair.user_id_a}-${pair.user_id_b}`}>{safePreview.matches.find((match) => match.source.id === pair.user_id_a) ? integrationName(safePreview.matches.find((match) => match.source.id === pair.user_id_a)!.source) : "PNCL rep"} + {safePreview.matches.find((match) => match.source.id === pair.user_id_b) ? integrationName(safePreview.matches.find((match) => match.source.id === pair.user_id_b)!.source) : "PNCL rep"} · shared hierarchy</li>)}</ul>}<h2>Recent manual runs</h2>{safePreview.recentRuns.length === 0 ? <p>No manual sync runs yet.</p> : <ul>{safePreview.recentRuns.slice(0, 8).map((run) => <li key={run.id}>{date(run.created_at)} · revision {run.revision} · {run.linked_count} linked, {run.synced_count} synced, {run.unresolved_count} unresolved · By {actorLabel(run.pncl_actor_id, run.actor_id)}</li>)}</ul>}<h2>Recent audit events</h2>{safePreview.events.length === 0 ? <p>No audit events yet.</p> : <ul>{safePreview.events.slice(0, 8).map((event) => <li key={event.id}>{date(event.created_at)} · {event.kind.replace(/_/g, " ")} · {actorLabel(event.pncl_actor_id)}{event.pncl_user_id && ` · ${actorLabel(event.pncl_user_id)}`}</li>)}</ul>}</section>
     </>}
   </section>;
 }

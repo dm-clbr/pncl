@@ -53,7 +53,7 @@ describe("LeadSpply snapshot panel", () => {
   it("shows explicit unlinked and error states without placeholder metrics", async () => {
     fetchSnapshot.mockResolvedValueOnce({ version: 1, state: "not_linked", asOf: connected.asOf });
     const { rerender } = render(<MemoryRouter><PortalLeadSpplySnapshot userId="agent-1" /></MemoryRouter>);
-    expect(await screen.findByText(/not linked to a LeadSpply account/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Connect your LeadSpply account to view your sales data/i)).toBeInTheDocument();
     expect(screen.queryByText("To work")).not.toBeInTheDocument();
 
     auth.userId = "agent-2";
