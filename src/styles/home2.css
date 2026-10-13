@@ -2744,6 +2744,33 @@ button.portal-todo-link {
 .home2-page .portal-leadspply-error { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--bone); }
 .home2-page .portal-leadspply-error p { margin: 0; }
 
+.home2-page .portal-leadspply-page { display: flex; flex-direction: column; gap: 18px; max-width: 720px; margin: 28px auto; }
+.home2-page .portal-leadspply-page h1 { margin: 5px 0 8px; color: var(--bone); font-size: clamp(1.6rem, 5vw, 2.25rem); }
+.home2-page .portal-leadspply-page header > p { margin: 0; color: var(--steel); line-height: 1.5; }
+.home2-page .portal-leadspply-page-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.home2-page .portal-leadspply-account-card,
+.home2-page .portal-leadspply-redeem { display: flex; flex-direction: column; gap: 9px; padding: 20px; border: 1px solid rgba(240,237,228,.12); border-radius: var(--radius); background: var(--ink-2); }
+.home2-page .portal-leadspply-account-card h2 { margin: 0; color: var(--bone); font-size: 1rem; }
+.home2-page .portal-leadspply-account-card strong { color: var(--bone); }
+.home2-page .portal-leadspply-account-card span, .home2-page .portal-leadspply-account-card p, .home2-page .portal-leadspply-account-card small, .home2-page .portal-leadspply-redeem p { margin: 0; color: var(--steel); font-size: .82rem; line-height: 1.45; }
+.home2-page .portal-leadspply-redeem label { display: flex; flex-direction: column; gap: 7px; color: var(--steel); font: 600 10px var(--ff-mono); letter-spacing: .12em; text-transform: uppercase; }
+.home2-page .portal-leadspply-redeem input { height: 44px; padding: 0 12px; border: 1px solid rgba(240,237,228,.14); border-radius: var(--radius); background: var(--ink); color: var(--bone); font: 14px var(--ff-sans); }
+
+.home2-page .leadspply-toolbar { align-items: end; flex-wrap: wrap; }
+.home2-page .leadspply-summary { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 0 0 16px; color: var(--steel); font-size: .8rem; text-transform: capitalize; }
+.home2-page .leadspply-summary strong { color: var(--bone); }
+.home2-page .leadspply-review-table select { max-width: 290px; min-width: 220px; padding: 8px; border: 1px solid rgba(240,237,228,.14); border-radius: var(--radius); background: var(--ink); color: var(--bone); }
+.home2-page .leadspply-review-table small { display: block; margin-top: 4px; color: var(--steel); font-size: .72rem; line-height: 1.35; }
+.home2-page .leadspply-match-note { color: var(--accent-bright) !important; }
+.home2-page .leadspply-sync-review, .home2-page .leadspply-audit { display: flex; flex-direction: column; gap: 14px; margin-top: 20px; padding: 18px; border: 1px solid rgba(240,237,228,.12); border-radius: var(--radius); background: rgba(240,237,228,.035); }
+.home2-page .leadspply-sync-review p, .home2-page .leadspply-audit p, .home2-page .leadspply-audit li { margin: 0; color: var(--steel); font-size: .82rem; line-height: 1.5; }
+.home2-page .leadspply-sync-review label { display: flex; align-items: flex-start; gap: 8px; color: var(--bone); font-size: .85rem; }
+.home2-page .leadspply-sync-review input { margin-top: 2px; accent-color: var(--accent-bright); }
+.home2-page .leadspply-audit h2 { margin: 0; color: var(--bone); font-size: .95rem; }
+.home2-page .leadspply-audit ul { display: flex; flex-direction: column; gap: 5px; margin: 0; padding-left: 18px; }
+.home2-page .leadspply-pagination { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 16px; color: var(--steel); font: 10px var(--ff-mono); letter-spacing: .06em; }
+.home2-page .admin-success { color: #b8e1bb; }
+
 @media (min-width: 640px) {
   .home2-page .portal-leadspply-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .home2-page .portal-leadspply-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }

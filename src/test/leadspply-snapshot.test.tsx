@@ -1,5 +1,6 @@
 import { render, renderHook, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
 import PortalLeadSpplySnapshot, { formatLeadSpplySyncStatus } from "@/components/PortalLeadSpplySnapshot";
 import { usePortalLeadSpplySnapshot } from "@/hooks/usePortalLeadSpplySnapshot";
 import { parseLeadSpplySnapshot, type LeadSpplySnapshot } from "@/lib/portal-leadspply-snapshot";
@@ -28,6 +29,7 @@ const connected: LeadSpplySnapshot = {
 
 afterEach(() => {
   vi.clearAllMocks();
+  fetchSnapshot.mockReset();
   auth.token = "portal-token";
   auth.loading = false;
   auth.userId = "agent-1";
@@ -50,13 +52,13 @@ describe("LeadSpply snapshot DTO", () => {
 describe("LeadSpply snapshot panel", () => {
   it("shows explicit unlinked and error states without placeholder metrics", async () => {
     fetchSnapshot.mockResolvedValueOnce({ version: 1, state: "not_linked", asOf: connected.asOf });
-    const { rerender } = render(<PortalLeadSpplySnapshot userId="agent-1" />);
+    const { rerender } = render(<MemoryRouter><PortalLeadSpplySnapshot userId="agent-1" /></MemoryRouter>);
     expect(await screen.findByText(/not linked to a LeadSpply account/i)).toBeInTheDocument();
     expect(screen.queryByText("To work")).not.toBeInTheDocument();
 
     auth.userId = "agent-2";
     fetchSnapshot.mockRejectedValueOnce(new Error("LeadSpply data is unavailable."));
-    rerender(<PortalLeadSpplySnapshot userId="agent-2" />);
+    rerender(<MemoryRouter><PortalLeadSpplySnapshot userId="agent-2" /></MemoryRouter>);
     expect(await screen.findByRole("alert")).toHaveTextContent("LeadSpply data is unavailable.");
     expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
   });
@@ -108,7 +110,7 @@ describe("LeadSpply snapshot panel", () => {
       ...connected,
       account: { ...connected.account!, syncStatus: "upline_unlinked" },
     });
-    render(<PortalLeadSpplySnapshot userId="agent-1" />);
+    render(<MemoryRouter><PortalLeadSpplySnapshot userId="agent-1" /></MemoryRouter>);
     expect(await screen.findByText("Linked · upline needs review")).toBeInTheDocument();
     expect(screen.getByText("$1,250.50 annual premium")).toBeInTheDocument();
   });
@@ -121,7 +123,7 @@ describe("LeadSpply snapshot panel", () => {
 
   it("explains unavailable accounts without suggesting an automatic retry", async () => {
     fetchSnapshot.mockResolvedValueOnce({ version: 1, state: "account_unavailable", asOf: connected.asOf });
-    render(<PortalLeadSpplySnapshot userId="agent-1" />);
+    render(<MemoryRouter><PortalLeadSpplySnapshot userId="agent-1" /></MemoryRouter>);
     expect(await screen.findByText(/contact PNCL support to review the connection/i)).toBeInTheDocument();
     expect(screen.queryByText(/try refreshing/i)).not.toBeInTheDocument();
   });

@@ -1,4 +1,5 @@
 import { ExternalLink, RefreshCw } from "lucide-react";
+import { Link } from "react-router-dom";
 import { usePortalLeadSpplySnapshot } from "@/hooks/usePortalLeadSpplySnapshot";
 import type { LeadSpplySnapshot } from "@/lib/portal-leadspply-snapshot";
 
@@ -97,6 +98,7 @@ export default function PortalLeadSpplySnapshot({ userId }: { userId: string | u
           <a href={LEADSPPLY_DASHBOARD_URL} target="_blank" rel="noopener noreferrer" className="portal-leadspply-open">
             Open LeadSpply <ExternalLink size={15} aria-hidden="true" />
           </a>
+          <Link to="/portal/leadspply" className="portal-leadspply-refresh">Connect / manage</Link>
         </div>
       </header>
       {loading && !snapshot ? <p className="portal-leadspply-state" role="status">Loading your LeadSpply snapshot…</p> : null}

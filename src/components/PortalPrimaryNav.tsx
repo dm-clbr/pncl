@@ -1,10 +1,11 @@
-import { CalendarDays, LayoutDashboard, MapPinned } from "lucide-react";
+import { CalendarDays, LayoutDashboard, Link2, MapPinned } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
 const PORTAL_NAV_ITEMS = [
   { to: "/portal", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/portal/calendar", label: "Calendar", icon: CalendarDays, end: false },
   { to: "/portal/state-map", label: "State Map", icon: MapPinned, end: false },
+  { to: "/portal/leadspply", label: "LeadSpply", icon: Link2, end: false },
 ] as const;
 
 export default function PortalPrimaryNav() {
