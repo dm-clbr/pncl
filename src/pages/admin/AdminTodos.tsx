@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useEffect, useState, type FormEvent } from "react";
 import {
   ArrowDown,
@@ -69,6 +70,8 @@ type TodoFormState = {
   completionType: AdminPortalTodoCompletionType;
   autoKey: string;
   gated: boolean;
+  showLoa: boolean;
+  showIbo: boolean;
 };
 
 const EMPTY_FORM: TodoFormState = {
@@ -84,6 +87,8 @@ const EMPTY_FORM: TodoFormState = {
   completionType: "agent",
   autoKey: "",
   gated: false,
+  showLoa: true,
+  showIbo: true,
 };
 
 function slugify(value: string): string {
@@ -110,6 +115,8 @@ function toFormState(todo: AdminPortalTodoSummary): TodoFormState {
     completionType: todo.completionType,
     autoKey: todo.autoKey ?? "",
     gated: todo.gated ?? false,
+    showLoa: todo.showLoa ?? true,
+    showIbo: todo.showIbo ?? true,
   };
 }
 
@@ -128,6 +135,8 @@ function toPayload(form: TodoFormState): UpsertPortalTodoPayload {
     completionType: form.completionType,
     autoKey: form.completionType === "auto" ? form.autoKey.trim() || null : null,
     gated: form.gated,
+    showLoa: form.showLoa,
+    showIbo: form.showIbo,
   };
 }
 
@@ -274,6 +283,7 @@ export default function AdminTodos() {
         </div>
       </div>
 
+      <p className="admin-panel-note"><Link to="/portal/admin/onboarding-steps" className="admin-secondary-link">Choose steps for LOA and IBO onboarding</Link></p>
       <div className="admin-panel-head-row">
         <p className="admin-panel-note">
           {editing ? "Editing to-do" : "Add a new to-do"}
@@ -452,6 +462,15 @@ export default function AdminTodos() {
               onChange={(event) => setForm((prev) => ({ ...prev, published: event.target.checked }))}
             />
             <span>Published in agent portal</span>
+          </label>
+
+          <label className="admin-field admin-field-checkbox">
+            <input type="checkbox" checked={form.showLoa} onChange={(event) => setForm((prev) => ({ ...prev, showLoa: event.target.checked }))} />
+            <span>Show in LOA onboarding</span>
+          </label>
+          <label className="admin-field admin-field-checkbox">
+            <input type="checkbox" checked={form.showIbo} onChange={(event) => setForm((prev) => ({ ...prev, showIbo: event.target.checked }))} />
+            <span>Show in IBO onboarding</span>
           </label>
 
           <div className="admin-form-actions">

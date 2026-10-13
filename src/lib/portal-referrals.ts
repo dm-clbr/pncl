@@ -1,3 +1,4 @@
+import type { AgentDesignation } from "@/lib/agent-designation";
 import { getSupabaseConfig } from "@/lib/supabase";
 import { buildReferralLink } from "@/lib/referral";
 
@@ -6,6 +7,7 @@ export type ReferralInviteStatus = "pending" | "consumed" | "expired" | "revoked
 export interface ReferralInviteSummary {
   id: string;
   compLevel: number;
+  agentDesignation?: AgentDesignation;
   recipientLabel: string | null;
   status: ReferralInviteStatus;
   expiresAt: string;
@@ -54,7 +56,7 @@ export async function listReferralInvites(
 
 export async function createReferralInvite(
   accessToken: string,
-  input: { compLevel: number; recipientLabel: string },
+  input: { compLevel: number; recipientLabel: string; agentDesignation: AgentDesignation },
 ): Promise<ReferralInviteSummary> {
   const data = await portalFetch<{ invite: ReferralInviteSummary }>(
     "create-referral-invite",

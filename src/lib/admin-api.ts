@@ -1,3 +1,4 @@
+import type { AgentDesignation } from "@/lib/agent-designation";
 import { getSupabaseConfig } from "@/lib/supabase";
 import type { PortalRole } from "@/lib/roles";
 
@@ -54,6 +55,7 @@ export function formatAgentNumber(agentNumber: number | null | undefined): strin
 }
 
 export interface AgentSummary {
+  agentDesignation?: AgentDesignation;
   id: string;
   email: string;
   name: string;
@@ -1081,6 +1083,8 @@ export interface AdminPortalTodoSummary {
   external: boolean;
   actionLabel: string;
   showEmailHint: boolean;
+  showLoa?: boolean;
+  showIbo?: boolean;
   sortOrder: number;
   published: boolean;
   phase: AdminPortalTodoPhase;
@@ -1103,6 +1107,8 @@ export interface UpsertPortalTodoPayload {
   external?: boolean;
   actionLabel: string;
   showEmailHint?: boolean;
+  showLoa?: boolean;
+  showIbo?: boolean;
   published?: boolean;
   sortOrder?: number;
   phase: AdminPortalTodoPhase;
@@ -1124,6 +1130,22 @@ export async function upsertPortalTodo(
   return adminFetch("admin-upsert-portal-todo", accessToken, {
     method: "POST",
     body: JSON.stringify(input),
+  });
+}
+
+export interface PortalTodoAudienceInput {
+  id: string;
+  showLoa: boolean;
+  showIbo: boolean;
+}
+
+export async function saveOnboardingSteps(
+  accessToken: string,
+  steps: PortalTodoAudienceInput[],
+): Promise<{ message: string }> {
+  return adminFetch("admin-set-onboarding-steps", accessToken, {
+    method: "POST",
+    body: JSON.stringify({ steps }),
   });
 }
 
@@ -1173,6 +1195,7 @@ export interface AdminUserDocument {
 }
 
 export interface AdminUserPortalProfile {
+  agentDesignation?: AgentDesignation;
   firstName: string;
   lastName: string;
   shirtSize: string | null;
@@ -1268,6 +1291,7 @@ export interface AdminUserProfileDetail {
 }
 
 export interface AdminEditableProfileFields {
+  agentDesignation?: AgentDesignation;
   firstName?: string | null;
   lastName?: string | null;
   shirtSize?: string | null;

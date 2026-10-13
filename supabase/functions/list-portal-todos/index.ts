@@ -1,3 +1,5 @@
+import { filterAgentTodos } from "../_shared/agentDesignation.ts";
+import { loadAgentDesignations } from "../_shared/portalAgentDesignations.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requirePortalUser } from "../_shared/adminAuth.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
@@ -36,7 +38,8 @@ serve(async (req) => {
       throw new Error(error.message);
     }
 
-    const rows = (data ?? []) as PortalTodoRecord[];
+    const designations = await loadAgentDesignations(adminClient, [user.id]);
+    const rows = filterAgentTodos((data ?? []) as PortalTodoRecord[], designations.get(user.id));
     const hasCompAttachment = rows.some((row) => row.slug === COMP_AGREEMENT_TODO_SLUG)
       ? await userHasCompAttachment(adminClient, user.id)
       : false;

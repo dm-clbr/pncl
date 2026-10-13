@@ -1,3 +1,4 @@
+import { resolveAgentDesignation, type AgentDesignation } from "@/lib/agent-designation";
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseClient, getSupabaseConfig } from "@/lib/supabase";
 import { lookupCountyFromZip, requireCountyFromZip } from "@/lib/us-zip-county";
@@ -21,6 +22,7 @@ export const SHOE_SIZES = [
 export interface PortalProfile {
   user_id: string;
   agent_number: number | null;
+  agent_designation?: AgentDesignation;
   first_name: string;
   last_name: string;
   shirt_size: string | null;
@@ -211,6 +213,16 @@ export function getProfilePhotoUrl(
   return `${data.publicUrl}${separator}v=${encodeURIComponent(String(cacheBuster))}`;
 }
 
+async function fetchAgentDesignation(userId: string): Promise<AgentDesignation> {
+  const { data, error } = await getSupabaseClient()
+    .from("portal_agent_designations")
+    .select("designation")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw error;
+  return resolveAgentDesignation(data?.designation);
+}
+
 export async function fetchPortalProfile(userId: string): Promise<PortalProfile | null> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase
@@ -220,7 +232,7 @@ export async function fetchPortalProfile(userId: string): Promise<PortalProfile 
     .maybeSingle();
 
   if (error) throw error;
-  return data as PortalProfile | null;
+  return data ? { ...data, agent_designation: await fetchAgentDesignation(userId) } as PortalProfile : null;
 }
 
 function getPhotoExtension(file: File): string {
@@ -317,7 +329,7 @@ export async function savePortalProfile(
 
   if (metadataError) throw metadataError;
 
-  return data as PortalProfile;
+  return { ...data, agent_designation: await fetchAgentDesignation(user.id) } as PortalProfile;
 }
 
 /**
@@ -483,7 +495,7 @@ export async function saveLicensingProfile(
       .single();
 
     if (error) throw error;
-    return data as PortalProfile;
+    return { ...data, agent_designation: await fetchAgentDesignation(user.id) } as PortalProfile;
   }
 
   const fallbackNames = getDefaultProfileValues(user);
@@ -499,5 +511,5 @@ export async function saveLicensingProfile(
     .single();
 
   if (error) throw error;
-  return data as PortalProfile;
+  return { ...data, agent_designation: await fetchAgentDesignation(user.id) } as PortalProfile;
 }

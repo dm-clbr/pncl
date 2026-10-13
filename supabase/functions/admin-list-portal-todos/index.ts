@@ -1,3 +1,5 @@
+import { isTodoApplicableToAgent } from "../_shared/agentDesignation.ts";
+import { loadAgentDesignations } from "../_shared/portalAgentDesignations.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requireAdmin } from "../_shared/adminAuth.ts";
 import { listPortalUsers } from "../_shared/adminAgents.ts";
@@ -51,24 +53,28 @@ serve(async (req) => {
       ]),
     );
 
+    const designations = await loadAgentDesignations(adminClient, userIds);
     const totalUsers = users.length;
     const todos = rows.map((row) => {
       let completedCount = 0;
+      let applicableUsers = 0;
       for (const user of users) {
+        if (!isTodoApplicableToAgent(row.slug, designations.get(user.id), row)) continue;
+        applicableUsers += 1;
         const completedMetadata = completedMetadataByUser.get(user.id) ?? {};
         if (isTodoCompleteForUser(row, user.id, completedMetadata, autoSets)) {
           completedCount += 1;
         }
       }
 
-      const completionPercent = totalUsers > 0
-        ? Math.round((completedCount / totalUsers) * 100)
+      const completionPercent = applicableUsers > 0
+        ? Math.round((completedCount / applicableUsers) * 100)
         : 0;
 
       return {
         ...mapPortalTodoRecord(row),
         completedCount,
-        totalUsers,
+        totalUsers: applicableUsers,
         completionPercent,
       };
     });

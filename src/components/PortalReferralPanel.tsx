@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Copy, Link2 } from "lucide-react";
+import { resolveAgentDesignation, type AgentDesignation } from "@/lib/agent-designation";
 import {
   formatReferralInviteStatus,
   isReferralInviteCopyable,
@@ -36,6 +37,7 @@ export default function PortalReferralPanel({ embedded = false }: PortalReferral
     createInvite,
   } = usePortalReferrals();
 
+  const [agentDesignation, setAgentDesignation] = useState<AgentDesignation | "">("");
   const [open, setOpen] = useState(false);
   const [recipientLabel, setRecipientLabel] = useState("");
   const [selectedCompLevel, setSelectedCompLevel] = useState<number | "">("");
@@ -56,6 +58,11 @@ export default function PortalReferralPanel({ embedded = false }: PortalReferral
       return;
     }
 
+    if (!agentDesignation) {
+      toast.error("Select LOA or IBO for this recruit.");
+      return;
+    }
+
     const nickname = recipientLabel.trim();
     if (!nickname) {
       toast.error("Add a nickname for this recruit.");
@@ -66,7 +73,9 @@ export default function PortalReferralPanel({ embedded = false }: PortalReferral
       const invite = await createInvite({
         compLevel: effectiveCompLevel,
         recipientLabel: nickname,
+        agentDesignation,
       });
+      setAgentDesignation("");
       setRecipientLabel("");
       setSelectedCompLevel("");
       await copyInviteLink(invite.link);
@@ -84,7 +93,7 @@ export default function PortalReferralPanel({ embedded = false }: PortalReferral
         <div className="portal-referral-item-copy">
           <strong>{label}</strong>
           <span>
-            {invite.compLevel}% starting contract · {formatReferralInviteStatus(invite.status)}
+            {resolveAgentDesignation(invite.agentDesignation).toUpperCase()} · {invite.compLevel}% starting contract · {formatReferralInviteStatus(invite.status)}
             {invite.sharedFromPartner ? " · Business partner link" : ""}
             {invite.status === "pending" ? ` · Expires ${formatInviteDate(invite.expiresAt)}` : ""}
             {invite.consumedAt ? ` · Used ${formatInviteDate(invite.consumedAt)}` : ""}
@@ -124,8 +133,9 @@ export default function PortalReferralPanel({ embedded = false }: PortalReferral
       ) : (
         <>
           <p className="portal-panel-note">
-            Create a unique, single-use link for each recruit and choose their starting contract. If
-            you have a linked business partner, you share the same referral link list.
+            Create a unique, single-use link for each recruit and choose their starting contract and
+            LOA or IBO onboarding. If you have a linked business partner, you share the same referral
+            link list.
           </p>
 
           <form className="portal-referral-form" onSubmit={(event) => void handleCreate(event)}>
@@ -162,6 +172,25 @@ export default function PortalReferralPanel({ embedded = false }: PortalReferral
                 ))}
               </select>
             </label>
+
+            <label className="portal-field" htmlFor="referral-agent-designation">
+              <span>Agent designation</span>
+              <select
+                id="referral-agent-designation"
+                value={agentDesignation}
+                onChange={(event) => setAgentDesignation(event.target.value as AgentDesignation | "")}
+                aria-describedby="referral-agent-designation-hint"
+                required
+              >
+                <option value="" disabled>Select LOA or IBO</option>
+                <option value="loa">LOA</option>
+                <option value="ibo">IBO</option>
+              </select>
+            </label>
+            <p id="referral-agent-designation-hint" className="portal-field-hint">
+              Recruits using this link receive the selected onboarding checklist.
+              IBO onboarding skips the W-9, direct-deposit, and payment-agreement steps.
+            </p>
 
             <button type="submit" className="portal-panel-btn" disabled={creating}>
               {creating ? "Creating…" : "Create & copy link"}

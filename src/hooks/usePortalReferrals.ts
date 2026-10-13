@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import type { AgentDesignation } from "@/lib/agent-designation";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   createReferralInvite,
@@ -48,6 +49,7 @@ export function usePortalReferrals() {
   const createInvite = useCallback(async (input: {
     compLevel: number;
     recipientLabel: string;
+    agentDesignation: AgentDesignation;
   }): Promise<ReferralInviteSummary> => {
     const token = session?.access_token;
     if (!token) {

@@ -55,6 +55,7 @@ const FULL_ADMIN_NAV = [
   { to: "/portal/admin/brand-assets", label: "Brand assets", icon: Palette, end: false },
   { to: "/portal/admin/carriers", label: "Carriers", icon: Building2, end: false },
   { to: "/portal/admin/state-availability", label: "State availability", icon: MapPinned, end: false },
+  { to: "/portal/admin/onboarding-steps", label: "Onboarding steps", icon: Workflow, end: false },
   { to: "/portal/admin/todos", label: "To-dos", icon: CheckSquare, end: false },
   { to: "/portal/admin/clients", label: "Clients", icon: ClipboardList, end: false },
   { to: "/portal/admin/dashboard-tabs", label: "Dashboard tabs", icon: LayoutGrid, end: false },

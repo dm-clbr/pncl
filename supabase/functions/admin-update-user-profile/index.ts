@@ -1,3 +1,5 @@
+import { validateAgentDesignation, resolveAgentDesignation } from "../_shared/agentDesignation.ts";
+import { loadAgentDesignations } from "../_shared/portalAgentDesignations.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requireAdmin } from "../_shared/adminAuth.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
@@ -86,7 +88,9 @@ serve(async (req) => {
       updates.state_licenses = Object.keys(normalized).sort();
     }
 
-    if (Object.keys(updates).length === 0) {
+    const hasDesignation = "agentDesignation" in fields;
+    const designation = hasDesignation ? validateAgentDesignation(fields.agentDesignation) : undefined;
+    if (Object.keys(updates).length === 0 && !hasDesignation) {
       return errorResponse("No editable fields provided", 400, "invalid_payload");
     }
 
@@ -133,6 +137,11 @@ serve(async (req) => {
 
     // Diff against current values so the audit trail records real changes only.
     const changes: Record<string, { from: unknown; to: unknown }> = {};
+    if (designation) {
+      const designations = await loadAgentDesignations(adminClient, [userId]);
+      const previous = resolveAgentDesignation(designations.get(userId));
+      if (previous !== designation) changes.agent_designation = { from: previous, to: designation };
+    }
     for (const [column, next] of Object.entries(updates)) {
       const previous = current[column] ?? null;
       const same = Array.isArray(next) && Array.isArray(previous)
@@ -147,12 +156,16 @@ serve(async (req) => {
       return jsonResponse({ message: "No changes to save." });
     }
 
-    const { error: upsertError } = await adminClient
-      .from("portal_profiles")
-      .upsert({ user_id: userId, ...updates }, { onConflict: "user_id" });
-
-    if (upsertError) {
-      throw new Error(upsertError.message);
+    if (Object.keys(updates).some((column) => column in changes)) {
+      const { error: upsertError } = await adminClient
+        .from("portal_profiles")
+        .upsert({ user_id: userId, ...updates }, { onConflict: "user_id" });
+      if (upsertError) throw new Error(upsertError.message);
+    }
+    if (changes.agent_designation) {
+      const { error } = await adminClient.from("portal_agent_designations")
+        .upsert({ user_id: userId, designation }, { onConflict: "user_id" });
+      if (error) throw new Error(error.message);
     }
 
     const { error: auditError } = await adminClient

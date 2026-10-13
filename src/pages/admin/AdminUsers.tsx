@@ -1,3 +1,4 @@
+import { resolveAgentDesignation } from "@/lib/agent-designation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { Download, UserPlus, Users, X } from "lucide-react";
@@ -520,6 +521,7 @@ export default function AdminUsers() {
                             {agent.name}
                           </Link>
                         )}
+                        <span className="admin-user-subtext">{resolveAgentDesignation(agent.agentDesignation).toUpperCase()}</span>
                         {agent.agentNumber !== null && (
                           <span className="admin-user-subtext">{formatAgentNumber(agent.agentNumber)}</span>
                         )}

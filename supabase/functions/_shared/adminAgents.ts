@@ -1,3 +1,5 @@
+import { filterAgentTodos, resolveAgentDesignation } from "./agentDesignation.ts";
+import { loadAgentDesignations } from "./portalAgentDesignations.ts";
 import type { SupabaseClient, User } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { getEmailDomain } from "./onboarding.ts";
 import { getUserRole, type PortalRole } from "./adminAuth.ts";
@@ -101,6 +103,7 @@ export async function computeAgentPhases(
     users.map((user) => user.id),
   );
 
+  const designations = await loadAgentDesignations(adminClient, users.map((user) => user.id));
   for (const user of users) {
     const completedMetadata = getCompletedTodosFromMetadata(
       user.user_metadata as Record<string, unknown> | undefined,
@@ -108,7 +111,7 @@ export async function computeAgentPhases(
 
     let phase: AgentPhase = "complete";
     for (const candidate of PORTAL_TODO_PHASES) {
-      const items = todosByPhase.get(candidate) ?? [];
+      const items = filterAgentTodos(todosByPhase.get(candidate) ?? [], designations.get(user.id));
       const hasIncomplete = items.some(
         (todo) => !isTodoCompleteForUser(todo, user.id, completedMetadata, autoSets),
       );
@@ -142,6 +145,7 @@ export interface AgentOnboardingDetails {
 export type { GoogleWorkspaceStatus };
 
 export interface AgentSummary {
+  agentDesignation?: "loa" | "ibo";
   id: string;
   email: string;
   name: string;
@@ -511,6 +515,7 @@ export async function buildAgentSummaries(
       : Promise.resolve(new Map<string, CarrierWritingNumber[]>()),
   ]);
   const partnerByUserId = buildPartnerLookup(partnerLinks);
+  const designations = await loadAgentDesignations(adminClient, users.map((user) => user.id));
 
   let phasesByUserId = new Map<string, AgentPhase>();
   try {
@@ -551,6 +556,7 @@ export async function buildAgentSummaries(
       compLevelEffectiveAt: compLevelEffectiveDates.get(user.id) ?? null,
       npn: profile?.npn?.trim() || onboarding?.npn?.trim() || null,
       agentNumber: profile?.agent_number ?? null,
+      agentDesignation: resolveAgentDesignation(designations.get(user.id)),
       phase: phasesByUserId.get(user.id) ?? null,
       referrerId,
       referrerName: resolveReferrerName(referrerId, usersById, onboardingMaps.byUserId),
@@ -596,11 +602,12 @@ export async function buildAgentSummaryForUser(
   const emailDomain = getEmailDomain();
   if (!user.email?.toLowerCase().endsWith(`@${emailDomain}`)) return null;
 
-  const [onboardingMaps, compLevelsByUserId, compLevelEffectiveDates, users] = await Promise.all([
+  const [onboardingMaps, compLevelsByUserId, compLevelEffectiveDates, users, designations] = await Promise.all([
     loadOnboardingMaps(adminClient),
     loadCompLevelsByUserId(adminClient),
     loadCurrentCompLevelEffectiveDates(adminClient),
     listPortalUsers(adminClient),
+    loadAgentDesignations(adminClient, [user.id]),
   ]);
 
   const usersById = new Map(users.map((entry) => [entry.id, entry]));
@@ -644,6 +651,7 @@ export async function buildAgentSummaryForUser(
     compLevelEffectiveAt: compLevelEffectiveDates.get(user.id) ?? null,
     npn: profileRow?.npn?.trim() || onboarding?.npn?.trim() || null,
     agentNumber: profileRow?.agent_number ?? null,
+    agentDesignation: resolveAgentDesignation(designations.get(user.id)),
     phase,
     referrerId,
     referrerName: resolveReferrerName(referrerId, usersById, onboardingMaps.byUserId),
