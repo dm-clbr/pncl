@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import PortalOnboardingProvider from "@/components/portal/PortalOnboardingProvider";
 import PortalDashboard from "@/pages/PortalDashboard";
 import type { PortalTodo } from "@/lib/portal-todos";
 
@@ -113,7 +114,7 @@ beforeEach(() => {
 });
 
 function renderDashboard() {
-  const view = render(<MemoryRouter><PortalDashboard /></MemoryRouter>);
+  const view = render(<MemoryRouter><PortalOnboardingProvider><PortalDashboard /></PortalOnboardingProvider></MemoryRouter>);
   return {
     ...view,
     capsule: screen.getByRole("button", { name: /steps complete.*open the checklist/ }),
@@ -130,6 +131,8 @@ describe("PortalDashboard onboarding dock", () => {
     expect(capsule).toHaveTextContent("On-Board");
     expect(capsule).toHaveTextContent("1 of 3");
     expect(capsule).toHaveTextContent("Next: Watch the welcome video");
+    expect(capsule.closest(".portal-header-actions")).toBeInTheDocument();
+    expect(document.querySelector(".pdock.is-floating")).toBeNull();
     expect(panel).not.toHaveAttribute("open");
     // The checklist mounts with the panel, not before it.
     expect(screen.queryByText("Book the state exam")).toBeNull();
@@ -158,14 +161,14 @@ describe("PortalDashboard onboarding dock", () => {
 
     // First stage done: the next stage with a pending step is current.
     todos = todos.map((item) => (item.phase === "on_board" ? { ...item, completed: true } : item));
-    rerender(<MemoryRouter><PortalDashboard /></MemoryRouter>);
+    rerender(<MemoryRouter><PortalOnboardingProvider><PortalDashboard /></PortalOnboardingProvider></MemoryRouter>);
     expect(currentStage()).toHaveTextContent("Pre-License");
     expect(capsule).toHaveTextContent("2 of 3");
     expect(capsule).toHaveTextContent("Next: Book the state exam");
 
     // Everything done: no stage is current and every stage reads as completed.
     todos = todos.map((item) => ({ ...item, completed: true }));
-    rerender(<MemoryRouter><PortalDashboard /></MemoryRouter>);
+    rerender(<MemoryRouter><PortalOnboardingProvider><PortalDashboard /></PortalOnboardingProvider></MemoryRouter>);
     expect(currentStage()).toBeNull();
     expect(within(stages()).getAllByRole("listitem").map((li) => li.className)).toEqual(
       Array(5).fill("portal-step is-done"),

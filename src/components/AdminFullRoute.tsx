@@ -1,7 +1,7 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdminAssist, isGenesisAdmin } from "@/lib/roles";
-import OnboardingLayout from "@/components/OnboardingLayout";
+import PortalLoading from "@/components/portal/PortalLoading";
 
 export default function AdminFullRoute({
   children,
@@ -13,11 +13,7 @@ export default function AdminFullRoute({
   const { user, loading } = useAuth();
 
   if (loading) {
-    return (
-      <OnboardingLayout>
-        <div className="onboarding-spinner" aria-label="Loading" />
-      </OnboardingLayout>
-    );
+    return <PortalLoading />;
   }
 
   if (isGenesisAdmin(user)) {

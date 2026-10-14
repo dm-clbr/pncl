@@ -1,0 +1,88 @@
+[
+  {
+    "floatingCount": 0,
+    "headerHeight": 75,
+    "overflow": false,
+    "pill": {
+      "height": 66,
+      "right": 1026.921875,
+      "x": 686.921875,
+      "y": 26.5
+    },
+    "pillInHeader": true,
+    "profileX": 1046.921875,
+    "viewport": [
+      1280,
+      720
+    ]
+  },
+  {
+    "headerHeight": 75,
+    "height": 1077,
+    "overflow": false,
+    "pillHeight": 66,
+    "pillRight": 1013.421875,
+    "profileLeft": 1033.421875,
+    "width": 1253
+  },
+  {
+    "headerHeight": 75,
+    "height": 1024,
+    "overflow": false,
+    "pillHeight": 46,
+    "pillRight": 577.8828125,
+    "profileLeft": 589.8828125,
+    "width": 768
+  },
+  {
+    "headerHeight": 75,
+    "height": 844,
+    "overflow": false,
+    "pillHeight": 46,
+    "pillRight": 435.296875,
+    "profileLeft": 447.296875,
+    "width": 621
+  },
+  {
+    "headerHeight": 56,
+    "height": 844,
+    "overflow": false,
+    "pillHeight": 46,
+    "pillRight": 545.40625,
+    "profileLeft": 557.40625,
+    "width": 620
+  },
+  {
+    "headerHeight": 56,
+    "height": 844,
+    "overflow": false,
+    "pillHeight": 46,
+    "pillRight": 320,
+    "profileLeft": 332,
+    "width": 390
+  },
+  {
+    "headerHeight": 56,
+    "height": 740,
+    "overflow": false,
+    "pillHeight": 46,
+    "pillRight": 250,
+    "profileLeft": 262,
+    "width": 320
+  },
+  {
+    "headerHeight": 56,
+    "path": "/portal/calendar",
+    "width": 390
+  },
+  {
+    "headerHeight": 56,
+    "path": "/portal/state-map",
+    "width": 390
+  },
+  {
+    "headerHeight": 56,
+    "path": "/portal",
+    "width": 390
+  }
+]

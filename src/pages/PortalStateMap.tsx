@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import PortalOnboardingAction from "@/components/portal/PortalOnboardingAction";
 import StateMapView from "@/components/portal/StateMapView";
 import type { StateMapFilter } from "@/components/portal/state-map-filter";
 import { useAuth } from "@/contexts/AuthContext";
@@ -97,6 +98,7 @@ export default function PortalStateMap() {
 
   return (
     <StateMapView
+      headerAction={<PortalOnboardingAction />}
       agent={{ name: displayName, email: user?.email, initials, photoUrl }}
       states={displayStates}
       licensed={licensedStates}

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Camera, FileText, LogOut, Shield } from "lucide-react";
+import { BadgeCheck, Camera, FileText, KeyRound, LogOut, Shield, UserRound, UsersRound, type LucideIcon } from "lucide-react";
 import ProfilePhotoCropModal from "@/components/ProfilePhotoCropModal";
 import BottomNav from "@/components/portal/BottomNav";
-import OnboardingDock from "@/components/portal/OnboardingDock";
-import PortalOnboardingChecklist from "@/components/PortalOnboardingChecklist";
+import PortalOnboardingAction from "@/components/portal/PortalOnboardingAction";
+import { useRequiredPortalOnboarding } from "@/contexts/PortalOnboardingContext";
 import Chip from "@/components/portal/Chip";
 import EmptyState from "@/components/portal/EmptyState";
 import Field from "@/components/portal/Field";
@@ -49,14 +49,8 @@ import {
   fetchPortalCompAttachments,
   type PortalCompAttachment,
 } from "@/lib/portal-comp-attachments";
-import { usePortalDirectDeposit } from "@/hooks/usePortalDirectDeposit";
-import { usePortalW9 } from "@/hooks/usePortalW9";
-import { usePortalIca } from "@/hooks/usePortalIca";
-import { usePortalTodos } from "@/hooks/usePortalTodos";
 import {
-  completePortalTodo,
   derivePortalPhase,
-  isTodoCompleted,
   PORTAL_PHASE_LABELS,
 } from "@/lib/portal-todos";
 import { trackPageView } from "@/lib/analytics";
@@ -67,17 +61,17 @@ import "@/styles/portal-profile.css";
 
 type ProfileTab = "details" | "team" | "licensing" | "documents" | "carriers";
 
-const PROFILE_TABS: { id: ProfileTab; label: string }[] = [
-  { id: "details", label: "Profile details" },
-  { id: "team", label: "Team" },
-  { id: "licensing", label: "Licensing" },
-  { id: "documents", label: "Documents" },
-  { id: "carriers", label: "Carrier logins" },
+const PROFILE_TABS: { id: ProfileTab; label: string; icon: LucideIcon }[] = [
+  { id: "details", label: "Profile details", icon: UserRound },
+  { id: "team", label: "Team", icon: UsersRound },
+  { id: "licensing", label: "Licensing", icon: BadgeCheck },
+  { id: "documents", label: "Documents", icon: FileText },
+  { id: "carriers", label: "Carrier logins", icon: KeyRound },
 ];
 
-const TAB_ITEMS = PROFILE_TABS.map((tab) => ({
+const TAB_ITEMS = PROFILE_TABS.map(({ icon: Icon, ...tab }) => ({
   value: tab.id,
-  label: tab.label,
+  label: <><Icon size={17} aria-hidden="true" /><span>{tab.label}</span></>,
   id: `profile-tab-${tab.id}`,
   controls: `profile-panel-${tab.id}`,
 }));
@@ -157,10 +151,11 @@ export default function PortalProfile() {
   const tabFromUrl = PROFILE_TABS.some((tab) => tab.id === initialTab)
     ? (initialTab as ProfileTab)
     : "details";
-  const { w9, submitted: w9Submitted, loading: w9Loading } = usePortalW9();
-  const { directDeposit, submitted: directDepositSubmitted, loading: directDepositLoading } = usePortalDirectDeposit();
-  const { ica, submitted: icaSubmitted, loading: icaLoading } = usePortalIca();
-  const { todos, loading: todosLoading } = usePortalTodos();
+  const onboarding = useRequiredPortalOnboarding();
+  const { w9: { w9, submitted: w9Submitted, loading: w9Loading },
+    directDeposit: { directDeposit, submitted: directDepositSubmitted, loading: directDepositLoading },
+    ica: { ica, submitted: icaSubmitted, loading: icaLoading },
+    todos: resolvedTodos, loading: todosLoading } = onboarding;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -466,31 +461,9 @@ export default function PortalProfile() {
     setProcessedPhoto(file, previewUrl);
   };
 
-  const resolvedTodos = useMemo(
-    () =>
-      todos.map((todo) => ({
-        ...todo,
-        completed: isTodoCompleted(user, todo, { icaSubmitted, w9Submitted, directDepositSubmitted }),
-      })),
-    [todos, user, icaSubmitted, w9Submitted, directDepositSubmitted],
-  );
   const todoTotal = resolvedTodos.length;
   const currentPhase = derivePortalPhase(resolvedTodos);
 
-  // The dashboard's checklist handler, so a step checked off here is the same
-  // call with the same messages.
-  const [completingTodoId, setCompletingTodoId] = useState<string | null>(null);
-  const handleCompleteTodo = async (todoId: string) => {
-    setCompletingTodoId(todoId);
-    try {
-      await completePortalTodo(todoId, resolvedTodos);
-      toast.success("To-do marked complete.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Unable to update to-do.");
-    } finally {
-      setCompletingTodoId(null);
-    }
-  };
   const [resolvedCounty, setResolvedCounty] = useState<string | null>(null);
 
   useEffect(() => {
@@ -519,6 +492,7 @@ export default function PortalProfile() {
       }
       setPhotoPreviewUrl(null);
       toast.success("Profile saved.");
+      void onboarding.reloadTodos();
 
       if (session?.access_token) {
         setSyncingRecoveryEmail(true);
@@ -586,7 +560,7 @@ export default function PortalProfile() {
             email={agentEmail}
             initials={initials}
             photoUrl={displayPhotoUrl}
-            stage={!todosLoading && todoTotal > 0 ? PORTAL_PHASE_LABELS[currentPhase] : undefined}
+            action={<PortalOnboardingAction />}
           />
 
           <PortalSubpageHeader
@@ -594,17 +568,6 @@ export default function PortalProfile() {
             aside={agentNumber ? <Chip>Agent ID {agentNumber}</Chip> : undefined}
           />
 
-          {!todosLoading && todoTotal > 0 && (
-            <OnboardingDock todos={resolvedTodos}>
-              <PortalOnboardingChecklist
-                todos={resolvedTodos}
-                agentEmail={agentEmail}
-                completingTodoId={completingTodoId}
-                onComplete={(id) => void handleCompleteTodo(id)}
-                previewUnlocked={showAdminLink}
-              />
-            </OnboardingDock>
-          )}
 
           <Segmented
             items={TAB_ITEMS}
@@ -915,7 +878,10 @@ export default function PortalProfile() {
               profile={profileRow}
               loading={loading}
               names={{ firstName: form.firstName, lastName: form.lastName }}
-              onSaved={setProfileRow}
+              onSaved={(profile) => {
+                setProfileRow(profile);
+                void onboarding.reloadTodos();
+              }}
             />
           </div>
 
@@ -1000,11 +966,10 @@ export default function PortalProfile() {
                         <ListRow
                           href={signedCompAttachment.documentUrl ?? "/portal/comp-agreement"}
                           label={signedCompAttachment.title}
-                          secondary={`Signed${compSignedDate ? ` on ${compSignedDate}` : ""}${
-                            signedCompAttachment.signatureName
+                          secondary={`Signed${compSignedDate ? ` on ${compSignedDate}` : ""}${signedCompAttachment.signatureName
                               ? ` by ${signedCompAttachment.signatureName}`
                               : ""
-                          }.`}
+                            }.`}
                           trailing={
                             signedCompAttachment.documentUrl ? (
                               <Chip variant="pdf">PDF</Chip>

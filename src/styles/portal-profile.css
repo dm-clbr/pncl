@@ -8,10 +8,53 @@
 /* The save bar is sticky, and .home2-page carries overflow-x: hidden, which
    computes overflow-y to auto and makes it a scrollport that never scrolls,
    so a sticky descendant never sticks. clip gives the same horizontal
-   containment without the scroll container (ruling R26, portal-shell.css
-   carries the same fix for the sub-page header). */
+   containment without the scroll container (portal-shell.css carries the same
+   fix for other sub-pages). */
 .home2-page:has(.portal-profile-savebar) {
   overflow-x: clip;
+}
+
+/* Profile section tabs match the primary portal navigation. The title/back
+   link divider is shared by all sub-pages in portal-shell.css. */
+.home2-page .portal-profile-dash .portal-segmented {
+  gap: 0;
+  padding: 0;
+  margin-bottom: var(--portal-gap);
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.home2-page .portal-profile-dash .portal-segment {
+  justify-content: flex-start;
+  gap: 8px;
+  min-height: 44px;
+  padding: 10px 18px 10px 0;
+  margin-right: 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: var(--ff-mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.home2-page .portal-profile-dash .portal-segment svg {
+  flex-shrink: 0;
+}
+
+.home2-page .portal-profile-dash .portal-segment:hover {
+  border-bottom-color: rgba(255, 255, 255, 0.2);
+  color: var(--portal-text-strong);
+}
+
+.home2-page .portal-profile-dash .portal-segment[data-active="true"] {
+  border-bottom-color: var(--portal-accent);
+  color: var(--portal-accent);
 }
 
 /* Single column always, on a measure a form can be read at. The wrap runs to

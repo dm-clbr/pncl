@@ -1,0 +1,75 @@
+{
+  "desktop": [
+    {
+      "dock": "On-Board1 of 2 steps completeNext: Complete your W-9, open the checklist50%",
+      "headerHeight": 75,
+      "headerY": 21.995737075805664,
+      "navY": 116.99573516845705,
+      "path": "/portal",
+      "stageInHeader": false,
+      "width": 1253
+    },
+    {
+      "headerHeight": 75,
+      "headerY": 21.995737075805664,
+      "navY": 116.99573516845705,
+      "path": "/portal/calendar",
+      "stageInHeader": false,
+      "width": 1253
+    },
+    {
+      "headerHeight": 75,
+      "headerY": 21.995737075805664,
+      "navY": 116.99573516845705,
+      "path": "/portal/state-map",
+      "stageInHeader": false,
+      "width": 1253
+    },
+    {
+      "dock": "On-Board1 of 2 steps completeNext: Complete your W-9, open the checklist50%",
+      "headerHeight": 75,
+      "headerY": 21.995737075805664,
+      "navY": 116.99573516845705,
+      "path": "/portal",
+      "stageInHeader": false,
+      "width": 1253
+    }
+  ],
+  "mobile": [
+    {
+      "headerHeight": 56,
+      "headerY": 16,
+      "path": "/portal",
+      "stageInHeader": false,
+      "width": 390
+    },
+    {
+      "headerHeight": 56,
+      "headerY": 16,
+      "path": "/portal/calendar",
+      "stageInHeader": false,
+      "width": 390
+    },
+    {
+      "headerHeight": 56,
+      "headerY": 16,
+      "path": "/portal/state-map",
+      "stageInHeader": false,
+      "width": 390
+    },
+    {
+      "headerHeight": 56,
+      "headerY": 16,
+      "path": "/portal/profile",
+      "stageInHeader": false,
+      "width": 390
+    },
+    {
+      "headerHeight": 56,
+      "headerY": 16,
+      "path": "/portal",
+      "stageInHeader": false,
+      "width": 390
+    }
+  ]
+}

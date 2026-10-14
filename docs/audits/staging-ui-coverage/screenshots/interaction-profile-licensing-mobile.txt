@@ -1,0 +1,137 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - link "PNCL home":
+    - /url: /
+  - paragraph: Employee Portal
+  - link "Jordan Example, view profile":
+    - /url: /portal/profile
+    - generic: JE
+  - link "Back to portal":
+    - /url: /portal
+    - generic: Back to portal
+  - heading "My profile" [level=1]
+  - generic: Agent ID PNCL-00042
+  - 'button "On-Board ·1 of 2 steps complete Next: Complete your W-9 , open the checklist"':
+    - text: On-Board
+    - text: ·1 of 2
+    - generic: steps complete
+    - generic: "Next: Complete your W-9"
+    - generic: ", open the checklist"
+    - generic: 50%
+  - tablist "Profile sections":
+    - tab "Profile details"
+    - tab "Team"
+    - tab "Licensing" [active] [selected]
+    - tab "Documents"
+    - tab "Carrier logins"
+  - tabpanel "Licensing":
+    - paragraph: Record your NPN, E&O policy number, and state licenses as you earn them. Each one clears a step on your onboarding checklist.
+    - region "Licensing numbers":
+      - heading "Licensing numbers" [level=2]
+      - generic: NPN (National Producer Number)
+      - textbox "NPN (National Producer Number)":
+        - /placeholder: Your NPN
+        - text: "12345678"
+      - generic: E&O policy number
+      - textbox "E&O policy number":
+        - /placeholder: Errors and omissions policy number
+    - region "Uploads":
+      - heading "Uploads" [level=2]
+      - paragraph: PNCL needs your E&O certificate to start contracting, and a clear image of your driver's license for carrier paperwork.
+      - strong: E&O certificate
+      - generic: Drop a file here or tap to browse. PDF or image, up to 5 MB.
+      - button "E&O certificate Drop a file here or tap to browse. PDF or image, up to 5 MB."
+      - strong: Driver's license
+      - generic: Drop a file here or tap to browse. JPG, PNG or WebP, up to 5 MB.
+      - button "Driver's license Drop a file here or tap to browse. JPG, PNG or WebP, up to 5 MB."
+    - region "State licenses":
+      - heading "State licenses" [level=2]
+      - generic: 1 on file
+      - generic: State
+      - combobox "State":
+        - option "Choose a state" [selected]
+        - option "Alabama (AL)"
+        - option "Alaska (AK)"
+        - option "Arizona (AZ)"
+        - option "Arkansas (AR)"
+        - option "California (CA)"
+        - option "Colorado (CO) — already added"
+        - option "Connecticut (CT)"
+        - option "Delaware (DE)"
+        - option "District of Columbia (DC)"
+        - option "Florida (FL)"
+        - option "Georgia (GA)"
+        - option "Hawaii (HI)"
+        - option "Idaho (ID)"
+        - option "Illinois (IL)"
+        - option "Indiana (IN)"
+        - option "Iowa (IA)"
+        - option "Kansas (KS)"
+        - option "Kentucky (KY)"
+        - option "Louisiana (LA)"
+        - option "Maine (ME)"
+        - option "Maryland (MD)"
+        - option "Massachusetts (MA)"
+        - option "Michigan (MI)"
+        - option "Minnesota (MN)"
+        - option "Mississippi (MS)"
+        - option "Missouri (MO)"
+        - option "Montana (MT)"
+        - option "Nebraska (NE)"
+        - option "Nevada (NV)"
+        - option "New Hampshire (NH)"
+        - option "New Jersey (NJ)"
+        - option "New Mexico (NM)"
+        - option "New York (NY)"
+        - option "North Carolina (NC)"
+        - option "North Dakota (ND)"
+        - option "Ohio (OH)"
+        - option "Oklahoma (OK)"
+        - option "Oregon (OR)"
+        - option "Pennsylvania (PA)"
+        - option "Rhode Island (RI)"
+        - option "South Carolina (SC)"
+        - option "South Dakota (SD)"
+        - option "Tennessee (TN)"
+        - option "Texas (TX)"
+        - option "Utah (UT)"
+        - option "Vermont (VT)"
+        - option "Virginia (VA)"
+        - option "Washington (WA)"
+        - option "West Virginia (WV)"
+        - option "Wisconsin (WI)"
+        - option "Wyoming (WY)"
+      - generic: License number
+      - textbox "License number"
+      - button "Add license" [disabled]
+      - list:
+        - generic: "CO: CO-TEST-42"
+        - button "Remove CO license":
+      - paragraph: Add each state you are licensed in, with its license number. Include your resident state. Pick a state already on file to update its number, then save.
+    - button "Save licensing details"
+  - link "Admin console":
+    - /url: /portal/admin
+    - generic: Admin console
+  - button "Sign out":
+    - text: Sign out
+  - link "Facebook":
+    - /url: https://www.facebook.com/profile.php?id=61588062292202
+  - link "Instagram":
+    - /url: https://www.instagram.com/thepncl_/
+  - link "LinkedIn":
+    - /url: https://www.linkedin.com/company/the-pncl/?viewAsMember=true
+- navigation "Portal sections":
+  - link "Dashboard":
+    - /url: /portal
+    - generic: Dashboard
+  - link "Calendar":
+    - /url: /portal/calendar
+    - generic: Calendar
+  - link "State Map":
+    - /url: /portal/state-map
+    - generic: State Map
+  - link "Profile":
+    - /url: /portal/profile
+    - generic: Profile

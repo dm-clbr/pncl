@@ -1,0 +1,62 @@
+
+/Users/vel/.codex/worktrees/d2c1/PNCL/src/components/PortalBentoStage.tsx
+  65:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/vel/.codex/worktrees/d2c1/PNCL/src/components/PortalGradientTuner.tsx
+  161:10  warning  Fast refresh only works when a file only exports components. Move your component(s) to a separate file  react-refresh/only-export-components
+
+/Users/vel/.codex/worktrees/d2c1/PNCL/src/components/StateAvailabilityCanvas.tsx
+   53:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+   89:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  105:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  109:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  120:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/vel/.codex/worktrees/d2c1/PNCL/src/components/admin/DashboardSectionLinks.tsx
+  131:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  139:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  187:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/vel/.codex/worktrees/d2c1/PNCL/src/components/admin/DashboardSortableTab.tsx
+  145:35  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  147:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/vel/.codex/worktrees/d2c1/PNCL/src/components/portal/Segmented.tsx
+  34:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  48:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/vel/.codex/worktrees/d2c1/PNCL/src/components/portal/SnapSheet.tsx
+  24:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  40:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  49:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  67:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/vel/.codex/worktrees/d2c1/PNCL/src/components/portal/StateDetail.tsx
+  11:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  20:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/vel/.codex/worktrees/d2c1/PNCL/src/components/portal/StateMapSvg.tsx
+  237:5  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+  274:5  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+  584:5  warning  Unused eslint-disable directive (no problems were reported from 'react-hooks/exhaustive-deps')
+
+/Users/vel/.codex/worktrees/d2c1/PNCL/src/components/ui/liquid-gradient.tsx
+  60:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  82:14  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/vel/.codex/worktrees/d2c1/PNCL/src/components/ui/sonner.tsx
+  34:19  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/vel/.codex/worktrees/d2c1/PNCL/src/contexts/AuthContext.tsx
+  144:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  152:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+  156:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/Users/vel/.codex/worktrees/d2c1/PNCL/src/lib/analytics.ts
+  55:75  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/vel/.codex/worktrees/d2c1/PNCL/tailwind.config.ts
+  122:13  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+✖ 31 problems (2 errors, 29 warnings)
+  0 errors and 3 warnings potentially fixable with the `--fix` option.

@@ -1,3 +1,4 @@
+import "@/styles/portal-overlays.css";
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { AlertTriangle, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";

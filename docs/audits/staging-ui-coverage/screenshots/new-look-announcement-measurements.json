@@ -1,0 +1,27 @@
+[
+  {
+    "dialog": {
+      "height": 489.694580078125,
+      "width": 520,
+      "x": 366.8181762695313,
+      "y": 293.7890625
+    },
+    "focused": "Meet your refreshed portal",
+    "height": 1077,
+    "open": true,
+    "overflow": false,
+    "width": 1253
+  },
+  {
+    "dialog": {
+      "height": 543.8778076171875,
+      "width": 322.5426025390625,
+      "x": 16.001419067382812,
+      "y": 111.69744110107422
+    },
+    "height": 767,
+    "open": true,
+    "overflow": false,
+    "width": 354
+  }
+]

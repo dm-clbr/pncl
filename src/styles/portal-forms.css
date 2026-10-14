@@ -56,6 +56,9 @@
 
 .pforms-doc .ica-fillable-pdf-host {
   min-height: 320px;
+  /* PDF.js gives each annotation its own increasing z-index. Keep those
+     fields inside the document so they cannot cover the sticky pager. */
+  isolation: isolate;
 }
 
 .pforms-doc-status {
@@ -493,4 +496,35 @@
   .pforms-pager-actions > * {
     flex: 1;
   }
+}
+
+/* Signing headings need their own fill over the animated portal backdrop. */
+.home2-page .pforms-intro {
+  padding: 16px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+}
+.home2-page .pforms-intro .eyebrow {
+  margin-bottom: 8px;
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-label);
+  color: var(--portal-text-faint);
+}
+.home2-page .pforms-intro .h3 {
+  margin-bottom: 8px;
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-large);
+  font-style: normal;
+  font-weight: 600;
+  text-transform: none;
+  color: var(--portal-text-strong);
+}
+.home2-page .pforms-intro .lead {
+  margin: 0;
+  font-size: var(--portal-t-body);
+  line-height: 1.6;
+  color: var(--portal-text);
 }

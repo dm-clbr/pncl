@@ -1,0 +1,8 @@
+Browser tab: 2, Title: "Employee Portal — PNCL", URL: "http://localhost:8080/portal".
+The following is a diff from the previous accessibility tree with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 33-36
++			39 container Example training video
++				40 AXWebArea 404, URL: iframe.mediadelivery.net/embed/1/local-ui-audit
++					41 heading 404, Value: 1
++						42 text 404
+The focused UI element is 26 button Watch example video

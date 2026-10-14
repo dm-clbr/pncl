@@ -95,9 +95,11 @@ export default function W9SigningStep({
 
   return (
     <div className={`onboarding-step onboarding-contract-step ica-flow ica-flow-fillable pforms ${className}`.trim()}>
-      <span className="eyebrow">{eyebrow}</span>
-      <h2 className="h3">{title}</h2>
-      <p className="lead">{lead}</p>
+      <div className="pforms-intro">
+        <span className="eyebrow">{eyebrow}</span>
+        <h2 className="h3">{title}</h2>
+        <p className="lead">{lead}</p>
+      </div>
 
       <W9FillablePdfViewer
         ref={viewerRef}

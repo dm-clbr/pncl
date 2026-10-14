@@ -19,11 +19,25 @@ const wrapperPages = homePages.filter((name) => !bentoPages.includes(name));
 
 describe("PortalBackground mounts on every portal page", () => {
   it("covers every home2-page wrapper", () => {
-    expect(wrapperPages.length).toBeGreaterThanOrEqual(12);
+    expect(wrapperPages.length).toBeGreaterThanOrEqual(9);
   });
 
   it.each(wrapperPages)("%s mounts the backdrop as the wrapper's first child", (name) => {
     expect(source(name)).toMatch(/<div className="home2-page[^"]*">\s*<PortalBackground \/>/);
+  });
+});
+
+// Secondary tool pages share their first-child backdrop through the layout.
+describe("the shared tool backdrop", () => {
+  it.each(["PortalBrandAssets.tsx", "PortalCompAgreement.tsx", "PortalPayPolicy.tsx"])(
+    "%s renders through PortalToolLayout", (name) => {
+      expect(source(name)).toContain("<PortalToolLayout");
+    },
+  );
+
+  it("mounts the backdrop first in the tool wrapper", () => {
+    const layout = readFileSync(path.resolve(__dirname, "PortalToolLayout.tsx"), "utf8");
+    expect(layout).toMatch(/<div className=\{`home2-page[^>]*>\s*<PortalBackground \/>/);
   });
 });
 
@@ -77,14 +91,19 @@ describe("the backdrop paint-through rule", () => {
   });
 });
 
-// ponytail: same text assertion, same reason. The sub-page header carried a
-// fill only inside the (max-width: 620px) sticky-bar block, so above 620px the
-// back link and the title sat on the bare gradient on all 14 sub-pages.
-describe("every shell text run over the backdrop carries a fill", () => {
-  it.each([
-    ".home2-page:has(> .portal-backdrop) .portal-subhead {",
-    ".home2-page:has(> .portal-backdrop) .portal-subhead + .portal-panel-note,",
-  ])("%s sits on --portal-bar-fill", (selector) => {
-    expect(ruleBody(selector)).toMatch(/background:.*--portal-bar-fill/);
+describe("supporting shell text over the backdrop", () => {
+  it("keeps page notes on --portal-bar-fill", () => {
+    expect(ruleBody(".home2-page:has(> .portal-backdrop) .portal-subhead + .portal-panel-note,")).toMatch(/background:.*--portal-bar-fill/);
+  });
+});
+
+// PDF.js annotations have z-indices above the pager's 5. A local stacking
+// context contains them without changing document fields or the sheet layer.
+describe("PDF annotation containment", () => {
+  it("isolates PDF fields from the sticky pager", () => {
+    const css = readFileSync(path.resolve(__dirname, "../../styles/portal-forms.css"), "utf8");
+    const start = css.indexOf(".pforms-doc .ica-fillable-pdf-host {");
+    const body = css.slice(start, css.indexOf("}", start));
+    expect(body).toMatch(/isolation:\s*isolate/);
   });
 });

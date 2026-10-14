@@ -35,6 +35,8 @@ type OnboardingDockProps = {
   /** A capsule floating over the page (the dashboard) or a card in the page's
       own flow (the profile). The panel is the same either way. */
   floating?: boolean;
+  /** Compact header action; the panel still opens in the native top layer. */
+  header?: boolean;
 };
 
 type Box = Pick<DOMRect, "top" | "right" | "bottom" | "left"> & { radius: number };
@@ -86,8 +88,10 @@ function Ring({ percent, label }: { percent: number; label: ReactNode }) {
 
     Floating, the capsule sits above the tab bar on a phone and at the bottom
     right from 621px, and folds to the ring alone while the page scrolls down.
-    Mount it outside PortalBentoStage and outside <main>, beside BottomNav. */
-export default function OnboardingDock({ todos, children, floating = false }: OnboardingDockProps) {
+    Mount a floating dock outside PortalBentoStage and <main>, beside BottomNav.
+    The dashboard uses the header variant inside PortalHeader instead; its
+    capsule stays within the masthead row and the dialog uses the top layer. */
+export default function OnboardingDock({ todos, children, floating = false, header = false }: OnboardingDockProps) {
   const capsuleRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -263,12 +267,13 @@ export default function OnboardingDock({ todos, children, floating = false }: On
   const line = allDone ? "You're sales ready" : next ? `Next: ${next.title}` : "Keep going";
 
   return (
-    <div className={`pdock${floating ? " is-floating" : ""}`}>
+    <div className={`pdock${floating ? " is-floating" : ""}${header ? " is-header" : ""}`}>
       <button
         ref={capsuleRef}
         type="button"
         className="pdock-capsule"
         data-compact={compact || undefined}
+        data-pending={!allDone || undefined}
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-controls={panelId}

@@ -53,7 +53,7 @@ Measured with the workspace's contrast.mjs: the shipped pncl preset's brightest 
 |---|---|---|
 | Sheet | `src/components/portal/Sheet.tsx` | Native `<dialog>` via showModal(). Bottom sheet to 620px (85vh, drag-handle affordance, safe-area padding), 420px right panel from 621px. Closes on Esc, backdrop and a 44px Close. Focus lands on the title. Mount outside PortalBentoStage. |
 | SnapSheet | `src/components/portal/SnapSheet.tsx` | Persistent, non-modal bottom sheet with snap points: a labelled `<section>`, never a dialog, that traps and locks nothing. The caller places it (fixed, `top` setting its full height, `bottom` above the tab bar) and mounts it outside `<main>` beside BottomNav. It renders at full height and moves by `translateY` only: no transition while a finger drives it (`data-dragging`), a WAAPI settle on release at 420ms on `--portal-ease-out`, shortened toward 240ms for a hard fling; never an animated height. `resolveSnap` is pure: velocity over the last 80ms, past 0.5px/ms one snap in the direction of travel, else the nearest; `rubberBand` follows the finger at 0.35 past either end. Drags start on the grabber or anything marked `[data-sheet-handle]`; inside `[data-sheet-scroll]` a downward drag that starts with the list at the top becomes a sheet drag (touch events, since a started pan cancels pointer events) and anything else scrolls the list, which takes `overscroll-behavior: contain`. The grabber is a 44px button with `aria-expanded` that cycles collapsed and full, the non-dragging path (WCAG 2.5.7). Solid `--portal-bar-fill` with the sheen, 16px top radius, 1px top border. Instant under reduced motion. First caller: the state map. |
-| OnboardingDock | `src/components/portal/OnboardingDock.tsx` | Onboarding, one tap away. A capsule (ring with the percentage, stage and count, "Next:" and the step) that grows into a native `<dialog>` panel through a clip-path morph from the capsule's own box and corners (560ms open, 420ms close on `--portal-ease-out`, content fading in after 140ms); the panel holds a ring head, the stage Stepper and the checklist, which mounts only while it is open. `floating` pins the capsule above the tab bar on a phone and at the bottom right from 621px, folding it to the ring while the page scrolls down; without it the capsule is a pane-shaped card in the page flow (the profile). Panel: the whole screen under the status bar on a phone with a 28px swipe-down grabber, a 460px right-anchored panel from 621px. Esc, the backdrop and a control-sized Close run the same morph back. Styles in `portal-onboarding.css`; instant under reduced motion. Replaced the progress strip, the sticky checklist rail and the checklist sheet. |
+| OnboardingDock | `src/components/portal/OnboardingDock.tsx` | Onboarding, one tap away. A capsule (ring with the percentage, stage and count, "Next:" and the step) that grows into a native `<dialog>` panel through a clip-path morph from the capsule's own box and corners (560ms open, 420ms close on `--portal-ease-out`, content fading in after 140ms); the panel holds a ring head, the stage Stepper and the checklist, which mounts only while it is open. Dashboard, Calendar, State Map and Profile use `header` to place the capsule immediately left of the profile, with its ring-only form at 900px and below; it fits the existing 75px desktop / 56px mobile masthead. `floating` remains available to pin a capsule above the tab bar on a phone and at the bottom right from 621px, folding it to the ring while the page scrolls down; without it the capsule is available as a pane-shaped card in the page flow. Panel: the whole screen under the status bar on a phone with a 28px swipe-down grabber, a 460px right-anchored panel from 621px. Esc, the backdrop and a control-sized Close run the same morph back. Styles in `portal-onboarding.css`; instant under reduced motion. Replaced the progress strip, the sticky checklist rail and the checklist sheet. |
 | Stepper | `src/components/portal/Stepper.tsx` | `<ol>` of 5 steps, done / current / todo, `aria-current="step"`, tabular numerals. Static by default; pass `onSelect` for 44px buttons. `done` takes the 1-based numbers that are complete, for a list whose steps can be finished out of order: training's seven modules each carry their own acknowledgment, so "everything before `current`" would claim completions the agent never made. Without it the old rule stands and every step before `current` reads as done. The label is the caller's to fit: training hides it at 620px and below and leans on the badges, because seven titles cannot read at 10px in a 40px column. |
 | Sheet | `src/components/portal/Sheet.tsx` | Native `<dialog>` via showModal(). Bottom sheet to 620px (85vh, drag-handle affordance, safe-area padding), 420px right panel from 621px. Closes on Esc, backdrop, a 44px Close and a swipe down over the drag handle (past 56px; the live offset is skipped under `prefers-reduced-motion`). Focus lands on the title. Mount outside PortalBentoStage. `size="half"` holds the bottom sheet to 40dvh, leaving the surface it explains the other 60%; the default `full` keeps 85vh, and from 621px the side panel ignores both. |
 | Stepper | `src/components/portal/Stepper.tsx` | `<ol>` of 5 steps, done / current / todo, `aria-current="step"`, tabular numerals. Static by default; pass `onSelect` for 44px buttons. |
@@ -150,7 +150,7 @@ The portal carries one backdrop, one header, one nav and one sub-page header. 62
 | Surface | File | Above 620px | 620px and below |
 |---|---|---|---|
 | Backdrop | `src/components/portal/PortalBackground.tsx` | The dashboard's frame, reproduced: the same base, page-tall canvas, blur and `--portal-vignette`, plus the dashboard's 22px top padding, 1180px measure and gutter, so no page reads differently from it. Absolute over the page wrapper and clipped by its own layer, like the dashboard's. The liquid gradient behind every pane: `LIQUID_GRADIENT_PRESETS.pncl` at 30fps and dpr 1, `blur(32px)` and `scale(1.16)`. | Same layer at 20fps and dpr 0.5, `blur(16px)`. The pointer type is read once in a `useState` initializer, because it does not change while the page is open. |
-| Header | `src/components/portal/PortalHeader.tsx` | No container. Logo, "Employee Portal", stage badge, and the identity beside a 40px avatar, all on the backdrop at 0.80 or stronger over the vignette's top band (5.21:1 at the preset's brightest stop) | 56px bar: logo left, avatar right. The title stays in the DOM for assistive tech, the stage moves to the progress strip under it, the name and the email to the profile page. Props only, no hooks. `subpage` renders the title as a `<p>` instead of the `<h1>`, for a page that also carries PortalSubpageHeader: that header holds the page's h1, and two h1s on one page leave assistive tech with no single page title. |
+| Header | `src/components/portal/PortalHeader.tsx` | No container. Logo, "Employee Portal", and the identity beside a 40px avatar, all on the backdrop at 0.80 or stronger over the vignette's top band (5.21:1 at the preset's brightest stop) | 56px bar: logo left, avatar right. The title stays in the DOM for assistive tech, the name and the email move to the profile page. Onboarding stage belongs in OnboardingDock at every width, so the header height stays consistent between tabs. Props only, no hooks. `subpage` renders the title as a `<p>` instead of the `<h1>`, for a page that also carries PortalSubpageHeader: that header holds the page's h1, and two h1s on one page leave assistive tech with no single page title. |
 | Primary nav | `src/components/PortalPrimaryNav.tsx` | Dashboard, Calendar, State Map text links | Hidden. |
 | Bottom nav | `src/components/portal/BottomNav.tsx` | Hidden. | A frosted pill floating `--portal-nav-gap` above the safe area, 16px from each edge, 440px at most: Dashboard, Calendar, State Map, Profile. 64px, a 22px icon over a 12px/600 label, a thumb that slides to the active tab on transform (420ms), active white 0.95 and `aria-current="page"`, rest white 0.74 (5.54:1 through the 0.7 fill at the brightest stop). Its own `backdrop-filter`, 18px: a single-instance surface. |
 | Sub-page header | `src/components/portal/PortalSubpageHeader.tsx` | Breadcrumb back link over the title, `aside` slot right | 44px sticky bar: back chevron, title, aside. The back label stays in the DOM, hidden visually. |
@@ -200,3 +200,51 @@ The five routes an agent reaches without a session (login, set password, confirm
 - Blur as separation. It never counts toward contrast; put a fill behind text.
 - Colour as hierarchy. Change the weight or the size before the alpha.
 - Dropping the focus ring.
+
+## Secondary tools and workflow overlays
+
+`PortalToolLayout` composes the shared `PortalBackground`, `PortalHeader`,
+`PortalSubpageHeader` and `BottomNav` for Brand Assets, Compensation Agreement,
+and Pay & Commissions. Keep its page title as the sole heading of level one in
+page chrome; document viewers may expose headings inside the document itself.
+`PortalLoading` uses the auth layout and skeletons while authentication or role
+resolution is pending; route authorization decisions stay in the existing gates.
+
+The signing steps carry `pforms-intro`, which gives their headings and instructions
+the solid bar fill over the gradient. The PDF host uses `isolation: isolate` to
+contain PDF.js annotations beneath the sticky pager. Do not remove that containment:
+annotation z-indices increase independently of the surrounding portal UI.
+
+Profile photo cropping uses the native `Sheet` and token-based controls in
+`portal-photo-crop.css`. Existing carrier-confirmation, onboarding-video and
+incentive-lightbox behavior stays in its original components; `portal-overlays.css`
+applies the shared pane, type and control tokens to their chrome.
+
+The standalone admin previews use the same backdrop. Their preview bar stays in
+normal flow with sticky positioning so wrapping on phones cannot cover fields.
+See `docs/audits/staging-ui-coverage/README.md` for route and state coverage, local
+fixture instructions, evidence, and the remaining staging-service checks.
+
+`PortalOnboardingProvider` owns the onboarding data for the four protected tab routes.
+`PortalOnboardingAction` renders the same header capsule and native checklist on
+each page; todo/form/carrier requests and pending completion state survive tab
+navigation. Profile reuses this state for its phase summary and signed documents.
+Profile and licensing saves revalidate shared progress, and completing a step
+refreshes its server state while retaining the capsule during the request.
+
+Every `PortalSubpageHeader` uses a transparent title/back-link section with one
+bottom divider. It stays in page flow on desktop and phones, with no card fill,
+radius or surrounding border. The header is 115px above 620px and 53px on
+phones, reserving identical title space with or without a badge/action.
+Profile section tabs use outline icons, uppercase
+mono labels and an orange active underline; these tab overrides are scoped to
+`.portal-profile-dash`. Segmented semantics, arrow keys and phone scrolling remain.
+Descriptions immediately following a sub-page header are separated from the next
+content section by `--portal-gap`; bento pages supply this through their parent
+flex gap, and backdrop-based pages supply a bottom margin. Notes followed by
+content directly inside a block pane also receive the shared gap.
+
+`PortalTabLayout` adds the new-look announcement alongside the persistent
+onboarding provider. It uses a centered native Sheet with solid portal material,
+keyboard/backdrop dismissal, per-account and per-release browser persistence,
+and cross-tab dismissal. Its development preview leaves saved preferences intact.

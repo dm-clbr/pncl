@@ -1,0 +1,82 @@
+[
+  {
+    "background": "rgba(0, 0, 0, 0)",
+    "borders": [
+      "0px",
+      "0px",
+      "1px",
+      "0px"
+    ],
+    "image": "none",
+    "overflow": false,
+    "position": "static",
+    "radius": "0px",
+    "route": "/portal/calendar",
+    "title": "Back to portalCalendar",
+    "viewport": 390
+  },
+  {
+    "background": "rgba(0, 0, 0, 0)",
+    "borders": [
+      "0px",
+      "0px",
+      "1px",
+      "0px"
+    ],
+    "image": "none",
+    "overflow": false,
+    "position": "static",
+    "radius": "0px",
+    "route": "/portal/profile",
+    "title": "Back to portalMy profileAgent ID PNCL-00042",
+    "viewport": 390
+  },
+  {
+    "background": "rgba(0, 0, 0, 0)",
+    "borders": [
+      "0px",
+      "0px",
+      "1px",
+      "0px"
+    ],
+    "image": "none",
+    "overflow": false,
+    "position": "static",
+    "radius": "0px",
+    "route": "/portal/disclosures",
+    "title": "Back to portalVideo TrainingsCheck for new videos",
+    "viewport": 390
+  },
+  {
+    "background": "rgba(0, 0, 0, 0)",
+    "borders": [
+      "0px",
+      "0px",
+      "1px",
+      "0px"
+    ],
+    "image": "none",
+    "overflow": false,
+    "position": "static",
+    "radius": "0px",
+    "route": "/portal/state-map",
+    "title": "Back to portalState map",
+    "viewport": 390
+  },
+  {
+    "background": "rgba(0, 0, 0, 0)",
+    "borders": [
+      "0px",
+      "0px",
+      "1px",
+      "0px"
+    ],
+    "image": "none",
+    "overflow": false,
+    "position": "static",
+    "radius": "0px",
+    "route": "/portal/clients/new",
+    "title": "My clientsClient intake",
+    "viewport": 390
+  }
+]

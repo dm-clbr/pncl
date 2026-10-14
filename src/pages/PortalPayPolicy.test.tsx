@@ -4,6 +4,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import PortalPayPolicy from "@/pages/PortalPayPolicy";
 import { fetchPayPolicyEntries, type PayPolicyEntry } from "@/lib/portal-pay-policy";
 
+vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: null }) }));
+vi.mock("@/hooks/usePortalProfile", () => ({ usePortalProfile: () => ({ displayName: "Agent", initials: "AG", photoUrl: null }) }));
+
 vi.mock("@/lib/portal-pay-policy", () => ({ fetchPayPolicyEntries: vi.fn() }));
 vi.mock("@/lib/analytics", () => ({ trackPageView: vi.fn() }));
 

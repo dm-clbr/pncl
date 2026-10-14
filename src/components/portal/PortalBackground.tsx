@@ -2,7 +2,7 @@ import { useState } from "react";
 import LiquidGradientCanvas, { LIQUID_GRADIENT_PRESETS } from "@/components/ui/liquid-gradient";
 
 /** The portal's shared backdrop: the dashboard's frame, behind every page that
-    does not render through PortalBentoMain. Same base, same page-tall liquid
+    does not render through PortalBentoMain. Same base, same viewport-sized liquid
     gradient, same vignette, so no page reads differently from the dashboard.
     Mount it as the first child of the page wrapper. Styles under
     .portal-backdrop in src/styles/portal-shell.css, which also carries the

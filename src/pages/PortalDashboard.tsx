@@ -36,8 +36,8 @@ function sectionIcon(id: string, title: string) {
   if (key.includes("tool") || key.includes("sales")) return <Wrench {...ICON} />;
   return <Link2 {...ICON} />;
 }
-import PortalOnboardingChecklist from "@/components/PortalOnboardingChecklist";
-import OnboardingDock from "@/components/portal/OnboardingDock";
+import PortalOnboardingAction from "@/components/portal/PortalOnboardingAction";
+import { useRequiredPortalOnboarding } from "@/contexts/PortalOnboardingContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { PORTAL_SECTIONS } from "@/lib/portal-links";
 import { usePortalDashboardTabs } from "@/hooks/usePortalDashboardTabs";
@@ -50,22 +50,6 @@ import PortalReferralPanel from "@/components/PortalReferralPanel";
 import { isOutbound, useSlowLoading } from "@/components/portal-tile-helpers";
 import { hasAdminConsoleAccess, isAdminAssist, isGenesisAdmin } from "@/lib/roles";
 import {
-  completePortalTodo,
-  derivePortalPhase,
-  isTodoCompleted,
-  PORTAL_PHASE_LABELS,
-} from "@/lib/portal-todos";
-import { usePortalTodos } from "@/hooks/usePortalTodos";
-import { usePortalCarriers } from "@/hooks/usePortalCarriers";
-import {
-  buildCarrierApplicationsDescription,
-  CARRIER_APPLICATIONS_TODO_ID,
-} from "@/lib/carrier-applications";
-import { usePortalW9 } from "@/hooks/usePortalW9";
-import { usePortalDirectDeposit } from "@/hooks/usePortalDirectDeposit";
-import { usePortalIca } from "@/hooks/usePortalIca";
-import {
-  refreshPortalUser,
   shouldShowDirectDepositResignNotice,
   shouldShowIcaResignNotice,
   shouldShowW9ResignNotice,
@@ -211,22 +195,17 @@ function SectionReveal({
 }
 
 export default function PortalDashboard() {
-  const { user: authUser, signOut } = useAuth();
-  const [portalUser, setPortalUser] = useState(authUser);
+  const { signOut } = useAuth();
+  const onboarding = useRequiredPortalOnboarding();
+  const { user: portalUser, ica: { submitted: icaSubmitted }, w9: { submitted: w9Submitted }, directDeposit: { submitted: directDepositSubmitted } } = onboarding;
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
-  const [completingTodoId, setCompletingTodoId] = useState<string | null>(null);
   /** Only one card's menu is open at a time. */
   const [openTile, setOpenTile] = useState<string | null>(null);
 
   const { incentives, loading: incentivesLoading } = usePortalIncentives();
   const { assets: brandAssets, loading: brandAssetsLoading } = usePortalBrandAssets();
   const { sections: dashboardSections } = usePortalDashboardTabs();
-  const { todos: portalTodos } = usePortalTodos();
-  const { carriers: portalCarriers } = usePortalCarriers();
-  const { submitted: icaSubmitted } = usePortalIca();
-  const { submitted: w9Submitted } = usePortalW9();
-  const { submitted: directDepositSubmitted } = usePortalDirectDeposit();
   const {
     profile,
     photoUrl,
@@ -238,32 +217,6 @@ export default function PortalDashboard() {
   // showing "Loading" forever. The hook is untouched; nothing falls back silently.
   const brandAssetsSlow = useSlowLoading(brandAssetsLoading);
 
-  const resolvedTodos = useMemo(() => {
-    const carrierApplicationsDescription =
-      buildCarrierApplicationsDescription(portalCarriers);
-
-    return portalTodos.map((todo) => ({
-      ...todo,
-      description:
-        todo.id === CARRIER_APPLICATIONS_TODO_ID && carrierApplicationsDescription
-          ? carrierApplicationsDescription
-          : todo.description,
-      completed: isTodoCompleted(portalUser, todo, {
-        icaSubmitted,
-        w9Submitted,
-        directDepositSubmitted,
-      }),
-    }));
-  }, [
-    portalUser,
-    portalTodos,
-    portalCarriers,
-    icaSubmitted,
-    w9Submitted,
-    directDepositSubmitted,
-  ]);
-
-  const currentPhase = derivePortalPhase(resolvedTodos);
   const showIcaResignNotice = shouldShowIcaResignNotice(portalUser) && !icaSubmitted;
   const showW9ResignNotice = shouldShowW9ResignNotice(portalUser) && !w9Submitted;
   const showDirectDepositResignNotice =
@@ -271,25 +224,25 @@ export default function PortalDashboard() {
   const recoveryEmailNotice = getRecoveryEmailDashboardNotice(profile, profileLoading);
   const recoveryEmailNoticeContent = recoveryEmailNotice === "missing"
     ? {
-        title: "Add your personal recovery email",
-        description:
-          "Add a personal email so you can recover your PNCL Google account and receive your electronic 1099.",
-        action: "Add recovery email",
-      }
+      title: "Add your personal recovery email",
+      description:
+        "Add a personal email so you can recover your PNCL Google account and receive your electronic 1099.",
+      action: "Add recovery email",
+    }
     : recoveryEmailNotice === "error"
       ? {
-          title: "Recovery email needs attention",
-          description:
-            "Your personal recovery email is saved, but Google Workspace could not be updated. Open your profile to retry the sync.",
-          action: "Retry in profile",
-        }
+        title: "Recovery email needs attention",
+        description:
+          "Your personal recovery email is saved, but Google Workspace could not be updated. Open your profile to retry the sync.",
+        action: "Retry in profile",
+      }
       : recoveryEmailNotice === "pending"
         ? {
           title: "Finish syncing your recovery email",
           description:
-              "Your personal recovery email is saved, but Google Workspace has not confirmed it yet. Open your profile and save your information to finish the sync.",
-            action: "Review and sync",
-          }
+            "Your personal recovery email is saved, but Google Workspace has not confirmed it yet. Open your profile and save your information to finish the sync.",
+          action: "Review and sync",
+        }
         : null;
 
   const displaySections = useMemo((): PortalDashboardSection[] => {
@@ -335,20 +288,6 @@ export default function PortalDashboard() {
   }, [dashboardSections]);
 
   useEffect(() => {
-    setPortalUser(authUser);
-  }, [authUser]);
-
-  useEffect(() => {
-    void refreshPortalUser()
-      .then((user) => {
-        if (user) setPortalUser(user);
-      })
-      .catch(() => {
-        // Keep the cached session user if refresh fails.
-      });
-  }, []);
-
-  useEffect(() => {
     document.title = "Employee Portal — PNCL";
     trackPageView("portal_dashboard");
     window.scrollTo(0, 0);
@@ -376,18 +315,6 @@ export default function PortalDashboard() {
     }
   };
 
-  const handleCompleteTodo = async (todoId: string) => {
-    setCompletingTodoId(todoId);
-    try {
-      await completePortalTodo(todoId, resolvedTodos);
-      toast.success("To-do marked complete.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Unable to update to-do.");
-    } finally {
-      setCompletingTodoId(null);
-    }
-  };
-
   const agentEmail = portalUser?.email ?? "";
   const showAdminLink = hasAdminConsoleAccess(portalUser);
   const adminLink = isGenesisAdmin(portalUser)
@@ -400,8 +327,6 @@ export default function PortalDashboard() {
     : isAdminAssist(portalUser)
       ? "Admin assist"
       : "Admin console";
-
-  const phaseLabel = PORTAL_PHASE_LABELS[currentPhase];
 
   const resignNotices = [
     showIcaResignNotice && {
@@ -515,7 +440,7 @@ export default function PortalDashboard() {
           email={agentEmail}
           initials={initials}
           photoUrl={photoUrl}
-          stage={phaseLabel}
+          action={<PortalOnboardingAction />}
         />
 
         <PortalPrimaryNav />
@@ -588,20 +513,8 @@ export default function PortalDashboard() {
         </div>
       </PortalBentoMain>
 
-      {/* Outside <main>: .portal-bento > * would set position: relative on the
-          bar and on the dock, and both must sit outside the tilted stage
-          (preserve-3d is a containing block for position: fixed). */}
+      {/* Outside <main> so the fixed navigation keeps its viewport anchor. */}
       <BottomNav />
-
-      <OnboardingDock floating todos={resolvedTodos}>
-        <PortalOnboardingChecklist
-          todos={resolvedTodos}
-          agentEmail={agentEmail}
-          completingTodoId={completingTodoId}
-          onComplete={(id) => void handleCompleteTodo(id)}
-          previewUnlocked={showAdminLink}
-        />
-      </OnboardingDock>
     </div>
   );
 }

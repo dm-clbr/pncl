@@ -1,0 +1,121 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - link "PNCL home":
+    - /url: /
+  - paragraph: Employee Portal
+  - link "Jordan Example, view profile":
+    - /url: /portal/profile
+    - generic: JE
+  - link "Back to portal":
+    - /url: /portal
+    - generic: Back to portal
+  - heading "My Clients" [level=1]
+  - link "New intake":
+    - /url: /portal/clients/new
+  - paragraph: Financial inventory forms you have submitted for clients.
+  - region "Client list":
+    - heading "Client list" [level=2]
+    - generic: "1"
+    - generic: Search clients
+    - searchbox "Search clients"
+    - list:
+      - button "Casey Example no phone · Met Oct 14, 2026 Hide form" [active]:
+        - generic: Casey Example
+        - generic: no phone · Met Oct 14, 2026
+        - generic: Hide form
+  - region "Casey Example":
+    - heading "Casey Example" [level=2]
+    - generic: Address
+    - generic: 123 Example Street
+    - generic: Date Met
+    - generic: 2026-10-14
+    - generic: Eff Date
+    - heading "Primary client" [level=3]
+    - generic: Name
+    - generic: Casey Example
+    - generic: Age
+    - generic: Phone
+    - generic: Email
+    - generic: Job
+    - generic: DOB
+    - generic: Monthly Income
+    - generic: Smoker
+    - generic: "No"
+    - generic: Height
+    - generic: Weight
+    - generic: Surgeries
+    - generic: Medications / Health
+    - generic: Left over $
+    - heading "Banking & ID" [level=4]
+    - generic: DLN
+    - generic: State
+    - generic: SSN
+    - generic: —
+    - generic: Birth State
+    - generic: Bank
+    - generic: Routing
+    - generic: Account
+    - generic: Draft Date
+    - heading "Financials" [level=3]
+    - generic: Loan Balance
+    - generic: Monthly Payment
+    - generic: Lender
+    - generic: Months of Bills Saved
+    - generic: Years Left on Mortgage
+    - heading "Annuity opportunities" [level=3]
+    - generic: Acct Type
+    - generic: Amount
+    - generic: Acct Type
+    - generic: Amount
+    - generic: Acct Type
+    - generic: Amount
+    - heading "Current policies" [level=3]
+    - generic: Carrier
+    - generic: Exp
+    - generic: Amt
+    - generic: Pymt
+    - generic: Carrier
+    - generic: Exp
+    - generic: Amt
+    - generic: Pymt
+    - heading "Beneficiary" [level=3]
+    - generic: Name
+    - generic: Has home & family
+    - generic: Plan
+    - generic: Notes
+    - heading "Coverage notes" [level=3]
+    - generic: Critical illness
+    - generic: "No"
+    - generic: Existing coverage
+    - generic: Work insurance notes
+    - generic: Retired income / SSA
+    - generic: Disability coverage
+    - generic: Driving record
+    - heading "Policy sold" [level=3]
+    - generic: Carrier
+    - generic: Face Amt
+    - generic: Monthly Pymt
+    - generic: Beneficiary
+    - generic: ()
+    - heading "Quotes" [level=3]
+    - generic: Good
+    - generic: Better
+    - generic: Best
+    - heading "Other" [level=3]
+    - generic: Other relevant information
+    - generic: Notes
+- navigation "Portal sections":
+  - link "Dashboard":
+    - /url: /portal
+    - generic: Dashboard
+  - link "Calendar":
+    - /url: /portal/calendar
+    - generic: Calendar
+  - link "State Map":
+    - /url: /portal/state-map
+    - generic: State Map
+  - link "Profile":
+    - /url: /portal/profile
+    - generic: Profile

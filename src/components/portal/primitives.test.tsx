@@ -517,7 +517,7 @@ describe("PortalHeader", () => {
   it("shows the photo when there is one and the initials when there is not", () => {
     const { rerender } = render(
       <MemoryRouter>
-        <PortalHeader name="Porter Gerlach" email="porter@thepncl.com" initials="PG" stage="Licensing" />
+        <PortalHeader name="Porter Gerlach" email="porter@thepncl.com" initials="PG" />
       </MemoryRouter>,
     );
 
@@ -525,7 +525,6 @@ describe("PortalHeader", () => {
     expect(screen.getByText("PG")).toBeInTheDocument();
     expect(document.querySelector(".portal-header-avatar img")).toBeNull();
     expect(screen.getByRole("heading", { level: 1, name: "Employee Portal" })).toBeInTheDocument();
-    expect(screen.getByText("Licensing")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Porter Gerlach, view profile" })).toHaveAttribute(
       "href",
       "/portal/profile",
@@ -541,8 +540,7 @@ describe("PortalHeader", () => {
       "/photo.jpg",
     );
     expect(screen.queryByText("PG")).not.toBeInTheDocument();
-    // No stage and no email means no empty badge and no empty line.
-    expect(document.querySelector(".portal-header-stage")).toBeNull();
+    // No email means no empty identity line.
     expect(document.querySelector(".portal-header-mail")).toBeNull();
   });
 });

@@ -1,0 +1,82 @@
+[
+  {
+    "headerHeight": 75,
+    "overflow": false,
+    "path": "/portal",
+    "pillLabel": "On-Board1 of 2 steps completeNext: Complete your W-9, open the checklist50%",
+    "pillWidth": 340,
+    "pillX": 792.921875,
+    "pillY": 26.5,
+    "width": 1492
+  },
+  {
+    "headerHeight": 75,
+    "overflow": false,
+    "path": "/portal/calendar",
+    "pillLabel": "On-Board1 of 2 steps completeNext: Complete your W-9, open the checklist50%",
+    "pillWidth": 340,
+    "pillX": 792.921875,
+    "pillY": 26.5,
+    "width": 1492
+  },
+  {
+    "headerHeight": 75,
+    "overflow": false,
+    "path": "/portal/state-map",
+    "pillLabel": "On-Board1 of 2 steps completeNext: Complete your W-9, open the checklist50%",
+    "pillWidth": 340,
+    "pillX": 792.921875,
+    "pillY": 26.5,
+    "width": 1492
+  },
+  {
+    "headerHeight": 75,
+    "overflow": false,
+    "path": "/portal/profile",
+    "pillLabel": "On-Board1 of 2 steps completeNext: Complete your W-9, open the checklist50%",
+    "pillWidth": 340,
+    "pillX": 792.921875,
+    "pillY": 26.5,
+    "width": 1492
+  },
+  {
+    "headerHeight": 56,
+    "overflow": false,
+    "path": "/portal",
+    "pillLabel": "On-Board1 of 2 steps completeNext: Complete your W-9, open the checklist50%",
+    "pillWidth": 46,
+    "pillX": 274,
+    "pillY": 21,
+    "width": 390
+  },
+  {
+    "headerHeight": 56,
+    "overflow": false,
+    "path": "/portal/calendar",
+    "pillLabel": "On-Board1 of 2 steps completeNext: Complete your W-9, open the checklist50%",
+    "pillWidth": 46,
+    "pillX": 274,
+    "pillY": 21,
+    "width": 390
+  },
+  {
+    "headerHeight": 56,
+    "overflow": false,
+    "path": "/portal/state-map",
+    "pillLabel": "On-Board1 of 2 steps completeNext: Complete your W-9, open the checklist50%",
+    "pillWidth": 46,
+    "pillX": 274,
+    "pillY": 21,
+    "width": 390
+  },
+  {
+    "headerHeight": 56,
+    "overflow": false,
+    "path": "/portal/profile",
+    "pillLabel": "On-Board1 of 2 steps completeNext: Complete your W-9, open the checklist50%",
+    "pillWidth": 46,
+    "pillX": 274,
+    "pillY": 21,
+    "width": 390
+  }
+]

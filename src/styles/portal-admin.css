@@ -483,8 +483,9 @@
      under nothing, so the row is static rather than sticky. The button brings
      its own glass fill. The logo is exempt from the text-contrast rule and the
      title (the one text run) is hidden visually, as the portal header hides
-     its own on a phone; the drop shadow keeps the mark legible if the canvas
-     drifts toward its brightest stop, rgb(232, 205, 176), behind it. */
+     its own on a phone. Like PortalHeader, the brand is an unfiltered SVG:
+     filtering this SVG intermittently clipped letters during navigation in
+     the in-app browser. */
   .admin-dash .admin-mobile-bar {
     display: flex;
     align-items: center;
@@ -509,7 +510,6 @@
     min-height: 44px;
     border-radius: 8px;
     color: var(--portal-text-strong);
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 14px rgba(0, 0, 0, 0.35));
   }
 
   .admin-dash .admin-mobile-brand svg {
@@ -4429,4 +4429,60 @@
   from {
     opacity: 0;
   }
+}
+
+/* Standalone previews use the portal backdrop and materials too. The preview
+   bar stays in document flow, so its wrapped phone height cannot cover fields. */
+.admin-onboarding-preview-shell { min-height: 100svh; background: var(--portal-base); }
+.admin-onboarding-preview-shell .admin-onboarding-preview-bar { position: sticky; }
+.admin-onboarding-preview-shell .home2-page.onboarding-page {
+  position: relative;
+  background: transparent;
+}
+.admin-onboarding-preview-shell .home2-page.onboarding-page .nav {
+  position: relative;
+  inset: auto;
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+}
+.admin-onboarding-preview-shell .home2-page.onboarding-page .onboarding-main {
+  min-height: calc(100svh - 160px);
+  padding-top: 24px;
+  background: transparent;
+}
+.admin-onboarding-preview-shell .home2-page.onboarding-page .onboarding-main::before,
+.admin-onboarding-preview-shell .home2-page.onboarding-page .onboarding-main::after { display: none; }
+.admin-onboarding-preview-shell .home2-page.onboarding-page .onboarding-panel:not(.onboarding-panel-signing) {
+  padding: 24px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
+  box-shadow: var(--portal-pane-shadow);
+}
+.admin-onboarding-preview-shell .home2-page :is(.h2, .h3) {
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-large);
+  font-style: normal;
+  font-weight: 600;
+  text-transform: none;
+  color: var(--portal-text-strong);
+}
+.admin-onboarding-preview-shell .home2-page .lead {
+  font-size: var(--portal-t-body);
+  color: var(--portal-text);
+}
+.admin-onboarding-preview-shell .home2-page .btn {
+  min-height: var(--portal-control-h);
+  border-radius: var(--portal-control-radius);
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.admin-onboarding-preview-shell .home2-page .btn-accent {
+  background: var(--portal-text-strong);
+  color: var(--portal-bar-fill);
+  border-color: var(--portal-border);
+}
+@media (max-width: 620px) {
+  .admin-onboarding-preview-shell .home2-page.onboarding-page .onboarding-main { padding-top: 16px; }
 }

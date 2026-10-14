@@ -5,6 +5,7 @@ import PortalCalendarPreview from "@/components/PortalCalendarPreview";
 import PortalPrimaryNav from "@/components/PortalPrimaryNav";
 import BottomNav from "@/components/portal/BottomNav";
 import PortalBentoMain from "@/components/portal/PortalBentoMain";
+import PortalOnboardingAction from "@/components/portal/PortalOnboardingAction";
 import PortalHeader from "@/components/portal/PortalHeader";
 import PortalSubpageHeader from "@/components/portal/PortalSubpageHeader";
 import { useAuth } from "@/contexts/AuthContext";
@@ -87,6 +88,7 @@ export default function PortalCalendar() {
           email={user?.email}
           initials={initials}
           photoUrl={photoUrl}
+          action={<PortalOnboardingAction />}
         />
 
         <PortalPrimaryNav />

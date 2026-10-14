@@ -1,3 +1,4 @@
+import "@/styles/portal-overlays.css";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { ArrowUpRight, X } from "lucide-react";

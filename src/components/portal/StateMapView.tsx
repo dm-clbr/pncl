@@ -129,6 +129,7 @@ type Agent = { name: string; email?: string; initials: string; photoUrl?: string
 
 export type StateMapViewProps = {
   agent: Agent;
+  headerAction?: ReactNode;
   /** All 51, placeholders while loading or when live data failed. */
   states: readonly StateAvailability[];
   licensed: ReadonlySet<UsStateCode>;
@@ -163,6 +164,7 @@ export type StateMapViewProps = {
     finder renders, in the sheet or in the panel, never both. */
 export default function StateMapView({
   agent,
+  headerAction,
   states,
   licensed,
   licenseNumbers,
@@ -541,6 +543,7 @@ export default function StateMapView({
           email={agent.email}
           initials={agent.initials}
           photoUrl={agent.photoUrl}
+          action={headerAction}
           subpage
         />
 

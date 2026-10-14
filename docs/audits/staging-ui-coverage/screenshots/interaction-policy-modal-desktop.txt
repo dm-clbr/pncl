@@ -1,0 +1,155 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - complementary "Admin navigation panel":
+    - link "PNCL home":
+      - /url: /
+    - button "Collapse navigation" [expanded]:
+    - generic: J
+    - generic: Admin console
+    - generic: Jordan Example
+    - navigation "Admin navigation":
+      - link "Overview":
+        - /url: /portal/admin
+        - generic: Overview
+      - link "Hierarchy":
+        - /url: /portal/admin/hierarchy
+        - generic: Hierarchy
+      - link "Users":
+        - /url: /portal/admin/users
+        - generic: Users
+      - link "Profile review":
+        - /url: /portal/admin/profile-review
+        - generic: Profile review
+      - link "Gmail verification":
+        - /url: /portal/admin/gmail-verification
+        - generic: Gmail verification
+      - link "Agent enrollments":
+        - /url: /portal/admin/onboarding-holds
+        - generic: Agent enrollments
+      - link "Contracting":
+        - /url: /portal/admin/contracting
+        - generic: Contracting
+      - link "Lead charges":
+        - /url: /portal/admin/lead-charges
+        - generic: Lead charges
+      - link "Setter / Closer":
+        - /url: /portal/admin/setter-closer
+        - generic: Setter / Closer
+      - link "Tickets":
+        - /url: /portal/admin/tickets
+        - generic: Tickets
+      - link "Pay policy":
+        - /url: /portal/admin/pay-policy
+        - generic: Pay policy
+      - link "Add user":
+        - /url: /portal/admin/users/new
+        - generic: Add user
+      - link "Incentives":
+        - /url: /portal/admin/incentives
+        - generic: Incentives
+      - link "Brand assets":
+        - /url: /portal/admin/brand-assets
+        - generic: Brand assets
+      - link "Carriers":
+        - /url: /portal/admin/carriers
+        - generic: Carriers
+      - link "State availability":
+        - /url: /portal/admin/state-availability
+        - generic: State availability
+      - link "To-dos":
+        - /url: /portal/admin/todos
+        - generic: To-dos
+      - link "Clients":
+        - /url: /portal/admin/clients
+        - generic: Clients
+      - link "Dashboard tabs":
+        - /url: /portal/admin/dashboard-tabs
+        - generic: Dashboard tabs
+      - link "Onboarding preview":
+        - /url: /portal/admin/onboarding-preview
+        - generic: Onboarding preview
+      - link "W-9 preview":
+        - /url: /portal/admin/w9-preview
+        - generic: W-9 preview
+    - link "Agent portal":
+      - /url: /portal
+      - generic: Agent portal
+  - heading "Setter / Closer tracker" [level=1]
+  - paragraph: Track commission splits by policy. 50/50 when the setter bought the lead; 70/30 when the closer bought the lead. Closer NPN is required on every record.
+  - generic: Search policies
+  - searchbox "Search policies"
+  - button "Search"
+  - button "Export CSV":
+    - text: Export CSV
+  - button "Add policy":
+    - text: Add policy
+  - strong: "1"
+  - generic: Policies tracked
+  - strong: "1"
+  - generic: 50/50 splits
+  - strong: "0"
+  - generic: 70/30 splits
+  - table:
+    - rowgroup:
+      - row "Policy Date Split Setter Closer Client Actions":
+        - columnheader "Policy"
+        - columnheader "Date"
+        - columnheader "Split"
+        - columnheader "Setter"
+        - columnheader "Closer"
+        - columnheader "Client"
+        - columnheader "Actions"
+    - rowgroup:
+      - row "TEST-POLICY-42 Mutual of Omaha Oct 14, 2026 50/50 Jordan Example (12345678) Taylor Example (87654321) Casey Example Edit TEST-POLICY-42 Delete TEST-POLICY-42":
+        - cell "TEST-POLICY-42 Mutual of Omaha":
+          - strong: TEST-POLICY-42
+          - paragraph: Mutual of Omaha
+        - cell "Oct 14, 2026"
+        - cell "50/50":
+          - generic: 50/50
+        - cell "Jordan Example (12345678)"
+        - cell "Taylor Example (87654321)"
+        - cell "Casey Example"
+        - cell "Edit TEST-POLICY-42 Delete TEST-POLICY-42":
+          - button "Edit TEST-POLICY-42":
+          - button "Delete TEST-POLICY-42":
+  - dialog "Add policy split":
+    - heading "Add policy split" [level=2]
+    - button "Close" [active]:
+    - paragraph: "Choose setter and closer from PNCL agents. NPNs fill in automatically from their profile. Split is assigned from who bought the lead: setter = 50/50, closer = 70/30."
+    - generic: Policy number
+    - textbox "Policy number"
+    - generic: Policy date
+    - textbox "Policy date"
+    - generic: Carrier
+    - combobox "Carrier":
+      - option "Select carrier" [selected]
+      - option "Mutual of Omaha"
+    - generic: Client name
+    - textbox "Client name"
+    - generic: Who bought the lead?
+    - combobox "Who bought the lead?":
+      - option "50/50 — setter bought lead" [selected]
+      - option "70/30 — closer bought lead"
+    - generic: Setter
+    - combobox "Setter":
+      - option "Select setter (optional)" [selected]
+      - option "Jordan Example (NPN 12345678)"
+      - option "Taylor Example (NPN 12345678)"
+    - generic: Setter NPN
+    - textbox "Setter NPN":
+      - /placeholder: Auto-filled from agent
+    - generic: Closer
+    - combobox "Closer":
+      - option "Select closer" [selected]
+      - option "Jordan Example (NPN 12345678)"
+      - option "Taylor Example (NPN 12345678)"
+    - generic: Closer NPN
+    - textbox "Closer NPN":
+      - /placeholder: Auto-filled from agent
+    - generic: Notes
+    - textbox "Notes"
+    - button "Cancel"
+    - button "Add policy"

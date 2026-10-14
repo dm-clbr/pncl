@@ -12,10 +12,11 @@ type PortalSubpageHeaderProps = {
   aside?: ReactNode;
 };
 
-/** The header every portal sub-page carries. Above 620px it reads as a
-    breadcrumb over the title; at 620px and below it becomes a 44px sticky bar
-    of back chevron plus title on the shared bar fill. Styles under
-    .portal-subhead in src/styles/portal-shell.css. */
+/** Shared transparent title/back-link chrome with a bottom divider. Above
+    620px the breadcrumb sits over the title in a 115px header; phones use a
+    53px inline row that fits 52px controls and the divider.
+    Stays in page flow so content never scrolls beneath transparent text.
+    Styles under .portal-subhead in src/styles/portal-shell.css. */
 export default function PortalSubpageHeader({
   title,
   backTo = "/portal",

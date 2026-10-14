@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Building2,
@@ -111,6 +111,7 @@ function useIsMobileAdminViewport() {
 
 export default function AdminLayout() {
   const { user } = useAuth();
+  const { pathname } = useLocation();
   const [collapsed, setCollapsed] = useState(getStoredSidebarPreference);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
@@ -282,7 +283,7 @@ export default function AdminLayout() {
                 <NavLink
                   key={to}
                   to={to}
-                  end={end}
+                  end={end || (to === "/portal/admin/users" && pathname === "/portal/admin/users/new")}
                   className={({ isActive }) => `admin-nav-link${isActive ? " active" : ""}`}
                   title={collapsed && !isMobile ? label : undefined}
                   onClick={() => {

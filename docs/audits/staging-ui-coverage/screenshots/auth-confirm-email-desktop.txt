@@ -1,0 +1,18 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - link "PNCL home":
+    - /url: /
+  - generic: Almost there
+  - heading "Sign in with Google" [level=1]
+  - paragraph:
+    - text: Use
+    - strong: audit@thepncl.com
+    - text: when signing in with Google to access the portal.
+  - link "Sign in with Google":
+    - /url: /portal/login
+  - button "Sign out"
+  - paragraph:
+    - link "Need help?":
+      - /url: /contact

@@ -1,0 +1,71 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - link "PNCL home":
+    - /url: /
+  - paragraph: Employee Portal
+  - link "Jordan Example, view profile":
+    - /url: /portal/profile
+    - generic: JE
+  - link "Back to portal":
+    - /url: /portal
+    - generic: Back to portal
+  - heading "My profile" [level=1]
+  - generic: Agent ID PNCL-00042
+  - 'button "On-Board ·1 of 2 steps complete Next: Complete your W-9 , open the checklist"':
+    - text: On-Board
+    - text: ·1 of 2
+    - generic: steps complete
+    - generic: "Next: Complete your W-9"
+    - generic: ", open the checklist"
+    - generic: 50%
+  - tablist "Profile sections":
+    - tab "Profile details"
+    - tab "Team" [active] [selected]
+    - tab "Licensing"
+    - tab "Documents"
+    - tab "Carrier logins"
+  - tabpanel "Team":
+    - paragraph: Create referral links for new recruits and track their onboarding progress through the portal checklist.
+    - region "Referral links":
+      - heading "Referral links" [level=2]
+      - paragraph: Create a unique, single-use link for each recruit and choose their starting contract. If you have a linked business partner, you share the same referral link list.
+      - generic: Recruit nickname*
+      - paragraph: For your records only, not their legal name, so spelling does not need to be exact.
+      - textbox "Recruit nickname":
+        - /placeholder: e.g. Joe B.
+      - generic: Starting contract*
+      - combobox "Starting contract":
+        - option "50%" [selected]
+        - option "60%"
+      - button "Create & copy link"
+    - region "Team progress":
+      - heading "Team progress" [level=2]
+      - paragraph: Track onboarding progress for agents you've referred, from portal activation through each checklist stage.
+      - paragraph: No recruits yet
+      - paragraph: Create a referral link above to invite your first team member.
+  - link "Admin console":
+    - /url: /portal/admin
+    - generic: Admin console
+  - button "Sign out":
+    - text: Sign out
+  - link "Facebook":
+    - /url: https://www.facebook.com/profile.php?id=61588062292202
+  - link "Instagram":
+    - /url: https://www.instagram.com/thepncl_/
+  - link "LinkedIn":
+    - /url: https://www.linkedin.com/company/the-pncl/?viewAsMember=true
+- navigation "Portal sections":
+  - link "Dashboard":
+    - /url: /portal
+    - generic: Dashboard
+  - link "Calendar":
+    - /url: /portal/calendar
+    - generic: Calendar
+  - link "State Map":
+    - /url: /portal/state-map
+    - generic: State Map
+  - link "Profile":
+    - /url: /portal/profile
+    - generic: Profile

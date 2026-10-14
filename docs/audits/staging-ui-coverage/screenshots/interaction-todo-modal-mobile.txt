@@ -1,0 +1,110 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - button "Open navigation":
+  - link "PNCL home":
+    - /url: /
+  - generic: Admin console
+  - heading "Portal to-dos" [level=1]
+  - paragraph: Manage the urgent onboarding checklist shown on the agent dashboard. Hide a to-do to remove it from agents without deleting completion data. Completion is tracked across portal users.
+  - paragraph: Editing to-do
+  - generic: Title
+  - textbox "Title":
+    - /placeholder: Create your LeadSpply account
+  - generic: Slug
+  - textbox "Slug Used to track completion. Do not change after agents have completed this task.":
+    - /placeholder: leadspply_account
+  - generic: Used to track completion. Do not change after agents have completed this task.
+  - generic: Description
+  - textbox "Description":
+    - /placeholder: Explain what the agent needs to do...
+  - generic: Stage
+  - combobox "Stage":
+    - option "On-Board" [selected]
+    - option "Pre-License"
+    - option "Licensing"
+    - option "New Producer"
+    - option "Sales Ready"
+  - generic: Completed by
+  - combobox "Completed by":
+    - option "Agent checks it off" [selected]
+    - option "PNCL admin checks it off"
+    - option "Auto-completed from data"
+  - generic: Link URL (optional)
+  - textbox "Link URL (optional)":
+    - /placeholder: https://...
+  - generic: Action button label
+  - textbox "Action button label":
+    - /placeholder: Go to LeadSpply
+  - checkbox "Open link in a new tab" [checked]
+  - generic: Open link in a new tab
+  - checkbox "Gated — locked until every earlier step in its stage is complete"
+  - generic: Gated — locked until every earlier step in its stage is complete
+  - checkbox "Show @thepncl.com email hint" [checked]
+  - generic: Show @thepncl.com email hint
+  - checkbox "Published in agent portal" [checked]
+  - generic: Published in agent portal
+  - button "Create to-do"
+  - button "Cancel"
+  - table:
+    - rowgroup:
+      - row "To-do Stage Completion Status Actions":
+        - columnheader "To-do"
+        - columnheader "Stage"
+        - columnheader "Completion"
+        - columnheader "Status"
+        - columnheader "Actions"
+    - rowgroup:
+      - row "To-do Complete your profile profile_setup Stage On-Board Auto-completed from data Completion 50% (1/2) View users Status Published Move Complete your profile up Move Complete your profile down Hide Complete your profile Edit Delete":
+        - cell "To-do Complete your profile profile_setup":
+          - text: To-do
+          - strong: Complete your profile
+          - generic: profile_setup
+        - cell "Stage On-Board Auto-completed from data":
+          - text: Stage
+          - generic: On-Board
+          - generic: Auto-completed from data
+        - cell "Completion 50% (1/2) View users":
+          - text: Completion
+          - generic: 50% (1/2)
+          - button "View users":
+            - text: View users
+        - cell "Status Published":
+          - text: Status
+          - generic: Published
+        - cell "Move Complete your profile up Move Complete your profile down Hide Complete your profile Edit Delete":
+          - button "Move Complete your profile up" [disabled]:
+          - button "Move Complete your profile down":
+          - button "Hide Complete your profile":
+            - text: Hide
+          - button "Edit":
+            - text: Edit
+          - button "Delete":
+            - text: Delete
+      - row "To-do Complete your W-9 w9_setup Stage On-Board Auto-completed from data Completion 0% (0/2) View users Status Published Move Complete your W-9 up Move Complete your W-9 down Hide Complete your W-9 Edit Delete":
+        - cell "To-do Complete your W-9 w9_setup":
+          - text: To-do
+          - strong: Complete your W-9
+          - generic: w9_setup
+        - cell "Stage On-Board Auto-completed from data":
+          - text: Stage
+          - generic: On-Board
+          - generic: Auto-completed from data
+        - cell "Completion 0% (0/2) View users":
+          - text: Completion
+          - generic: 0% (0/2)
+          - button "View users":
+            - text: View users
+        - cell "Status Published":
+          - text: Status
+          - generic: Published
+        - cell "Move Complete your W-9 up Move Complete your W-9 down Hide Complete your W-9 Edit Delete":
+          - button "Move Complete your W-9 up":
+          - button "Move Complete your W-9 down" [disabled]:
+          - button "Hide Complete your W-9":
+            - text: Hide
+          - button "Edit":
+            - text: Edit
+          - button "Delete":
+            - text: Delete

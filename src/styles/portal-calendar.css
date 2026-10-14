@@ -9,11 +9,9 @@
    (docs/DESIGN.md, Shell).
    ========================================================================== */
 
-/* An agenda has no business at the dashboard's 1180px. The masthead and nav
-   keep the full frame so they sit exactly where they do on the dashboard;
-   only the agenda column narrows, held to the frame's left edge. */
+/* The calendar fills the same available frame as the masthead and nav. */
 .pcal-column {
-  max-width: 880px;
+  width: 100%;
 }
 
 .pcal {

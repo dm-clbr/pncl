@@ -74,6 +74,7 @@
    floating glass below at the preset's brightest stop. */
 .pdock-eyebrow {
   display: flex;
+  align-items: center;
   gap: 8px;
   font-size: 11px;
   font-weight: 700;
@@ -81,6 +82,17 @@
   line-height: 1.2;
   text-transform: uppercase;
   color: var(--portal-text);
+}
+
+/* A steady accent marks unfinished onboarding without adding height or motion. */
+.pdock-capsule[data-pending] .pdock-eyebrow::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--portal-accent);
+  box-shadow: 0 0 8px rgba(255, 77, 0, 0.35);
 }
 
 .pdock-count {
@@ -189,6 +201,19 @@
   opacity: 0;
 }
 
+/* The label is clipped away when folded; keep its cue beside the progress ring. */
+.pdock.is-floating .pdock-capsule[data-pending][data-compact] .pdock-ring::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--portal-accent);
+  box-shadow: 0 0 0 2px var(--portal-bar-fill);
+}
+
 @media (min-width: 621px) {
   .pdock.is-floating .pdock-capsule {
     inset-inline: auto 24px;
@@ -222,6 +247,55 @@ html:has(.pdock.is-floating) {
 
 /* ── Panel ──────────────────────────────────────────────────────────────── */
 
+/* The header action fits inside the masthead's existing height. Narrow
+   headers keep the progress ring and urgency cue beside the profile avatar. */
+.pdock.is-header {
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.pdock.is-header .pdock-capsule {
+  width: clamp(240px, 28vw, 340px);
+  border-radius: 999px;
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+}
+
+@media (max-width: 900px) {
+  .pdock.is-header .pdock-capsule {
+    width: 46px;
+    height: 46px;
+    min-height: 44px;
+    padding: 4px;
+    gap: 0;
+  }
+
+  .pdock.is-header .pdock-copy {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .pdock.is-header .pdock-capsule > .pdock-ring {
+    width: 36px;
+    height: 36px;
+  }
+
+  .pdock.is-header .pdock-capsule[data-pending] > .pdock-ring::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--portal-accent);
+    box-shadow: 0 0 0 2px var(--portal-bar-fill);
+  }
+}
+
 /* Anchored where the capsule lives: the bottom right corner from 621px, the
    whole screen below the status bar on a phone. A bar over the page, so it
    takes the solid --portal-bar-fill (DESIGN.md: a fixed surface never lets
@@ -245,6 +319,13 @@ html:has(.pdock.is-floating) {
   box-shadow:
     0 30px 80px rgba(0, 0, 0, 0.6),
     0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+@media (min-width: 621px) {
+  .pdock.is-header .pdock-panel {
+    inset: 110px 24px auto auto;
+    height: min(820px, calc(100dvh - 134px));
+  }
 }
 
 .pdock-panel[open] {

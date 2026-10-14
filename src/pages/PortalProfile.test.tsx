@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import PortalOnboardingProvider from "@/components/portal/PortalOnboardingProvider";
 import PortalProfile from "@/pages/PortalProfile";
 import type { PortalProfile as PortalProfileRow } from "@/lib/portal-profile";
 import type { PortalTodo } from "@/lib/portal-todos";
@@ -84,6 +85,9 @@ vi.mock("@/hooks/usePortalTodos", () => ({
   usePortalTodos: () => ({ todos: todoRows, loading: false, error: null, reload: vi.fn() }),
 }));
 
+vi.mock("@/hooks/usePortalCarriers", () => ({ usePortalCarriers: () => ({ carriers: [] }) }));
+vi.mock("@/lib/portal-messages", () => ({ refreshPortalUser: () => Promise.resolve(null) }));
+
 vi.mock("@/components/AgentBusinessCardDownload", () => ({ default: () => <div /> }));
 vi.mock("@/components/PortalCarrierCredentials", () => ({ default: () => <div /> }));
 vi.mock("@/components/PortalLicensingSection", () => ({ default: () => <div /> }));
@@ -121,7 +125,7 @@ beforeAll(() => {
 function renderProfile() {
   return render(
     <MemoryRouter>
-      <PortalProfile />
+      <PortalOnboardingProvider><PortalProfile /></PortalOnboardingProvider>
     </MemoryRouter>,
   );
 }
