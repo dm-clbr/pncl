@@ -398,8 +398,9 @@
   padding: 20px;
   border: 2px solid var(--portal-accent);
   border-radius: var(--portal-radius);
-  background: var(--bone);
-  color: var(--ink);
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  box-shadow: var(--portal-pane-shadow);
+  color: var(--portal-text);
 }
 .portal-auth .onboarding-password-card:focus-visible {
   outline: var(--portal-focus-ring);
@@ -418,7 +419,7 @@
 }
 .portal-auth .onboarding-password-card p {
   margin: 12px 0;
-  color: var(--ink);
+  color: var(--portal-text);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -428,8 +429,8 @@
   margin: 14px 0;
   border: 1px solid rgba(22, 22, 22, 0.25);
   border-radius: var(--portal-control-radius);
-  background: white;
-  color: var(--ink);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--portal-text-strong);
   font-family: var(--ff-mono);
   font-size: 24px;
   line-height: 1.4;
@@ -440,19 +441,19 @@
   width: 100%;
   min-height: 52px;
   padding: 12px;
-  background: var(--ink);
-  color: var(--bone);
+  background: var(--portal-text-strong);
+  color: var(--portal-bar-fill);
   white-space: normal;
   text-align: center;
 }
 .portal-auth .onboarding-password-card .pauth-btn:hover {
-  background: var(--ink-2);
+  background: white;
 }
 .portal-auth .onboarding-password-card .pauth-btn:focus-visible {
-  outline: 2px solid var(--ink);
+  outline: var(--portal-focus-ring);
   outline-offset: 3px;
 }
 .portal-auth .onboarding-password-card .onboarding-password-error {
-  color: #8f211b;
+  color: #ffb4b4;
   font-weight: 600;
 }

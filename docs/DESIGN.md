@@ -248,3 +248,10 @@ content directly inside a block pane also receive the shared gap.
 onboarding provider. It uses a centered native Sheet with solid portal material,
 keyboard/backdrop dismissal, per-account and per-release browser persistence,
 and cross-tab dismissal. Its development preview leaves saved preferences intact.
+
+LeadSpply snapshot and connection surfaces compose Pane, Chip and Field with
+`portal-integrations.css` for inset metrics, responsive activity rows and shared
+controls. The admin integration and LOA/IBO step table use the same console tokens
+and labelled phone rows. Gmail password emphasis uses the dark auth material,
+an accent border, a selectable code block and a white primary action. Tutorial
+progress, errors and completion actions inherit the workflow overlay theme.

@@ -1,0 +1,228 @@
+/* LeadSpply surfaces use the same panes, spacing, type and controls as the portal. */
+.home2-page .portal-leadspply-card {
+  margin: 0 0 var(--portal-gap);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+.home2-page .portal-leadspply-card > .portal-pane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--portal-gap);
+}
+.home2-page .portal-leadspply-card .portal-pane-head {
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 0;
+}
+.home2-page .portal-leadspply-card .portal-leadspply-actions,
+.home2-page .portal-leadspply-page .portal-leadspply-page-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.home2-page .portal-leadspply-card :is(.portal-leadspply-refresh, .portal-leadspply-open),
+.home2-page .portal-leadspply-card .portal-leadspply-error button,
+.home2-page .portal-leadspply-page .ptools-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--portal-control-h);
+  margin: 0;
+  padding: 8px 16px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-control-radius);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: 0;
+  text-transform: none;
+  text-decoration: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.home2-page .portal-leadspply-card .portal-leadspply-open,
+.home2-page .portal-leadspply-page .ptools-cta.is-primary {
+  background: var(--portal-text-strong);
+  color: var(--portal-bar-fill);
+}
+.home2-page .portal-leadspply-card :is(button, a):hover,
+.home2-page .portal-leadspply-page .ptools-cta:hover {
+  border-color: var(--portal-text-faint);
+}
+.home2-page .portal-leadspply-card :is(button, a):focus-visible,
+.home2-page .portal-leadspply-page .ptools-cta:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+.home2-page .portal-leadspply-card button:disabled,
+.home2-page .portal-leadspply-page button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.home2-page .portal-leadspply-card .portal-leadspply-eyebrow {
+  margin: 0;
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-micro);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--portal-text-faint);
+}
+.home2-page .portal-leadspply-card :is(.portal-leadspply-state, .portal-leadspply-status, .portal-leadspply-timestamps) {
+  margin: 0;
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  line-height: 1.55;
+  color: var(--portal-text);
+}
+.home2-page .portal-leadspply-card .portal-leadspply-account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.home2-page .portal-leadspply-card .portal-leadspply-account strong {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--portal-t-mid);
+  color: var(--portal-text-strong);
+}
+.home2-page .portal-leadspply-card .portal-leadspply-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--portal-gap);
+}
+.home2-page .portal-leadspply-card .portal-leadspply-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--portal-gap);
+}
+.home2-page .portal-leadspply-card :is(.portal-leadspply-metric, .portal-leadspply-summary-grid > section, .portal-leadspply-activity) {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--portal-rule);
+  border-radius: var(--portal-radius-inner);
+  background: rgba(0, 0, 0, 0.22);
+}
+.home2-page .portal-leadspply-card .portal-leadspply-metric strong {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  color: var(--portal-text-strong);
+}
+.home2-page .portal-leadspply-card :is(.portal-leadspply-metric span, .portal-leadspply-summary-grid small) {
+  display: block;
+  margin-top: 6px;
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+  color: var(--portal-text);
+}
+.home2-page .portal-leadspply-card .portal-leadspply-summary-grid strong {
+  display: block;
+  margin-top: 6px;
+  font-size: var(--portal-t-body);
+  color: var(--portal-text-strong);
+}
+.home2-page .portal-leadspply-card .portal-leadspply-activity > .portal-leadspply-eyebrow {
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--portal-rule);
+}
+.home2-page .portal-leadspply-card .portal-leadspply-activity-row {
+  display: grid;
+  grid-template-columns: 1.2fr repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px 0;
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--portal-text);
+}
+.home2-page .portal-leadspply-card .portal-leadspply-activity-row > span:first-child {
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+.home2-page .portal-leadspply-card .portal-leadspply-activity-row:last-child { padding-bottom: 0; }
+.home2-page .portal-leadspply-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--portal-gap);
+  max-width: 720px;
+  margin: 0;
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  line-height: 1.55;
+}
+.home2-page .portal-leadspply-page :is(.portal-leadspply-account-details, .portal-leadspply-redeem) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--portal-gap);
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.home2-page .portal-leadspply-page :is(p, small) { margin: 0; font-size: var(--portal-t-body); color: var(--portal-text); }
+.home2-page .portal-leadspply-page strong { color: var(--portal-text-strong); }
+.home2-page .portal-leadspply-page .portal-leadspply-account-details a { color: var(--portal-text-strong); text-decoration: underline; }
+.home2-page .portal-leadspply-page .portal-leadspply-redeem .portal-input {
+  font-family: var(--portal-font);
+  font-size: 16px;
+}
+.admin-dash .leadspply-admin-panel :is(.leadspply-sync-review, .leadspply-audit) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--portal-gap);
+  margin-top: var(--portal-gap);
+  padding: 16px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius-inner);
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  line-height: 1.55;
+}
+.admin-dash .leadspply-admin-panel .leadspply-audit :is(h2, p, ul) { margin: 0; }
+.admin-dash .leadspply-admin-panel .leadspply-audit h2 { font-size: var(--portal-t-mid); color: var(--portal-text-strong); }
+.admin-dash .leadspply-admin-panel .leadspply-audit ul { padding-left: 18px; }
+.admin-dash .leadspply-admin-panel .leadspply-audit li + li { margin-top: 8px; }
+.admin-dash .leadspply-admin-panel :is(.leadspply-summary, .leadspply-pagination) {
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  letter-spacing: 0;
+  color: var(--portal-text);
+}
+.admin-dash .leadspply-admin-panel :is(.leadspply-summary strong, .leadspply-match-note) { color: var(--portal-text-strong); }
+.admin-dash .leadspply-admin-panel .leadspply-review-table select { min-width: 0; width: 100%; max-width: 290px; }
+.admin-dash .leadspply-admin-panel .leadspply-sync-review label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.admin-dash .leadspply-admin-panel .leadspply-sync-review input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  accent-color: var(--portal-text-strong);
+}
+@media (max-width: 720px) {
+  .home2-page .portal-leadspply-card .portal-leadspply-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home2-page .portal-leadspply-card .portal-leadspply-summary-grid { grid-template-columns: 1fr; }
+  .home2-page .portal-leadspply-card .portal-leadspply-activity-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .home2-page .portal-leadspply-card .portal-leadspply-activity-row > span:first-child { grid-column: 1 / -1; }
+  .home2-page .portal-leadspply-card .portal-pane-aside { width: 100%; }
+  .home2-page .portal-leadspply-card .portal-leadspply-actions { gap: 8px; }
+  .home2-page .portal-leadspply-card .portal-leadspply-actions > * { flex: 1 1 auto; }
+}

@@ -100,3 +100,39 @@
   width: var(--portal-control-icon);
   height: var(--portal-control-icon);
 }
+
+.home2-page .portal-video-modal :is(.portal-video-watch-note, .portal-video-status) {
+  margin: var(--portal-gap) 0 0;
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  line-height: 1.55;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text);
+}
+.home2-page .portal-video-modal .portal-video-frame {
+  overflow: hidden;
+  border: 1px solid var(--portal-rule);
+  border-radius: var(--portal-radius-inner);
+  background: black;
+}
+.home2-page .portal-video-modal .portal-video-frame video { width: 100%; height: 100%; object-fit: contain; }
+.home2-page .portal-video-modal .portal-todo-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--portal-control-h);
+  margin-top: var(--portal-gap);
+  padding: 8px 16px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-control-radius);
+  background: var(--portal-text-strong);
+  color: var(--portal-bar-fill);
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.home2-page .pcl-step .portal-todo-mandatory-warning { color: var(--portal-text-strong); font-weight: 600; }
+.home2-page .portal-video-modal .portal-video-status { margin: 0; }

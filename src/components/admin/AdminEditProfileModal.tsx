@@ -160,7 +160,7 @@ export default function AdminEditProfileModal({
               <option value="loa">LOA</option>
               <option value="ibo">IBO</option>
             </select>
-            <small id="admin-agent-designation-help">IBOs skip PNCL W-9, direct deposit, and comp agreement steps.</small>
+            <small id="admin-agent-designation-help" className="admin-field-hint">IBOs skip PNCL W-9, direct deposit, and comp agreement steps.</small>
           </div>
           <label className="admin-field">
             <span>First name</span>

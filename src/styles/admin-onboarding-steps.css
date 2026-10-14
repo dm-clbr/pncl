@@ -1,25 +1,46 @@
-.home2-page .admin-onboarding-toolbar,
-.home2-page .admin-onboarding-save {
+/* LOA/IBO controls share the admin console's pane, typography and control tokens. */
+.admin-dash .admin-onboarding-steps :is(.admin-onboarding-toolbar, .admin-onboarding-save) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 20px;
+  gap: var(--portal-gap);
   flex-wrap: wrap;
-  margin: 24px 0;
+  margin: var(--portal-gap) 0;
 }
-.home2-page .admin-onboarding-counts { display: flex; gap: 24px; flex-wrap: wrap; }
-.home2-page .admin-onboarding-counts strong { color: var(--orange); margin-right: 8px; }
-.home2-page .admin-onboarding-table th[scope="row"] { text-transform: none; letter-spacing: normal; font-weight: 400; min-width: 260px; }
-.home2-page .admin-onboarding-table th[scope="row"] strong { display: block; font-size: 14px; color: #f5f3ed; }
-.home2-page .admin-onboarding-table .admin-todo-slug { max-width: 650px; line-height: 1.5; }
-.home2-page .admin-onboarding-stage { display: block; color: var(--orange); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; margin: 8px 0 14px; }
-.home2-page .admin-onboarding-table input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--orange); cursor: pointer; }
-.home2-page .admin-onboarding-table input:focus-visible { outline: 2px solid #f5f3ed; outline-offset: 4px; }
-.home2-page .admin-onboarding-save { position: sticky; bottom: 0; background: #1e1e23; padding: 18px 20px; border: 1px solid #38383e; z-index: 2; }
-.home2-page .admin-onboarding-save .admin-form-actions { margin: 0; }
-@media (max-width: 640px) {
-  .home2-page .admin-onboarding-save { padding: 14px; gap: 12px; }
-  .home2-page .admin-onboarding-save .admin-form-actions { width: 100%; justify-content: space-between; }
+.admin-dash .admin-onboarding-steps .admin-onboarding-counts { display: flex; gap: 20px; flex-wrap: wrap; color: var(--portal-text); }
+.admin-dash .admin-onboarding-steps .admin-onboarding-counts strong { color: var(--portal-text-strong); margin-right: 8px; }
+.admin-dash .admin-onboarding-steps .admin-onboarding-table th[scope="row"] { text-transform: none; letter-spacing: normal; font-weight: 400; min-width: 240px; }
+.admin-dash .admin-onboarding-steps .admin-onboarding-table th[scope="row"] strong { display: block; font-size: var(--portal-t-body); color: var(--portal-text-strong); }
+.admin-dash .admin-onboarding-steps .admin-todo-slug { max-width: 650px; line-height: 1.55; color: var(--portal-text); }
+.admin-dash .admin-onboarding-steps .admin-onboarding-stage {
+  display: block;
+  color: var(--portal-text-faint);
+  font-size: var(--portal-t-micro);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin: 8px 0 14px;
 }
-
-.home2-page .admin-onboarding-stage-filter { min-width: 180px; margin: 0; }
+.admin-dash .admin-onboarding-steps .admin-onboarding-check { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; cursor: pointer; }
+.admin-dash .admin-onboarding-steps .admin-onboarding-check input { width: 20px; height: 20px; accent-color: var(--portal-text-strong); cursor: pointer; }
+.admin-dash .admin-onboarding-steps .admin-onboarding-check input:focus-visible { outline: var(--portal-focus-ring); outline-offset: var(--portal-focus-offset); }
+.admin-dash .admin-onboarding-steps .admin-onboarding-save {
+  position: sticky;
+  bottom: 10px;
+  z-index: 2;
+  padding: 16px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  box-shadow: var(--portal-pane-shadow);
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+}
+.admin-dash .admin-onboarding-steps .admin-onboarding-save .admin-form-actions { margin: 0; }
+.admin-dash .admin-onboarding-steps .admin-onboarding-stage-filter { min-width: 180px; margin: 0; }
+@media (max-width: 620px) {
+  .admin-dash .admin-onboarding-steps .admin-onboarding-save { padding: 14px; gap: 12px; }
+  .admin-dash .admin-onboarding-steps .admin-onboarding-save .admin-form-actions { width: 100%; justify-content: space-between; }
+  .admin-dash .admin-onboarding-steps .admin-onboarding-table th[scope="row"] { min-width: 0; }
+}
