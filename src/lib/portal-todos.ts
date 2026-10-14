@@ -321,6 +321,15 @@ export function isTodoCompleted(
   todo: PortalTodo,
   options?: ResolveTodoOptions,
 ): boolean {
+  // Training completion is version-aware on the server. In particular, an
+  // older `completed_portal_todos.disclosures` metadata flag cannot satisfy
+  // the current published curriculum.
+  if (
+    todo.id === "disclosures"
+    && todo.completionType === "auto"
+  ) {
+    return todo.completed === true;
+  }
   if (todo.completed) return true;
   if (todo.id === "ica_setup" && options?.icaSubmitted) return true;
   if (todo.id === "w9_setup" && options?.w9Submitted) return true;
