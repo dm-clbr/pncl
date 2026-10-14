@@ -371,6 +371,119 @@
   font-family: var(--ff-mono);
 }
 
+/* Give the first-login password its own unmistakable focal point. */
+.home2-page.onboarding-page .onboarding-password-card {
+  margin: 1rem 0;
+  padding: clamp(20px, 4vw, 28px);
+  border: 2px solid var(--accent-bright);
+  border-radius: var(--radius);
+  background: var(--bone);
+  color: var(--ink);
+  text-align: left;
+}
+
+.home2-page.onboarding-page .onboarding-password-card:focus-visible {
+  outline: 3px solid var(--bone);
+  outline-offset: 4px;
+}
+
+.home2-page.onboarding-page .onboarding-password-eyebrow {
+  font-family: var(--ff-mono);
+  font-size: 12px;
+  color: var(--accent-deep);
+}
+
+.home2-page.onboarding-page .onboarding-password-card h3 {
+  margin: 0.5rem 0 0.75rem;
+  font-size: clamp(21px, 4vw, 25px);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.home2-page.onboarding-page .onboarding-password-card p {
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.5;
+  margin: 0.75rem 0;
+}
+
+.home2-page.onboarding-page .onboarding-password-card .onboarding-password {
+  display: block;
+  padding: 1rem;
+  margin: 1rem 0;
+  border: 1px solid rgba(22, 22, 22, 0.25);
+  background: white;
+  color: var(--ink);
+  font-size: clamp(24px, 5vw, 32px);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.home2-page.onboarding-page .onboarding-password-action {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 0.5rem;
+  background: var(--ink);
+  color: var(--bone);
+  white-space: normal;
+  text-align: center;
+}
+
+.home2-page.onboarding-page .onboarding-password-action:hover {
+  background: var(--ink-2);
+}
+
+.home2-page.onboarding-page .onboarding-password-action:focus-visible {
+  outline: 3px solid var(--accent-deep);
+  outline-offset: 3px;
+}
+
+.home2-page.onboarding-page .onboarding-password-action:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.home2-page.onboarding-page .onboarding-password-card .onboarding-password-hint {
+  font-size: 13px;
+  margin-bottom: 0;
+}
+
+.home2-page.onboarding-page .onboarding-password-card .onboarding-password-error {
+  color: #8f211b;
+  font-weight: 600;
+}
+
+.home2-page.onboarding-page .onboarding-copy-email {
+  align-self: flex-start;
+  margin-top: 0.5rem;
+}
+
+.home2-page.onboarding-page .onboarding-troubleshooting {
+  margin: 1.5rem 0;
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.home2-page.onboarding-page .onboarding-troubleshooting summary {
+  cursor: pointer;
+}
+
+.home2-page.onboarding-page .onboarding-next-step {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(240, 237, 228, 0.2);
+}
+
+.home2-page.onboarding-page .onboarding-next-step h3 {
+  margin: 0.75rem 0;
+}
+
+.home2-page.onboarding-page .onboarding-next-step p {
+  margin-bottom: 1rem;
+}
+
 .home2-page.onboarding-page .onboarding-steps {
   text-align: left;
   margin: 1.25rem 0 1.5rem;
