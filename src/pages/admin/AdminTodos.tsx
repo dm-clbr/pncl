@@ -508,30 +508,30 @@ export default function AdminTodos() {
 
                 return (
                   <tr key={todo.id} className={todo.published ? undefined : "admin-todo-row-hidden"}>
-                    <td>
+                    <td data-label="To-do">
                       <strong>{todo.title}</strong>
                       <span className="admin-todo-slug">{todo.slug}</span>
                     </td>
-                    <td>
+                    <td data-label="Stage">
                       <span className="admin-todo-phase">{phaseLabel(todo.phase)}</span>
                       <span className="admin-todo-slug">
                         {COMPLETION_TYPE_OPTIONS.find((option) => option.value === todo.completionType)?.label
                           ?? todo.completionType}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Completion">
                       <CompletionCell todo={todo} onViewUsers={setCompletionTodo} />
                     </td>
-                    <td>
+                    <td data-label="Status">
                       <span className={`admin-status${todo.published ? " active" : ""}`}>
                         {todo.published ? "Published" : "Hidden"}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Actions">
                       <div className="admin-incentive-actions">
                         <button
                           type="button"
-                          className="admin-icon-btn"
+                          className="admin-icon-btn admin-icon-only"
                           disabled={index === 0 || isReordering}
                           onClick={() => void moveTodo(index, -1)}
                           aria-label={`Move ${rowLabel(todo)} up`}
@@ -540,7 +540,7 @@ export default function AdminTodos() {
                         </button>
                         <button
                           type="button"
-                          className="admin-icon-btn"
+                          className="admin-icon-btn admin-icon-only"
                           disabled={index === todos.length - 1 || isReordering}
                           onClick={() => void moveTodo(index, 1)}
                           aria-label={`Move ${rowLabel(todo)} down`}

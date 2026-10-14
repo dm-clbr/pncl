@@ -1,0 +1,38 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - link "PNCL home":
+    - /url: /
+  - paragraph: Employee Portal
+  - 'button "On-Board ·1 of 2 steps complete Next: Complete your W-9 , open the checklist"':
+    - text: On-Board
+    - text: ·1 of 2
+    - generic: steps complete
+    - generic: "Next: Complete your W-9"
+    - generic: ", open the checklist"
+    - generic: 50%
+  - link "Jordan Example, view profile":
+    - /url: /portal/profile
+    - generic: Jordan Example
+    - generic: audit@thepncl.com
+    - generic: JE
+  - navigation "Agent portal":
+    - link "Dashboard":
+      - /url: /portal
+      - text: Dashboard
+    - link "Calendar":
+      - /url: /portal/calendar
+      - text: Calendar
+    - link "State Map":
+      - /url: /portal/state-map
+      - text: State Map
+  - link "Back to portal":
+    - /url: /portal
+    - generic: Back to portal
+  - heading "Calendar" [level=1]
+  - paragraph: A read-only preview of what is next, visible only to your signed-in portal account.
+  - heading "Bring your schedule into the portal" [level=2]
+  - paragraph: A read-only preview of the next 14 days on your primary calendar. PNCL cannot create, edit, or delete calendar events.
+  - button "Connect Google Calendar":
+    - text: Connect Google Calendar

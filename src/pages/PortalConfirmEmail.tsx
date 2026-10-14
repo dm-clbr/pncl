@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import OnboardingLayout from "@/components/OnboardingLayout";
+import PortalAuthLayout from "@/components/portal/PortalAuthLayout";
+import Chip from "@/components/portal/Chip";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function PortalConfirmEmail() {
@@ -15,23 +16,23 @@ export default function PortalConfirmEmail() {
   };
 
   return (
-    <OnboardingLayout>
-      <span className="onboarding-status-badge tone-pending">Almost there</span>
-      <h2 className="h3" style={{ margin: "1rem 0" }}>Sign in with Google</h2>
-      <p className="lead">
+    <PortalAuthLayout>
+      <Chip variant="pending">Almost there</Chip>
+      <h1 className="pauth-title">Sign in with Google</h1>
+      <p className="pauth-lede">
         {email
           ? <>Use <strong>{email}</strong> when signing in with Google to access the portal.</>
           : "Sign in with your @thepncl.com Google account to access the portal."}
       </p>
 
-      <div className="onboarding-actions" style={{ marginTop: "1.5rem" }}>
-        <Link to="/portal/login" className="btn btn-accent">
-          Sign in with Google <span className="arr">→</span>
+      <div className="pauth-actions">
+        <Link to="/portal/login" className="pauth-btn is-primary">
+          Sign in with Google
         </Link>
-        <button type="button" className="btn btn-ghost" onClick={() => void handleSignOut()}>
+        <button type="button" className="pauth-btn" onClick={() => void handleSignOut()}>
           Sign out
         </button>
       </div>
-    </OnboardingLayout>
+    </PortalAuthLayout>
   );
 }

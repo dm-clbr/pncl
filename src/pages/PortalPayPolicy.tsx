@@ -1,29 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ChevronDown } from "lucide-react";
-import PNCLLogo from "@/components/PNCLLogo";
+import { ChevronDown, Wallet } from "lucide-react";
+import PortalToolLayout from "@/components/portal/PortalToolLayout";
+import EmptyState from "@/components/portal/EmptyState";
+import Pane from "@/components/portal/Pane";
+import Skeleton from "@/components/portal/Skeleton";
 import { fetchPayPolicyEntries, type PayPolicyEntry } from "@/lib/portal-pay-policy";
 import { trackPageView } from "@/lib/analytics";
 import "@/styles/home2.css";
-
-function FaqItem({ entry }: { entry: PayPolicyEntry }) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="portal-faq-item">
-      <button
-        type="button"
-        className="portal-faq-question"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <span>{entry.title}</span>
-        <ChevronDown size={16} aria-hidden="true" className={open ? "open" : undefined} />
-      </button>
-      {open && <p className="portal-faq-answer">{entry.body}</p>}
-    </div>
-  );
-}
+import "@/styles/portal-tools.css";
 
 export default function PortalPayPolicy() {
   const [entries, setEntries] = useState<PayPolicyEntry[]>([]);
@@ -45,78 +30,72 @@ export default function PortalPayPolicy() {
   const faqs = useMemo(() => entries.filter((entry) => entry.category === "faq"), [entries]);
 
   return (
-    <div className="home2-page">
-      <div className="grain" aria-hidden="true" />
+    <PortalToolLayout title="Pay & Commissions">
+      <p className="portal-panel-note">
+        How you get paid: policies, examples, and answers.
+      </p>
 
-      <main className="portal-dash dark carrier-sheet-dash">
-        <div className="wrap carrier-sheet-wrap">
-          <header className="carrier-sheet-header">
-            <Link to="/" className="portal-hero-logo" aria-label="PNCL home">
-              <PNCLLogo height={40} />
-            </Link>
-            <div className="carrier-sheet-header-copy">
-              <p className="portal-welcome">Pay &amp; Commissions</p>
-              <p className="portal-meta">How you get paid: policies, examples, and answers.</p>
+      <div className="ptools-stack">
+        {loading && (
+          <Pane>
+            <div className="ptools-rows" aria-busy="true" aria-label="Loading pay policies">
+              <Skeleton variant="text" width="42%" />
+              <Skeleton variant="row" />
+              <Skeleton variant="row" />
             </div>
-            <Link to="/portal" className="admin-back-link">
-              <ArrowLeft size={16} aria-hidden="true" />
-              Back to portal
-            </Link>
-          </header>
+          </Pane>
+        )}
 
-          {loading ? (
-            <div className="portal-incentives-loading">
-              <span className="onboarding-spinner" aria-hidden="true" />
-              <span>Loading...</span>
-            </div>
-          ) : error ? (
-            <p className="admin-error">{error}</p>
-          ) : entries.length === 0 ? (
-            <div className="carrier-sheet-panel portal-profile-panel">
-              <p className="portal-panel-note">
-                Pay policies are being finalized. Check back soon, or open a support ticket if you
-                have a question now.
-              </p>
-            </div>
-          ) : (
-            <>
-              {policies.length > 0 && (
-                <div className="carrier-sheet-panel portal-profile-panel">
-                  <div className="carrier-sheet-panel-head">
-                    <div>
-                      <h1>Pay policies</h1>
-                      <p>The rules PNCL pays by. Questions? Open a support ticket.</p>
-                    </div>
-                  </div>
-                  <div className="portal-pay-policy-list">
-                    {policies.map((entry) => (
-                      <article key={entry.id} className="portal-pay-policy-entry">
-                        <h2>{entry.title}</h2>
-                        <p>{entry.body}</p>
-                      </article>
-                    ))}
-                  </div>
-                </div>
-              )}
+        {!loading && error && (
+          <Pane>
+            <p className="ptools-error">{error}</p>
+          </Pane>
+        )}
 
-              {faqs.length > 0 && (
-                <div className="carrier-sheet-panel portal-profile-panel">
-                  <div className="carrier-sheet-panel-head">
-                    <div>
-                      <h2>Frequently asked questions</h2>
-                    </div>
-                  </div>
-                  <div className="portal-faq-list">
-                    {faqs.map((entry) => (
-                      <FaqItem key={entry.id} entry={entry} />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </main>
-    </div>
+        {!loading && !error && entries.length === 0 && (
+          <Pane>
+            <EmptyState
+              icon={<Wallet aria-hidden="true" />}
+              title="Pay policies are being finalized"
+              body="Check back soon, or open a ticket if you have a question now."
+              action={
+                <Link to="/portal/support" className="ptools-cta">
+                  Open a support ticket
+                </Link>
+              }
+            />
+          </Pane>
+        )}
+
+        {!loading && !error && policies.length > 0 && (
+          <Pane title="Pay policies">
+            <div className="ptools-policy">
+              {policies.map((entry) => (
+                <article key={entry.id}>
+                  <h3 className="ptools-policy-title">{entry.title}</h3>
+                  <p className="ptools-policy-body">{entry.body}</p>
+                </article>
+              ))}
+            </div>
+          </Pane>
+        )}
+
+        {!loading && !error && faqs.length > 0 && (
+          <Pane title="Frequently asked questions">
+            {/* ponytail: native <details>, so the disclosure needs no state,
+              no key handler and no aria-expanded of our own. */}
+            {faqs.map((entry) => (
+              <details key={entry.id} className="ptools-faq">
+                <summary className="ptools-faq-q">
+                  <span>{entry.title}</span>
+                  <ChevronDown size={16} aria-hidden="true" />
+                </summary>
+                <p className="ptools-faq-a">{entry.body}</p>
+              </details>
+            ))}
+          </Pane>
+        )}
+      </div>
+    </PortalToolLayout>
   );
 }

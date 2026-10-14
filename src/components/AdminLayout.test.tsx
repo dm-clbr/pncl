@@ -74,6 +74,16 @@ describe("admin sidebar layout", () => {
     document.body.style.overflow = "";
   });
 
+  it("marks Add user alone as current while keeping Users current on user details", () => {
+    const view = renderAdminLayout("/portal/admin/users/new");
+    const nav = screen.getByRole("navigation", { name: "Admin navigation" });
+    expect(within(nav).getByRole("link", { name: "Add user" })).toHaveAttribute("aria-current", "page");
+    expect(within(nav).getByRole("link", { name: "Users" })).not.toHaveAttribute("aria-current");
+    view.unmount();
+    renderAdminLayout("/portal/admin/users/example-agent");
+    expect(screen.getByRole("link", { name: "Users" })).toHaveAttribute("aria-current", "page");
+  });
+
   it("preserves full-admin destinations and marks the matching route active", () => {
     renderAdminLayout("/portal/admin/users/agent-123");
 

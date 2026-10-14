@@ -1,0 +1,63 @@
+/* A release announcement uses the native Sheet's focus and dismissal behavior,
+   centered over the portal with its own solid material for readable copy. */
+.portal-new-look .portal-sheet {
+  inset: 50% auto auto 50%;
+  width: min(520px, calc(100vw - 32px));
+  height: auto;
+  max-height: calc(100dvh - 48px);
+  margin: 0;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+}
+
+.portal-new-look .portal-sheet[open] {
+  animation: portal-new-look-in 240ms var(--portal-ease-out);
+}
+
+.portal-new-look .portal-sheet-handle { display: none; }
+.portal-new-look .portal-sheet-head { padding: 20px; gap: 16px; }
+.portal-new-look .portal-sheet-title { font-size: 24px; line-height: 1.25; }
+.portal-new-look .portal-sheet-title:focus { outline: none; }
+.portal-new-look .portal-sheet-body { display: grid; gap: 20px; padding: 0 20px 20px; }
+.portal-new-look-intro { display: grid; gap: 8px; }
+.portal-new-look-intro p { margin: 0; font-size: 15px; line-height: 1.55; }
+.portal-new-look-intro .portal-new-look-eyebrow {
+  color: var(--portal-accent);
+  font-family: var(--ff-mono, "JetBrains Mono", ui-monospace, monospace);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.portal-new-look-features { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.portal-new-look-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius-inner);
+  background: rgba(0, 0, 0, 0.16);
+}
+.portal-new-look-features svg { flex-shrink: 0; margin-top: 2px; color: var(--portal-accent); }
+.portal-new-look-features strong { color: var(--portal-text-strong); font-size: 14px; font-weight: 600; }
+.portal-new-look-features p { margin: 4px 0 0; font-size: 13px; line-height: 1.45; }
+.portal-new-look-continue {
+  min-height: var(--portal-control-h);
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--portal-control-radius);
+  background: var(--portal-text-strong);
+  color: var(--portal-bar-fill);
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  cursor: pointer;
+}
+.portal-new-look-continue:hover { background: #fff; }
+
+@keyframes portal-new-look-in { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 620px) { .portal-new-look .portal-sheet-title { font-size: 21px; } }
+@media (prefers-reduced-motion: reduce) { .portal-new-look .portal-sheet[open] { animation: none; } }

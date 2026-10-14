@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Building2,
@@ -30,9 +30,11 @@ import {
   X,
 } from "lucide-react";
 import PNCLLogo from "@/components/PNCLLogo";
+import PortalBackground from "@/components/portal/PortalBackground";
 import { useAuth } from "@/contexts/AuthContext";
 import { isAdminAssist, isGenesisAdmin } from "@/lib/roles";
 import "@/styles/home2.css";
+import "@/styles/portal-admin.css";
 
 const ADMIN_SIDEBAR_STORAGE_KEY = "pncl.admin.sidebar.collapsed";
 const ADMIN_MOBILE_QUERY = "(max-width: 899px)";
@@ -112,11 +114,13 @@ function useIsMobileAdminViewport() {
 
 export default function AdminLayout() {
   const { user } = useAuth();
+  const { pathname } = useLocation();
   const [collapsed, setCollapsed] = useState(getStoredSidebarPreference);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const mobileCloseButtonRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
   const isMobile = useIsMobileAdminViewport();
   const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Admin";
   const adminAssistOnly = isAdminAssist(user);
@@ -145,6 +149,9 @@ export default function AdminLayout() {
     } else {
       sidebar.removeAttribute("inert");
     }
+    // The open drawer is modal: the page behind it leaves the tab order and
+    // the accessibility tree until it closes.
+    mainRef.current?.toggleAttribute("inert", isMobile && mobileNavOpen);
   }, [isMobile, mobileNavOpen]);
 
   useEffect(() => {
@@ -208,6 +215,7 @@ export default function AdminLayout() {
 
   return (
     <div className="home2-page">
+      <PortalBackground />
       <div className="grain" aria-hidden="true" />
 
       <main className="portal-dash dark admin-dash">
@@ -216,7 +224,8 @@ export default function AdminLayout() {
             type="button"
             className={`admin-sidebar-backdrop${mobileNavOpen ? " open" : ""}`}
             aria-label="Close admin navigation"
-            tabIndex={mobileNavOpen ? 0 : -1}
+            aria-hidden="true"
+            tabIndex={-1}
             onClick={() => closeMobileNavigation()}
           />
 
@@ -277,7 +286,7 @@ export default function AdminLayout() {
                 <NavLink
                   key={to}
                   to={to}
-                  end={end}
+                  end={end || (to === "/portal/admin/users" && pathname === "/portal/admin/users/new")}
                   className={({ isActive }) => `admin-nav-link${isActive ? " active" : ""}`}
                   title={collapsed && !isMobile ? label : undefined}
                   onClick={() => {
@@ -302,7 +311,7 @@ export default function AdminLayout() {
             </div>
           </aside>
 
-          <section className="admin-main">
+          <section className="admin-main" ref={mainRef}>
             <header className="admin-mobile-bar">
               <button
                 ref={mobileMenuButtonRef}

@@ -1,0 +1,34 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - button "Open navigation":
+  - link "PNCL home":
+    - /url: /
+  - generic: Admin assist
+  - heading "Referral hierarchy" [level=1]
+  - paragraph: Read-only canvas and tree views. Select any person to see upline, downline, and NPN details.
+  - generic: Focus on agent
+  - combobox "Focus on agent":
+    - option "Full organization" [selected]
+  - group "Hierarchy view":
+    - button "Canvas" [pressed]:
+      - text: Canvas
+    - button "Tree":
+      - text: Tree
+  - generic "Canvas zoom controls":
+    - button "Zoom out":
+    - generic: 100%
+    - button "Zoom in":
+    - button "100%"
+    - button "Fit":
+      - text: Fit
+  - button "View hierarchy details for Taylor Example":
+    - generic: TE
+    - heading "Taylor Example" [level=3]
+    - paragraph: NPN 12345678
+  - button "View hierarchy details for Jordan Example":
+    - generic: JE
+    - heading "Jordan Example" [level=3]
+    - paragraph: NPN 12345678
+    - generic: 1 direct

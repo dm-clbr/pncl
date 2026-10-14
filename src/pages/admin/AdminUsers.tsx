@@ -1,5 +1,6 @@
 import { resolveAgentDesignation } from "@/lib/agent-designation";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useAdminModal } from "@/components/admin/useAdminModal";
 import { Link } from "react-router-dom";
 import { Download, UserPlus, Users, X } from "lucide-react";
 import AdminUserRowActionsMenu from "@/components/admin/AdminUserRowActionsMenu";
@@ -317,6 +318,9 @@ export default function AdminUsers() {
     setEmailDraft("");
   };
 
+  const emailModalRef = useRef<HTMLFormElement>(null);
+  useAdminModal(emailModalRef, !assistView && Boolean(emailEditAgent), closeEmailEditor);
+
   const handleSaveEmail = async (event: FormEvent) => {
     event.preventDefault();
     const token = session?.access_token;
@@ -503,7 +507,7 @@ export default function AdminUsers() {
 
                 return (
                   <tr key={agent.id}>
-                    <td>
+                    <td data-label="Name">
                       <div className="admin-user-name-cell">
                         {assistView && (
                           <AdminUserAvatar
@@ -527,12 +531,12 @@ export default function AdminUsers() {
                         )}
                       </div>
                     </td>
-                    <td>{agent.email}</td>
-                    <td>{agent.referrerName ?? agent.uplineNetwork ?? "—"}</td>
-                    <td>{agent.npn ?? "—"}</td>
-                    <td>{phaseBadge(agent.phase)}</td>
+                    <td data-label="Email">{agent.email}</td>
+                    <td data-label="Upline">{agent.referrerName ?? agent.uplineNetwork ?? "—"}</td>
+                    <td data-label="NPN">{agent.npn ?? "—"}</td>
+                    <td data-label="Stage">{phaseBadge(agent.phase)}</td>
                     {!assistView && (
-                      <td>
+                      <td data-label="Comp">
                         <AdminCompLevelSelect
                           agent={agent}
                           agentsById={agentsById}
@@ -542,12 +546,12 @@ export default function AdminUsers() {
                         />
                       </td>
                     )}
-                    <td>
+                    <td data-label="Status">
                       <span className={`admin-status${agent.emailConfirmed ? " active" : ""}`}>
                         {statusLabel(agent)}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Google">
                       <span
                         className={`admin-status${googleStatusClass(agent.googleWorkspaceStatus)}`}
                         title={agent.googleSuspensionReason ?? undefined}
@@ -555,13 +559,13 @@ export default function AdminUsers() {
                         {googleStatusLabel(agent.googleWorkspaceStatus)}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Role">
                       <span className={roleBadgeClass(agent.role)}>
                         {formatRoleLabel(agent.role)}
                       </span>
                     </td>
                     {!assistView && (
-                      <td>
+                      <td data-label="Actions">
                         <AdminUserRowActionsMenu
                           agent={agent}
                           isSelf={isSelf}
@@ -601,6 +605,9 @@ export default function AdminUsers() {
           <form
             className="admin-modal admin-user-email-modal"
             role="dialog"
+            ref={emailModalRef}
+            tabIndex={-1}
+            aria-modal="true"
             aria-labelledby="admin-edit-email-title"
             onClick={(event) => event.stopPropagation()}
             onSubmit={(event) => void handleSaveEmail(event)}

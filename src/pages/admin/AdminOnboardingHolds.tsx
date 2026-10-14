@@ -203,12 +203,12 @@ export default function AdminOnboardingHolds() {
                 const canRelease = !hold.hasGoogleAccount && !hold.hasPortalAccount;
                 return (
                   <tr key={hold.onboardingId}>
-                    <td>
+                    <td data-label="Agent">
                       <strong>{hold.legalName}</strong><br />
                       <span title={hold.phoneNumber}>{privatePhone(hold.phoneNumber)}</span><br />
                       {hold.workspaceEmail ?? "No PNCL email yet"}
                     </td>
-                    <td>
+                    <td data-label="Enrollment">
                       <code title={hold.onboardingId}>{shortId(hold.onboardingId)}</code>
                       <details>
                         <summary>Identifiers</summary>
@@ -220,8 +220,8 @@ export default function AdminOnboardingHolds() {
                         </small>
                       </details>
                     </td>
-                    <td><StepList hold={hold} /></td>
-                    <td>
+                    <td data-label="Progress"><StepList hold={hold} /></td>
+                    <td data-label="Attention">
                       {hold.needsAttention ? (
                         <>
                           <strong><AlertTriangle size={15} aria-hidden="true" /> {formatStatus(hold.failedStep ?? "unknown step")}</strong><br />
@@ -230,9 +230,9 @@ export default function AdminOnboardingHolds() {
                         </>
                       ) : formatStatus(hold.enrollmentStatus)}
                     </td>
-                    <td>{holdLabel(hold)}</td>
-                    <td>{formatDateTime(hold.updatedAt)}<br /><small>Attempts: {hold.provisioningAttempts}</small></td>
-                    <td>
+                    <td data-label="Reservation">{holdLabel(hold)}</td>
+                    <td data-label="Updated">{formatDateTime(hold.updatedAt)}<br /><small>Attempts: {hold.provisioningAttempts}</small></td>
+                    <td data-label="Actions">
                       <div className="admin-action-row">
                         {hold.hasPortalAccount && hold.supabaseUserId && <Link to={`/portal/admin/users/${hold.supabaseUserId}`} className="admin-secondary-btn">View user</Link>}
                         {hold.needsAttention && (

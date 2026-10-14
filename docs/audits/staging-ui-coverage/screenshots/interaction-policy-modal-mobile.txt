@@ -1,0 +1,87 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - button "Open navigation":
+  - link "PNCL home":
+    - /url: /
+  - generic: Admin console
+  - heading "Setter / Closer tracker" [level=1]
+  - paragraph: Track commission splits by policy. 50/50 when the setter bought the lead; 70/30 when the closer bought the lead. Closer NPN is required on every record.
+  - generic: Search policies
+  - searchbox "Search policies"
+  - button "Search"
+  - button "Export CSV":
+    - text: Export CSV
+  - button "Add policy":
+    - text: Add policy
+  - strong: "1"
+  - generic: Policies tracked
+  - strong: "1"
+  - generic: 50/50 splits
+  - strong: "0"
+  - generic: 70/30 splits
+  - table:
+    - rowgroup:
+      - row "Policy Date Split Setter Closer Client Actions":
+        - columnheader "Policy"
+        - columnheader "Date"
+        - columnheader "Split"
+        - columnheader "Setter"
+        - columnheader "Closer"
+        - columnheader "Client"
+        - columnheader "Actions"
+    - rowgroup:
+      - row "Policy TEST-POLICY-42 Mutual of Omaha Date Oct 14, 2026 Split 50/50 Setter Jordan Example (12345678) Closer Taylor Example (87654321) Client Casey Example Edit TEST-POLICY-42 Delete TEST-POLICY-42":
+        - cell "Policy TEST-POLICY-42 Mutual of Omaha":
+          - text: Policy
+          - strong: TEST-POLICY-42
+          - paragraph: Mutual of Omaha
+        - cell "Date Oct 14, 2026"
+        - cell "Split 50/50":
+          - text: Split
+          - generic: 50/50
+        - cell "Setter Jordan Example (12345678)"
+        - cell "Closer Taylor Example (87654321)"
+        - cell "Client Casey Example"
+        - cell "Edit TEST-POLICY-42 Delete TEST-POLICY-42":
+          - button "Edit TEST-POLICY-42":
+          - button "Delete TEST-POLICY-42":
+  - dialog "Add policy split":
+    - heading "Add policy split" [level=2]
+    - button "Close" [active]:
+    - paragraph: "Choose setter and closer from PNCL agents. NPNs fill in automatically from their profile. Split is assigned from who bought the lead: setter = 50/50, closer = 70/30."
+    - generic: Policy number
+    - textbox "Policy number"
+    - generic: Policy date
+    - textbox "Policy date"
+    - generic: Carrier
+    - combobox "Carrier":
+      - option "Select carrier" [selected]
+      - option "Mutual of Omaha"
+    - generic: Client name
+    - textbox "Client name"
+    - generic: Who bought the lead?
+    - combobox "Who bought the lead?":
+      - option "50/50 — setter bought lead" [selected]
+      - option "70/30 — closer bought lead"
+    - generic: Setter
+    - combobox "Setter":
+      - option "Select setter (optional)" [selected]
+      - option "Jordan Example (NPN 12345678)"
+      - option "Taylor Example (NPN 12345678)"
+    - generic: Setter NPN
+    - textbox "Setter NPN":
+      - /placeholder: Auto-filled from agent
+    - generic: Closer
+    - combobox "Closer":
+      - option "Select closer" [selected]
+      - option "Jordan Example (NPN 12345678)"
+      - option "Taylor Example (NPN 12345678)"
+    - generic: Closer NPN
+    - textbox "Closer NPN":
+      - /placeholder: Auto-filled from agent
+    - generic: Notes
+    - textbox "Notes"
+    - button "Cancel"
+    - button "Add policy"

@@ -1,0 +1,4488 @@
+/* ==========================================================================
+   Admin console (/portal/admin) on the portal's glass system: the shell, the
+   page panels and their controls, tables that stack into labelled cards on a
+   phone, modals that become bottom sheets, the hierarchy canvas and tree, and
+   the bar over the two full-screen preview routes. Tokens live in
+   portal-tokens.css (type, text ladder, pane, radii, motion, focus and the
+   --portal-control-* sizes every button, input, menu row and tab takes).
+
+   Moved out of home2.css and onboarding.css. The eleven classes agent pages
+   still share (admin-field, admin-field-checkbox, admin-form,
+   admin-form-actions, admin-primary-btn, admin-back-link, admin-error,
+   admin-empty, admin-secondary-link, admin-modal-overlay, admin-modal-close)
+   keep their base rules in home2.css; the console restyles them here, under
+   .admin-dash, and leaves the agent pages as they were.
+   ========================================================================== */
+
+/* ── Scope ───────────────────────────────────────────────────────────────── */
+
+/* Everything below is scoped to the admin <main> (or the preview shell at the
+   end of the file). Every stylesheet ships in one bundle, so an unscoped rule
+   here would restyle the agent pages that still share admin-field and
+   friends. Specificity is 0-2-0 or more throughout: that ties the shared base
+   rules in home2.css and wins by order (this file loads after it), and it
+   clears Tailwind's preflight, which loads after both. */
+.home2-page main.admin-dash {
+  /* State changes run 150 to 250ms on the portal's ease-out; all three drop to
+     zero under reduced motion, so nothing that reads them needs a second
+     rule. */
+  --admin-fast: 150ms;
+  --admin-base: 200ms;
+  --admin-slow: 250ms;
+  /* The recessed fill: table frames, stacked rows, stat tiles, inputs and
+     secondary buttons. White 0.60 reads 4.66:1 on it (the Segmented track). */
+  --admin-inset: rgba(0, 0, 0, 0.28);
+  /* Destructive: a light rose on the inset fill (5.6:1), always paired with a
+     border and a label or a trash glyph, never the colour alone. */
+  --admin-danger: #ffb4b4;
+  --admin-danger-border: rgba(255, 138, 138, 0.55);
+  --admin-select-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23ffffff' stroke-opacity='0.6' stroke-width='1.5'%3E%3Cpath d='M1 1.75 6 6.5l5-4.75'/%3E%3C/svg%3E");
+  min-width: 0;
+  padding: 0;
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home2-page main.admin-dash {
+    --admin-fast: 0ms;
+    --admin-base: 0ms;
+    --admin-slow: 0ms;
+  }
+}
+
+/* One focus treatment for every control in the console, keyboard only. */
+.admin-dash :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.admin-dash .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── Shell ───────────────────────────────────────────────────────────────── */
+
+/* Desktop: a floating glass rail in a fixed column, the page beside it. The
+   gutter between rail, page and viewport is the portal's 14px gap. */
+.admin-dash .admin-shell {
+  --admin-rail: 268px;
+  --admin-gutter: 14px;
+  display: grid;
+  grid-template-columns: calc(var(--admin-rail) + var(--admin-gutter)) minmax(0, 1fr);
+  min-width: 0;
+  min-height: 100svh;
+  font-size: var(--portal-control-fs);
+  line-height: 1.5;
+  transition: grid-template-columns var(--admin-slow) var(--portal-ease-out);
+}
+
+.admin-dash .admin-shell-collapsed {
+  --admin-rail: 76px;
+}
+
+/* The rail sits beside the page, never over it, so the translucent pane fill
+   only ever has the gradient behind it. */
+.admin-dash .admin-sidebar {
+  position: fixed;
+  top: var(--admin-gutter);
+  bottom: var(--admin-gutter);
+  left: var(--admin-gutter);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  width: var(--admin-rail);
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
+  box-shadow: var(--portal-pane-shadow);
+  color: var(--portal-text);
+  transition: width var(--admin-slow) var(--portal-ease-out);
+}
+
+.admin-dash .admin-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 12px 10px 12px 18px;
+  border-bottom: 1px solid var(--portal-rule);
+}
+
+.admin-dash .admin-sidebar-brand {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 44px;
+  border-radius: 8px;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-sidebar-logo-full {
+  display: inline-flex;
+}
+
+.admin-dash .admin-sidebar-logo-full svg {
+  height: 28px;
+  width: auto;
+}
+
+/* The collapsed rail's mark. */
+.admin-dash .admin-sidebar-logo-mark {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--portal-border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-sidebar-collapse,
+.admin-dash .admin-sidebar-close,
+.admin-dash .admin-mobile-menu {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--portal-control-h);
+  height: var(--portal-control-h);
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--portal-control-radius);
+  background: none;
+  color: var(--portal-text);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--admin-fast) var(--portal-ease-out),
+    color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-sidebar-collapse svg,
+.admin-dash .admin-sidebar-close svg,
+.admin-dash .admin-mobile-menu svg {
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
+}
+
+.admin-dash .admin-sidebar-collapse:hover,
+.admin-dash .admin-sidebar-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-sidebar-close {
+  display: none;
+}
+
+.admin-dash .admin-sidebar-account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  min-width: 0;
+  margin: 12px 10px 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-sidebar-account-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--portal-border);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-sidebar-account-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+/* portal-welcome and portal-meta are the dashboard's mono labels in home2.css;
+   here they are a name and a role in Manrope. */
+.admin-dash .admin-sidebar-account .portal-welcome,
+.admin-dash .admin-sidebar-account .portal-meta {
+  margin: 0;
+  overflow: hidden;
+  font-family: var(--portal-font);
+  letter-spacing: 0;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  text-transform: none;
+  white-space: nowrap;
+  word-break: normal;
+}
+
+.admin-dash .admin-sidebar-account .portal-welcome {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-sidebar-account .portal-meta {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-nav {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+  margin: 0;
+  padding: 4px 10px 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  scrollbar-width: thin;
+}
+
+/* One row recipe for the 21 destinations and the way back to the portal. The
+   active row is a pill: a white 0.12 fill plus a 1px inner ring, so the state
+   never rests on the fill alone, and aria-current carries it for assistive
+   tech. The weight stays put between states. */
+.admin-dash .admin-nav-link,
+.admin-dash .admin-back-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  width: 100%;
+  min-height: var(--portal-control-h);
+  padding: 0 12px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: var(--portal-control-radius);
+  background: none;
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.25;
+  text-transform: none;
+  text-decoration: none;
+  transition:
+    background-color var(--admin-fast) var(--portal-ease-out),
+    color var(--admin-fast) var(--portal-ease-out),
+    box-shadow var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-nav-link svg,
+.admin-dash .admin-back-link svg {
+  flex: 0 0 auto;
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
+  color: var(--portal-text-faint);
+  transition: color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-nav-link:hover,
+.admin-dash .admin-back-link:hover {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-nav-link:hover svg,
+.admin-dash .admin-back-link:hover svg {
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-nav-link.active {
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-nav-link.active svg {
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-nav-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-dash .admin-sidebar-footer {
+  flex-shrink: 0;
+  padding: 8px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--portal-rule);
+}
+
+.admin-dash .admin-main {
+  grid-column: 2;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--admin-gutter) var(--admin-gutter) 40px;
+  overflow-x: clip;
+}
+
+.admin-dash .admin-content {
+  width: 100%;
+  min-width: 0;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.admin-dash .admin-mobile-bar,
+.admin-dash .admin-sidebar-backdrop {
+  display: none;
+}
+
+/* Collapsed to the icon rail. Labels stay in the DOM for assistive tech; the
+   links carry a title for pointer users. */
+@media (min-width: 900px) {
+  .admin-dash .admin-shell-collapsed .admin-sidebar-header {
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 0;
+  }
+
+  .admin-dash .admin-shell-collapsed .admin-sidebar-logo-full {
+    display: none;
+  }
+
+  .admin-dash .admin-shell-collapsed .admin-sidebar-logo-mark {
+    display: inline-flex;
+  }
+
+  .admin-dash .admin-shell-collapsed .admin-sidebar-account {
+    justify-content: center;
+    margin-inline: 10px;
+    padding: 8px 0;
+    background: none;
+  }
+
+  .admin-dash .admin-shell-collapsed .admin-sidebar-account-copy,
+  .admin-dash .admin-shell-collapsed .admin-nav-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .admin-dash .admin-shell-collapsed .admin-nav-link,
+  .admin-dash .admin-shell-collapsed .admin-back-link {
+    justify-content: center;
+    gap: 0;
+    padding: 0;
+  }
+}
+
+/* Below 900px the rail becomes a drawer over the page. It sits over content,
+   so it takes the solid bar fill rather than the translucent pane. */
+@media (max-width: 899px) {
+  .admin-dash .admin-shell,
+  .admin-dash .admin-shell-collapsed {
+    display: block;
+    min-height: 100svh;
+  }
+
+  .admin-dash .admin-sidebar {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 9200;
+    width: min(320px, calc(100vw - 48px));
+    padding-top: env(safe-area-inset-top, 0px);
+    border-width: 0 1px 0 0;
+    border-radius: 0 var(--portal-radius) var(--portal-radius) 0;
+    background: var(--portal-pane-sheen), var(--portal-bar-fill);
+    box-shadow: 16px 0 48px rgba(0, 0, 0, 0.45);
+    visibility: hidden;
+    transform: translateX(-104%);
+    transition:
+      transform var(--admin-slow) var(--portal-ease-out),
+      visibility var(--admin-slow);
+  }
+
+  .admin-dash .admin-sidebar.open {
+    visibility: visible;
+    transform: translateX(0);
+  }
+
+  .admin-dash .admin-sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9100;
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: rgba(0, 0, 0, 0.55);
+    opacity: 0;
+    visibility: hidden;
+    cursor: pointer;
+    transition:
+      opacity var(--admin-base) var(--portal-ease-out),
+      visibility var(--admin-base);
+  }
+
+  .admin-dash .admin-sidebar-backdrop.open {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .admin-dash .admin-sidebar-collapse {
+    display: none;
+  }
+
+  .admin-dash .admin-sidebar-close {
+    display: inline-flex;
+  }
+
+  .admin-dash .admin-main {
+    padding: 0 16px 40px;
+  }
+
+  /* No bar: the menu button and the logo sit on the gradient. The page scrolls
+     under nothing, so the row is static rather than sticky. The button brings
+     its own glass fill. The logo is exempt from the text-contrast rule and the
+     title (the one text run) is hidden visually, as the portal header hides
+     its own on a phone. Like PortalHeader, the brand is an unfiltered SVG:
+     filtering this SVG intermittently clipped letters during navigation in
+     the in-app browser. */
+  .admin-dash .admin-mobile-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 0 12px;
+  }
+
+  .admin-dash .admin-mobile-menu {
+    border-color: var(--portal-border);
+    background: var(--portal-pane-sheen), var(--portal-pane-fill);
+    box-shadow: var(--portal-pane-shadow);
+    color: var(--portal-text-strong);
+  }
+
+  .admin-dash .admin-mobile-menu:hover {
+    background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  }
+
+  .admin-dash .admin-mobile-brand {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    border-radius: 8px;
+    color: var(--portal-text-strong);
+  }
+
+  .admin-dash .admin-mobile-brand svg {
+    height: 28px;
+    width: auto;
+  }
+
+  .admin-dash .admin-mobile-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
+/* ── Panels ──────────────────────────────────────────────────────────────── */
+
+/* Every admin page is one glass pane. AdminClients names its wrapper
+   admin-section; it takes the same recipe. */
+.admin-dash .admin-panel,
+.admin-dash .admin-section {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 24px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
+  box-shadow: var(--portal-pane-shadow);
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-panel-head,
+.admin-dash .admin-section-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 20px;
+  color: var(--portal-text-faint);
+}
+
+.admin-dash .admin-panel-head > svg,
+.admin-dash .admin-panel-head > div > svg {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+}
+
+.admin-dash .admin-panel-head h1,
+.admin-dash .admin-section-head h1 {
+  margin: 0 0 4px;
+  font-size: var(--portal-t-large);
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  text-transform: none;
+  text-wrap: balance;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-panel-head h2,
+.admin-dash .admin-section-head h2 {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-panel-head p,
+.admin-dash .admin-section-head p,
+.admin-dash .admin-panel-note {
+  margin: 0;
+  max-width: 72ch;
+  font-size: var(--portal-control-fs);
+  line-height: 1.5;
+  color: var(--portal-text);
+}
+
+/* A head with an action beside it. The head can wrap the row or sit inside
+   it; either way only the outer element spaces the page. */
+.admin-dash .admin-panel-head-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+
+.admin-dash .admin-panel-head-row:not(.admin-panel-head) {
+  margin-bottom: 20px;
+}
+
+.admin-dash .admin-panel-head-row > .admin-panel-head {
+  margin-bottom: 0;
+}
+
+.admin-dash .admin-panel-head-actions,
+.admin-dash .admin-action-row,
+.admin-dash .admin-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Stats ───────────────────────────────────────────────────────────────── */
+
+/* A quiet summary strip, not a hero metric: label over value, the value at
+   the pane title size, on the recessed fill. On a phone the strip becomes a
+   list of rows, label left and value right. */
+.admin-dash .admin-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 0 0 20px;
+}
+
+.admin-dash .admin-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 14px;
+  background: var(--admin-inset);
+  color: inherit;
+  text-decoration: none;
+}
+
+.admin-dash .admin-stat strong {
+  font-size: var(--portal-t-large);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-stat span {
+  order: -1;
+  min-width: 0;
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.35;
+  text-transform: none;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-phase-stat {
+  transition:
+    background-color var(--admin-fast) var(--portal-ease-out),
+    border-color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-phase-stat:hover {
+  border-color: var(--portal-border);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Stage hues. The label always names the stage; the hue is a second cue. */
+.admin-dash .phase-on_board { --admin-phase: #e3b48a; }
+.admin-dash .phase-pre_license { --admin-phase: #e0cc78; }
+.admin-dash .phase-licensing { --admin-phase: #a9c7f0; }
+.admin-dash .phase-new_producer { --admin-phase: #8ddcce; }
+.admin-dash .phase-sales_ready { --admin-phase: #c8b6f7; }
+.admin-dash .phase-complete { --admin-phase: #a6d493; }
+
+.admin-dash .admin-phase-stat strong {
+  color: var(--admin-phase, var(--portal-text-strong));
+}
+
+/* ── Overview cards ──────────────────────────────────────────────────────── */
+
+.admin-dash .admin-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.admin-dash .admin-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 16px;
+  background: var(--admin-inset);
+  color: var(--portal-text-strong);
+  text-decoration: none;
+  transition:
+    background-color var(--admin-fast) var(--portal-ease-out),
+    border-color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-card:hover {
+  border-color: var(--portal-border);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.admin-dash .admin-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 4px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-card-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.admin-dash .admin-card strong {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.3;
+}
+
+.admin-dash .admin-card span:last-child {
+  font-size: var(--portal-t-body);
+  line-height: 1.45;
+  color: var(--portal-text);
+}
+
+/* ── Toolbar and fields ──────────────────────────────────────────────────── */
+
+.admin-dash .admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.admin-dash .admin-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 200px;
+}
+
+.admin-dash .admin-field-grow {
+  flex: 1 1 260px;
+}
+
+/* The label. home2.css sets these in mono uppercase for the agent pages. */
+.admin-dash .admin-field span,
+.admin-dash .admin-field > label {
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.3;
+  text-transform: none;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-field .admin-field-hint,
+.admin-dash .admin-field-hint {
+  display: block;
+  margin: 2px 0 0;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--portal-text);
+}
+
+/* The control: the portal input on the control tokens. 16px text on a phone
+   so iOS Safari does not zoom on focus. The near-black fill is what the text
+   sits on: white 0.95 reads 8.88:1 and the placeholder's 0.60 reads 4.66:1. */
+.admin-dash .admin-field :is(input, select, textarea),
+.admin-dash .admin-table-input,
+.admin-dash .admin-role-select {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--portal-control-h);
+  min-height: var(--portal-control-h);
+  margin: 0;
+  padding: 0 12px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-control-radius);
+  background-color: var(--admin-inset);
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.3;
+  text-transform: none;
+  color-scheme: dark;
+  transition: border-color var(--admin-fast) var(--portal-ease-out);
+}
+
+/* Still native selects, so a phone keeps its own picker; only the arrow is
+   ours. */
+.admin-dash .admin-field select,
+.admin-dash select.admin-table-input,
+.admin-dash .admin-role-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 36px;
+  background-image: var(--admin-select-arrow);
+  background-position: right 12px center;
+  background-repeat: no-repeat;
+  background-size: 12px 8px;
+  cursor: pointer;
+}
+
+.admin-dash .admin-field textarea {
+  height: auto;
+  min-height: 104px;
+  padding: 10px 12px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.admin-dash .admin-field :is(input, textarea)::placeholder,
+.admin-dash .admin-table-input::placeholder {
+  color: var(--portal-text-faint);
+  opacity: 1;
+}
+
+.admin-dash .admin-field :is(input, select, textarea):hover:not(:disabled),
+.admin-dash .admin-table-input:hover:not(:disabled),
+.admin-dash .admin-role-select:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.admin-dash .admin-field :is(input, select, textarea):focus,
+.admin-dash .admin-table-input:focus,
+.admin-dash .admin-role-select:focus {
+  border-color: rgba(255, 255, 255, 0.8);
+}
+
+.admin-dash .admin-field :is(input, select, textarea):focus-visible,
+.admin-dash .admin-table-input:focus-visible,
+.admin-dash .admin-role-select:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+.admin-dash .admin-field :is(input, select, textarea):disabled,
+.admin-dash .admin-table-input:disabled,
+.admin-dash .admin-role-select:disabled {
+  border-color: var(--portal-rule);
+  background-color: rgba(0, 0, 0, 0.14);
+  color: var(--portal-text-faint);
+  cursor: not-allowed;
+}
+
+.admin-dash .admin-field select option,
+.admin-dash select.admin-table-input option,
+.admin-dash .admin-role-select option {
+  background: #1c1611;
+  color: #f4f1ea;
+}
+
+/* Checkboxes stay native at 20px; the row around them is the target. */
+.admin-dash .admin-field input[type="checkbox"],
+.admin-dash .admin-agent-flag input,
+.admin-dash .admin-table-checkbox input {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  accent-color: #f0ede4;
+  cursor: pointer;
+}
+
+.admin-dash .admin-field-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: var(--portal-control-h);
+  cursor: pointer;
+}
+
+.admin-dash .admin-field-checkbox span {
+  font-size: var(--portal-control-fs);
+  font-weight: 500;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-field-inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-dash .admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 560px;
+}
+
+.admin-dash .admin-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+
+/* One box for every button: the control height, radius, text and icon size.
+   The fill says what it is. Secondary and icon buttons sit on the recessed
+   fill with the pane border; primary is the portal's white fill. */
+.admin-dash .admin-primary-btn,
+.admin-dash .admin-secondary-btn,
+.admin-dash .admin-icon-btn,
+.admin-dash .admin-danger-btn,
+.admin-dash .admin-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  min-width: var(--portal-control-h);
+  height: auto;
+  min-height: var(--portal-control-h);
+  margin: 0;
+  padding: 0 16px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-control-radius);
+  background: var(--admin-inset);
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  text-transform: none;
+  white-space: nowrap;
+  opacity: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--admin-fast) var(--portal-ease-out),
+    border-color var(--admin-fast) var(--portal-ease-out),
+    color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-icon-btn {
+  padding: 0 12px;
+}
+
+.admin-dash :is(.admin-primary-btn, .admin-secondary-btn, .admin-icon-btn, .admin-danger-btn, .admin-upload-btn) svg {
+  flex: 0 0 auto;
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
+}
+
+.admin-dash .admin-secondary-btn:hover:not(:disabled),
+.admin-dash .admin-icon-btn:hover:not(:disabled),
+.admin-dash .admin-upload-btn:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-primary-btn {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.92);
+  color: #161616;
+  font-weight: 700;
+}
+
+.admin-dash .admin-primary-btn:hover:not(:disabled) {
+  background: #fff;
+  color: #161616;
+}
+
+.admin-dash .admin-primary-btn:disabled {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--portal-text-faint);
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.admin-dash :is(.admin-secondary-btn, .admin-icon-btn, .admin-danger-btn, .admin-upload-btn):disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-dash .admin-upload-btn {
+  border-style: dashed;
+}
+
+.admin-dash .admin-upload-btn:disabled {
+  cursor: wait;
+}
+
+/* Destructive: rose text and a rose border on the same recessed fill, with a
+   label or a trash glyph beside it, so colour is never the only signal. A
+   trash icon marks a delete on every page without a class of its own. */
+.admin-dash .admin-danger-btn,
+.admin-dash .admin-icon-btn.danger,
+.admin-dash .admin-icon-btn-danger,
+.admin-dash .admin-icon-btn:has(> .lucide-trash2) {
+  border-color: var(--admin-danger-border);
+  color: var(--admin-danger);
+}
+
+.admin-dash .admin-danger-btn:hover:not(:disabled),
+.admin-dash .admin-icon-btn.danger:hover:not(:disabled),
+.admin-dash .admin-icon-btn-danger:hover:not(:disabled),
+.admin-dash .admin-icon-btn:has(> .lucide-trash2):hover:not(:disabled) {
+  border-color: rgba(255, 150, 150, 0.85);
+  background: rgba(255, 120, 120, 0.14);
+  color: #ffd0d0;
+}
+
+/* Text links that act as secondary actions: "Cancel", "Open profile". */
+.admin-dash .admin-secondary-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text-strong);
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.35);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  cursor: pointer;
+  transition: text-decoration-color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-secondary-link:hover {
+  color: var(--portal-text-strong);
+  text-decoration-color: currentColor;
+}
+
+.admin-dash .admin-secondary-link svg {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-dash .admin-user-link {
+  border: 0;
+  color: var(--portal-text-strong);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.3);
+  text-underline-offset: 3px;
+  transition: text-decoration-color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-user-link:hover {
+  color: var(--portal-text-strong);
+  text-decoration-color: currentColor;
+}
+
+/* ── Status chips ────────────────────────────────────────────────────────── */
+
+/* The portal Chip: one near-black fill for every variant, measured at 3.06:1
+   against the pane, so the border, the text and a leading glyph carry the
+   difference. A filled dot for active, a dotted left edge for pending, a dash
+   for skipped, a diamond for an error. */
+.admin-dash .admin-status,
+.admin-dash .admin-badge,
+.admin-dash .admin-phase-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 7px 3px;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.86);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-label);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-status.active::before,
+.admin-dash .admin-status.skipped::before,
+.admin-dash .admin-status.error::before {
+  content: "";
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.admin-dash .admin-status.active {
+  border-color: rgba(59, 214, 107, 0.7);
+  color: #8be7a8;
+}
+
+.admin-dash .admin-status.pending {
+  padding-left: 6px;
+  border-color: rgba(245, 201, 120, 0.7);
+  border-left: 3px dotted currentColor;
+  color: #f5c978;
+}
+
+.admin-dash .admin-status.skipped {
+  color: var(--portal-text-faint);
+}
+
+.admin-dash .admin-status.skipped::before {
+  width: 8px;
+  height: 1.5px;
+  border-radius: 0;
+}
+
+.admin-dash .admin-status.error {
+  border-color: rgba(255, 138, 138, 0.7);
+  color: var(--admin-danger);
+}
+
+.admin-dash .admin-status.error::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  transform: rotate(45deg);
+}
+
+/* Roles. The words carry the role; the border tint is a second cue. */
+.admin-dash .admin-badge.accent {
+  border-color: rgba(243, 184, 148, 0.7);
+  color: #f3c3a4;
+}
+
+.admin-dash .admin-badge.genesis {
+  border-color: rgba(156, 205, 245, 0.7);
+  color: #9ccdf5;
+}
+
+.admin-dash .admin-badge.assist {
+  border-color: rgba(143, 216, 200, 0.7);
+  color: #9fe0d2;
+}
+
+.admin-dash .admin-phase-badge {
+  border-color: color-mix(in srgb, var(--admin-phase, #fff) 60%, transparent);
+  color: var(--admin-phase, var(--portal-text));
+}
+
+/* ── Inline text ─────────────────────────────────────────────────────────── */
+
+.admin-dash .admin-inline-note {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.4;
+  text-transform: none;
+  color: var(--portal-text);
+}
+
+/* As a block of its own (a second line under a name) it takes a line. */
+.admin-dash div.admin-inline-note,
+.admin-dash p.admin-inline-note {
+  display: flex;
+}
+
+.admin-dash .admin-user-subtext {
+  display: block;
+  font-family: var(--portal-font);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--portal-text-faint);
+}
+
+/* ── Loading, empty and error states ─────────────────────────────────────── */
+
+.admin-dash .onboarding-spinner {
+  display: block;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  margin: 32px auto;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  border-top-color: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  animation: admin-spin 800ms linear infinite;
+}
+
+@keyframes admin-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.admin-dash .portal-incentives-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 28px 0;
+  font-size: var(--portal-control-fs);
+  color: var(--portal-text);
+}
+
+.admin-dash .portal-incentives-loading .onboarding-spinner {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+}
+
+.admin-dash .admin-empty,
+.admin-dash .admin-empty-state {
+  margin: 0;
+  padding: 28px 16px;
+  font-size: var(--portal-control-fs);
+  line-height: 1.5;
+  text-align: center;
+  text-wrap: balance;
+  color: var(--portal-text);
+}
+
+/* Errors sit on their own dark fill, which is what lets the rose read
+   (the same move the portal field error makes with the accent). */
+.admin-dash .admin-error {
+  margin: 12px 0;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 138, 138, 0.45);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.5);
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  line-height: 1.45;
+  color: #ffc4c4;
+}
+
+.admin-dash .admin-empty .admin-error {
+  margin: 0 auto 12px;
+  max-width: 48ch;
+}
+
+/* ── Designation toggles ─────────────────────────────────────────────────── */
+
+.admin-dash .admin-agent-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-dash .admin-agent-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--portal-control-h);
+  padding: 0 14px;
+  box-sizing: border-box;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-control-radius);
+  background: var(--admin-inset);
+  font-size: var(--portal-control-fs);
+  font-weight: 500;
+  color: var(--portal-text-strong);
+  cursor: pointer;
+  transition:
+    background-color var(--admin-fast) var(--portal-ease-out),
+    border-color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-agent-flag:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.admin-dash .admin-agent-flag:has(input:checked) {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ── Row actions menu ────────────────────────────────────────────────────── */
+
+.admin-dash .admin-actions-menu {
+  position: relative;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.admin-dash .admin-actions-menu-trigger {
+  min-width: 112px;
+}
+
+/* A menu over content, so the solid bar fill rather than the translucent
+   pane. The component positions it (fixed, under its trigger). */
+.admin-dash .admin-actions-menu-panel {
+  position: fixed;
+  z-index: 300;
+  box-sizing: border-box;
+  max-width: calc(100vw - 24px);
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px;
+  border: 1px solid var(--portal-border);
+  border-radius: 16px;
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5), 0 16px 40px rgba(0, 0, 0, 0.45);
+  animation: admin-menu-in var(--admin-fast) var(--portal-ease-out);
+}
+
+@keyframes admin-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.admin-dash .admin-actions-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: var(--portal-control-h);
+  margin: 0;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.25;
+  text-align: left;
+  text-transform: none;
+  white-space: nowrap;
+  color: var(--portal-text-strong);
+  cursor: pointer;
+  transition: background-color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-actions-menu-item svg {
+  flex: 0 0 auto;
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
+  color: var(--portal-text-faint);
+}
+
+.admin-dash .admin-actions-menu-item:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.admin-dash .admin-actions-menu-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* Delete gets its own ring as well as its colour and its trash glyph. */
+.admin-dash .admin-actions-menu-item-danger {
+  box-shadow: inset 0 0 0 1px rgba(255, 138, 138, 0.35);
+  color: var(--admin-danger);
+}
+
+.admin-dash .admin-actions-menu-item-danger svg {
+  color: currentColor;
+}
+
+.admin-dash .admin-actions-menu-item-danger:hover:not(:disabled) {
+  background: rgba(255, 120, 120, 0.14);
+  color: #ffd0d0;
+}
+
+.admin-dash .admin-actions-menu-divider {
+  height: 1px;
+  margin: 6px 8px;
+  background: var(--portal-rule);
+}
+
+/* ── Comp level select ───────────────────────────────────────────────────── */
+
+.admin-dash .admin-role-select {
+  width: auto;
+  min-width: 108px;
+}
+
+.admin-dash .admin-comp-level-unavailable {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-comp-level-hint {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--portal-text);
+}
+
+/* ── Uploads ─────────────────────────────────────────────────────────────── */
+
+/* Every file input in the console is driven by a button beside it. The field
+   control rule above would otherwise show them. */
+.admin-dash .admin-upload-input,
+.admin-dash .admin-field input[type="file"] {
+  display: none;
+}
+
+.admin-dash .admin-upload-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-upload-path {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--portal-text-faint);
+  word-break: break-all;
+}
+
+/* ── Phones ──────────────────────────────────────────────────────────────── */
+
+@media (max-width: 620px) {
+  .admin-dash .admin-panel,
+  .admin-dash .admin-section {
+    padding: 16px;
+  }
+
+  .admin-dash .admin-panel-head h1,
+  .admin-dash .admin-section-head h1 {
+    font-size: var(--portal-t-mid);
+  }
+
+  /* The head icon is decoration; a 326px column needs the width more. */
+  .admin-dash .admin-panel-head > svg {
+    display: none;
+  }
+
+  /* Actions beside a head drop under it at full width, in thumb reach. */
+  .admin-dash .admin-panel-head-row > :is(.admin-primary-btn, .admin-secondary-btn, .admin-icon-btn, .admin-panel-head-actions, .admin-action-row) {
+    width: 100%;
+  }
+
+  /* Two long labels share a row badly at 326px, so each takes the width. */
+  .admin-dash :is(.admin-panel-head-actions, .admin-action-row) > * {
+    flex: 1 1 200px;
+  }
+
+  .admin-dash .admin-stats {
+    grid-template-columns: 1fr;
+    gap: 0;
+    overflow: hidden;
+    border: 1px solid var(--portal-rule);
+    border-radius: 14px;
+    background: var(--admin-inset);
+  }
+
+  .admin-dash .admin-stat {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 44px;
+    padding: 8px 14px;
+    border: 0;
+    border-bottom: 1px solid var(--portal-rule);
+    border-radius: 0;
+    background: none;
+  }
+
+  .admin-dash .admin-stat:last-child {
+    border-bottom: 0;
+  }
+
+  .admin-dash .admin-stat strong {
+    font-size: var(--portal-t-mid);
+  }
+
+  .admin-dash .admin-stat span {
+    font-size: var(--portal-control-fs);
+  }
+
+  .admin-dash .admin-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-dash .admin-card {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    align-items: center;
+    column-gap: 12px;
+    row-gap: 2px;
+    padding: 12px 14px;
+  }
+
+  .admin-dash .admin-card-icon {
+    grid-row: span 2;
+    margin: 0;
+  }
+
+  .admin-dash .admin-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-dash .admin-field {
+    min-width: 0;
+  }
+
+  .admin-dash .admin-field-grow {
+    flex: 0 0 auto;
+  }
+
+  /* Buttons may wrap their label rather than overflow a 326px column. */
+  .admin-dash :is(.admin-primary-btn, .admin-secondary-btn, .admin-icon-btn, .admin-danger-btn, .admin-upload-btn) {
+    white-space: normal;
+  }
+
+  .admin-dash .admin-form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-dash .admin-form-actions .admin-secondary-link {
+    justify-content: center;
+  }
+
+  .admin-dash .admin-agent-flags {
+    flex-direction: column;
+  }
+
+  /* The row menu docks to the bottom of the screen as an action sheet. The
+     component writes top, left and min-width inline to anchor it under its
+     trigger, which on a phone can push it off the screen or past the right
+     edge; !important is the only way a stylesheet outranks an inline style. */
+  .admin-dash .admin-actions-menu-panel {
+    top: auto !important;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    left: 12px !important;
+    min-width: 0 !important;
+    max-width: none;
+    max-height: calc(100dvh - 96px);
+    padding: 8px;
+    border-radius: 20px;
+    box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.5);
+    animation-name: admin-sheet-rise;
+    animation-duration: var(--admin-slow);
+  }
+
+  .admin-dash .admin-actions-menu-item {
+    white-space: normal;
+  }
+}
+
+@keyframes admin-sheet-rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-dash .onboarding-spinner {
+    animation-duration: 2400ms;
+  }
+}
+
+/* ── Tables ──────────────────────────────────────────────────────────────── */
+
+/* The table sits in a recessed frame on the page pane: 52px rows, a quiet
+   12/600 header, rules between rows. Wider than the frame, it scrolls
+   sideways inside it rather than widening the page. */
+.admin-dash .admin-table-wrap {
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  border: 1px solid var(--portal-rule);
+  border-radius: 16px;
+  background: var(--admin-inset);
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  scrollbar-width: thin;
+}
+
+.admin-dash .admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--portal-control-fs);
+  line-height: 1.45;
+}
+
+.admin-dash .admin-table th,
+.admin-dash .admin-table td {
+  padding: 4px 14px;
+  border-bottom: 1px solid var(--portal-rule);
+  text-align: left;
+  vertical-align: middle;
+}
+
+/* 0.60 white on the frame's darker head strip clears 4.66:1. */
+.admin-dash .admin-table thead th {
+  height: 44px;
+  padding-block: 0;
+  background: rgba(0, 0, 0, 0.18);
+  font-family: var(--portal-font);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+  color: var(--portal-text-faint);
+}
+
+.admin-dash .admin-table tbody td,
+.admin-dash .admin-table tbody th {
+  height: 52px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-table tbody td:first-child,
+.admin-dash .admin-table tbody th[scope="row"] {
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.admin-dash .admin-table tbody tr {
+  transition: background-color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+/* The carrier sheet's section dividers. */
+.admin-dash .admin-table .admin-table-section-row th {
+  height: 40px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-table-editing tbody td:first-child {
+  font-weight: 400;
+}
+
+.admin-dash .admin-table-input {
+  min-width: 120px;
+}
+
+.admin-dash .admin-table-input-wide {
+  min-width: 220px;
+}
+
+.admin-dash .admin-table-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: var(--portal-control-fs);
+  color: var(--portal-text);
+  cursor: pointer;
+}
+
+/* Second lines inside a cell: an email under a name, an address, a carrier. */
+.admin-dash .admin-table-subtext,
+.admin-dash .admin-table-sub,
+.admin-dash .admin-table .portal-meta,
+.admin-dash .admin-table small {
+  display: block;
+  margin: 2px 0 0;
+  font-family: var(--portal-font);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.4;
+  text-transform: none;
+  word-break: normal;
+  overflow-wrap: anywhere;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-user-name-cell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 10px;
+  min-width: 160px;
+}
+
+.admin-dash .admin-row-actions,
+.admin-dash .admin-incentive-actions,
+.admin-dash .admin-table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-dash .admin-table .admin-action-row {
+  justify-content: flex-end;
+}
+
+/* The carrier sheet's edit toolbar. */
+.admin-dash .admin-sheet-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  margin-bottom: 16px;
+}
+
+.admin-dash .admin-sheet-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+/* ── Tables on a phone ───────────────────────────────────────────────────── */
+
+/* At 620px and below each row is a card: the frame drops away, the rows take
+   the recessed fill, and every cell is labelled from its data-label, which
+   repeats the column header. The label sits in a fixed left column and the
+   value flows as ordinary block content beside it, so a cell holding a
+   control, a chip or two lines of text all lay out without extra markup.
+   The header row stays in the accessibility tree, clipped rather than
+   display: none. Action cells lose the label and become a full-width row of
+   control-sized buttons. */
+@media (max-width: 620px) {
+  .admin-dash .admin-table-wrap {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+
+  .admin-dash .admin-table,
+  .admin-dash .admin-table tbody,
+  .admin-dash .admin-table tbody tr {
+    display: block;
+    width: 100%;
+  }
+
+  .admin-dash .admin-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .admin-dash .admin-table tbody tr {
+    box-sizing: border-box;
+    margin: 0 0 10px;
+    padding: 4px 14px;
+    border: 1px solid var(--portal-border);
+    border-radius: 16px;
+    background: var(--admin-inset);
+  }
+
+  .admin-dash .admin-table tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .admin-dash .admin-table tbody tr:hover {
+    background: var(--admin-inset);
+  }
+
+  .admin-dash .admin-table tbody td,
+  .admin-dash .admin-table tbody th {
+    --admin-cell-label: 30%;
+    position: relative;
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    height: auto;
+    min-height: 44px;
+    padding: 10px 0 10px calc(var(--admin-cell-label) + 12px);
+    border-bottom: 1px solid var(--portal-rule);
+    /* A step under the 16px control text, so a work email fits the value
+       column on one line. */
+    font-size: 15px;
+    text-align: left;
+    overflow-wrap: anywhere;
+  }
+
+  .admin-dash .admin-table tbody tr > :last-child {
+    border-bottom: 0;
+  }
+
+  .admin-dash .admin-table tbody [data-label]::before {
+    content: attr(data-label);
+    position: absolute;
+    top: 12px;
+    left: 0;
+    width: var(--admin-cell-label);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0;
+    line-height: 1.3;
+    text-transform: none;
+    white-space: normal;
+    overflow-wrap: normal;
+    color: var(--portal-text-faint);
+  }
+
+  /* A cell holding a control centres its label on the control. */
+  .admin-dash .admin-table tbody [data-label]:has(> :is(select, input, .admin-role-select, .state-admin-status-control))::before {
+    top: calc(10px + (var(--portal-control-h) - 16px) / 2);
+  }
+
+  /* A cell with no header, the "No clients found." row, spans the card. */
+  .admin-dash .admin-table tbody td:not([data-label]) {
+    padding-left: 0;
+    text-align: center;
+  }
+
+  .admin-dash .admin-table tbody td[data-label="Actions"] {
+    padding: 10px 0 12px;
+    overflow-wrap: normal;
+  }
+
+  .admin-dash .admin-table tbody td[data-label="Actions"]::before {
+    content: none;
+  }
+
+  .admin-dash .admin-table td[data-label="Actions"] :is(.admin-row-actions, .admin-incentive-actions, .admin-table-actions, .admin-action-row, .admin-actions-menu) {
+    justify-content: stretch;
+  }
+
+  /* Labelled buttons keep their label on one line and share the row at their
+     own width; one that does not fit wraps onto a row of its own. */
+  .admin-dash .admin-table td[data-label="Actions"] :is(.admin-primary-btn, .admin-secondary-btn, .admin-icon-btn, .admin-danger-btn) {
+    flex: 1 1 auto;
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+
+  /* Icon-only buttons stay a control-sized square. */
+  .admin-dash .admin-table td[data-label="Actions"] .admin-icon-only {
+    flex: 0 0 var(--portal-control-h);
+    width: var(--portal-control-h);
+    padding: 0;
+  }
+
+  .admin-dash .admin-table td[data-label="Actions"] :is(.admin-row-actions, .admin-incentive-actions, .admin-table-actions, .admin-action-row) > a {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+
+  .admin-dash .admin-user-name-cell {
+    min-width: 0;
+  }
+
+  .admin-dash .admin-table-input,
+  .admin-dash .admin-table-input-wide,
+  .admin-dash .admin-role-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .admin-dash .admin-sheet-toolbar,
+  .admin-dash .admin-sheet-toolbar-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ── Modals ──────────────────────────────────────────────────────────────── */
+
+/* Eleven dialogs share .admin-modal-overlay > .admin-modal. Desktop: a glass
+   pane centred over a 0.55 scrim, fading in over 200ms from 0.98 scale. The
+   pane is a single instance over moving content, so it carries its own
+   backdrop blur (under 20px, as the Sheet does); over the scrim it
+   composites to about rgb(68, 60, 53), where white 0.80 reads 7.59:1. */
+.admin-dash .admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  animation: admin-fade var(--admin-base) var(--portal-ease-out);
+}
+
+.admin-dash .admin-modal {
+  position: relative;
+  box-sizing: border-box;
+  width: min(760px, 100%);
+  max-width: none;
+  max-height: min(86vh, 880px);
+  max-height: min(86dvh, 880px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 24px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--portal-pane-shadow), 0 24px 64px rgba(0, 0, 0, 0.45);
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  line-height: 1.5;
+  animation: admin-modal-in var(--admin-base) var(--portal-ease-out);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .admin-dash .admin-modal {
+    background: var(--portal-pane-sheen), rgba(28, 22, 17, 0.96);
+  }
+}
+
+@keyframes admin-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes admin-modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+}
+
+.admin-dash .admin-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.admin-dash .admin-modal-head h2 {
+  margin: 0 0 4px;
+  font-size: var(--portal-t-mid);
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  text-transform: none;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-modal-head p {
+  margin: 0;
+  font-size: var(--portal-control-fs);
+  line-height: 1.5;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--portal-control-h);
+  height: var(--portal-control-h);
+  margin: -10px -10px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--portal-control-radius);
+  background: none;
+  color: var(--portal-text);
+  cursor: pointer;
+  transition:
+    background-color var(--admin-fast) var(--portal-ease-out),
+    color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-modal-close svg {
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
+}
+
+.admin-dash .admin-modal-close:hover:not(:disabled) {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-modal-close:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.admin-dash .admin-modal .admin-field {
+  min-width: 0;
+}
+
+.admin-dash .admin-modal .admin-form-actions,
+.admin-dash .admin-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Sizes. */
+.admin-dash .admin-user-email-modal,
+.admin-dash .admin-hierarchy-edit-modal {
+  width: min(520px, 100%);
+}
+
+.admin-dash .admin-ticket-modal,
+.admin-dash .admin-hierarchy-partner-modal {
+  width: min(560px, 100%);
+}
+
+.admin-dash .admin-edit-profile-modal {
+  width: min(640px, 100%);
+}
+
+.admin-dash .admin-hierarchy-assist-modal {
+  width: min(480px, 100%);
+}
+
+/* ── Ticket ──────────────────────────────────────────────────────────────── */
+
+.admin-dash .admin-ticket-description {
+  max-height: 30vh;
+  overflow-y: auto;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 12px;
+  background: var(--admin-inset);
+  font-size: var(--portal-control-fs);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-ticket-modal-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  margin-bottom: 12px;
+}
+
+/* ── Edit profile ────────────────────────────────────────────────────────── */
+
+/* The field grid scrolls on its own on a desktop so the head and the
+   actions stay in view; a phone sheet scrolls as one. */
+.admin-dash .admin-edit-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  max-height: 55vh;
+  margin-bottom: 4px;
+  padding: 2px 4px 2px 2px;
+  overflow-y: auto;
+}
+
+/* A read-only value shown in place of an input. */
+.admin-dash .portal-profile-derived-value {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: var(--portal-control-h);
+  margin: 0;
+  padding: 0 12px;
+  border: 1px solid var(--portal-rule);
+  border-radius: var(--portal-control-radius);
+  background: rgba(0, 0, 0, 0.14);
+  font-size: var(--portal-control-fs);
+  color: var(--portal-text-strong);
+}
+
+/* ── Detail lists (Genesis details, user profile, onboarding details) ──── */
+
+.admin-dash .admin-genesis-details-modal {
+  width: min(760px, 100%);
+}
+
+.admin-dash .admin-genesis-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px 20px;
+  margin: 0;
+}
+
+.admin-dash .admin-genesis-details-modal .admin-genesis-details-grid {
+  padding-top: 4px;
+}
+
+.admin-dash .admin-genesis-details-item {
+  min-width: 0;
+}
+
+.admin-dash .admin-genesis-details-item dt {
+  margin: 0 0 3px;
+  font-family: var(--portal-font);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.3;
+  text-transform: none;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-genesis-details-item dd {
+  margin: 0;
+  font-size: var(--portal-control-fs);
+  font-weight: 500;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-genesis-details-documents {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--portal-rule);
+}
+
+.admin-dash .admin-genesis-details-documents h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-genesis-details-documents-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ── To-do completion ────────────────────────────────────────────────────── */
+
+.admin-dash .admin-todo-completion-loading {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.admin-dash .admin-todo-completion-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.admin-dash .admin-todo-completion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 180px;
+  padding: 14px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 14px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-todo-completion-list h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-todo-completion-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.86);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-todo-completion-list-completed .admin-todo-completion-count {
+  border-color: rgba(59, 214, 107, 0.7);
+  color: #8be7a8;
+}
+
+.admin-dash .admin-todo-completion-list-pending .admin-todo-completion-count {
+  border-color: rgba(245, 201, 120, 0.7);
+  border-style: dotted;
+  color: #f5c978;
+}
+
+.admin-dash .admin-todo-completion-list ul {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 360px;
+  margin: 0;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+}
+
+.admin-dash .admin-todo-completion-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--portal-rule);
+}
+
+.admin-dash .admin-todo-completion-list li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.admin-dash .admin-todo-completion-list li strong {
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-todo-completion-list li span {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-todo-completion-empty {
+  margin: 0;
+  font-size: var(--portal-t-body);
+  line-height: 1.5;
+  color: var(--portal-text);
+}
+
+/* ── Modals on a phone ───────────────────────────────────────────────────── */
+
+/* A bottom sheet: flush to the bottom edge, 20px top corners, capped at 88dvh
+   with its own scroll, the home indicator's inset below the last control,
+   rising on the portal ease-out. Actions stack full width, primary first. */
+@media (max-width: 620px) {
+  .admin-dash .admin-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .admin-dash .admin-modal-overlay > .admin-modal {
+    width: 100%;
+    max-height: 88vh;
+    max-height: 88dvh;
+    padding: 20px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    border-bottom: 0;
+    border-radius: 20px 20px 0 0;
+    animation-name: admin-sheet-in;
+    animation-duration: var(--admin-slow);
+  }
+
+  .admin-dash .admin-modal-head h2 {
+    font-size: var(--portal-t-mid);
+  }
+
+  .admin-dash .admin-modal .admin-form-actions,
+  .admin-dash .admin-modal-actions {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .admin-dash .admin-ticket-modal-fields,
+  .admin-dash .admin-edit-profile-grid,
+  .admin-dash .admin-todo-completion-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-dash .admin-edit-profile-grid {
+    max-height: none;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .admin-dash .admin-todo-completion-list ul {
+    max-height: none;
+  }
+}
+
+@keyframes admin-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+/* ── Hierarchy ───────────────────────────────────────────────────────────── */
+
+/* "Viewing as admin assist": a notice, so the recessed fill, not the accent. */
+.admin-dash .admin-hierarchy-preview {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--portal-border);
+  border-radius: 14px;
+  background: var(--admin-inset);
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-hierarchy-preview > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.admin-dash .admin-hierarchy-preview div {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-dash .admin-hierarchy-preview strong {
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-hierarchy-preview span {
+  font-size: var(--portal-t-body);
+  line-height: 1.45;
+  color: var(--portal-text);
+}
+
+/* Canvas or tree: the portal Segmented with its pill, control-sized items
+   on a recessed track; the pill carries a fill and a 2px inner ring, so the
+   choice is never the fill alone. */
+.admin-dash .admin-hierarchy-view-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border: 0;
+  border-radius: calc(var(--portal-control-radius) + 4px);
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-hierarchy-view-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--portal-control-h);
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--portal-control-radius);
+  background: none;
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text-faint);
+  cursor: pointer;
+  transition:
+    background-color var(--admin-fast) var(--portal-ease-out),
+    color var(--admin-fast) var(--portal-ease-out),
+    box-shadow var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-hierarchy-view-btn svg {
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
+}
+
+.admin-dash .admin-hierarchy-view-btn:hover {
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-hierarchy-view-btn-active,
+.admin-dash .admin-hierarchy-view-btn-active:hover {
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.85);
+  color: var(--portal-text-strong);
+}
+
+/* The canvas: a recessed frame with a dot grid, glass tiles on it. */
+.admin-dash .admin-hierarchy-shell,
+.admin-dash .admin-hierarchy-scroll {
+  margin-top: 4px;
+  overflow: hidden;
+  border: 1px solid var(--portal-rule);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.08) 1px, transparent 0) 0 0 / 20px 20px,
+    var(--admin-inset);
+}
+
+.admin-dash .admin-hierarchy-scroll {
+  overflow: auto;
+}
+
+.admin-dash .admin-hierarchy-zoom-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border-bottom: 1px solid var(--portal-rule);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.admin-dash .admin-hierarchy-zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+  min-width: var(--portal-control-h);
+  height: var(--portal-control-h);
+  padding: 0 12px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-control-radius);
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text-strong);
+  cursor: pointer;
+  transition: border-color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-hierarchy-zoom-btn svg {
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
+}
+
+.admin-dash .admin-hierarchy-zoom-btn:hover:not(:disabled) {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.admin-dash .admin-hierarchy-zoom-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.admin-dash .admin-hierarchy-zoom-label {
+  min-width: 52px;
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-align: center;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-hierarchy-viewport {
+  position: relative;
+  height: min(68vh, 720px);
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.admin-dash .admin-hierarchy-viewport-panning {
+  cursor: grabbing;
+}
+
+.admin-dash .admin-hierarchy-transform {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.admin-dash .admin-hierarchy-canvas {
+  position: relative;
+  min-width: 100%;
+}
+
+.admin-dash .admin-hierarchy-lines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.admin-dash .admin-hierarchy-line {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.3);
+  stroke-width: 1.5;
+}
+
+.admin-dash .admin-hierarchy-node {
+  position: absolute;
+}
+
+/* A tile is a button of a fixed size the layout computes (148 by 172, 220
+   wide for partners, 132 tall in the assist view), so the contents are sized
+   to fit it rather than to the control tokens. */
+.admin-dash .admin-hierarchy-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 12px 10px 10px;
+  overflow: hidden;
+  border: 1px solid var(--portal-border);
+  border-radius: 16px;
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
+  box-shadow: var(--portal-pane-shadow);
+  color: var(--portal-text);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color var(--admin-fast) var(--portal-ease-out),
+    box-shadow var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-hierarchy-tile:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.admin-dash .admin-hierarchy-tile-selected,
+.admin-dash .admin-hierarchy-tile-selected:hover {
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow: var(--portal-pane-shadow), 0 0 0 1px rgba(255, 255, 255, 0.85);
+}
+
+.admin-dash .admin-hierarchy-tile-assist {
+  justify-content: flex-start;
+}
+
+.admin-dash .admin-hierarchy-tile-partner {
+  min-height: 100%;
+}
+
+.admin-dash .admin-hierarchy-tile-avatars {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+
+.admin-dash .admin-hierarchy-tile .admin-hierarchy-tile-avatar {
+  width: 44px;
+  height: 44px;
+}
+
+.admin-dash .admin-hierarchy-tile-assist .admin-hierarchy-tile-avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.admin-dash .admin-hierarchy-tile-name {
+  display: -webkit-box;
+  flex-shrink: 0;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  line-height: 1.3;
+  color: var(--portal-text-strong);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.admin-dash .admin-hierarchy-tile-npn,
+.admin-dash .admin-hierarchy-tile-email {
+  margin: 0;
+  font-family: var(--portal-font);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums lining-nums;
+  overflow-wrap: anywhere;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-hierarchy-tile-effective {
+  margin: 0;
+  font-size: var(--portal-t-micro);
+  line-height: 1.25;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-hierarchy-tile-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 6px;
+  margin-top: auto;
+}
+
+.admin-dash .admin-hierarchy-tile-meta,
+.admin-dash .admin-tree-count {
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-label);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--portal-text-faint);
+}
+
+/* ── Tree ────────────────────────────────────────────────────────────────── */
+
+.admin-dash .admin-hierarchy-tree-wrap {
+  max-height: min(68vh, 720px);
+  margin-top: 4px;
+  padding: 8px;
+  overflow: auto;
+  border: 1px solid var(--portal-rule);
+  border-radius: 16px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-tree,
+.admin-dash .admin-tree-children {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* One indent per level, the rule under the parent's toggle. The inline
+   --depth the component writes compounded with every nested list, which on a
+   phone pushed the fifth level off the screen. */
+.admin-dash .admin-tree-children {
+  margin-left: calc(var(--portal-control-h) / 2);
+  padding-left: 10px;
+  border-left: 1px solid var(--portal-rule);
+}
+
+.admin-dash .admin-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: var(--portal-control-h);
+  border-radius: var(--portal-control-radius);
+}
+
+.admin-dash .admin-tree-row-selected {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.admin-dash .admin-tree-toggle,
+.admin-dash .admin-tree-toggle-spacer {
+  flex: 0 0 auto;
+  width: var(--portal-control-h);
+  height: var(--portal-control-h);
+}
+
+.admin-dash .admin-tree-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--portal-control-radius);
+  background: none;
+  color: var(--portal-text);
+  cursor: pointer;
+  transition: background-color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-tree-toggle svg {
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
+}
+
+.admin-dash .admin-tree-toggle:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-tree-select {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  min-width: 0;
+  min-height: var(--portal-control-h);
+  padding: 6px 10px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: var(--portal-control-radius);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-tree-select:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.admin-dash .admin-tree-avatars {
+  justify-content: flex-start;
+}
+
+.admin-dash .admin-tree-name {
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-tree-meta {
+  font-family: var(--portal-font);
+  font-size: 12px;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--portal-text);
+}
+
+/* ── Hierarchy dialogs ───────────────────────────────────────────────────── */
+
+.admin-dash .admin-hierarchy-edit-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 16px;
+}
+
+.admin-dash .admin-hierarchy-edit-stat {
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 12px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-hierarchy-edit-stat dt {
+  margin: 0 0 2px;
+  font-family: var(--portal-font);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text-faint);
+}
+
+.admin-dash .admin-hierarchy-edit-stat dd {
+  margin: 0;
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums lining-nums;
+  overflow-wrap: anywhere;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-hierarchy-edit-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--portal-text-strong);
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.4);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.admin-dash .admin-hierarchy-edit-link:hover {
+  color: var(--portal-text-strong);
+  text-decoration-color: currentColor;
+}
+
+.admin-dash .admin-hierarchy-edit-field-form {
+  margin: 0 0 12px;
+  padding: 14px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 14px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-hierarchy-edit-field {
+  width: 100%;
+  min-width: 0;
+}
+
+.admin-dash .admin-hierarchy-edit-field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-dash .admin-hierarchy-edit-field-row :is(select, .admin-role-select, .admin-hierarchy-partner-current) {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+.admin-dash .admin-hierarchy-edit-field-row .admin-hierarchy-partner-current {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: var(--portal-control-h);
+  padding: 0 12px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-control-radius);
+  background: rgba(0, 0, 0, 0.14);
+  font-size: var(--portal-control-fs);
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-hierarchy-edit-save-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.admin-dash .admin-hierarchy-partner-members {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-dash .admin-hierarchy-partner-member {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.admin-dash .admin-hierarchy-partner-member strong {
+  display: block;
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-hierarchy-partner-member p {
+  margin: 2px 0 4px;
+  font-size: var(--portal-t-body);
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-hierarchy-partner-section {
+  margin-top: 8px;
+}
+
+.admin-dash .admin-hierarchy-partner-current,
+.admin-dash .admin-hierarchy-partner-link-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-dash .admin-hierarchy-partner-link-row select {
+  flex: 1 1 220px;
+}
+
+.admin-dash .admin-hierarchy-assist-identity {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.admin-dash .admin-hierarchy-assist-details {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+
+.admin-dash .admin-hierarchy-assist-details > div {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-dash .admin-hierarchy-assist-details dt {
+  font-family: var(--portal-font);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-hierarchy-assist-details dd {
+  margin: 0;
+  font-size: var(--portal-control-fs);
+  overflow-wrap: anywhere;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-hierarchy-assist-people {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-dash .admin-hierarchy-assist-person {
+  padding: 14px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 14px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-hierarchy-assist-person .admin-hierarchy-assist-identity {
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.admin-dash .admin-hierarchy-assist-person h3 {
+  margin: 0 0 2px;
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-hierarchy-assist-person p {
+  margin: 0;
+  font-size: var(--portal-t-body);
+  overflow-wrap: anywhere;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-hierarchy-assist-downline {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--portal-rule);
+}
+
+.admin-dash .admin-hierarchy-assist-direct-list {
+  grid-column: 1 / -1;
+}
+
+.admin-dash .admin-hierarchy-assist-direct-list ul {
+  display: grid;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-dash .admin-hierarchy-assist-direct-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-dash .admin-hierarchy-assist-direct-list strong {
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-hierarchy-assist-direct-list span {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  color: var(--portal-text);
+}
+
+@media (max-width: 620px) {
+  .admin-dash .admin-hierarchy-view-toggle {
+    display: flex;
+  }
+
+  .admin-dash .admin-hierarchy-view-btn {
+    flex: 1 1 0;
+  }
+
+  .admin-dash .admin-hierarchy-viewport {
+    height: 60vh;
+    height: 60dvh;
+  }
+
+  /* Five controls in one row: scroll sideways rather than wrap. */
+  .admin-dash .admin-hierarchy-zoom-toolbar {
+    flex-wrap: nowrap;
+    gap: 4px;
+    padding: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .admin-dash .admin-hierarchy-zoom-btn {
+    flex: 0 0 auto;
+    padding: 0 10px;
+  }
+
+  .admin-dash .admin-hierarchy-zoom-label {
+    min-width: 44px;
+  }
+
+  .admin-dash .admin-tree-children {
+    margin-left: 14px;
+    padding-left: 6px;
+  }
+
+  .admin-dash .admin-hierarchy-edit-field-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-dash .admin-hierarchy-edit-field-row :is(select, .admin-role-select, .admin-hierarchy-partner-current) {
+    width: 100%;
+  }
+}
+
+/* ── User detail ─────────────────────────────────────────────────────────── */
+
+.admin-dash .admin-user-profile-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Sections inside the page pane: recessed, not a second pane of glass. */
+.admin-dash .admin-user-profile-summary,
+.admin-dash .admin-user-profile-section {
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.admin-dash .admin-user-profile-section h2 {
+  margin: 0 0 4px;
+}
+
+.admin-dash .admin-user-profile-identity {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.admin-dash .admin-user-profile-identity h2 {
+  margin: 0 0 2px;
+  font-size: var(--portal-t-mid);
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-user-profile-photo {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.admin-dash .admin-user-profile-photo-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 1px solid var(--portal-border);
+  background: rgba(255, 255, 255, 0.08);
+  font-family: var(--portal-font);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-user-profile-meta {
+  margin-top: 4px;
+}
+
+.admin-dash .admin-user-form-status {
+  margin-bottom: 16px;
+}
+
+.admin-dash .admin-user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid var(--portal-border);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.admin-dash .admin-user-avatar-sm {
+  width: 28px;
+  height: 28px;
+}
+
+.admin-dash .admin-user-avatar-md {
+  width: 52px;
+  height: 52px;
+}
+
+.admin-dash .admin-user-avatar-lg {
+  width: 72px;
+  height: 72px;
+}
+
+.admin-dash .admin-user-avatar-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-dash .admin-user-avatar-initials {
+  font-family: var(--portal-font);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-user-avatar-sm .admin-user-avatar-initials {
+  font-size: 11px;
+}
+
+.admin-dash .admin-user-avatar-md .admin-user-avatar-initials {
+  font-size: 14px;
+}
+
+.admin-dash .admin-user-avatar-lg .admin-user-avatar-initials {
+  font-size: 22px;
+}
+
+/* Checklists: onboarding steps and carrier applications. */
+.admin-dash .admin-user-todo-phases {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  margin-top: 12px;
+}
+
+.admin-dash .admin-user-todo-phase-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.admin-dash .admin-user-todo-phase-head h3 {
+  margin: 0;
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-user-todo-phase-head span {
+  font-family: var(--portal-font);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums lining-nums;
+  color: var(--portal-text-faint);
+}
+
+.admin-dash .admin-user-todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-dash .admin-user-todo-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+/* The toggle is the row's control: control-sized, a circle or a filled
+   check, so the state is a shape and not only a colour. */
+.admin-dash .admin-user-todo-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--portal-control-h);
+  height: var(--portal-control-h);
+  margin: 0 0 0 -12px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--portal-control-radius);
+  background: none;
+  color: var(--portal-text-faint);
+  cursor: pointer;
+  transition:
+    background-color var(--admin-fast) var(--portal-ease-out),
+    color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-user-todo-toggle svg {
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
+}
+
+.admin-dash .admin-user-todo-toggle:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-user-todo-list li.done .admin-user-todo-toggle {
+  color: #8be7a8;
+}
+
+.admin-dash .admin-user-todo-toggle:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.admin-dash .admin-user-todo-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+  min-height: var(--portal-control-h);
+}
+
+.admin-dash .admin-user-todo-title {
+  font-size: var(--portal-control-fs);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-user-todo-list li.done .admin-user-todo-title {
+  color: var(--portal-text);
+  text-decoration: line-through;
+  text-decoration-color: rgba(255, 255, 255, 0.35);
+}
+
+.admin-dash .admin-user-todo-note {
+  font-family: var(--portal-font);
+  font-size: 12px;
+  letter-spacing: 0;
+  line-height: 1.4;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-todo-phase {
+  display: block;
+  font-size: var(--portal-t-body);
+  white-space: nowrap;
+}
+
+/* Saved documents and the upload slots. */
+.admin-dash .admin-user-documents {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-dash .admin-user-document-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 14px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-user-document-item strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-user-document-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-dash .admin-user-document-upload-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--portal-rule);
+}
+
+.admin-dash .admin-user-document-upload-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.admin-dash .admin-user-document-upload-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 14px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-user-document-upload-item strong {
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-user-document-upload-other-label {
+  max-width: 420px;
+}
+
+.admin-dash .admin-comp-attachment-panel {
+  display: grid;
+  gap: 16px;
+}
+
+/* ── Incentives and to-dos ───────────────────────────────────────────────── */
+
+.admin-dash .admin-incentive-form {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--portal-rule);
+}
+
+.admin-dash .admin-incentive-form-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(180px, 220px);
+  align-items: start;
+  gap: 24px;
+}
+
+.admin-dash .admin-incentive-form-fields {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-dash .admin-incentive-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-dash .admin-incentive-preview-label {
+  margin: 0;
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-incentive-preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  aspect-ratio: 2 / 3;
+  padding: 18px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  background: var(--admin-inset);
+  font-size: var(--portal-t-body);
+  text-align: center;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-incentive-thumb {
+  width: 72px;
+}
+
+.admin-dash .admin-incentive-thumb .portal-incentive-poster figcaption {
+  display: none;
+}
+
+.admin-dash .admin-incentive-slug,
+.admin-dash .admin-todo-slug {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--portal-font);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--portal-text-faint);
+}
+
+.admin-dash .admin-todo-row-hidden {
+  opacity: 0.7;
+}
+
+.admin-dash .admin-todo-completion {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 140px;
+}
+
+.admin-dash .admin-todo-completion-bar {
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.admin-dash .admin-todo-completion-fill {
+  display: block;
+  height: 100%;
+  min-width: 4px;
+  border-radius: inherit;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.admin-dash .admin-todo-completion-label {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums lining-nums;
+  white-space: nowrap;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-todo-completion-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--portal-text-strong);
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.35);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.admin-dash .admin-todo-completion-btn:hover {
+  text-decoration-color: currentColor;
+}
+
+/* ── State availability ──────────────────────────────────────────────────── */
+
+.admin-dash .state-availability-admin-stats {
+  margin-top: 4px;
+}
+
+.admin-dash .state-availability-admin-note {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 12px;
+  background: var(--admin-inset);
+  font-size: var(--portal-control-fs);
+  line-height: 1.5;
+  color: var(--portal-text);
+}
+
+.admin-dash .state-availability-admin-table th[scope="row"] {
+  min-width: 190px;
+}
+
+.admin-dash .state-admin-name,
+.admin-dash .state-admin-code,
+.admin-dash .state-admin-status-description {
+  display: block;
+}
+
+.admin-dash .state-admin-code {
+  margin-top: 2px;
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-label);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--portal-text-faint);
+}
+
+/* Unsaved: the pending chip, dotted edge and all. */
+.admin-dash .state-admin-unsaved {
+  display: inline-flex;
+  margin-top: 6px;
+  padding: 3px 6px 2px 5px;
+  border: 1px solid rgba(245, 201, 120, 0.7);
+  border-left: 3px dotted currentColor;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.86);
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-label);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  color: #f5c978;
+}
+
+.admin-dash .state-row-changed {
+  background: rgba(245, 201, 120, 0.06);
+}
+
+.admin-dash .state-admin-status-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-dash .state-admin-status-control select {
+  max-width: 200px;
+}
+
+/* The map's own encodings: a filled dot for Active, a ring for Pending, a
+   dash for Inactive, beside a select that names the status in words. */
+.admin-dash .state-status-dot {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  color: var(--portal-text-faint);
+}
+
+.admin-dash .state-status-dot.state-status-active {
+  color: #5fd88a;
+}
+
+.admin-dash .state-status-dot.state-status-pending {
+  border: 2px solid #f5c978;
+  background: none;
+}
+
+.admin-dash .state-status-dot.state-status-inactive {
+  height: 2px;
+  border-radius: 1px;
+}
+
+.admin-dash .state-admin-status-description {
+  margin: 6px 0 0 20px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--portal-text);
+}
+
+/* ── Brand assets and uploads ────────────────────────────────────────────── */
+
+.admin-dash .admin-upload-preview {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 14px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-upload-preview-image,
+.admin-dash .admin-upload-preview-placeholder {
+  flex-shrink: 0;
+  width: 88px;
+  height: 88px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.admin-dash .admin-upload-preview-image {
+  object-fit: contain;
+}
+
+.admin-dash .admin-upload-preview-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--portal-text-faint);
+}
+
+.admin-dash .admin-upload-preview-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-dash .admin-upload-preview-copy strong {
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-upload-preview-copy span {
+  font-family: var(--portal-font);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-brand-asset-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-dash .admin-brand-asset-thumb {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  object-fit: contain;
+}
+
+.admin-dash .admin-brand-asset-thumb-file {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--portal-text-faint);
+}
+
+.admin-dash .admin-brand-asset-thumb-color {
+  border: 1px solid var(--portal-border);
+}
+
+.admin-dash .admin-color-preview {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 14px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-color-swatch {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--portal-border);
+  border-radius: 12px;
+}
+
+.admin-dash .admin-color-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* The field control rule would stretch the picker to the row. */
+.admin-dash .admin-field .admin-color-picker {
+  flex: 0 0 auto;
+  width: var(--portal-control-h);
+  padding: 4px;
+  cursor: pointer;
+}
+
+/* ── Dashboard tabs ──────────────────────────────────────────────────────── */
+
+.admin-dash .admin-dashboard-tabs-list {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-dash .admin-dashboard-tab-card {
+  padding: 16px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.admin-dash .admin-dashboard-tab-card.dragging {
+  opacity: 0.45;
+}
+
+.admin-dash .admin-dashboard-tab-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-bottom: 14px;
+}
+
+.admin-dash .admin-dashboard-tab-head-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.admin-dash .admin-dashboard-tab-head h2 {
+  margin: 0 0 2px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-dashboard-tab-head .admin-incentive-actions {
+  align-items: center;
+}
+
+.admin-dash .admin-dashboard-tab-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  margin: -8px 0 0 -8px;
+  border-radius: var(--portal-control-radius);
+  color: var(--portal-text-faint);
+  cursor: grab;
+  touch-action: none;
+}
+
+.admin-dash .admin-dashboard-tab-drag-handle:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-dashboard-tab-drag-handle:active {
+  cursor: grabbing;
+}
+
+.admin-dash .admin-dashboard-tab-card-overlay {
+  min-width: min(100%, 520px);
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 18px;
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  cursor: grabbing;
+}
+
+.admin-dash .admin-dashboard-tab-card-overlay strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-dashboard-system-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.admin-dash .admin-dashboard-link-form {
+  margin-top: 8px;
+  padding-top: 18px;
+  border-top: 1px solid var(--portal-rule);
+}
+
+/* Unsaved order: an amber dotted edge, the pending cue, not an accent field. */
+.admin-dash .admin-draft-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-bottom: 16px;
+  padding: 10px 12px 10px 14px;
+  border: 1px solid rgba(245, 201, 120, 0.5);
+  border-left: 3px dotted #f5c978;
+  border-radius: 14px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-draft-bar p {
+  margin: 0;
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-draft-bar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-dash .admin-dashboard-links-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.admin-dash .admin-dashboard-links-grid.is-drop-over {
+  border-radius: 14px;
+  outline: 1px dashed rgba(255, 255, 255, 0.4);
+  outline-offset: 2px;
+}
+
+.admin-dash .admin-dashboard-link-tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  min-height: 72px;
+  padding: 12px 14px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 14px;
+  background: var(--admin-inset);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  transition:
+    border-color var(--admin-fast) var(--portal-ease-out),
+    opacity var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-dashboard-link-tile:hover {
+  border-color: var(--portal-border);
+}
+
+.admin-dash .admin-dashboard-link-tile:active,
+.admin-dash .admin-dashboard-link-tile.dragging {
+  cursor: grabbing;
+}
+
+.admin-dash .admin-dashboard-link-tile.dragging {
+  opacity: 0.45;
+}
+
+/* Unpublished: dimmed and dashed, so it does not rest on the dim alone. */
+.admin-dash .admin-dashboard-link-tile.unpublished {
+  border-style: dashed;
+  opacity: 0.6;
+}
+
+.admin-dash .admin-dashboard-link-tile.drop-target {
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.admin-dash .admin-dashboard-link-tile-grip {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--portal-text-faint);
+}
+
+.admin-dash .admin-dashboard-link-tile-title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  overflow-wrap: anywhere;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-dashboard-link-tile-menu {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--portal-border);
+  border-radius: 10px;
+  background: var(--portal-bar-fill);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-dash .admin-dashboard-link-tile:hover .admin-dashboard-link-tile-menu,
+.admin-dash .admin-dashboard-link-tile:focus-within .admin-dashboard-link-tile-menu {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.admin-dash .admin-dashboard-link-tile-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--portal-text);
+  cursor: pointer;
+}
+
+.admin-dash .admin-dashboard-link-tile-menu-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-dashboard-link-tile-menu-btn:has(> .lucide-trash2) {
+  color: var(--admin-danger);
+}
+
+.admin-dash .admin-dashboard-link-tile-menu-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* No hover on a touch screen: the edit and delete buttons stay in view and
+   grow to a thumb target, and the tile makes room under its title. */
+@media (hover: none) {
+  .admin-dash .admin-dashboard-link-tile {
+    padding-bottom: 52px;
+  }
+
+  .admin-dash .admin-dashboard-link-tile-menu {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .admin-dash .admin-dashboard-link-tile-menu-btn {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+.admin-dash .admin-dashboard-link-drop-zone {
+  justify-content: center;
+  border-style: dashed;
+  cursor: default;
+}
+
+.admin-dash .admin-dashboard-link-drop-zone .admin-dashboard-link-tile-title {
+  flex: unset;
+  font-weight: 500;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-dashboard-link-drop-zone.active {
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.admin-dash .admin-dashboard-link-drop-zone.active .admin-dashboard-link-tile-title {
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-dashboard-tabs-list-dragging .admin-dashboard-tab-card:not(:has(.admin-dashboard-link-tile.dragging)) {
+  outline: 1px dashed rgba(255, 255, 255, 0.14);
+  outline-offset: 4px;
+}
+
+.admin-dash .admin-dashboard-link-tile-overlay-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  min-width: 160px;
+  min-height: 72px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 14px;
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  cursor: grabbing;
+}
+
+.admin-dash .admin-dashboard-files {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.admin-dash .admin-dashboard-files-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-dash .admin-dashboard-files-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-dash .admin-dashboard-file-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 12px 10px 16px;
+  border: 1px solid var(--portal-rule);
+  border-radius: 14px;
+  background: var(--admin-inset);
+}
+
+.admin-dash .admin-dashboard-file-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-dash .admin-dashboard-file-copy strong {
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-dashboard-file-copy span {
+  font-size: 12px;
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-dashboard-file-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.admin-dash .admin-dashboard-file-edit input {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+/* ── Pages on a phone ────────────────────────────────────────────────────── */
+
+@media (max-width: 720px) {
+  .admin-dash .admin-incentive-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-dash .admin-incentive-preview {
+    max-width: 220px;
+  }
+}
+
+@media (max-width: 620px) {
+  .admin-dash .admin-user-profile-summary,
+  .admin-dash .admin-user-profile-section {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .admin-dash .admin-genesis-details-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px 16px;
+  }
+
+  .admin-dash .admin-user-document-item,
+  .admin-dash .admin-dashboard-file-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-dash :is(.admin-user-document-actions, .admin-dashboard-file-row .admin-incentive-actions) {
+    justify-content: stretch;
+  }
+
+  .admin-dash :is(.admin-user-document-actions, .admin-dashboard-file-row .admin-incentive-actions) > * {
+    flex: 1 1 0;
+  }
+
+  .admin-dash .admin-upload-preview {
+    align-items: flex-start;
+  }
+
+  .admin-dash .admin-draft-bar,
+  .admin-dash .admin-draft-bar-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-dash .admin-dashboard-tab-head .admin-incentive-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .admin-dash .state-admin-status-control select {
+    max-width: none;
+  }
+
+  .admin-dash .admin-todo-completion-btn {
+    min-height: 44px;
+  }
+
+  .admin-onboarding-preview-shell .home2-page.onboarding-page .onboarding-main {
+    padding-top: 212px;
+  }
+}
+
+/* ── Full-screen preview routes ──────────────────────────────────────────── */
+
+/* The onboarding and W-9 previews render outside AdminLayout, under a fixed
+   bar that says nothing is saved. The bar sits over scrolling content, so it
+   takes the solid bar fill with the sheen. */
+.admin-onboarding-preview-shell {
+  --admin-fast: 150ms;
+  --admin-inset: rgba(0, 0, 0, 0.28);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-onboarding-preview-shell {
+    --admin-fast: 0ms;
+  }
+}
+
+.admin-onboarding-preview-shell .home2-page.onboarding-page .onboarding-main {
+  padding-top: clamp(128px, 16vh, 150px);
+  overflow: visible;
+}
+
+.admin-onboarding-preview-shell .home2-page.onboarding-page:has(.onboarding-panel-signing) {
+  overflow-x: visible;
+}
+
+.admin-onboarding-preview-shell .admin-onboarding-preview-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1002;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-sizing: border-box;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) clamp(16px, 4vw, 28px) 10px;
+  border-bottom: 1px solid var(--portal-border);
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+}
+
+.admin-onboarding-preview-shell .admin-onboarding-preview-bar-copy {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.admin-onboarding-preview-shell .admin-onboarding-preview-bar-copy p {
+  margin: 0;
+  font-size: var(--portal-control-fs);
+  line-height: 1.45;
+  color: var(--portal-text);
+}
+
+/* A pending chip: the preview is a state, not an alert. */
+.admin-onboarding-preview-shell .admin-onboarding-preview-badge {
+  flex-shrink: 0;
+  padding: 4px 7px 3px 6px;
+  border: 1px solid rgba(245, 201, 120, 0.7);
+  border-left: 3px dotted currentColor;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.86);
+  font-size: var(--portal-t-label);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #f5c978;
+}
+
+.admin-onboarding-preview-shell .admin-onboarding-preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.admin-onboarding-preview-shell .admin-onboarding-preview-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  min-height: var(--portal-control-h);
+  padding: 0 14px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-control-radius);
+  background: var(--admin-inset);
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--admin-fast) var(--portal-ease-out),
+    border-color var(--admin-fast) var(--portal-ease-out);
+}
+
+.admin-onboarding-preview-shell .admin-onboarding-preview-btn svg {
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
+}
+
+.admin-onboarding-preview-shell .admin-onboarding-preview-btn:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.admin-onboarding-preview-shell .admin-onboarding-preview-btn:focus-visible {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+
+@media (max-width: 720px) {
+  .admin-onboarding-preview-shell .admin-onboarding-preview-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .admin-onboarding-preview-shell .admin-onboarding-preview-bar-copy {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .admin-onboarding-preview-shell .admin-onboarding-preview-actions > * {
+    flex: 1 1 0;
+  }
+}
+
+/* ── Audit fixes ─────────────────────────────────────────────────────────── */
+
+/* Every admin text control at 16px at every width: iOS Safari zooms on focus
+   under 16px, in landscape and on an iPad as much as on a phone. */
+.admin-dash :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+  font-size: 16px;
+}
+
+@media (max-width: 620px) {
+  /* The phone stat list clipped its links' focus rings to a hairline with
+     overflow: hidden. The corners come from the first and last rows now, and
+     the ring sits inside each row. */
+  .admin-dash .admin-stats {
+    overflow: visible;
+  }
+
+  .admin-dash .admin-stat {
+    min-height: var(--portal-control-h);
+  }
+
+  .admin-dash .admin-stat:first-child {
+    border-radius: 14px 14px 0 0;
+  }
+
+  .admin-dash .admin-stat:last-child {
+    border-radius: 0 0 14px 14px;
+  }
+
+  .admin-dash .admin-stat:focus-visible {
+    outline-offset: -3px;
+  }
+
+  /* Toolbars (setter/closer, dashboard tabs) stack full width like every
+     other action row, instead of wrapping at uneven widths. */
+  .admin-dash :is(.admin-toolbar, .admin-toolbar-actions) {
+    width: 100%;
+  }
+
+  .admin-dash :is(.admin-toolbar, .admin-toolbar-actions) > * {
+    flex: 1 1 100%;
+  }
+
+  /* State availability runs about 12,700px on a phone. Once a row is edited,
+     Discard and Save leave the head and dock at the foot of the screen, on
+     the bar material, so they are reachable from any state. */
+  .admin-dash .admin-panel:has(.state-availability-admin-table .state-row-changed) > .admin-panel-head-row .admin-panel-head-actions {
+    position: fixed;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    left: 12px;
+    z-index: 40;
+    width: auto;
+    padding: 10px;
+    border: 1px solid var(--portal-border);
+    border-radius: 18px;
+    background: var(--portal-pane-sheen), var(--portal-bar-fill);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  }
+
+  .admin-dash .admin-panel:has(.state-availability-admin-table .state-row-changed) {
+    padding-bottom: 96px;
+  }
+}
+
+/* The row actions sheet's scrim is a real element on a phone, so a tap outside
+   the sheet closes it without also reaching the page under it. */
+.admin-dash .admin-actions-menu-backdrop {
+  display: none;
+}
+
+@media (max-width: 620px) {
+  .admin-dash .admin-actions-menu-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 299;
+    background: rgba(0, 0, 0, 0.45);
+    animation: admin-fade-in var(--admin-slow, 250ms) var(--portal-ease-out);
+  }
+}
+
+@keyframes admin-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Standalone previews use the portal backdrop and materials too. The preview
+   bar stays in document flow, so its wrapped phone height cannot cover fields. */
+.admin-onboarding-preview-shell { min-height: 100svh; background: var(--portal-base); }
+.admin-onboarding-preview-shell .admin-onboarding-preview-bar { position: sticky; }
+.admin-onboarding-preview-shell .home2-page.onboarding-page {
+  position: relative;
+  background: transparent;
+}
+.admin-onboarding-preview-shell .home2-page.onboarding-page .nav {
+  position: relative;
+  inset: auto;
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+}
+.admin-onboarding-preview-shell .home2-page.onboarding-page .onboarding-main {
+  min-height: calc(100svh - 160px);
+  padding-top: 24px;
+  background: transparent;
+}
+.admin-onboarding-preview-shell .home2-page.onboarding-page .onboarding-main::before,
+.admin-onboarding-preview-shell .home2-page.onboarding-page .onboarding-main::after { display: none; }
+.admin-onboarding-preview-shell .home2-page.onboarding-page .onboarding-panel:not(.onboarding-panel-signing) {
+  padding: 24px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-pane-sheen), var(--portal-pane-fill);
+  box-shadow: var(--portal-pane-shadow);
+}
+.admin-onboarding-preview-shell .home2-page :is(.h2, .h3) {
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-large);
+  font-style: normal;
+  font-weight: 600;
+  text-transform: none;
+  color: var(--portal-text-strong);
+}
+.admin-onboarding-preview-shell .home2-page .lead {
+  font-size: var(--portal-t-body);
+  color: var(--portal-text);
+}
+.admin-onboarding-preview-shell .home2-page .btn {
+  min-height: var(--portal-control-h);
+  border-radius: var(--portal-control-radius);
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.admin-onboarding-preview-shell .home2-page .btn-accent {
+  background: var(--portal-text-strong);
+  color: var(--portal-bar-fill);
+  border-color: var(--portal-border);
+}
+@media (max-width: 620px) {
+  .admin-onboarding-preview-shell .home2-page.onboarding-page .onboarding-main { padding-top: 16px; }
+}

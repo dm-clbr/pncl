@@ -1,0 +1,74 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - link "PNCL home":
+    - /url: /
+  - heading "Employee Portal" [level=1]
+  - link "Jordan Example, view profile":
+    - /url: /portal/profile
+    - generic: JE
+  - button "Referral links" [expanded] [active]:
+    - generic: "01"
+    - generic: Referral links
+  - button "Sales Tools, 1 item":
+    - generic: "02"
+    - generic: "01"
+    - generic: Sales Tools
+    - generic: 1 item
+  - button "Incentives, 1 item":
+    - generic: "03"
+    - generic: "01"
+    - generic: Incentives
+    - generic: 1 item
+  - button "Brand assets, 2 items":
+    - generic: "04"
+    - generic: "02"
+    - generic: Brand assets
+    - generic: 2 items
+  - link "Admin console":
+    - /url: /portal/admin
+    - generic: Admin console
+  - button "Sign out":
+    - text: Sign out
+  - link "Facebook":
+    - /url: https://www.facebook.com/profile.php?id=61588062292202
+  - link "Instagram":
+    - /url: https://www.instagram.com/thepncl_/
+  - link "LinkedIn":
+    - /url: https://www.linkedin.com/company/the-pncl/?viewAsMember=true
+- navigation "Portal sections":
+  - link "Dashboard":
+    - /url: /portal
+    - generic: Dashboard
+  - link "Calendar":
+    - /url: /portal/calendar
+    - generic: Calendar
+  - link "State Map":
+    - /url: /portal/state-map
+    - generic: State Map
+  - link "Profile":
+    - /url: /portal/profile
+    - generic: Profile
+- 'button "On-Board ·1 of 2 steps complete Next: Complete your W-9 , open the checklist"':
+  - text: On-Board
+  - text: ·1 of 2
+  - generic: steps complete
+  - generic: "Next: Complete your W-9"
+  - generic: ", open the checklist"
+  - generic: 50%
+- group "Referral links":
+  - generic: Referral links
+  - region "Referral links":
+    - paragraph: Create a unique, single-use link for each recruit and choose their starting contract. If you have a linked business partner, you share the same referral link list.
+    - generic: Recruit nickname*
+    - paragraph: For your records only, not their legal name, so spelling does not need to be exact.
+    - textbox "Recruit nickname":
+      - /placeholder: e.g. Joe B.
+    - generic: Starting contract*
+    - combobox "Starting contract":
+      - option "50%" [selected]
+      - option "60%"
+    - button "Create & copy link"
+  - link "Open team dashboard":
+    - /url: /portal/profile?tab=team

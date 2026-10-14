@@ -1,27 +1,34 @@
-import { useTheme } from "next-themes";
+import type { CSSProperties } from "react";
 import { Toaster as Sonner, toast } from "sonner";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
-const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme();
+/* The portal's bar material, handed to Sonner through its own theme
+   variables. The shadcn classes this replaced read --background, --foreground
+   and --border, which nothing defines, so every toast rendered transparent.
+   Dark always: the portal is dark, and the old theme followed the OS through a
+   next-themes hook with no provider behind it. */
+const PORTAL_TOAST_STYLE = {
+  "--normal-bg": "rgb(28, 22, 17)",
+  "--normal-border": "rgba(255, 255, 255, 0.15)",
+  "--normal-text": "rgba(255, 255, 255, 0.95)",
+  "--border-radius": "14px",
+  fontFamily: '"Manrope", sans-serif',
+} as CSSProperties;
 
-  return (
-    <Sonner
-      theme={theme as ToasterProps["theme"]}
-      className="toaster group"
-      toastOptions={{
-        classNames: {
-          toast:
-            "group toast group-[.toaster]:bg-background group-[.toaster]:text-foreground group-[.toaster]:border-border group-[.toaster]:shadow-lg",
-          description: "group-[.toast]:text-muted-foreground",
-          actionButton: "group-[.toast]:bg-primary group-[.toast]:text-primary-foreground",
-          cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
-        },
-      }}
-      {...props}
-    />
-  );
-};
+/** Top centre at every width: the bottom of the screen belongs to the
+    floating tab bar and the onboarding capsule, and the masthead's centre is
+    empty. The safe-area inset keeps a phone toast clear of the status bar. */
+const Toaster = ({ ...props }: ToasterProps) => (
+  <Sonner
+    theme="dark"
+    position="top-center"
+    offset={16}
+    mobileOffset={{ top: "calc(env(safe-area-inset-top) + 12px)" }}
+    className="toaster group"
+    style={PORTAL_TOAST_STYLE}
+    {...props}
+  />
+);
 
 export { Toaster, toast };

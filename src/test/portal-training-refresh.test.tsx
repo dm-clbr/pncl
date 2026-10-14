@@ -70,7 +70,7 @@ describe("video training refresh", () => {
     authState.role = "agent";
     render(<MemoryRouter><PortalDisclosures /></MemoryRouter>);
 
-    expect(await screen.findByText("Day 1: Welcome")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Day 1: Welcome" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Check for new videos" })).not.toBeInTheDocument();
   });
 });

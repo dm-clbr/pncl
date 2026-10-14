@@ -1,0 +1,138 @@
+
+ RUN  v3.2.4 /Users/vel/.codex/worktrees/d2c1/PNCL
+
+stderr | src/components/portal/primitives.test.tsx > ListRow > picks its element and its default trailing glyph from the href
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/pages/PortalProfile.test.tsx > portal profile details tab > shows the loading state until the profile arrives
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at /Users/vel/.codex/worktrees/d2c1/PNCL/src/components/ui/liquid-gradient.tsx:654:23
+    at commitHookEffectListMount (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+    at commitPassiveMountOnFiber (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+    at commitPassiveMountEffects_complete (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+    at commitPassiveMountEffects_begin (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+    at commitPassiveMountEffects (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+    at flushPassiveEffectsImpl (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:27078:3) undefined
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ ✓ src/components/portal/primitives.test.tsx (27 tests) 160ms
+stderr | src/pages/PortalProfile.test.tsx > portal profile details tab > keeps the form and reports the failure when the profile cannot be loaded
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at /Users/vel/.codex/worktrees/d2c1/PNCL/src/components/ui/liquid-gradient.tsx:654:23
+    at commitHookEffectListMount (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+    at commitPassiveMountOnFiber (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+    at commitPassiveMountEffects_complete (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+    at commitPassiveMountEffects_begin (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+    at commitPassiveMountEffects (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+    at flushPassiveEffectsImpl (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:27078:3) undefined
+
+stderr | src/pages/PortalDashboard.test.tsx > PortalDashboard onboarding dock > shows the stage, the count and the next step on the capsule
+⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+stderr | src/pages/PortalProfile.test.tsx > portal profile details tab > renders the populated details tab as tabs, panes and a save bar
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at /Users/vel/.codex/worktrees/d2c1/PNCL/src/components/ui/liquid-gradient.tsx:654:23
+    at commitHookEffectListMount (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+    at commitPassiveMountOnFiber (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+    at commitPassiveMountEffects_complete (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+    at commitPassiveMountEffects_begin (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+    at commitPassiveMountEffects (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+    at flushPassiveEffectsImpl (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:27078:3) undefined
+
+stderr | src/pages/PortalProfile.test.tsx > portal profile details tab > shows onboarding as the dock capsule and opens the checklist from it
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at /Users/vel/.codex/worktrees/d2c1/PNCL/src/components/ui/liquid-gradient.tsx:654:23
+    at commitHookEffectListMount (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+    at commitPassiveMountOnFiber (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+    at commitPassiveMountEffects_complete (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+    at commitPassiveMountEffects_begin (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+    at commitPassiveMountEffects (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+    at flushPassiveEffectsImpl (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:27078:3) undefined
+
+stderr | src/pages/PortalProfile.test.tsx > portal profile details tab > opens the team tab panel
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at /Users/vel/.codex/worktrees/d2c1/PNCL/src/components/ui/liquid-gradient.tsx:654:23
+    at commitHookEffectListMount (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+    at commitPassiveMountOnFiber (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+    at commitPassiveMountEffects_complete (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+    at commitPassiveMountEffects_begin (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+    at commitPassiveMountEffects (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+    at flushPassiveEffectsImpl (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:27078:3) undefined
+
+stderr | src/pages/PortalProfile.test.tsx > portal profile details tab > opens the carrier logins tab panel
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at /Users/vel/.codex/worktrees/d2c1/PNCL/src/components/ui/liquid-gradient.tsx:654:23
+    at commitHookEffectListMount (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+    at commitPassiveMountOnFiber (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+    at commitPassiveMountEffects_complete (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+    at commitPassiveMountEffects_begin (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+    at commitPassiveMountEffects (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+    at flushPassiveEffectsImpl (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:27078:3) undefined
+
+stderr | src/pages/PortalProfile.test.tsx > portal profile details tab > opens the licensing tab panel
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at /Users/vel/.codex/worktrees/d2c1/PNCL/src/components/ui/liquid-gradient.tsx:654:23
+    at commitHookEffectListMount (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+    at commitPassiveMountOnFiber (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+    at commitPassiveMountEffects_complete (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+    at commitPassiveMountEffects_begin (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+    at commitPassiveMountEffects (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+    at flushPassiveEffectsImpl (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:27078:3) undefined
+
+ ✓ src/pages/PortalDashboard.test.tsx (3 tests) 523ms
+stderr | src/pages/PortalProfile.test.tsx > portal profile details tab > renders a signed form as a row with a PDF chip and its date
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at /Users/vel/.codex/worktrees/d2c1/PNCL/src/components/ui/liquid-gradient.tsx:654:23
+    at commitHookEffectListMount (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+    at commitPassiveMountOnFiber (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+    at commitPassiveMountEffects_complete (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+    at commitPassiveMountEffects_begin (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+    at commitPassiveMountEffects (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+    at flushPassiveEffectsImpl (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:27078:3) undefined
+
+stderr | src/pages/PortalProfile.test.tsx > portal profile details tab > opens the documents tab on the saved forms empty state
+Error: Not implemented: HTMLCanvasElement.prototype.getContext (without installing the canvas npm package)
+    at module.exports (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/browser/not-implemented.js:9:17)
+    at HTMLCanvasElementImpl.getContext (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/living/nodes/HTMLCanvasElement-impl.js:42:5)
+    at HTMLCanvasElement.getContext (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/jsdom/lib/jsdom/living/generated/HTMLCanvasElement.js:131:58)
+    at /Users/vel/.codex/worktrees/d2c1/PNCL/src/components/ui/liquid-gradient.tsx:654:23
+    at commitHookEffectListMount (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:23189:26)
+    at commitPassiveMountOnFiber (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24970:11)
+    at commitPassiveMountEffects_complete (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24930:9)
+    at commitPassiveMountEffects_begin (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24917:7)
+    at commitPassiveMountEffects (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:24905:3)
+    at flushPassiveEffectsImpl (/Users/vel/.codex/worktrees/d2c1/PNCL/node_modules/react-dom/cjs/react-dom.development.js:27078:3) undefined
+
+ ✓ src/pages/PortalProfile.test.tsx (9 tests) 678ms
+
+ Test Files  3 passed (3)
+      Tests  39 passed (39)
+   Start at  15:20:26
+   Duration  1.84s (transform 494ms, setup 149ms, collect 1.25s, tests 1.36s, environment 918ms, prepare 128ms)

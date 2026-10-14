@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useAdminModal } from "@/components/admin/useAdminModal";
 import { DollarSign, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -63,11 +64,17 @@ function EntryModal({
     }
   };
 
+  const modalRef = useRef<HTMLDivElement>(null);
+  useAdminModal(modalRef, true, saving ? undefined : onClose);
+
   return (
     <div className="admin-modal-overlay" role="presentation" onClick={saving ? undefined : onClose}>
       <div
         className="admin-modal admin-ticket-modal"
         role="dialog"
+        ref={modalRef}
+        tabIndex={-1}
+        aria-modal="true"
         aria-labelledby="admin-pay-policy-title"
         onClick={(event) => event.stopPropagation()}
       >
@@ -243,19 +250,19 @@ export default function AdminPayPolicy() {
             <tbody>
               {entries.map((entry) => (
                 <tr key={entry.id}>
-                  <td>{entry.title}</td>
-                  <td>{CATEGORY_LABELS[entry.category]}</td>
-                  <td>{entry.sort_order}</td>
-                  <td>
+                  <td data-label="Title">{entry.title}</td>
+                  <td data-label="Type">{CATEGORY_LABELS[entry.category]}</td>
+                  <td data-label="Order">{entry.sort_order}</td>
+                  <td data-label="Status">
                     <span className={entry.published ? "admin-status active" : "admin-status"}>
                       {entry.published ? "Published" : "Draft"}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="Actions">
                     <div className="admin-row-actions">
                       <button
                         type="button"
-                        className="admin-icon-btn"
+                        className="admin-icon-btn admin-icon-only"
                         aria-label={`Edit ${entry.title}`}
                         onClick={() =>
                           setDraft({
@@ -272,7 +279,7 @@ export default function AdminPayPolicy() {
                       </button>
                       <button
                         type="button"
-                        className="admin-icon-btn danger"
+                        className="admin-icon-btn admin-icon-only danger"
                         aria-label={`Delete ${entry.title}`}
                         disabled={deletingId === entry.id}
                         onClick={() => void handleDelete(entry)}

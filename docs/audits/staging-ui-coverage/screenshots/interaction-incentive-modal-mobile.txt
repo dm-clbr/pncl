@@ -1,0 +1,62 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - button "Open navigation":
+  - link "PNCL home":
+    - /url: /
+  - generic: Admin console
+  - heading "Incentives" [level=1]
+  - paragraph: Upload poster images or videos for the agent portal.
+  - generic: Title
+  - textbox "Title":
+    - /placeholder: Trip to Hawaii
+  - generic: Slug
+  - textbox "Slug":
+    - /placeholder: trip-to-hawaii
+  - generic: Media type
+  - combobox "Media type":
+    - option "Image" [selected]
+    - option "Video"
+  - generic: Image upload
+  - button "Choose file":
+    - text: Choose file
+  - paragraph: Images are compressed to 500 KB–1 MB before upload.
+  - generic: Link URL (optional)
+  - textbox "Link URL (optional)":
+    - /placeholder: https://...
+  - checkbox "Published in agent portal" [checked]
+  - generic: Published in agent portal
+  - paragraph: Preview
+  - generic: Upload media to preview the poster.
+  - button "Create incentive"
+  - button "Cancel"
+  - table:
+    - rowgroup:
+      - row "Preview Title Type Status Actions":
+        - columnheader "Preview"
+        - columnheader "Title"
+        - columnheader "Type"
+        - columnheader "Status"
+        - columnheader "Actions"
+    - rowgroup:
+      - row "Preview Example incentive Title Example incentive example Type image Status Published Move Example incentive up Move Example incentive down Edit Delete":
+        - cell "Preview Example incentive":
+          - text: Preview
+          - figure "Example incentive":
+            - img "Example incentive"
+        - cell "Title Example incentive example":
+          - text: Title
+          - strong: Example incentive
+          - generic: example
+        - cell "Type image"
+        - cell "Status Published":
+          - text: Status
+          - generic: Published
+        - cell "Move Example incentive up Move Example incentive down Edit Delete":
+          - button "Move Example incentive up" [disabled]:
+          - button "Move Example incentive down" [disabled]:
+          - button "Edit":
+            - text: Edit
+          - button "Delete":
+            - text: Delete

@@ -1,0 +1,22 @@
+[
+  {
+    "available": 1124,
+    "calendarRight": 1308,
+    "calendarWidth": 1124,
+    "headerRight": 1308,
+    "overflow": false,
+    "viewport": [
+      1492,
+      1077
+    ]
+  },
+  {
+    "available": 362,
+    "calendarWidth": 362,
+    "overflow": false,
+    "viewport": [
+      390,
+      844
+    ]
+  }
+]

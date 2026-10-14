@@ -1,4 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+@import "./styles/portal-tokens.css";
+@import "./styles/portal-primitives.css";
+@import "./styles/portal-shell.css";
 
 @tailwind base;
 @tailwind components;
@@ -21,6 +24,10 @@
   --border-subtle: rgba(240, 237, 228, 0.06);
   --hover-bg: rgba(240, 237, 228, 0.03);
   --radius: 0px;
+
+  /* Bento dashboard accent. Single swap point if PNCL rejects the red. */
+  --portal-accent: #FF3A1E;
+  --portal-success: #3BD66B;
 }
 
 html { scroll-behavior: smooth; font-size: 16px; }

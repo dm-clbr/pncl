@@ -18,13 +18,13 @@ function show() { render(<MemoryRouter><PortalReferralPanel embedded /></MemoryR
 describe("Referral onboarding choice", () => {
   it.each(["loa", "ibo"])("creates a %s invite with the recruit nickname and compensation", async (designation) => {
     show();
-    expect(screen.getByLabelText("Agent designation")).toBeRequired();
-    expect(screen.getByLabelText("Agent designation")).toHaveValue("");
+    expect(screen.getByRole("combobox", { name: "Agent designation" })).toBeRequired();
+    expect(screen.getByRole("combobox", { name: "Agent designation" })).toHaveValue("");
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "Jordan" } });
-    fireEvent.change(screen.getByLabelText("Agent designation"), { target: { value: designation } });
+    fireEvent.change(screen.getByRole("combobox", { name: "Agent designation" }), { target: { value: designation } });
     fireEvent.click(screen.getByRole("button", { name: "Create & copy link" }));
     await waitFor(() => expect(createInvite).toHaveBeenCalledWith({ compLevel: 95, recipientLabel: "Jordan", agentDesignation: designation }));
-    await waitFor(() => expect(screen.getByLabelText("Agent designation")).toHaveValue(""));
+    await waitFor(() => expect(screen.getByRole("combobox", { name: "Agent designation" })).toHaveValue(""));
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith("https://thepncl.com/onboarding?ref=sample");
   });
   it("blocks creation without a designation", () => {

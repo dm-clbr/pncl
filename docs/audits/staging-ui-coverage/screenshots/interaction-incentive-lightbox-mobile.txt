@@ -1,0 +1,3 @@
+Browser tab: 2, Title: "Employee Portal — PNCL", URL: "http://localhost:8080/portal".
+There has been no change in the accessibility tree.
+The focused UI element is 43 button Example incentive Example incentive POSTER

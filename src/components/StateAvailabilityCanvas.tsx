@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Minus, Plus, RotateCcw } from "lucide-react";
 import * as THREE from "three";
 import { feature } from "topojson-client";
 import statesAtlas from "us-atlas/states-albers-10m.json";
@@ -10,26 +11,116 @@ import type {
   Position,
 } from "geojson";
 import {
-  STATE_AVAILABILITY_META,
   type StateAvailability,
+  type StateAvailabilityStatus,
 } from "@/lib/portal-state-availability";
 import { US_STATE_BY_FIPS, type UsStateCode } from "@/lib/us-states";
+import { matchesFilter, type StateMapFilter } from "@/components/portal/state-map-filter";
 
 interface StateVisual {
   group: THREE.Group;
   outlineMaterials: THREE.LineBasicMaterial[];
+  restOutline: { color: string; opacity: number };
+  /** The fill and the licence ring: what a filter fades out. */
+  faceMaterials: THREE.Material[];
+  status: StateAvailabilityStatus;
+  licensed: boolean;
 }
+
+/** One status, or the agent's own licences. Null shows every state. */
+export type { StateMapFilter };
 
 interface StateAvailabilityCanvasProps {
   states: StateAvailability[];
   licensedStates: Set<UsStateCode>;
   selectedState: UsStateCode | null;
+  /** Fades every state the filter excludes. The directory below the map
+      filters with it too, so the map is never the only place it shows. */
+  filter?: StateMapFilter | null;
   availabilityUnavailable?: boolean;
   onHover: (stateCode: UsStateCode | null) => void;
   onSelect: (stateCode: UsStateCode) => void;
 }
 
 type StateGeometry = Polygon | MultiPolygon;
+
+/** Map fills, not the swatches in STATE_AVAILABILITY_META. Those three sit at
+    1.48:1 (Active to Pending) and 2.31:1 (Active to Inactive), so a viewer with
+    deuteranopia or protanopia loses the difference. These three clear 3:1
+    against each other: Active to Inactive 3.32:1, Pending to Active 3.48:1,
+    Pending to Inactive 11.55:1. Colour still is not the only channel: Pending
+    also carries a hatch and a licensed state carries a ring. */
+export const STATE_MAP_FILL: Record<StateAvailabilityStatus, string> = {
+  Active: "#27865a",
+  Pending: "#fbdf9d",
+  Inactive: "#212730",
+};
+
+const UNAVAILABLE_FILL = "#3d4654";
+const HATCH_INK = "#7a5c14";
+const RING_LIGHT = "#f4f0df";
+const RING_HALO = "#101318";
+const HIGHLIGHT_OUTLINE = "#ff7a3d";
+/** A filtered-out state stays on the map as context and stops competing with
+    the ones that matched. */
+const DIM_OPACITY = 0.2;
+/** A dark fill needs a light edge or the state has no silhouette against the
+    panel and two neighbouring Inactive states read as one shape. A bright fill
+    keeps the etched dark edge. No single edge colour covers both: the fills are
+    more than 3:1 apart by design, so any one line colour lands inside 3:1 of
+    one of them. */
+const DARK_OUTLINE = { color: "#171a20", opacity: 0.85 };
+const LIGHT_OUTLINE = { color: RING_LIGHT, opacity: 0.55 };
+
+/** The albers atlas centre the camera was framed on. */
+const MAP_CENTER_X = 487.5;
+const MAP_CENTER_Y = -305;
+const ZOOM_MIN = 1;
+const ZOOM_MAX = 4;
+const ZOOM_STEP = 1.4;
+
+const clamp = (value: number, low: number, high: number) =>
+  Math.min(Math.max(value, low), high);
+
+/** Where the zoomed camera sits: on the selected state, or at the map edge when
+    following it would pan past the atlas. Pure so the clamp is checkable
+    without a WebGL context. Half-width and half-height are the frustum's, at
+    zoom 1. */
+export function cameraCenter(
+  zoom: number,
+  halfWidth: number,
+  halfHeight: number,
+  center?: { x: number; y: number },
+): { x: number; y: number } {
+  const marginX = halfWidth * (1 - 1 / zoom);
+  const marginY = halfHeight * (1 - 1 / zoom);
+  return {
+    x: clamp(center?.x ?? MAP_CENTER_X, MAP_CENTER_X - marginX, MAP_CENTER_X + marginX),
+    y: clamp(center?.y ?? MAP_CENTER_Y, MAP_CENTER_Y - marginY, MAP_CENTER_Y + marginY),
+  };
+}
+
+/** The render gate. Frames are asked for, never looped, so a false here is the
+    whole saving: renderer.render is not reached and the GPU draws nothing. */
+export const canDrawFrame = (onScreen: boolean, documentHidden: boolean) =>
+  onScreen && !documentHidden;
+
+/** A phone paints this map at a third of the fragments for no visible loss. */
+export const rendererPixelRatio = (coarsePointer: boolean, deviceRatio: number) =>
+  coarsePointer ? 1 : Math.min(deviceRatio, 2);
+
+/** The slop a finger leaves on a deliberate tap, in CSS pixels. */
+const TAP_SLOP = 8;
+
+/** A tap rather than the start of a scroll. On a phone the map card is pinned
+    across the top of the viewport, so it is the primary scroll surface: a
+    swipe that begins over a drawn state must not commit the selection, because
+    selecting opens a modal sheet and the open dialog then locks the scroll
+    mid-gesture. Pure so the threshold is checkable without a pointer device. */
+export const isTap = (
+  down: { x: number; y: number },
+  up: { x: number; y: number },
+) => Math.hypot(up.x - down.x, up.y - down.y) <= TAP_SLOP;
 
 function createShape(rings: Position[][]): THREE.Shape | null {
   const [outer, ...holes] = rings;
@@ -58,10 +149,45 @@ function polygonSets(geometry: StateGeometry): Position[][][] {
   return geometry.type === "Polygon" ? [geometry.coordinates] : geometry.coordinates;
 }
 
+/** Diagonal hatch for Pending, so the status survives a colour-blind read and a
+    greyscale print. ExtrudeGeometry's default UV generator hands the face the
+    raw atlas coordinates, so the repeat is set in map units and every state
+    gets the same stripe pitch. Returns null where there is no 2D context. */
+function createHatchTexture(): THREE.CanvasTexture | null {
+  const tile = document.createElement("canvas");
+  tile.width = 16;
+  tile.height = 16;
+  const context = tile.getContext("2d");
+  if (!context) return null;
+
+  context.fillStyle = STATE_MAP_FILL.Pending;
+  context.fillRect(0, 0, 16, 16);
+  context.strokeStyle = HATCH_INK;
+  context.lineWidth = 4;
+  context.beginPath();
+  context.moveTo(-4, 12);
+  context.lineTo(12, -4);
+  context.moveTo(4, 20);
+  context.lineTo(20, 4);
+  context.stroke();
+
+  const texture = new THREE.CanvasTexture(tile);
+  // flipY leaves UNPACK_FLIP_Y_WEBGL set for the renderer's next texImage3D,
+  // which logs an INVALID_OPERATION warning. The tile is a symmetric hatch, so
+  // the only difference is which way the stripes lean.
+  texture.flipY = false;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1 / 18, 1 / 18);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
 export default function StateAvailabilityCanvas({
   states,
   licensedStates,
   selectedState,
+  filter = null,
   availabilityUnavailable = false,
   onHover,
   onSelect,
@@ -72,29 +198,46 @@ export default function StateAvailabilityCanvas({
   const hoveredRef = useRef<UsStateCode | null>(null);
   const selectedRef = useRef<UsStateCode | null>(selectedState);
   const renderRef = useRef<(() => void) | null>(null);
+  const applyViewRef = useRef<(() => void) | null>(null);
   const callbacksRef = useRef({ onHover, onSelect });
+  const filterRef = useRef(filter);
   const [webglError, setWebglError] = useState<string | null>(null);
+  const [zoom, setZoom] = useState(ZOOM_MIN);
+  const zoomRef = useRef(zoom);
   const licenseKey = [...licensedStates].sort().join(",");
 
   callbacksRef.current = { onHover, onSelect };
   selectedRef.current = selectedState;
+  zoomRef.current = zoom;
+  filterRef.current = filter;
 
   const refreshHighlights = () => {
+    const active = filterRef.current;
     for (const [code, visual] of visualsRef.current) {
+      const fade = matchesFilter(active, visual.status, visual.licensed) ? 1 : DIM_OPACITY;
       const highlighted = code === selectedRef.current || code === hoveredRef.current;
       visual.group.position.z = highlighted ? 5 : 0;
+      for (const material of visual.faceMaterials) material.opacity = fade;
       for (const material of visual.outlineMaterials) {
-        material.color.set(highlighted ? "#ff7a3d" : "#171a20");
-        material.opacity = highlighted ? 1 : 0.72;
+        material.color.set(highlighted ? HIGHLIGHT_OUTLINE : visual.restOutline.color);
+        material.opacity = (highlighted ? 1 : visual.restOutline.opacity) * fade;
       }
     }
     renderRef.current?.();
   };
 
+  useEffect(refreshHighlights, [filter]);
+
   useEffect(() => {
     selectedRef.current = selectedState;
+    applyViewRef.current?.();
     refreshHighlights();
   }, [selectedState]);
+
+  useEffect(() => {
+    applyViewRef.current?.();
+    renderRef.current?.();
+  }, [zoom]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -111,13 +254,15 @@ export default function StateAvailabilityCanvas({
       return;
     }
 
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const finePointer = window.matchMedia("(pointer: fine)");
+    const coarsePointer = window.matchMedia("(pointer: coarse)");
+    renderer.setPixelRatio(rendererPixelRatio(coarsePointer.matches, window.devicePixelRatio));
     renderer.setClearColor(0x000000, 0);
 
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-500, 500, 320, -320, 0.1, 2000);
-    camera.position.set(487.5, -305, 1000);
-    camera.lookAt(487.5, -305, 0);
+    camera.position.set(MAP_CENTER_X, MAP_CENTER_Y, 1000);
+    camera.lookAt(MAP_CENTER_X, MAP_CENTER_Y, 0);
 
     const stateByCode = new Map(states.map((state) => [state.stateCode, state]));
     const licensedStateSet = new Set(
@@ -129,8 +274,10 @@ export default function StateAvailabilityCanvas({
       topology.objects.states,
     ) as unknown as FeatureCollection<StateGeometry>;
 
+    const hatchTexture = availabilityUnavailable ? null : createHatchTexture();
     const interactiveMeshes: THREE.Mesh[] = [];
     const visuals = new Map<UsStateCode, StateVisual>();
+    const centers = new Map<UsStateCode, { x: number; y: number }>();
 
     for (const stateFeature of collection.features) {
       const fips = String(stateFeature.id ?? "").padStart(2, "0");
@@ -141,13 +288,26 @@ export default function StateAvailabilityCanvas({
 
       const group = new THREE.Group();
       group.userData.stateCode = stateDefinition.code;
+      const hatched = !availabilityUnavailable
+        && availability.status === "Pending"
+        && hatchTexture !== null;
       const fillMaterial = new THREE.MeshBasicMaterial({
-        color: availabilityUnavailable
-          ? "#3d4654"
-          : STATE_AVAILABILITY_META[availability.status].color,
+        // The hatch tile already carries the Pending fill, so its material
+        // multiplies by white rather than tinting the stripes.
+        color: hatched ? "#ffffff" : availabilityUnavailable
+          ? UNAVAILABLE_FILL
+          : STATE_MAP_FILL[availability.status],
+        map: hatched ? hatchTexture : null,
         side: THREE.DoubleSide,
+        // Always transparent so a filter can fade it without a shader
+        // recompile. At opacity 1 it still writes depth, and no two states
+        // overlap, so nothing sorts differently from an opaque fill.
+        transparent: true,
       });
+      const darkFill = availabilityUnavailable || availability.status === "Inactive";
+      const restOutline = darkFill ? LIGHT_OUTLINE : DARK_OUTLINE;
       const outlineMaterials: THREE.LineBasicMaterial[] = [];
+      const faceMaterials: THREE.Material[] = [fillMaterial];
 
       for (const rings of polygonSets(stateFeature.geometry)) {
         const shape = createShape(rings);
@@ -163,9 +323,9 @@ export default function StateAvailabilityCanvas({
         interactiveMeshes.push(mesh);
 
         const outlineMaterial = new THREE.LineBasicMaterial({
-          color: "#171a20",
+          color: restOutline.color,
           transparent: true,
-          opacity: 0.72,
+          opacity: restOutline.opacity,
         });
         const outline = new THREE.LineSegments(
           new THREE.EdgesGeometry(geometry, 20),
@@ -176,34 +336,98 @@ export default function StateAvailabilityCanvas({
         outlineMaterials.push(outlineMaterial);
       }
 
+      const box = new THREE.Box3().setFromObject(group);
+      const center = box.getCenter(new THREE.Vector3());
+      centers.set(stateDefinition.code, { x: center.x, y: center.y });
+
       if (licensedStateSet.has(stateDefinition.code)) {
-        const box = new THREE.Box3().setFromObject(group);
-        const center = box.getCenter(new THREE.Vector3());
+        // Two bands, not one: the light ring alone reads at 1.14:1 on the pale
+        // Pending fill, and a single mid tone would vanish on Active.
+        const halo = new THREE.Mesh(
+          new THREE.RingGeometry(8.5, 10.5, 24),
+          new THREE.MeshBasicMaterial({
+            color: RING_HALO,
+            side: THREE.DoubleSide,
+            depthTest: false,
+            transparent: true,
+          }),
+        );
+        halo.position.set(center.x, center.y, 7.9);
+        halo.renderOrder = 4;
+        halo.userData.stateCode = stateDefinition.code;
+        group.add(halo);
+        faceMaterials.push(halo.material);
+
         const marker = new THREE.Mesh(
           new THREE.RingGeometry(4.5, 8.5, 24),
           new THREE.MeshBasicMaterial({
-            color: "#f4f0df",
+            color: RING_LIGHT,
             side: THREE.DoubleSide,
             depthTest: false,
+            transparent: true,
           }),
         );
         marker.position.set(center.x, center.y, 8);
         marker.renderOrder = 5;
         marker.userData.stateCode = stateDefinition.code;
         group.add(marker);
+        faceMaterials.push(marker.material);
       }
 
       scene.add(group);
-      visuals.set(stateDefinition.code, { group, outlineMaterials });
+      visuals.set(stateDefinition.code, {
+        group,
+        outlineMaterials,
+        restOutline,
+        faceMaterials,
+        status: availability.status,
+        licensed: licensedStateSet.has(stateDefinition.code),
+      });
     }
 
     visualsRef.current = visuals;
 
-    const render = () => renderer.render(scene, camera);
+    // There is no animation loop: every frame is asked for. Off-screen and
+    // backgrounded asks are dropped and replayed once, so a map scrolled out of
+    // view or a backgrounded tab costs nothing. The first frame always paints,
+    // so the map is ready before it scrolls in.
+    let onScreen = true;
+    let framePending = false;
+    const render = () => {
+      if (!canDrawFrame(onScreen, document.hidden)) {
+        framePending = true;
+        return;
+      }
+      framePending = false;
+      renderer.render(scene, camera);
+    };
+    const flush = () => {
+      if (framePending) render();
+    };
     renderRef.current = render;
 
+    // Zoom alone would push the small north-eastern states out of frame, so the
+    // zoomed camera follows the selection and stops at the map's edge. That is
+    // the whole pan story: there is no drag, the list is how you reach a state.
+    const applyView = () => {
+      camera.zoom = zoomRef.current;
+      const { x, y } = cameraCenter(
+        camera.zoom,
+        (camera.right - camera.left) / 2,
+        (camera.top - camera.bottom) / 2,
+        selectedRef.current ? centers.get(selectedRef.current) : undefined,
+      );
+      camera.position.x = x;
+      camera.position.y = y;
+      camera.updateProjectionMatrix();
+    };
+    applyViewRef.current = applyView;
+
     const resize = () => {
-      const bounds = host.getBoundingClientRect();
+      // The canvas box, not the host's: the shell also holds the zoom stack,
+      // which reserves a right gutter at tablet widths and a row beneath the
+      // canvas on a phone, so the two boxes differ.
+      const bounds = canvas.getBoundingClientRect();
       const width = Math.max(bounds.width, 1);
       const height = Math.max(bounds.height, 1);
       renderer.setSize(width, height, false);
@@ -221,7 +445,7 @@ export default function StateAvailabilityCanvas({
       camera.right = viewWidth / 2;
       camera.top = viewHeight / 2;
       camera.bottom = -viewHeight / 2;
-      camera.updateProjectionMatrix();
+      applyView();
       render();
     };
 
@@ -238,6 +462,9 @@ export default function StateAvailabilityCanvas({
     };
 
     const handlePointerMove = (event: PointerEvent) => {
+      // Hover is a fine-pointer affordance. On a touch screen it would fire on
+      // the tap that already selects and leave the highlight behind.
+      if (!finePointer.matches) return;
       const code = stateAtPointer(event);
       if (code === hoveredRef.current) return;
       hoveredRef.current = code;
@@ -250,17 +477,48 @@ export default function StateAvailabilityCanvas({
       hoveredRef.current = null;
       canvas.style.cursor = "default";
       callbacksRef.current.onHover(null);
+      pendingTap = null;
       refreshHighlights();
     };
 
-    const handleClick = (event: PointerEvent) => {
+    // The raycast runs on pointerdown, not click: the hit is taken where the
+    // finger landed, so touch gets the state without a hover step it can never
+    // reach. The selection commits on pointerup, and only within TAP_SLOP of
+    // that point, so a scroll that starts over a drawn state is not a pick.
+    let pendingTap:
+      | { id: number; x: number; y: number; code: UsStateCode }
+      | null = null;
+
+    const handlePointerDown = (event: PointerEvent) => {
       const code = stateAtPointer(event);
-      if (code) callbacksRef.current.onSelect(code);
+      pendingTap = code
+        ? { id: event.pointerId, x: event.clientX, y: event.clientY, code }
+        : null;
+    };
+
+    const handlePointerUp = (event: PointerEvent) => {
+      const tap = pendingTap;
+      pendingTap = null;
+      if (!tap || tap.id !== event.pointerId) return;
+      if (!isTap(tap, { x: event.clientX, y: event.clientY })) return;
+      callbacksRef.current.onSelect(tap.code);
+    };
+
+    const handlePointerCancel = () => {
+      pendingTap = null;
     };
 
     canvas.addEventListener("pointermove", handlePointerMove);
     canvas.addEventListener("pointerleave", handlePointerLeave);
-    canvas.addEventListener("click", handleClick);
+    canvas.addEventListener("pointerdown", handlePointerDown);
+    canvas.addEventListener("pointerup", handlePointerUp);
+    canvas.addEventListener("pointercancel", handlePointerCancel);
+    document.addEventListener("visibilitychange", flush);
+    const intersectionObserver = new IntersectionObserver(([entry]) => {
+      onScreen = entry.isIntersecting;
+      flush();
+    });
+    intersectionObserver.observe(host);
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(host);
     resize();
@@ -269,7 +527,11 @@ export default function StateAvailabilityCanvas({
     return () => {
       canvas.removeEventListener("pointermove", handlePointerMove);
       canvas.removeEventListener("pointerleave", handlePointerLeave);
-      canvas.removeEventListener("click", handleClick);
+      canvas.removeEventListener("pointerdown", handlePointerDown);
+      canvas.removeEventListener("pointerup", handlePointerUp);
+      canvas.removeEventListener("pointercancel", handlePointerCancel);
+      document.removeEventListener("visibilitychange", flush);
+      intersectionObserver.disconnect();
       resizeObserver.disconnect();
       scene.traverse((object) => {
         if (object instanceof THREE.Mesh || object instanceof THREE.LineSegments) {
@@ -278,9 +540,11 @@ export default function StateAvailabilityCanvas({
           materials.forEach((material) => material.dispose());
         }
       });
+      hatchTexture?.dispose();
       renderer.dispose();
       visualsRef.current = new Map();
       renderRef.current = null;
+      applyViewRef.current = null;
     };
   }, [states, licenseKey, availabilityUnavailable]);
 
@@ -292,6 +556,35 @@ export default function StateAvailabilityCanvas({
         aria-hidden="true"
         tabIndex={-1}
       />
+      {/* WCAG 2.5.1: the map must be reachable without a pinch. The camera is
+          orthographic, so zoom is one number and the view stays centred.
+          ponytail: no pan, the state list is the way to reach a small state. */}
+      <div className="state-map-zoom" role="group" aria-label="Map zoom">
+        <button
+          type="button"
+          onClick={() => setZoom((current) => Math.min(ZOOM_MAX, current * ZOOM_STEP))}
+          disabled={zoom >= ZOOM_MAX}
+          aria-label="Zoom in"
+        >
+          <Plus size={18} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setZoom((current) => Math.max(ZOOM_MIN, current / ZOOM_STEP))}
+          disabled={zoom <= ZOOM_MIN}
+          aria-label="Zoom out"
+        >
+          <Minus size={18} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setZoom(ZOOM_MIN)}
+          disabled={zoom === ZOOM_MIN}
+          aria-label="Reset zoom"
+        >
+          <RotateCcw size={16} aria-hidden="true" />
+        </button>
+      </div>
       {webglError && <p className="state-map-webgl-error" role="status">{webglError}</p>}
     </div>
   );

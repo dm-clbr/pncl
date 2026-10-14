@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import Cropper, { type Area } from "react-easy-crop";
-import { X } from "lucide-react";
+import Sheet from "@/components/portal/Sheet";
+import "@/styles/portal-photo-crop.css";
 import {
   getCroppedProfilePhotoBlob,
   profilePhotoBlobToFile,
@@ -44,29 +45,9 @@ export default function ProfilePhotoCropModal({
   };
 
   return (
-    <div className="portal-photo-crop-overlay" role="presentation" onClick={onClose}>
-      <div
-        className="portal-photo-crop-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="portal-photo-crop-title"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="portal-photo-crop-head">
-          <div>
-            <h2 id="portal-photo-crop-title">Crop profile photo</h2>
-            <p>Drag to reposition. Your photo is compressed to 300 KB before upload.</p>
-          </div>
-          <button
-            type="button"
-            className="portal-photo-crop-close"
-            onClick={onClose}
-            aria-label="Close crop dialog"
-          >
-            <X size={18} aria-hidden="true" />
-          </button>
-        </div>
-
+    <Sheet open title="Crop profile photo" onClose={onClose}>
+      <div className="portal-photo-crop-body">
+        <p className="portal-photo-crop-note">Drag to reposition. Your photo is compressed to 300 KB before upload.</p>
         <div className="portal-photo-crop-stage">
           <Cropper
             image={imageSrc}
@@ -94,12 +75,12 @@ export default function ProfilePhotoCropModal({
         </label>
 
         <div className="portal-photo-crop-actions">
-          <button type="button" className="portal-panel-btn" onClick={onClose} disabled={processing}>
+          <button type="button" className="portal-photo-crop-action" onClick={onClose} disabled={processing}>
             Cancel
           </button>
           <button
             type="button"
-            className="admin-primary-btn"
+            className="portal-photo-crop-action is-primary"
             onClick={() => void handleConfirm()}
             disabled={processing || !croppedAreaPixels}
           >
@@ -107,6 +88,6 @@ export default function ProfilePhotoCropModal({
           </button>
         </div>
       </div>
-    </div>
+    </Sheet>
   );
 }
