@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Download, Eye, GitBranch, LayoutGrid, ListTree } from "lucide-react";
 import { HierarchyAssistDetailModal } from "@/components/admin/HierarchyAssistDetailModal";
 import { HierarchyCanvas } from "@/components/admin/HierarchyCanvas";
 import { HierarchyEditModal } from "@/components/admin/HierarchyEditModal";
 import { HierarchyPartnerEditModal } from "@/components/admin/HierarchyPartnerEditModal";
+import { HierarchySearch, type HierarchySearchOption } from "@/components/admin/HierarchySearch";
 import { HierarchyTree } from "@/components/admin/HierarchyTree";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   downloadAgentsCsv,
+  formatAgentNumber,
   getHierarchy,
   type AssistHierarchyNode,
   type HierarchyFocusOption,
@@ -40,6 +42,8 @@ export default function AdminHierarchy() {
   const [editPartnerGroupId, setEditPartnerGroupId] = useState<string | null>(null);
   const [assistDetailNodeId, setAssistDetailNodeId] = useState<string | null>(null);
   const [exportingCsv, setExportingCsv] = useState(false);
+  const [focusRequest, setFocusRequest] = useState<{ userId: string; requestId: number } | null>(null);
+  const locateRequestId = useRef(0);
 
   const handleExportCsv = async () => {
     const token = session?.access_token;
@@ -64,6 +68,22 @@ export default function AdminHierarchy() {
     () => new Map(agents.map((agent) => [agent.id, agent])),
     [agents],
   );
+
+  const searchOptions = useMemo<HierarchySearchOption[]>(() => assistView
+    ? focusOptions
+    : agentOptions.map((agent) => ({
+        id: agent.id,
+        name: agent.name,
+        email: agent.email,
+        npn: agent.npn,
+        agentNumber: formatAgentNumber(agent.agentNumber),
+      })), [agentOptions, assistView, focusOptions]);
+  const locatedPerson = focusRequest ? searchOptions.find((option) => option.id === focusRequest.userId) : null;
+  const locatedNode = focusRequest
+    ? assistView
+      ? findAssistHierarchyNode(assistTree, focusRequest.userId)
+      : findHierarchyNode(fullTree, focusRequest.userId)
+    : null;
 
   const editAgent = editAgentId ? agentsById.get(editAgentId) ?? null : null;
   const editPartnerNode = editPartnerGroupId
@@ -117,6 +137,7 @@ export default function AdminHierarchy() {
   }, [reloadHierarchy]);
 
   function handleSelectNode(nodeId: string) {
+    setFocusRequest(null);
     setSelectedNodeId(nodeId);
     if (assistView) {
       setAssistDetailNodeId(nodeId);
@@ -136,12 +157,26 @@ export default function AdminHierarchy() {
     setEditPartnerGroupId(null);
     setAssistDetailNodeId(null);
     setSelectedNodeId(null);
+    setFocusRequest(null);
     setRootUserId(agentId);
+  }
+
+  function handleLocateAgent(option: HierarchySearchOption) {
+    const node = assistView
+      ? findAssistHierarchyNode(assistTree, option.id)
+      : findHierarchyNode(fullTree, option.id);
+    setEditAgentId(null);
+    setEditPartnerGroupId(null);
+    setAssistDetailNodeId(null);
+    setSelectedNodeId(null);
+    setFocusRequest({ userId: option.id, requestId: ++locateRequestId.current });
+    if (!node && rootUserId) setRootUserId("");
   }
 
   function handleToggleAssistPreview() {
     setRootUserId("");
     setSelectedNodeId(null);
+    setFocusRequest(null);
     setEditAgentId(null);
     setEditPartnerGroupId(null);
     setAssistDetailNodeId(null);
@@ -190,7 +225,7 @@ export default function AdminHierarchy() {
           <span>Focus on agent</span>
           <select
             value={rootUserId}
-            onChange={(event) => setRootUserId(event.target.value)}
+            onChange={(event) => handleFocusAgent(event.target.value)}
             disabled={treeLoading}
           >
             <option value="">Full organization</option>
@@ -255,6 +290,25 @@ export default function AdminHierarchy() {
         )}
       </div>
 
+      <HierarchySearch
+        key={assistView ? "assist" : "admin"}
+        options={searchOptions}
+        assistView={assistView}
+        disabled={treeLoading || !!error}
+        onLocate={handleLocateAgent}
+        onClear={() => {
+          setFocusRequest(null);
+          setSelectedNodeId(null);
+        }}
+      />
+      {locatedPerson && !treeLoading && !error && (
+        <p className="admin-hierarchy-search-status" role="status">
+          {locatedNode
+            ? `Located ${locatedPerson.name}${locatedNode.isPartnerGroup ? " in their business-partner group" : ""}. Highlighted in the ${view}.`
+            : `${locatedPerson.name} is not available in this hierarchy.`}
+        </p>
+      )}
+
       {treeLoading && (
         <div className="onboarding-spinner admin-spinner" aria-label="Loading hierarchy" />
       )}
@@ -268,7 +322,8 @@ export default function AdminHierarchy() {
       {!treeLoading && !error && hasTree && view === "canvas" && (
         <HierarchyCanvas
           tree={assistView ? assistTree : fullTree}
-          selectedNodeId={selectedNodeId}
+          selectedNodeId={locatedNode?.id ?? selectedNodeId}
+          focusRequest={focusRequest}
           assistView={assistView}
           onSelectNode={handleSelectNode}
         />
@@ -278,7 +333,8 @@ export default function AdminHierarchy() {
         <HierarchyTree
           key={rootUserId || "full"}
           tree={assistView ? assistTree : fullTree}
-          selectedNodeId={selectedNodeId}
+          selectedNodeId={locatedNode?.id ?? selectedNodeId}
+          focusRequest={focusRequest}
           assistView={assistView}
           onSelectNode={handleSelectNode}
         />
