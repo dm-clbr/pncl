@@ -16,6 +16,20 @@ describe('LeadSpply export',()=>{
   expect(buildLeadSpplyExport([user],[{user_id:'u1',comp_level:95}],[],[{user_id:'u1',comp_level:90,effective_at:'2026-10-01'}])[0].comp_effective_at).toBeNull();
   expect(buildLeadSpplyExport([user],[{user_id:'u1',comp_level:null}],[],[{user_id:'u1',comp_level:90,effective_at:'2026-10-01'}])[0].comp_effective_at).toBeNull();
  });
+ it('exports verified and active eligibility only from Auth lifecycle fields',()=>{
+  const now=Date.parse('2026-10-15T12:00:00Z');
+  const exportUser=(auth: Record<string, unknown>)=>buildLeadSpplyExport([{...user,...auth}],[],[],[],now)[0];
+  expect(exportUser({email_confirmed_at:'2026-10-01T00:00:00Z'})).toMatchObject({email_verified:true,account_active:true});
+  expect(exportUser({email_confirmed_at:null})).toMatchObject({email_verified:false,account_active:true});
+  expect(exportUser({email_confirmed_at:'not-a-date'})).toMatchObject({email_verified:false,account_active:true});
+  expect(exportUser({email_confirmed_at:'2026-10-16T00:00:00Z'})).toMatchObject({email_verified:false,account_active:true});
+  expect(exportUser({email_confirmed_at:'2026-10-01T00:00:00Z',banned_until:'2026-10-16T00:00:00Z'})).toMatchObject({email_verified:true,account_active:false});
+  expect(exportUser({email_confirmed_at:'2026-10-01T00:00:00Z',banned_until:'not-a-date'})).toMatchObject({email_verified:true,account_active:false});
+  expect(exportUser({email_confirmed_at:'2026-10-01T00:00:00Z',banned_until:'2026-10-14T00:00:00Z'})).toMatchObject({email_verified:true,account_active:true});
+  expect(exportUser({email_confirmed_at:'2026-10-01T00:00:00Z',deleted_at:'2026-10-14T00:00:00Z'})).toMatchObject({email_verified:true,account_active:false});
+  expect(exportUser({email_confirmed_at:'2026-10-01T00:00:00Z',is_anonymous:true})).toMatchObject({email_verified:true,account_active:false});
+  expect(exportUser({user_metadata:{email_confirmed_at:'2026-10-01T00:00:00Z',is_anonymous:false}})).toMatchObject({email_verified:false,account_active:true});
+ });
 });
 describe('shared hierarchy export',()=>{
  it('exports only canonical partner UUID pairs and no admin metadata',()=>{

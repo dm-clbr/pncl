@@ -8,8 +8,38 @@ export function buildLeadSpplyPartners(reps: { id: string }[], links: Row[]) {
       return { user_id_a, user_id_b };
     }).sort((a, b) => a.user_id_a.localeCompare(b.user_id_a));
 }
-export interface ExportUser { id: string; email?: string; app_metadata?: { onboarding_id?: string }; user_metadata?: { first_name?: string; last_name?: string } }
-export function buildLeadSpplyExport(users: ExportUser[], profiles: Row[], onboarding: Row[], history: Row[]) {
+export interface ExportUser {
+  id: string;
+  email?: string;
+  email_confirmed_at?: string | null;
+  banned_until?: string | null;
+  deleted_at?: string | null;
+  is_anonymous?: boolean;
+  app_metadata?: { onboarding_id?: string };
+  user_metadata?: { first_name?: string; last_name?: string };
+}
+
+function isConfirmedEmail(value: string | null | undefined, now: number): boolean {
+  if (!value) return false;
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) && timestamp <= now;
+}
+
+function isUnbanned(value: string | null | undefined, now: number): boolean {
+  if (!value) return true;
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) && timestamp <= now;
+}
+
+/** Only Auth lifecycle fields determine whether LeadSpply may auto-connect this identity. */
+export function leadSpplyExportEligibility(user: ExportUser, now = Date.now()) {
+  return {
+    email_verified: isConfirmedEmail(user.email_confirmed_at, now),
+    account_active: !user.deleted_at && user.is_anonymous !== true && isUnbanned(user.banned_until, now),
+  };
+}
+
+export function buildLeadSpplyExport(users: ExportUser[], profiles: Row[], onboarding: Row[], history: Row[], now = Date.now()) {
   return users.map(user => {
     const p=profiles.find(p=>p.user_id===user.id);
     const active=onboarding.filter(o=>o.status!=='failed'&&!o.released_at)
@@ -26,6 +56,6 @@ export function buildLeadSpplyExport(users: ExportUser[], profiles: Row[], onboa
       last_name:o?.last_name || p?.last_name || user.user_metadata?.last_name || '',
       npn:p?.npn || o?.npn || null,agent_number:p?.agent_number ?? null,
       comp_level:p?.comp_level ?? null,comp_effective_at:p?.comp_level==null ? null : h?.effective_at ?? null,
-      parent_id:o?.referrer_user_id || null };
+      parent_id:o?.referrer_user_id || null, ...leadSpplyExportEligibility(user, now) };
   });
 }
