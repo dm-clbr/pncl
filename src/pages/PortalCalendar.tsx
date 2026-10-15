@@ -1,15 +1,19 @@
 import { useEffect } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { CalendarDays } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import PNCLLogo from "@/components/PNCLLogo";
 import PortalCalendarPreview from "@/components/PortalCalendarPreview";
 import PortalPrimaryNav from "@/components/PortalPrimaryNav";
+import BottomNav from "@/components/portal/BottomNav";
+import PortalBentoMain from "@/components/portal/PortalBentoMain";
+import PortalOnboardingAction from "@/components/portal/PortalOnboardingAction";
+import PortalHeader from "@/components/portal/PortalHeader";
+import PortalSubpageHeader from "@/components/portal/PortalSubpageHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePortalGoogleCalendar } from "@/hooks/usePortalGoogleCalendar";
 import { usePortalProfile } from "@/hooks/usePortalProfile";
 import { trackPageView } from "@/lib/analytics";
 import "@/styles/home2.css";
+import "@/styles/portal-bento.css";
 
 const CALLBACK_ERROR_MESSAGES: Record<string, string> = {
   invalid_state: "The connection request was invalid or already used. Please try again.",
@@ -77,40 +81,24 @@ export default function PortalCalendar() {
 
   return (
     <div className="home2-page">
-      <div className="grain" aria-hidden="true" />
-      <main className="portal-dash dark portal-calendar-page">
-        <div className="wrap portal-calendar-wrap">
-          <header className="portal-hero portal-calendar-hero">
-            <Link to="/" className="portal-hero-logo" aria-label="PNCL home">
-              <PNCLLogo height={44} />
-            </Link>
-            <Link to="/portal/profile" className="portal-hero-profile" aria-label="View profile">
-              <span className="portal-hero-profile-avatar" aria-hidden="true">
-                {photoUrl ? (
-                  <img src={photoUrl} alt="" className="portal-hero-profile-photo" />
-                ) : (
-                  <span className="portal-hero-profile-initials">{initials}</span>
-                )}
-              </span>
-              <span className="portal-hero-profile-copy">
-                <span className="portal-welcome">Welcome, {displayName}</span>
-                {user?.email && <span className="portal-meta">{user.email}</span>}
-              </span>
-            </Link>
-          </header>
+      <PortalBentoMain>
+        <PortalHeader
+          subpage
+          name={displayName}
+          email={user?.email}
+          initials={initials}
+          photoUrl={photoUrl}
+          action={<PortalOnboardingAction />}
+        />
 
-          <PortalPrimaryNav />
+        <PortalPrimaryNav />
 
-          <section className="portal-calendar-intro" aria-labelledby="portal-calendar-title">
-            <span className="portal-calendar-intro-icon" aria-hidden="true">
-              <CalendarDays size={25} />
-            </span>
-            <div>
-              <p className="portal-calendar-eyebrow">Your schedule</p>
-              <h1 id="portal-calendar-title">Google Calendar</h1>
-              <p>A concise view of what is next, available only to your signed-in portal account.</p>
-            </div>
-          </section>
+        <div className="portal-bento-page pcal-column">
+          <PortalSubpageHeader title="Calendar" />
+
+          <p className="portal-panel-note">
+            A read-only preview of what is next, visible only to your signed-in portal account.
+          </p>
 
           <PortalCalendarPreview
             data={calendar.data}
@@ -125,7 +113,11 @@ export default function PortalCalendar() {
             onRetry={() => void calendar.reload()}
           />
         </div>
-      </main>
+      </PortalBentoMain>
+
+      {/* Outside <main> so the fixed bar never inherits a page containing
+          block. It replaces the primary nav at 620px and below. */}
+      <BottomNav />
     </div>
   );
 }

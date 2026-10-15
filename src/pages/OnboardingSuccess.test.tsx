@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import OnboardingSuccess from "./OnboardingSuccess";
 import { getOnboardingStatus, revealOnboardingCredentials } from "@/lib/onboarding-api";
 
+vi.mock("@/components/ui/liquid-gradient", async (importOriginal) => ({ ...await importOriginal<typeof import("@/components/ui/liquid-gradient")>(), default: () => null }));
 vi.mock("@/lib/analytics", () => ({ trackPageView: vi.fn() }));
 vi.mock("@/lib/onboarding-api", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/lib/onboarding-api")>(),

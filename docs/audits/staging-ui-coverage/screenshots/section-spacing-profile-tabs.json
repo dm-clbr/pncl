@@ -1,0 +1,1758 @@
+{
+  "desktop": [
+    {
+      "groups": [
+        {
+          "children": [
+            {
+              "bottom": 97,
+              "cls": "portal-header",
+              "gap": null,
+              "margin": "0px 0px 6px",
+              "title": "Onboarding",
+              "top": 22,
+              "type": "HEADER"
+            },
+            {
+              "bottom": 232,
+              "cls": "portal-subhead",
+              "gap": 20,
+              "margin": "0px",
+              "title": "My profile",
+              "top": 117,
+              "type": "HEADER"
+            },
+            {
+              "bottom": 290,
+              "cls": "portal-segmented",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Profile detailsTeamLicensingDocumentsCarrier ",
+              "top": 246,
+              "type": "DIV"
+            },
+            {
+              "bottom": 1138,
+              "cls": "portal-profile-tabpanel",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Referral links",
+              "top": 304,
+              "type": "DIV"
+            },
+            {
+              "bottom": 1222,
+              "cls": "portal-bento-footer portal-profile-foot",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Admin consoleSign out",
+              "top": 1152,
+              "type": "DIV"
+            }
+          ],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "wrap carrier-sheet-wrap"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel portal-profile-details"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [
+            {
+              "bottom": 1138,
+              "cls": "portal-profile-team",
+              "gap": null,
+              "margin": "0px",
+              "title": "Referral links",
+              "top": 304,
+              "type": "DIV"
+            }
+          ],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [
+            {
+              "bottom": 343,
+              "cls": "portal-profile-lede",
+              "gap": null,
+              "margin": "0px",
+              "title": "Create referral links for new recruits and tr",
+              "top": 304,
+              "type": "P"
+            },
+            {
+              "bottom": 839,
+              "cls": "portal-pane",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Referral links",
+              "top": 357,
+              "type": "SECTION"
+            },
+            {
+              "bottom": 1138,
+              "cls": "portal-pane",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Team progress",
+              "top": 853,
+              "type": "SECTION"
+            }
+          ],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-team"
+        },
+        {
+          "children": [
+            {
+              "bottom": 577,
+              "cls": "portal-field",
+              "gap": null,
+              "margin": "0px",
+              "title": "Recruit nickname*For your records only, not t",
+              "top": 489,
+              "type": "DIV"
+            },
+            {
+              "bottom": 658,
+              "cls": "portal-field",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Starting contract*50%60%",
+              "top": 591,
+              "type": "DIV"
+            },
+            {
+              "bottom": 760,
+              "cls": "portal-field",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Agent designation*Recruits receive the select",
+              "top": 672,
+              "type": "DIV"
+            },
+            {
+              "bottom": 818,
+              "cls": "portal-profile-btn",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Create & copy link",
+              "top": 774,
+              "type": "BUTTON"
+            }
+          ],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-licensing"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-docs"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-carriers"
+        }
+      ],
+      "overflow": false,
+      "path": "/portal/profile",
+      "width": 1280
+    },
+    {
+      "groups": [
+        {
+          "children": [
+            {
+              "bottom": 97,
+              "cls": "portal-header",
+              "gap": null,
+              "margin": "0px 0px 6px",
+              "title": "Onboarding",
+              "top": 22,
+              "type": "HEADER"
+            },
+            {
+              "bottom": 232,
+              "cls": "portal-subhead",
+              "gap": 20,
+              "margin": "0px",
+              "title": "My profile",
+              "top": 117,
+              "type": "HEADER"
+            },
+            {
+              "bottom": 290,
+              "cls": "portal-segmented",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Profile detailsTeamLicensingDocumentsCarrier ",
+              "top": 246,
+              "type": "DIV"
+            },
+            {
+              "bottom": 1224,
+              "cls": "portal-profile-tabpanel",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Licensing numbers",
+              "top": 304,
+              "type": "DIV"
+            },
+            {
+              "bottom": 1308,
+              "cls": "portal-bento-footer portal-profile-foot",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Admin consoleSign out",
+              "top": 1238,
+              "type": "DIV"
+            }
+          ],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "wrap carrier-sheet-wrap"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel portal-profile-details"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-team"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [
+            {
+              "bottom": 1224,
+              "cls": "portal-profile-licensing",
+              "gap": null,
+              "margin": "0px",
+              "title": "Licensing numbers",
+              "top": 304,
+              "type": "DIV"
+            }
+          ],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [
+            {
+              "bottom": 343,
+              "cls": "portal-profile-lede",
+              "gap": null,
+              "margin": "0px",
+              "title": "Record your NPN, E&O policy number, and state",
+              "top": 304,
+              "type": "P"
+            },
+            {
+              "bottom": 1224,
+              "cls": "portal-profile-form",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Licensing numbers",
+              "top": 357,
+              "type": "FORM"
+            }
+          ],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-licensing"
+        },
+        {
+          "children": [
+            {
+              "bottom": 585,
+              "cls": "portal-pane",
+              "gap": null,
+              "margin": "0px",
+              "title": "Licensing numbers",
+              "top": 357,
+              "type": "SECTION"
+            },
+            {
+              "bottom": 894,
+              "cls": "portal-pane",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Uploads",
+              "top": 599,
+              "type": "SECTION"
+            },
+            {
+              "bottom": 1166,
+              "cls": "portal-pane",
+              "gap": 14,
+              "margin": "0px",
+              "title": "State licenses",
+              "top": 908,
+              "type": "SECTION"
+            },
+            {
+              "bottom": 1224,
+              "cls": "portal-profile-btn",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Save licensing details",
+              "top": 1180,
+              "type": "BUTTON"
+            }
+          ],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-docs"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-carriers"
+        }
+      ],
+      "overflow": false,
+      "path": "/portal/profile",
+      "width": 1280
+    },
+    {
+      "groups": [
+        {
+          "children": [
+            {
+              "bottom": 97,
+              "cls": "portal-header",
+              "gap": null,
+              "margin": "0px 0px 6px",
+              "title": "Onboarding",
+              "top": 22,
+              "type": "HEADER"
+            },
+            {
+              "bottom": 232,
+              "cls": "portal-subhead",
+              "gap": 20,
+              "margin": "0px",
+              "title": "My profile",
+              "top": 117,
+              "type": "HEADER"
+            },
+            {
+              "bottom": 290,
+              "cls": "portal-segmented",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Profile detailsTeamLicensingDocumentsCarrier ",
+              "top": 246,
+              "type": "DIV"
+            },
+            {
+              "bottom": 990,
+              "cls": "portal-profile-tabpanel",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Saved documents",
+              "top": 304,
+              "type": "DIV"
+            },
+            {
+              "bottom": 1074,
+              "cls": "portal-bento-footer portal-profile-foot",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Admin consoleSign out",
+              "top": 1004,
+              "type": "DIV"
+            }
+          ],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "wrap carrier-sheet-wrap"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel portal-profile-details"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-team"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-licensing"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [
+            {
+              "bottom": 990,
+              "cls": "portal-profile-docs",
+              "gap": null,
+              "margin": "0px",
+              "title": "Saved documents",
+              "top": 304,
+              "type": "DIV"
+            }
+          ],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [
+            {
+              "bottom": 464,
+              "cls": "portal-pane",
+              "gap": null,
+              "margin": "0px",
+              "title": "Saved documents",
+              "top": 304,
+              "type": "SECTION"
+            },
+            {
+              "bottom": 990,
+              "cls": "portal-pane",
+              "gap": 14,
+              "margin": "0px",
+              "title": "My documents",
+              "top": 478,
+              "type": "SECTION"
+            }
+          ],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-docs"
+        },
+        {
+          "children": [
+            {
+              "bottom": 823,
+              "cls": "portal-field",
+              "gap": null,
+              "margin": "0px",
+              "title": "Document name",
+              "top": 756,
+              "type": "DIV"
+            },
+            {
+              "bottom": 911,
+              "cls": "portal-dropzone",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Add a fileDrop a file here or tap to browse. ",
+              "top": 837,
+              "type": "LABEL"
+            },
+            {
+              "bottom": 969,
+              "cls": "portal-profile-btn",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Upload document",
+              "top": 925,
+              "type": "BUTTON"
+            }
+          ],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-carriers"
+        }
+      ],
+      "overflow": false,
+      "path": "/portal/profile",
+      "width": 1280
+    },
+    {
+      "groups": [
+        {
+          "children": [
+            {
+              "bottom": 97,
+              "cls": "portal-header",
+              "gap": null,
+              "margin": "0px 0px 6px",
+              "title": "Onboarding",
+              "top": 22,
+              "type": "HEADER"
+            },
+            {
+              "bottom": 232,
+              "cls": "portal-subhead",
+              "gap": 20,
+              "margin": "0px",
+              "title": "My profile",
+              "top": 117,
+              "type": "HEADER"
+            },
+            {
+              "bottom": 290,
+              "cls": "portal-segmented",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Profile detailsTeamLicensingDocumentsCarrier ",
+              "top": 246,
+              "type": "DIV"
+            },
+            {
+              "bottom": 792,
+              "cls": "portal-profile-tabpanel",
+              "gap": 14,
+              "margin": "0px",
+              "title": "SureLC accounts",
+              "top": 304,
+              "type": "DIV"
+            },
+            {
+              "bottom": 876,
+              "cls": "portal-bento-footer portal-profile-foot",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Admin consoleSign out",
+              "top": 806,
+              "type": "DIV"
+            }
+          ],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "wrap carrier-sheet-wrap"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel portal-profile-details"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-team"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-licensing"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-docs"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [
+            {
+              "bottom": 792,
+              "cls": "portal-profile-carriers",
+              "gap": null,
+              "margin": "0px",
+              "title": "SureLC accounts",
+              "top": 304,
+              "type": "DIV"
+            }
+          ],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [
+            {
+              "bottom": 579,
+              "cls": "portal-pane",
+              "gap": null,
+              "margin": "0px",
+              "title": "SureLC accounts",
+              "top": 304,
+              "type": "SECTION"
+            },
+            {
+              "bottom": 792,
+              "cls": "portal-pane",
+              "gap": 14,
+              "margin": "0px",
+              "title": "Carrier accounts",
+              "top": 593,
+              "type": "SECTION"
+            }
+          ],
+          "display": "flex",
+          "gap": "14px",
+          "parent": "portal-profile-carriers"
+        }
+      ],
+      "overflow": false,
+      "path": "/portal/profile",
+      "width": 1280
+    }
+  ],
+  "mobile": [
+    {
+      "groups": [
+        {
+          "children": [
+            {
+              "bottom": 72,
+              "cls": "portal-header",
+              "gap": null,
+              "margin": "0px 0px 2px",
+              "title": "Onboarding",
+              "top": 16,
+              "type": "HEADER"
+            },
+            {
+              "bottom": 137,
+              "cls": "portal-subhead",
+              "gap": 12,
+              "margin": "0px",
+              "title": "My profile",
+              "top": 84,
+              "type": "HEADER"
+            },
+            {
+              "bottom": 191,
+              "cls": "portal-segmented",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Profile detailsTeamLicensingDocumentsCarrier ",
+              "top": 147,
+              "type": "DIV"
+            },
+            {
+              "bottom": 2673,
+              "cls": "portal-profile-tabpanel portal-profile-details",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Profile photo",
+              "top": 201,
+              "type": "DIV"
+            },
+            {
+              "bottom": 2833,
+              "cls": "portal-bento-footer portal-profile-foot",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Admin consoleSign out",
+              "top": 2683,
+              "type": "DIV"
+            }
+          ],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "wrap carrier-sheet-wrap"
+        },
+        {
+          "children": [
+            {
+              "bottom": 285,
+              "cls": "portal-profile-lede",
+              "gap": null,
+              "margin": "0px",
+              "title": "Keep your name, home address, apparel sizes, ",
+              "top": 201,
+              "type": "P"
+            },
+            {
+              "bottom": 739,
+              "cls": "portal-pane",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Profile photo",
+              "top": 295,
+              "type": "SECTION"
+            },
+            {
+              "bottom": 1174,
+              "cls": "portal-pane",
+              "gap": 10,
+              "margin": "0px",
+              "title": "PDF business card",
+              "top": 749,
+              "type": "SECTION"
+            },
+            {
+              "bottom": 2673,
+              "cls": "portal-profile-form",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Contact",
+              "top": 1184,
+              "type": "FORM"
+            }
+          ],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-tabpanel portal-profile-details"
+        },
+        {
+          "children": [
+            {
+              "bottom": 1795,
+              "cls": "portal-pane",
+              "gap": null,
+              "margin": "0px",
+              "title": "Contact",
+              "top": 1184,
+              "type": "SECTION"
+            },
+            {
+              "bottom": 2257,
+              "cls": "portal-pane",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Address",
+              "top": 1805,
+              "type": "SECTION"
+            },
+            {
+              "bottom": 2585,
+              "cls": "portal-pane",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Apparel",
+              "top": 2267,
+              "type": "SECTION"
+            }
+          ],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-team"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-licensing"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-docs"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-carriers"
+        }
+      ],
+      "overflow": false,
+      "path": "/portal/profile",
+      "width": 354
+    },
+    {
+      "groups": [
+        {
+          "children": [
+            {
+              "bottom": 72,
+              "cls": "portal-header",
+              "gap": null,
+              "margin": "0px 0px 2px",
+              "title": "Onboarding",
+              "top": 16,
+              "type": "HEADER"
+            },
+            {
+              "bottom": 137,
+              "cls": "portal-subhead",
+              "gap": 12,
+              "margin": "0px",
+              "title": "My profile",
+              "top": 84,
+              "type": "HEADER"
+            },
+            {
+              "bottom": 191,
+              "cls": "portal-segmented",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Profile detailsTeamLicensingDocumentsCarrier ",
+              "top": 147,
+              "type": "DIV"
+            },
+            {
+              "bottom": 1092,
+              "cls": "portal-profile-tabpanel",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Referral links",
+              "top": 201,
+              "type": "DIV"
+            },
+            {
+              "bottom": 1252,
+              "cls": "portal-bento-footer portal-profile-foot",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Admin consoleSign out",
+              "top": 1102,
+              "type": "DIV"
+            }
+          ],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "wrap carrier-sheet-wrap"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel portal-profile-details"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [
+            {
+              "bottom": 1092,
+              "cls": "portal-profile-team",
+              "gap": null,
+              "margin": "0px",
+              "title": "Referral links",
+              "top": 201,
+              "type": "DIV"
+            }
+          ],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [
+            {
+              "bottom": 240,
+              "cls": "portal-profile-lede",
+              "gap": null,
+              "margin": "0px",
+              "title": "Create referral links for new recruits and tr",
+              "top": 201,
+              "type": "P"
+            },
+            {
+              "bottom": 792,
+              "cls": "portal-pane",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Referral links",
+              "top": 250,
+              "type": "SECTION"
+            },
+            {
+              "bottom": 1092,
+              "cls": "portal-pane",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Team progress",
+              "top": 802,
+              "type": "SECTION"
+            }
+          ],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-team"
+        },
+        {
+          "children": [
+            {
+              "bottom": 507,
+              "cls": "portal-field",
+              "gap": null,
+              "margin": "0px",
+              "title": "Recruit nickname*For your records only, not t",
+              "top": 395,
+              "type": "DIV"
+            },
+            {
+              "bottom": 591,
+              "cls": "portal-field",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Starting contract*50%60%",
+              "top": 517,
+              "type": "DIV"
+            },
+            {
+              "bottom": 713,
+              "cls": "portal-field",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Agent designation*Recruits receive the select",
+              "top": 601,
+              "type": "DIV"
+            },
+            {
+              "bottom": 775,
+              "cls": "portal-profile-btn",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Create & copy link",
+              "top": 723,
+              "type": "BUTTON"
+            }
+          ],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-licensing"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-docs"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-carriers"
+        }
+      ],
+      "overflow": false,
+      "path": "/portal/profile",
+      "width": 354
+    },
+    {
+      "groups": [
+        {
+          "children": [
+            {
+              "bottom": 72,
+              "cls": "portal-header",
+              "gap": null,
+              "margin": "0px 0px 2px",
+              "title": "Onboarding",
+              "top": 16,
+              "type": "HEADER"
+            },
+            {
+              "bottom": 137,
+              "cls": "portal-subhead",
+              "gap": 12,
+              "margin": "0px",
+              "title": "My profile",
+              "top": 84,
+              "type": "HEADER"
+            },
+            {
+              "bottom": 191,
+              "cls": "portal-segmented",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Profile detailsTeamLicensingDocumentsCarrier ",
+              "top": 147,
+              "type": "DIV"
+            },
+            {
+              "bottom": 1331,
+              "cls": "portal-profile-tabpanel",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Licensing numbers",
+              "top": 201,
+              "type": "DIV"
+            },
+            {
+              "bottom": 1491,
+              "cls": "portal-bento-footer portal-profile-foot",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Admin consoleSign out",
+              "top": 1341,
+              "type": "DIV"
+            }
+          ],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "wrap carrier-sheet-wrap"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel portal-profile-details"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-team"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [
+            {
+              "bottom": 1331,
+              "cls": "portal-profile-licensing",
+              "gap": null,
+              "margin": "0px",
+              "title": "Licensing numbers",
+              "top": 201,
+              "type": "DIV"
+            }
+          ],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [
+            {
+              "bottom": 259,
+              "cls": "portal-profile-lede",
+              "gap": null,
+              "margin": "0px",
+              "title": "Record your NPN, E&O policy number, and state",
+              "top": 201,
+              "type": "P"
+            },
+            {
+              "bottom": 1331,
+              "cls": "portal-profile-form",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Licensing numbers",
+              "top": 269,
+              "type": "FORM"
+            }
+          ],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-licensing"
+        },
+        {
+          "children": [
+            {
+              "bottom": 499,
+              "cls": "portal-pane",
+              "gap": null,
+              "margin": "0px",
+              "title": "Licensing numbers",
+              "top": 269,
+              "type": "SECTION"
+            },
+            {
+              "bottom": 814,
+              "cls": "portal-pane",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Uploads",
+              "top": 509,
+              "type": "SECTION"
+            },
+            {
+              "bottom": 1269,
+              "cls": "portal-pane",
+              "gap": 10,
+              "margin": "0px",
+              "title": "State licenses",
+              "top": 824,
+              "type": "SECTION"
+            },
+            {
+              "bottom": 1331,
+              "cls": "portal-profile-btn",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Save licensing details",
+              "top": 1279,
+              "type": "BUTTON"
+            }
+          ],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-docs"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-carriers"
+        }
+      ],
+      "overflow": false,
+      "path": "/portal/profile",
+      "width": 354
+    },
+    {
+      "groups": [
+        {
+          "children": [
+            {
+              "bottom": 72,
+              "cls": "portal-header",
+              "gap": null,
+              "margin": "0px 0px 2px",
+              "title": "Onboarding",
+              "top": 16,
+              "type": "HEADER"
+            },
+            {
+              "bottom": 137,
+              "cls": "portal-subhead",
+              "gap": 12,
+              "margin": "0px",
+              "title": "My profile",
+              "top": 84,
+              "type": "HEADER"
+            },
+            {
+              "bottom": 191,
+              "cls": "portal-segmented",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Profile detailsTeamLicensingDocumentsCarrier ",
+              "top": 147,
+              "type": "DIV"
+            },
+            {
+              "bottom": 907,
+              "cls": "portal-profile-tabpanel",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Saved documents",
+              "top": 201,
+              "type": "DIV"
+            },
+            {
+              "bottom": 1066,
+              "cls": "portal-bento-footer portal-profile-foot",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Admin consoleSign out",
+              "top": 917,
+              "type": "DIV"
+            }
+          ],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "wrap carrier-sheet-wrap"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel portal-profile-details"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-team"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-licensing"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [
+            {
+              "bottom": 907,
+              "cls": "portal-profile-docs",
+              "gap": null,
+              "margin": "0px",
+              "title": "Saved documents",
+              "top": 201,
+              "type": "DIV"
+            }
+          ],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [
+            {
+              "bottom": 371,
+              "cls": "portal-pane",
+              "gap": null,
+              "margin": "0px",
+              "title": "Saved documents",
+              "top": 201,
+              "type": "SECTION"
+            },
+            {
+              "bottom": 907,
+              "cls": "portal-pane",
+              "gap": 10,
+              "margin": "0px",
+              "title": "My documents",
+              "top": 381,
+              "type": "SECTION"
+            }
+          ],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-docs"
+        },
+        {
+          "children": [
+            {
+              "bottom": 740,
+              "cls": "portal-field",
+              "gap": null,
+              "margin": "0px",
+              "title": "Document name",
+              "top": 665,
+              "type": "DIV"
+            },
+            {
+              "bottom": 828,
+              "cls": "portal-dropzone",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Add a fileDrop a file here or tap to browse. ",
+              "top": 750,
+              "type": "LABEL"
+            },
+            {
+              "bottom": 890,
+              "cls": "portal-profile-btn",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Upload document",
+              "top": 838,
+              "type": "BUTTON"
+            }
+          ],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-carriers"
+        }
+      ],
+      "overflow": false,
+      "path": "/portal/profile",
+      "width": 354
+    },
+    {
+      "groups": [
+        {
+          "children": [
+            {
+              "bottom": 72,
+              "cls": "portal-header",
+              "gap": null,
+              "margin": "0px 0px 2px",
+              "title": "Onboarding",
+              "top": 16,
+              "type": "HEADER"
+            },
+            {
+              "bottom": 137,
+              "cls": "portal-subhead",
+              "gap": 12,
+              "margin": "0px",
+              "title": "My profile",
+              "top": 84,
+              "type": "HEADER"
+            },
+            {
+              "bottom": 191,
+              "cls": "portal-segmented",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Profile detailsTeamLicensingDocumentsCarrier ",
+              "top": 147,
+              "type": "DIV"
+            },
+            {
+              "bottom": 697,
+              "cls": "portal-profile-tabpanel",
+              "gap": 10,
+              "margin": "0px",
+              "title": "SureLC accounts",
+              "top": 201,
+              "type": "DIV"
+            },
+            {
+              "bottom": 857,
+              "cls": "portal-bento-footer portal-profile-foot",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Admin consoleSign out",
+              "top": 707,
+              "type": "DIV"
+            }
+          ],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "wrap carrier-sheet-wrap"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel portal-profile-details"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-team"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-licensing"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [],
+          "display": "none",
+          "gap": "normal",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-docs"
+        },
+        {
+          "children": [],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-form"
+        },
+        {
+          "children": [
+            {
+              "bottom": 697,
+              "cls": "portal-profile-carriers",
+              "gap": null,
+              "margin": "0px",
+              "title": "SureLC accounts",
+              "top": 201,
+              "type": "DIV"
+            }
+          ],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-tabpanel"
+        },
+        {
+          "children": [
+            {
+              "bottom": 497,
+              "cls": "portal-pane",
+              "gap": null,
+              "margin": "0px",
+              "title": "SureLC accounts",
+              "top": 201,
+              "type": "SECTION"
+            },
+            {
+              "bottom": 697,
+              "cls": "portal-pane",
+              "gap": 10,
+              "margin": "0px",
+              "title": "Carrier accounts",
+              "top": 507,
+              "type": "SECTION"
+            }
+          ],
+          "display": "flex",
+          "gap": "10px",
+          "parent": "portal-profile-carriers"
+        }
+      ],
+      "overflow": false,
+      "path": "/portal/profile",
+      "width": 354
+    }
+  ]
+}

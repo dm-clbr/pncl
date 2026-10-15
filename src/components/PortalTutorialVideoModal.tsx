@@ -1,3 +1,4 @@
+import "@/styles/portal-overlays.css";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
@@ -21,13 +22,13 @@ export default function PortalTutorialVideoModal({
   const watched = useRef(0);
   const submitted = useRef(false);
   const embedUrl = getBunnyVideoEmbedUrl(sourceUrl);
-  const portalTarget = document.querySelector<HTMLElement>(".home2-page") ?? document.body;
+  const portalTarget = document.querySelector<HTMLElement>("dialog[open]") ?? document.querySelector<HTMLElement>(".home2-page") ?? document.body;
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape") { event.preventDefault(); onClose(); }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => {

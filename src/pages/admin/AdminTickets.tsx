@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAdminModal } from "@/components/admin/useAdminModal";
 import { ClipboardCheck, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -76,11 +77,17 @@ function TicketModal({
     }
   };
 
+  const modalRef = useRef<HTMLDivElement>(null);
+  useAdminModal(modalRef, true, saving ? undefined : onClose);
+
   return (
     <div className="admin-modal-overlay" role="presentation" onClick={saving ? undefined : onClose}>
       <div
         className="admin-modal admin-ticket-modal"
         role="dialog"
+        ref={modalRef}
+        tabIndex={-1}
+        aria-modal="true"
         aria-labelledby="admin-ticket-title"
         onClick={(event) => event.stopPropagation()}
       >
@@ -253,17 +260,17 @@ export default function AdminTickets() {
             <tbody>
               {filtered.map((ticket) => (
                 <tr key={ticket.id}>
-                  <td>{ticket.subject}</td>
-                  <td>{ticket.agentName}</td>
-                  <td>{TYPE_LABELS[ticket.type]}</td>
-                  <td>
+                  <td data-label="Subject">{ticket.subject}</td>
+                  <td data-label="Agent">{ticket.agentName}</td>
+                  <td data-label="Type">{TYPE_LABELS[ticket.type]}</td>
+                  <td data-label="Status">
                     <span className={statusClass(ticket.status)}>
                       {STATUS_LABELS[ticket.status]}
                     </span>
                   </td>
-                  <td>{ticket.assignedToName ?? "—"}</td>
-                  <td>{formatDate(ticket.createdAt)}</td>
-                  <td>
+                  <td data-label="Assigned">{ticket.assignedToName ?? "—"}</td>
+                  <td data-label="Submitted">{formatDate(ticket.createdAt)}</td>
+                  <td data-label="Actions">
                     <button
                       type="button"
                       className="admin-icon-btn"

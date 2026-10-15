@@ -1,0 +1,44 @@
+[
+  {
+    "gap": 14,
+    "noteMargin": "14px",
+    "overflow": false,
+    "route": "/portal/clients",
+    "width": 1280
+  },
+  {
+    "gap": 14,
+    "noteMargin": "14px",
+    "overflow": false,
+    "route": "/portal/carriers",
+    "width": 1280
+  },
+  {
+    "gap": 14,
+    "noteMargin": "14px",
+    "overflow": false,
+    "route": "/portal/support",
+    "width": 1280
+  },
+  {
+    "gap": 14,
+    "noteMargin": "14px",
+    "overflow": false,
+    "route": "/portal/brand-assets",
+    "width": 1280
+  },
+  {
+    "gap": 14,
+    "noteMargin": "0px",
+    "overflow": false,
+    "route": "/portal/calendar",
+    "width": 1280
+  },
+  {
+    "gap": 10,
+    "noteMargin": "10px",
+    "overflow": false,
+    "route": "/portal/clients",
+    "width": 390
+  }
+]

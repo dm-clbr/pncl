@@ -107,8 +107,8 @@ describe("SureLC playback and final submission", () => {
     expect(screen.queryByRole("button", { name: /Stage 4 New Producer/ })).toBeNull();
     const submit = screen.getByRole("button", { name: "Submit for New Producer" });
     expect(submit).toBeEnabled();
-    const card = submit.closest(".portal-todo-item") as HTMLElement;
-    expect(card).toHaveClass("portal-todo-item-mandatory");
+    const card = submit.closest(".pcl-step") as HTMLElement;
+    expect(card).toHaveClass("pcl-step");
     expect(within(card).getByText("Mandatory")).toBeInTheDocument();
     expect(within(card).getByText(/MANDATORY - YOU WILL NOT GET/)).toHaveClass("portal-todo-mandatory-warning");
     expect(card.parentElement?.lastElementChild).toBe(card);
@@ -187,5 +187,35 @@ describe("PortalOnboardingChecklist tutorial video", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("PortalOnboardingChecklist mark-complete rows", () => {
+  it("makes the whole title row the toggle for agent steps only", () => {
+    const onComplete = vi.fn();
+    render(
+      <MemoryRouter>
+        <PortalOnboardingChecklist
+          todos={[
+            todo({ id: "agent_step", title: "Join the weekly sales call" }),
+            todo({ id: "done_step", title: "Follow PNCL on Instagram", completed: true }),
+            todo({ id: "form_step", title: "Complete your W-9 form", completionType: "auto" }),
+          ]}
+          agentEmail="agent@thepncl.com"
+          completingTodoId={null}
+          onComplete={onComplete}
+        />
+      </MemoryRouter>,
+    );
+
+    const toggle = screen.getByRole("button", { name: /Join the weekly sales call/, pressed: false });
+    fireEvent.click(toggle);
+    expect(onComplete).toHaveBeenCalledWith("agent_step");
+
+    const done = screen.getByRole("button", { name: /Follow PNCL on Instagram/, pressed: true });
+    expect(done).toBeDisabled();
+
+    expect(screen.getByText("Complete your W-9 form")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Complete your W-9 form/ })).not.toBeInTheDocument();
   });
 });

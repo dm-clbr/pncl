@@ -10,6 +10,8 @@ import {
 } from "pdfjs-dist/legacy/web/pdf_viewer.mjs";
 import "pdfjs-dist/legacy/web/pdf_viewer.css";
 import W9FieldCallouts from "@/components/W9FieldCallouts";
+import Segmented, { panelAria } from "@/components/portal/Segmented";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   forwardRef,
   useCallback,
@@ -17,6 +19,7 @@ import {
   useImperativeHandle,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 
 export interface W9FillablePdfViewerHandle {
@@ -28,14 +31,26 @@ export interface W9FillablePdfViewerHandle {
 interface W9FillablePdfViewerProps {
   className?: string;
   prefillLegalName?: string;
+  /** Rendered at the end of the pager bar: the Sign button, a Back link. */
+  actions?: ReactNode;
+  onPageChange?: (page: number) => void;
 }
 
 const PARSE_TIMEOUT_MS = 30_000;
+
+const W9_HOST_ID = "w9-pdf-host";
 
 const W9_SECTION_JUMPS = [
   { label: "Form", page: W9_PDF_PAGES.form },
   { label: "Instructions", page: 2 },
 ] as const;
+
+const W9_JUMP_ITEMS = W9_SECTION_JUMPS.map((section) => ({
+  value: String(section.page),
+  label: section.label,
+  id: `${W9_HOST_ID}-jump-${section.page}`,
+  controls: W9_HOST_ID,
+}));
 
 async function fetchW9PdfBytes(): Promise<Uint8Array> {
   const response = await fetch(W9_PDF_URL);
@@ -85,7 +100,10 @@ function hasRenderedPages(viewer: HTMLElement | null): boolean {
 }
 
 const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfViewerProps>(
-  function W9FillablePdfViewer({ className, prefillLegalName = "" }, ref) {
+  function W9FillablePdfViewer(
+    { className, prefillLegalName = "", actions, onPageChange },
+    ref,
+  ) {
     const hostRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const viewerRef = useRef<HTMLDivElement>(null);
@@ -336,76 +354,45 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
       void refreshW9SignatureDate(pdfDocumentLocal, container);
     }, [viewerReady, pdfDocument]);
 
+    // Notifies the owner of the page the viewer is showing. pdf.js raises
+    // pagechanging on scroll as well as on a jump, so this follows both.
+    useEffect(() => {
+      onPageChange?.(currentPage);
+    }, [currentPage, onPageChange]);
+
     const progressPercent = Math.round((currentPage / W9_TOTAL_PAGES) * 100);
+    const chromeReady = !loading && !error;
+    // The host is the tabs' panel only on a page a jump owns; on every other
+    // page no tab is selected, so it takes a plain page name instead.
+    const hostAria = chromeReady
+      ? panelAria(W9_JUMP_ITEMS, String(currentPage), `Page ${currentPage} of ${W9_TOTAL_PAGES}`)
+      : {};
 
     return (
-      <div className={`ica-fillable-pdf${className ? ` ${className}` : ""}`}>
-        <div className="ica-fillable-pdf-head">
-          <span>Form W-9</span>
-          <span className="ica-fillable-pdf-head-meta">
-            {loading && !error ? (
-              <span className="ica-fillable-pdf-head-status">Loading…</span>
-            ) : (
-              <>Page {currentPage} of {W9_TOTAL_PAGES}</>
-            )}
-          </span>
-        </div>
-
-        {!loading && !error && (
-          <div className="ica-fillable-pdf-toolbar">
-            <div className="ica-fillable-pdf-nav">
-              <button
-                type="button"
-                className="ica-fillable-pdf-nav-btn"
-                onClick={() => goToPage(currentPage - 1)}
-                disabled={currentPage <= 1}
-                aria-label="Previous page"
-              >
-                ← Prev
-              </button>
-              <label className="ica-fillable-pdf-page-input">
-                <span className="sr-only">Page number</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={W9_TOTAL_PAGES}
-                  value={currentPage}
-                  onChange={(event) => {
-                    const next = Number.parseInt(event.target.value, 10);
-                    if (!Number.isNaN(next)) goToPage(next);
-                  }}
-                />
-                <span>/ {W9_TOTAL_PAGES}</span>
-              </label>
-              <button
-                type="button"
-                className="ica-fillable-pdf-nav-btn"
-                onClick={() => goToPage(currentPage + 1)}
-                disabled={currentPage >= W9_TOTAL_PAGES}
-                aria-label="Next page"
-              >
-                Next →
-              </button>
-            </div>
-            <div className="ica-fillable-pdf-progress" aria-hidden="true">
-              <div className="ica-fillable-pdf-progress-fill" style={{ width: `${progressPercent}%` }} />
-            </div>
-            <div className="ica-fillable-pdf-jumps">
-              {W9_SECTION_JUMPS.map((section) => (
-                <button
-                  key={section.page}
-                  type="button"
-                  className={`ica-fillable-pdf-jump-btn${currentPage === section.page ? " active" : ""}`}
-                  onClick={() => goToPage(section.page)}
-                >
-                  {section.label}
-                </button>
-              ))}
-            </div>
+      <div className={`pforms-doc${className ? ` ${className}` : ""}`}>
+        {chromeReady && (
+          <div className="pforms-jumps">
+            <Segmented
+              items={W9_JUMP_ITEMS}
+              value={String(currentPage)}
+              onChange={(value) => goToPage(Number(value))}
+              label="W-9 sections"
+            />
           </div>
         )}
 
-        <div ref={hostRef} className="ica-fillable-pdf-host">
+        <div
+          ref={hostRef}
+          id={W9_HOST_ID}
+          className="ica-fillable-pdf-host"
+          {...hostAria}
+        >
+          {loading && !error && (
+            <p className="pforms-doc-status">
+              <span className="pforms-doc-spinner" aria-hidden="true" />
+              Loading&#8230;
+            </p>
+          )}
           {error && (
             <div className="ica-fillable-pdf-error">
               <p>{error}</p>
@@ -425,6 +412,58 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
             active={viewerReady && !error}
           />
         </div>
+        {!chromeReady && actions && (
+          // The pager is chrome for a loaded document, but the actions slot
+          // carries the step's Back control, and on the public onboarding funnel
+          // that is the only way out of the contract step. So the slot keeps its
+          // own row when the pager is suppressed.
+          <div className="pforms-pager-actions pforms-pager-actions--bare">{actions}</div>
+        )}
+        {chromeReady && (
+          <div className="pforms-pager">
+            <div className="pforms-pager-progress" aria-hidden="true">
+              <div className="pforms-pager-progress-fill" style={{ width: `${progressPercent}%` }} />
+            </div>
+            <div className="pforms-pager-row">
+              <button
+                type="button"
+                className="pforms-pager-btn"
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage <= 1}
+              >
+                <ChevronLeft size={18} strokeWidth={2} aria-hidden="true" />
+                Prev
+              </button>
+              <label className="pforms-pager-count">
+                <span className="sr-only">Page number</span>
+                <input
+                  type="number"
+                  name="page"
+                  inputMode="numeric"
+                  min={1}
+                  max={W9_TOTAL_PAGES}
+                  value={currentPage}
+                  onChange={(event) => {
+                    const next = Number.parseInt(event.target.value, 10);
+                    if (!Number.isNaN(next)) goToPage(next);
+                  }}
+                />
+                <span>of {W9_TOTAL_PAGES}</span>
+              </label>
+              <button
+                type="button"
+                className="pforms-pager-btn"
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage >= W9_TOTAL_PAGES}
+              >
+                Next
+                <ChevronRight size={18} strokeWidth={2} aria-hidden="true" />
+              </button>
+              {actions && <div className="pforms-pager-actions">{actions}</div>}
+            </div>
+          </div>
+        )}
+
         <a href={W9_PDF_URL} target="_blank" rel="noopener noreferrer" className="ica-fillable-pdf-link">
           Open full W-9 in a new tab
         </a>

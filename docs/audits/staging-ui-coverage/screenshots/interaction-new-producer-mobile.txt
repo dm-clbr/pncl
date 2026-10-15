@@ -1,0 +1,106 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - link "PNCL home":
+    - /url: /
+  - heading "Employee Portal" [level=1]
+  - link "Jordan Example, view profile":
+    - /url: /portal/profile
+    - generic: JE
+  - button "Referral links":
+    - generic: "01"
+    - generic: Referral links
+  - button "Sales Tools, 1 item":
+    - generic: "02"
+    - generic: "01"
+    - generic: Sales Tools
+    - generic: 1 item
+  - button "Incentives, 1 item":
+    - generic: "03"
+    - generic: "01"
+    - generic: Incentives
+    - generic: 1 item
+  - button "Brand assets, 2 items":
+    - generic: "04"
+    - generic: "02"
+    - generic: Brand assets
+    - generic: 2 items
+  - button "Sign out":
+    - text: Sign out
+  - link "Facebook":
+    - /url: https://www.facebook.com/profile.php?id=61588062292202
+  - link "Instagram":
+    - /url: https://www.instagram.com/thepncl_/
+  - link "LinkedIn":
+    - /url: https://www.linkedin.com/company/the-pncl/?viewAsMember=true
+- navigation "Portal sections":
+  - link "Dashboard":
+    - /url: /portal
+    - generic: Dashboard
+  - link "Calendar":
+    - /url: /portal/calendar
+    - generic: Calendar
+  - link "State Map":
+    - /url: /portal/state-map
+    - generic: State Map
+  - link "Profile":
+    - /url: /portal/profile
+    - generic: Profile
+- 'button "Licensing ·2 of 4 steps complete Next: Example training video , open the checklist" [expanded]':
+  - text: Licensing
+  - text: ·2 of 4
+  - generic: steps complete
+  - generic: "Next: Example training video"
+  - generic: ", open the checklist"
+  - generic: 50%
+- dialog "Onboarding":
+  - generic: 50%
+  - heading "Onboarding" [level=2]
+  - paragraph: 2 of 4 steps complete · Licensing
+  - button "Close":
+  - list "Onboarding stages":
+    - generic: "01"
+    - generic: On-Board
+    - generic: ", completed"
+    - generic: "02"
+    - generic: Pre-License
+    - generic: ", completed"
+    - generic: "03"
+    - generic: Licensing
+    - generic: "04"
+    - generic: New Producer
+    - generic: "05"
+    - generic: Sales Ready
+  - paragraph: Work through each stage in order. The next stage unlocks once every step in the current stage is complete.
+  - button "On-Board 2/2":
+    - text: On-Board
+    - text: 2/2
+  - button "Licensing 0/2" [expanded]:
+    - generic: "03"
+    - text: Licensing
+    - text: 0/2
+  - list:
+    - button "Example training video , mark complete":
+      - generic: Example training video
+      - generic: ", mark complete"
+    - paragraph: Local UI audit only.
+    - paragraph: Use audit@thepncl.com when you sign up.
+    - button "Watch example video":
+      - text: Watch example video
+    - generic: Submit for New Producer
+    - paragraph: Confirm your carrier contracts.
+    - paragraph: Use audit@thepncl.com when you sign up.
+    - button "Submit for New Producer" [active]:
+      - text: Submit for New Producer
+    - dialog "Submit for New Producer":
+      - heading "Submit for New Producer" [level=2]
+      - button "Close":
+      - paragraph: By submitting for New Producer, you have requested contracts with all of your recommended carriers. Please confirm that you're ready to proceed before continuing.
+      - paragraph: Please mark each carrier that you have contracts with.
+      - heading "Life" [level=3]
+      - checkbox "Mutual of Omaha"
+      - generic: Mutual of Omaha
+      - generic: 0 carriers marked
+      - button "Cancel"
+      - button "Confirm and submit" [disabled]

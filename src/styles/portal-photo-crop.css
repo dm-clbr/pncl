@@ -1,0 +1,51 @@
+/* Photo editing travels with the shared Sheet, outside page-specific skins. */
+.portal-sheet .portal-photo-crop-body { display: grid; gap: 16px; }
+.portal-photo-crop-note { font-size: var(--portal-t-body); line-height: 1.6; color: var(--portal-text); }
+.portal-sheet .portal-photo-crop-body .portal-photo-crop-stage {
+  position: relative;
+  height: min(42dvh, 360px);
+  overflow: hidden;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius-inner);
+  background: rgba(0, 0, 0, 0.28);
+}
+.portal-sheet .portal-photo-crop-body .portal-photo-crop-zoom {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+}
+.portal-sheet .portal-photo-crop-body .portal-photo-crop-zoom span {
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text);
+}
+.portal-sheet .portal-photo-crop-body input[type="range"] {
+  width: 100%;
+  min-height: 44px;
+  accent-color: var(--portal-text-strong);
+}
+.portal-sheet .portal-photo-crop-body .portal-photo-crop-actions {
+  display: flex;
+  gap: 12px;
+  margin: 0;
+}
+.portal-photo-crop-action {
+  flex: 1;
+  min-height: var(--portal-control-h);
+  padding: 0 16px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-control-radius);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  cursor: pointer;
+}
+.portal-photo-crop-action.is-primary { background: var(--portal-text-strong); color: var(--portal-bar-fill); }
+.portal-photo-crop-action:disabled { opacity: 0.5; cursor: not-allowed; }
+.portal-photo-crop-action:focus-visible,
+.portal-photo-crop-zoom input:focus-visible { outline: var(--portal-focus-ring); outline-offset: var(--portal-focus-offset); }

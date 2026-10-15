@@ -1,0 +1,67 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - button "Open navigation":
+  - link "PNCL home":
+    - /url: /
+  - generic: Admin console
+  - heading "Brand assets" [level=1]
+  - paragraph: Upload logos, templates, and other files for agents to download from the portal. Add brand colors with hex codes for the color palette. Select multiple files to add them all at once.
+  - paragraph: Editing color
+  - strong: Color name
+  - generic: "#000000"
+  - generic: Title
+  - textbox "Title":
+    - /placeholder: PNCL Gold
+  - generic: Hex color
+  - textbox "Pick color": "#000000"
+  - textbox "#FF5500": "#000000"
+  - generic: Description
+  - textbox "Description":
+    - /placeholder: Optional notes for agents
+  - checkbox "Published in agent portal" [checked]
+  - generic: Published in agent portal
+  - button "Add color"
+  - button "Cancel"
+  - table:
+    - rowgroup:
+      - row "Asset File / Hex Type Status Actions":
+        - columnheader "Asset"
+        - columnheader "File / Hex"
+        - columnheader "Type"
+        - columnheader "Status"
+        - columnheader "Actions"
+    - rowgroup:
+      - 'row "Asset PNCL bone File / Hex #F0EDE4 Type Color Status Published Move PNCL bone up Move PNCL bone down Edit Delete"':
+        - cell "Asset PNCL bone":
+          - text: Asset
+          - generic: PNCL bone
+        - 'cell "File / Hex #F0EDE4"'
+        - cell "Type Color"
+        - cell "Status Published":
+          - text: Status
+          - generic: Published
+        - cell "Move PNCL bone up Move PNCL bone down Edit Delete":
+          - button "Move PNCL bone up" [disabled]:
+          - button "Move PNCL bone down":
+          - button "Edit":
+            - text: Edit
+          - button "Delete":
+            - text: Delete
+      - row "Asset PNCL logo File / Hex pncl-logo.svg Type Image Status Published Move PNCL logo up Move PNCL logo down Edit Delete":
+        - cell "Asset PNCL logo":
+          - text: Asset
+          - generic: PNCL logo
+        - cell "File / Hex pncl-logo.svg"
+        - cell "Type Image"
+        - cell "Status Published":
+          - text: Status
+          - generic: Published
+        - cell "Move PNCL logo up Move PNCL logo down Edit Delete":
+          - button "Move PNCL logo up":
+          - button "Move PNCL logo down" [disabled]:
+          - button "Edit":
+            - text: Edit
+          - button "Delete":
+            - text: Delete

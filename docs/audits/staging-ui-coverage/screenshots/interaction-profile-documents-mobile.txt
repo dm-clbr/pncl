@@ -1,0 +1,77 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - link "PNCL home":
+    - /url: /
+  - paragraph: Employee Portal
+  - link "Jordan Example, view profile":
+    - /url: /portal/profile
+    - generic: JE
+  - link "Back to portal":
+    - /url: /portal
+    - generic: Back to portal
+  - heading "My profile" [level=1]
+  - generic: Agent ID PNCL-00042
+  - 'button "On-Board ·1 of 2 steps complete Next: Complete your W-9 , open the checklist"':
+    - text: On-Board
+    - text: ·1 of 2
+    - generic: steps complete
+    - generic: "Next: Complete your W-9"
+    - generic: ", open the checklist"
+    - generic: 50%
+  - tablist "Profile sections":
+    - tab "Profile details"
+    - tab "Team"
+    - tab "Licensing"
+    - tab "Documents" [active] [selected]
+    - tab "Carrier logins"
+  - tabpanel "Documents":
+    - region "Saved documents":
+      - heading "Saved documents" [level=2]
+      - paragraph: The portal keeps a copy of each form you sign.
+      - list:
+        - link "Independent Contractor Agreement Sign your ICA to save a copy to your profile.":
+          - /url: /portal/ica
+          - generic: Independent Contractor Agreement
+          - generic: Sign your ICA to save a copy to your profile.
+        - link "Example compensation attachment Ready to sign. Assigned October 14, 2026.":
+          - /url: /portal/comp-agreement
+          - generic: Example compensation attachment
+          - generic: Ready to sign. Assigned October 14, 2026.
+    - region "My documents":
+      - heading "My documents" [level=2]
+      - paragraph: Upload anything else PNCL asks for, such as a certification or carrier paperwork. Admins can see what you add here.
+      - paragraph: Nothing uploaded yet
+      - paragraph: What you add stays on your profile for PNCL admins.
+      - generic: Document name
+      - textbox "Document name":
+        - /placeholder: e.g. AHIP certification
+      - strong: Add a file
+      - generic: Drop a file here or tap to browse. PDF or image, up to 5 MB.
+      - button "Add a file Drop a file here or tap to browse. PDF or image, up to 5 MB."
+      - button "Upload document" [disabled]
+  - link "Admin console":
+    - /url: /portal/admin
+    - generic: Admin console
+  - button "Sign out":
+    - text: Sign out
+  - link "Facebook":
+    - /url: https://www.facebook.com/profile.php?id=61588062292202
+  - link "Instagram":
+    - /url: https://www.instagram.com/thepncl_/
+  - link "LinkedIn":
+    - /url: https://www.linkedin.com/company/the-pncl/?viewAsMember=true
+- navigation "Portal sections":
+  - link "Dashboard":
+    - /url: /portal
+    - generic: Dashboard
+  - link "Calendar":
+    - /url: /portal/calendar
+    - generic: Calendar
+  - link "State Map":
+    - /url: /portal/state-map
+    - generic: State Map
+  - link "Profile":
+    - /url: /portal/profile
+    - generic: Profile

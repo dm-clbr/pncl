@@ -1,47 +1,56 @@
-import { resolveAgentDesignation } from "@/lib/agent-designation";
-import { filterPortalTodosForAgent } from "@/lib/portal-todos";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowUpRight,
-  ChevronDown,
+  Award,
   ClipboardList,
   FileSignature,
+  GraduationCap,
+  Link2,
   LogOut,
+  Palette,
   Shield,
-  X,
+  TrendingUp,
+  UserRound,
+  Wrench,
 } from "lucide-react";
-import PNCLLogo from "@/components/PNCLLogo";
-import PortalOnboardingChecklist, {
-  PortalUrgentIcon,
-} from "@/components/PortalOnboardingChecklist";
+
+/** 14px outline marks, one per tile, so a tile is identifiable at a glance. */
+const ICON = { size: 18, strokeWidth: 1.75 } as const;
+
+/** Picks a mark for a server-driven section by its id or title. */
+function sectionIcon(id: string, title: string) {
+  const key = `${id} ${title}`.toLowerCase();
+  if (key.includes("script")) return <ClipboardList {...ICON} />;
+  if (key.includes("track") || key.includes("sheet")) return <TrendingUp {...ICON} />;
+  if (key.includes("brand")) return <Palette {...ICON} />;
+  if (key.includes("incentive")) return <Award {...ICON} />;
+  if (key.includes("train") || key.includes("resource")) return <GraduationCap {...ICON} />;
+  if (key.includes("account")) return <UserRound {...ICON} />;
+  if (key.includes("tool") || key.includes("sales")) return <Wrench {...ICON} />;
+  return <Link2 {...ICON} />;
+}
+import PortalOnboardingAction from "@/components/portal/PortalOnboardingAction";
+import { useRequiredPortalOnboarding } from "@/contexts/PortalOnboardingContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { PORTAL_SECTIONS } from "@/lib/portal-links";
 import { usePortalDashboardTabs } from "@/hooks/usePortalDashboardTabs";
-import { isLinksDashboardSection, isDownloadsDashboardSection } from "@/lib/portal-dashboard-section-types";
+import {
+  isLinksDashboardSection,
+  isDownloadsDashboardSection,
+} from "@/lib/portal-dashboard-section-types";
 import type { PortalDashboardSection } from "@/lib/portal-dashboard-tabs";
-import PortalReferralPanel from "@/components/PortalReferralPanel";
 import PortalLeadSpplySnapshot from "@/components/PortalLeadSpplySnapshot";
+import PortalReferralPanel from "@/components/PortalReferralPanel";
+import { isOutbound, useSlowLoading } from "@/components/portal-tile-helpers";
 import { hasAdminConsoleAccess, isAdminAssist, isGenesisAdmin } from "@/lib/roles";
 import {
-  completePortalTodo,
-  derivePortalPhase,
-  isRequiredFormTodo,
-  isTodoCompleted,
-  PORTAL_PHASE_LABELS,
-  type TodoCompletionOptions,
-} from "@/lib/portal-todos";
-import { usePortalTodos } from "@/hooks/usePortalTodos";
-import { usePortalCarriers } from "@/hooks/usePortalCarriers";
-import {
-  buildCarrierApplicationsDescription,
-  CARRIER_APPLICATIONS_TODO_ID,
-} from "@/lib/carrier-applications";
-import { usePortalW9 } from "@/hooks/usePortalW9";
-import { usePortalDirectDeposit } from "@/hooks/usePortalDirectDeposit";
-import { usePortalIca } from "@/hooks/usePortalIca";
-import {
-  refreshPortalUser,
   shouldShowDirectDepositResignNotice,
   shouldShowIcaResignNotice,
   shouldShowW9ResignNotice,
@@ -50,6 +59,12 @@ import PortalIncentivesList from "@/components/PortalIncentivesList";
 import PortalBrandAssetsList from "@/components/PortalBrandAssetsList";
 import PortalDashboardFilesList from "@/components/PortalDashboardFilesList";
 import PortalPrimaryNav from "@/components/PortalPrimaryNav";
+import PortalHeader from "@/components/portal/PortalHeader";
+import BottomNav from "@/components/portal/BottomNav";
+import PortalBentoStage from "@/components/PortalBentoStage";
+import PortalNoticeBanner from "@/components/PortalNoticeBanner";
+import PortalBentoMain from "@/components/portal/PortalBentoMain";
+import PortalTile from "@/components/PortalBentoTile";
 import { usePortalIncentives } from "@/hooks/usePortalIncentives";
 import { usePortalBrandAssets } from "@/hooks/usePortalBrandAssets";
 import { usePortalProfile } from "@/hooks/usePortalProfile";
@@ -57,6 +72,8 @@ import { getRecoveryEmailDashboardNotice } from "@/lib/portal-profile";
 import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 import "@/styles/home2.css";
+import "@/styles/portal-bento.css";
+import "@/styles/portal-tile.css";
 
 const PORTAL_SOCIAL_LINKS = [
   {
@@ -79,90 +96,117 @@ const PORTAL_SOCIAL_LINKS = [
   },
 ] as const;
 
-function PortalSubLink({
-  link,
-}: {
-  link: { title: string; href: string; external: boolean };
-}) {
-  const content = (
-    <>
-      <span>{link.title}</span>
-      <ArrowUpRight size={18} strokeWidth={2.5} aria-hidden="true" />
-    </>
-  );
+const GRID_COLUMNS = 3;
 
-  if (link.external) {
+function pad(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+/** "1 item", "7 items". */
+function count(n: number, noun: string): string {
+  return `${n} ${noun}${n === 1 ? "" : "s"}`;
+}
+
+/** Tier 3 list for a section, with its existing empty and loading copy kept. */
+function SectionReveal({
+  section,
+  incentives,
+  incentivesLoading,
+  brandAssets,
+  brandAssetsLoading,
+  brandAssetsSlow,
+}: {
+  section: PortalDashboardSection;
+  incentives: ReturnType<typeof usePortalIncentives>["incentives"];
+  incentivesLoading: boolean;
+  brandAssets: ReturnType<typeof usePortalBrandAssets>["assets"];
+  brandAssetsLoading: boolean;
+  brandAssetsSlow: boolean;
+}) {
+  if (isLinksDashboardSection(section)) {
+    if (section.links.length === 0) {
+      return <p className="ptile-micro">No links published yet.</p>;
+    }
     return (
-      <a
-        href={link.href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="portal-sub-link"
-      >
-        {content}
-      </a>
+      <ul className="ptile-reveal-list">
+        {section.links.map((link) => {
+          const outbound = isOutbound(link.href);
+          return (
+            <li key={link.id}>
+              {link.external ? (
+                <a
+                  className={`ptile-link${outbound ? " is-external" : ""}`}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {link.title}
+                  {outbound && <ArrowUpRight size={14} strokeWidth={1.75} aria-hidden="true" />}
+                  <span className="ptile-sr">opens in a new tab</span>
+                </a>
+              ) : (
+                <Link className="ptile-link" to={link.href}>
+                  {link.title}
+                </Link>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     );
   }
 
-  return (
-    <Link to={link.href} className="portal-sub-link">
-      {content}
-    </Link>
-  );
-}
+  if (isDownloadsDashboardSection(section)) {
+    return section.files.length > 0 ? (
+      <PortalDashboardFilesList items={section.files} />
+    ) : (
+      <p className="ptile-micro">No files published yet.</p>
+    );
+  }
 
-function PortalTile({
-  label,
-  count,
-  open,
-  urgent,
-  onToggle,
-  children,
-}: {
-  label: string;
-  count?: number;
-  open: boolean;
-  urgent?: boolean;
-  onToggle: () => void;
-  children?: ReactNode;
-}) {
-  return (
-    <div className={`portal-tile-group${open ? " open" : ""}${urgent ? " urgent" : ""}`}>
-      <button
-        type="button"
-        className={`portal-tile${open ? " open" : ""}${urgent ? " urgent" : ""}`}
-        onClick={onToggle}
-        aria-expanded={open}
-      >
-        {urgent && <PortalUrgentIcon size={28} />}
-        <span className="portal-tile-label">
-          <span className="portal-tile-title">{label}</span>
-          {count !== undefined && <span className="portal-tile-count">({count})</span>}
-          {urgent && <span className="portal-urgent-label">Required</span>}
-        </span>
-        <ChevronDown size={22} strokeWidth={2.5} className="portal-tile-chevron" aria-hidden="true" />
-      </button>
-      {open && children && <div className="portal-tile-panel">{children}</div>}
-    </div>
+  if (section.sectionType === "incentives") {
+    if (incentivesLoading) return <p className="ptile-micro">Loading incentives...</p>;
+    return incentives.length > 0 ? (
+      <PortalIncentivesList items={incentives} />
+    ) : (
+      <p className="ptile-micro">No incentives published yet.</p>
+    );
+  }
+
+  if (brandAssetsLoading) {
+    return (
+      <p className="ptile-micro">
+        {brandAssetsSlow
+          ? "Brand assets are taking longer than usual to load. Refresh the page if this continues."
+          : "Loading brand assets..."}
+      </p>
+    );
+  }
+
+  return brandAssets.length > 0 ? (
+    <>
+      <PortalBrandAssetsList items={brandAssets} />
+      <Link className="ptile-link" to="/portal/brand-assets">
+        View all brand assets
+      </Link>
+    </>
+  ) : (
+    <p className="ptile-micro">No brand assets published yet.</p>
   );
 }
 
 export default function PortalDashboard() {
-  const { user: authUser, signOut } = useAuth();
-  const [portalUser, setPortalUser] = useState(authUser);
+  const { signOut } = useAuth();
+  const onboarding = useRequiredPortalOnboarding();
+  const { todos: resolvedTodos, user: portalUser, ica: { submitted: icaSubmitted }, w9: { submitted: w9Submitted }, directDeposit: { submitted: directDepositSubmitted } } = onboarding;
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
-  const [completingTodoId, setCompletingTodoId] = useState<string | null>(null);
-  const [checklistOpen, setChecklistOpen] = useState(false);
+  /** Only one card's menu is open at a time. */
+  const [openTile, setOpenTile] = useState<string | null>(null);
 
   const { incentives, loading: incentivesLoading } = usePortalIncentives();
   const { assets: brandAssets, loading: brandAssetsLoading } = usePortalBrandAssets();
   const { sections: dashboardSections } = usePortalDashboardTabs();
-  const { todos: portalTodos } = usePortalTodos();
-  const { carriers: portalCarriers } = usePortalCarriers();
-  const { submitted: icaSubmitted } = usePortalIca();
-  const { submitted: w9Submitted } = usePortalW9();
-  const { submitted: directDepositSubmitted } = usePortalDirectDeposit();
   const {
     profile,
     photoUrl,
@@ -170,67 +214,36 @@ export default function PortalDashboard() {
     displayName,
     loading: profileLoading,
   } = usePortalProfile(portalUser);
+  // UI only: after 10 s of loading, the Brand assets reveal says so instead of
+  // showing "Loading" forever. The hook is untouched; nothing falls back silently.
+  const brandAssetsSlow = useSlowLoading(brandAssetsLoading);
 
-  const resolvedTodos = useMemo(() => {
-    const carrierApplicationsDescription = buildCarrierApplicationsDescription(portalCarriers);
-
-    return filterPortalTodosForAgent(portalTodos, profile?.agent_designation).map((todo) => ({
-      ...todo,
-      description:
-        todo.id === CARRIER_APPLICATIONS_TODO_ID && carrierApplicationsDescription
-          ? carrierApplicationsDescription
-          : todo.description,
-      completed: isTodoCompleted(portalUser, todo, {
-        icaSubmitted,
-        w9Submitted,
-        directDepositSubmitted,
-      }),
-    }));
-  }, [
-    portalUser,
-    portalTodos,
-    profile?.agent_designation,
-    portalCarriers,
-    icaSubmitted,
-    w9Submitted,
-    directDepositSubmitted,
-  ]);
-  const pendingTodos = useMemo(
-    () => resolvedTodos.filter((todo) => !todo.completed),
-    [resolvedTodos],
-  );
-  const completedTodoCount = resolvedTodos.length - pendingTodos.length;
-  const currentPhase = derivePortalPhase(resolvedTodos);
-  const progressPercent = resolvedTodos.length === 0
-    ? 0
-    : Math.round((completedTodoCount / resolvedTodos.length) * 100);
-  const pendingRequiredForms = pendingTodos.some((todo) => isRequiredFormTodo(todo.id));
-  const showIcaResignNotice = resolvedTodos.some((todo) => todo.id === "ica_setup") && shouldShowIcaResignNotice(portalUser) && !icaSubmitted;
-  const showW9ResignNotice = resolvedTodos.some((todo) => todo.id === "w9_setup") && shouldShowW9ResignNotice(portalUser) && !w9Submitted;
+  const showIcaResignNotice = resolvedTodos.some(todo => todo.id === "ica_setup") && shouldShowIcaResignNotice(portalUser) && !icaSubmitted;
+  const showW9ResignNotice = resolvedTodos.some(todo => todo.id === "w9_setup") && shouldShowW9ResignNotice(portalUser) && !w9Submitted;
   const showDirectDepositResignNotice =
-    resolvedTodos.some((todo) => todo.id === "direct_deposit_setup") && shouldShowDirectDepositResignNotice(portalUser) && !directDepositSubmitted;
+    resolvedTodos.some(todo => todo.id === "direct_deposit_setup") && shouldShowDirectDepositResignNotice(portalUser) && !directDepositSubmitted;
   const recoveryEmailNotice = getRecoveryEmailDashboardNotice(profile, profileLoading);
   const recoveryEmailNoticeContent = recoveryEmailNotice === "missing"
     ? {
-        title: "Add your personal recovery email",
-        description:
-          "Add a personal email so you can recover your PNCL Google account and receive your electronic 1099.",
-        action: "Add recovery email",
-      }
+      title: "Add your personal recovery email",
+      description:
+        "Add a personal email so you can recover your PNCL Google account and receive your electronic 1099.",
+      action: "Add recovery email",
+    }
     : recoveryEmailNotice === "error"
       ? {
-          title: "Recovery email needs attention",
-          description:
-            "Your personal recovery email is saved, but Google Workspace could not be updated. Open your profile to retry the sync.",
-          action: "Retry in profile",
-        }
+        title: "Recovery email needs attention",
+        description:
+          "Your personal recovery email is saved, but Google Workspace could not be updated. Open your profile to retry the sync.",
+        action: "Retry in profile",
+      }
       : recoveryEmailNotice === "pending"
         ? {
           title: "Finish syncing your recovery email",
           description:
-              "Your personal recovery email is saved, but Google Workspace has not confirmed it yet. Open your profile and save your information to finish the sync.",
-            action: "Review and sync",
-          }
+            "Your personal recovery email is saved, but Google Workspace has not confirmed it yet. Open your profile and save your information to finish the sync.",
+          action: "Review and sync",
+        }
         : null;
 
   const displaySections = useMemo((): PortalDashboardSection[] => {
@@ -276,41 +289,23 @@ export default function PortalDashboard() {
   }, [dashboardSections]);
 
   useEffect(() => {
-    setPortalUser(authUser);
-  }, [authUser]);
-
-  useEffect(() => {
-    void refreshPortalUser()
-      .then((user) => {
-        if (user) setPortalUser(user);
-      })
-      .catch(() => {
-        // Keep the cached session user if refresh fails.
-      });
-  }, []);
-
-  useEffect(() => {
     document.title = "Employee Portal — PNCL";
     trackPageView("portal_dashboard");
     window.scrollTo(0, 0);
   }, []);
 
-  useEffect(() => {
-    if (!checklistOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setChecklistOpen(false);
-    };
-    document.addEventListener("keydown", onKeyDown);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [checklistOpen]);
-
-  const toggleSection = (id: string) => {
+  const toggleSection = useCallback((id: string) => {
     setOpenSections((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  }, []);
+
+  /** Opening one card's menu closes whichever was open. */
+  const handleOpen = useCallback(
+    (id: string) => (next: boolean) => {
+      setOpenTile(next ? id : null);
+      toggleSection(id);
+    },
+    [toggleSection],
+  );
 
   const handleSignOut = async () => {
     try {
@@ -318,18 +313,6 @@ export default function PortalDashboard() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unable to sign out";
       toast.error(message);
-    }
-  };
-
-  const handleCompleteTodo = async (todoId: string, options?: TodoCompletionOptions) => {
-    setCompletingTodoId(todoId);
-    try {
-      await completePortalTodo(todoId, resolvedTodos, options);
-      toast.success("To-do marked complete.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Unable to update to-do.");
-    } finally {
-      setCompletingTodoId(null);
     }
   };
 
@@ -346,323 +329,197 @@ export default function PortalDashboard() {
       ? "Admin assist"
       : "Admin console";
 
+  const resignNotices = [
+    showIcaResignNotice && {
+      title: "Re-sign your Independent Contractor Agreement",
+      body: "The ICA was updated, so your previous signature is no longer on file.",
+      href: "/portal/ica",
+      cta: "Re-sign agreement",
+    },
+    showW9ResignNotice && {
+      title: "Fill out a new W-9",
+      body: "Your previous W-9 was removed and needs to be completed again.",
+      href: "/portal/w9",
+      cta: "Complete W-9",
+    },
+    showDirectDepositResignNotice && {
+      title: "Fill out a new direct deposit form",
+      body: "Your previous direct deposit form was removed and needs completing again.",
+      href: "/portal/direct-deposit",
+      cta: "Complete direct deposit form",
+    },
+  ].filter(Boolean) as Array<{ title: string; body: string; href: string; cta: string }>;
+
+  const tiles: ReactNode[] = [];
+  const slot = () => {
+    const position = tiles.length;
+    return {
+      index: position + 1,
+      row: Math.floor(position / GRID_COLUMNS),
+      order: position,
+    };
+  };
+  const menuProps = (id: string) => ({
+    open: openTile === id,
+    onOpenChange: handleOpen(id),
+  });
+
+  const indexTile = (id: string, title: string, itemCount: number, reveal: ReactNode) => {
+    const spot = slot();
+    return (
+      <PortalTile
+        key={id}
+        index={spot.index}
+        row={spot.row}
+        order={spot.order}
+        title={title}
+        icon={sectionIcon(id, title)}
+        headerCount={pad(itemCount)}
+        ariaLabel={`${title}, ${count(itemCount, "item")}`}
+        {...menuProps(id)}
+        meta={count(itemCount, "item")}
+        reveal={<div className="ptile-reveal-body">{reveal}</div>}
+      />
+    );
+  };
+
+  // 01 Referral links. No count; the panel owns the copy and the team dashboard link.
+  {
+    const spot = slot();
+    tiles.push(
+      <PortalTile
+        key="referrals"
+        index={spot.index}
+        row={spot.row}
+        order={spot.order}
+        title="Referral links"
+        icon={<Link2 {...ICON} />}
+        {...menuProps("referrals")}
+        reveal={
+          <div className="ptile-reveal-body">
+            <PortalReferralPanel embedded />
+            <Link className="ptile-link" to="/portal/profile?tab=team">
+              Open team dashboard
+            </Link>
+          </div>
+        }
+      />,
+    );
+  }
+
+  // 02 onward: one card per dashboard section, in the order the server sends them.
+  displaySections.forEach((section) => {
+    const itemCount = isLinksDashboardSection(section)
+      ? section.links.length
+      : isDownloadsDashboardSection(section)
+        ? section.files.length
+        : section.sectionType === "incentives"
+          ? incentives.length
+          : brandAssets.length;
+    tiles.push(
+      indexTile(
+        section.id,
+        section.title,
+        itemCount,
+        <SectionReveal
+          section={section}
+          incentives={incentives}
+          incentivesLoading={incentivesLoading}
+          brandAssets={brandAssets}
+          brandAssetsLoading={brandAssetsLoading}
+          brandAssetsSlow={brandAssetsSlow}
+        />,
+      ),
+    );
+  });
+
   return (
     <div className="home2-page">
-      <div className="grain" aria-hidden="true" />
+      <PortalBentoMain>
+        <PortalHeader
+          name={displayName}
+          email={agentEmail}
+          initials={initials}
+          photoUrl={photoUrl}
+          action={<PortalOnboardingAction />}
+        />
 
-      <main className="portal-dash dark portal-home-dash">
-        <div className="wrap portal-wrap">
-          <header className="portal-hero">
-            <Link to="/" className="portal-hero-logo" aria-label="PNCL home">
-              <PNCLLogo height={44} />
-            </Link>
-            <Link to="/portal/profile" className="portal-hero-profile" aria-label="View profile">
-              <span className="portal-hero-profile-avatar" aria-hidden="true">
-                {photoUrl ? (
-                  <img src={photoUrl} alt="" className="portal-hero-profile-photo" />
-                ) : (
-                  <span className="portal-hero-profile-initials">{initials}</span>
-                )}
-              </span>
-              <span className="portal-hero-profile-copy">
-                <span className="portal-welcome">Welcome, {displayName}</span>
-                {agentEmail && <span className="portal-meta">{agentEmail}</span>}
-              </span>
-            </Link>
-          </header>
+        <PortalPrimaryNav />
 
-          <PortalPrimaryNav />
-
-          {resolvedTodos.length > 0 && (
-            <Link
-              to="/portal/profile"
-              className="portal-readiness-summary"
-              aria-label={`View your onboarding progress: ${PORTAL_PHASE_LABELS[currentPhase]}, ${completedTodoCount} of ${resolvedTodos.length} steps complete`}
-            >
-              <div className="portal-readiness-summary-copy">
-                <span className="portal-readiness-summary-label">Your progress</span>
-                <span className={`portal-phase-badge phase-${currentPhase}`}>
-                  {PORTAL_PHASE_LABELS[currentPhase]}
-                </span>
-                <span className="portal-readiness-summary-count">
-                  {completedTodoCount} of {resolvedTodos.length} steps complete
-                </span>
-                <span className="portal-progress-tier">{resolveAgentDesignation(profile?.agent_designation).toUpperCase()}</span>
-              </div>
-              <div
-                className="portal-readiness-summary-bar"
-                role="progressbar"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={progressPercent}
-              >
-                <span style={{ width: `${progressPercent}%` }} />
-              </div>
-            </Link>
-          )}
+        <div className="portal-dashboard-sections">
+          {resignNotices.map((notice) => (
+            <PortalNoticeBanner
+              key={notice.href}
+              role="alert"
+              icon={<FileSignature size={20} strokeWidth={2.25} />}
+              title={notice.title}
+              body={notice.body}
+              href={notice.href}
+              cta={notice.cta}
+            />
+          ))}
 
           {recoveryEmailNoticeContent && (
-            <div
-              className={`portal-notice-banner portal-recovery-email-notice portal-recovery-email-notice-${recoveryEmailNotice}`}
+            <PortalNoticeBanner
               role={recoveryEmailNotice === "error" ? "alert" : "status"}
-            >
-              <span className="portal-notice-icon" aria-hidden="true">
-                <Shield size={20} strokeWidth={2.25} />
-              </span>
-              <div className="portal-notice-copy">
-                <strong>{recoveryEmailNoticeContent.title}</strong>
-                <p>{recoveryEmailNoticeContent.description}</p>
-                <Link to="/portal/profile?tab=details" className="portal-notice-link">
-                  {recoveryEmailNoticeContent.action}
-                  <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
-                </Link>
-              </div>
-            </div>
+              icon={<Shield size={20} strokeWidth={2.25} />}
+              title={recoveryEmailNoticeContent.title}
+              body={recoveryEmailNoticeContent.description}
+              href="/portal/profile?tab=details"
+              cta={recoveryEmailNoticeContent.action}
+              dismissKey={`portal-notice-dismissed:recovery-${recoveryEmailNotice}`}
+            />
           )}
 
-          {showIcaResignNotice && (
-            <div className="portal-notice-banner" role="alert">
-              <span className="portal-notice-icon" aria-hidden="true">
-                <FileSignature size={20} strokeWidth={2.25} />
-              </span>
-              <div className="portal-notice-copy">
-                <strong>Please re-sign your Independent Contractor Agreement</strong>
-                <p>
-                  We updated the ICA document, so your previous signature is no longer on
-                  file. It only takes a couple of minutes to sign the new version.
-                </p>
-                <Link to="/portal/ica" className="portal-notice-link">
-                  Re-sign agreement
-                  <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
-                </Link>
-              </div>
-            </div>
-          )}
+          <PortalLeadSpplySnapshot userId={portalUser?.id} />
 
-          {showW9ResignNotice && (
-            <div className="portal-notice-banner" role="alert">
-              <span className="portal-notice-icon" aria-hidden="true">
-                <FileSignature size={20} strokeWidth={2.25} />
-              </span>
-              <div className="portal-notice-copy">
-                <strong>Please fill out a new W-9</strong>
-                <p>
-                  Your previous W-9 was removed and needs to be completed again. It only
-                  takes a couple of minutes to fill out and sign a new form.
-                </p>
-                <Link to="/portal/w9" className="portal-notice-link">
-                  Complete W-9
-                  <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {showDirectDepositResignNotice && (
-            <div className="portal-notice-banner" role="alert">
-              <span className="portal-notice-icon" aria-hidden="true">
-                <FileSignature size={20} strokeWidth={2.25} />
-              </span>
-              <div className="portal-notice-copy">
-                <strong>Please fill out a new direct deposit form</strong>
-                <p>
-                  Your previous direct deposit form was removed and needs to be completed
-                  again. It only takes a couple of minutes to fill out and sign a new form.
-                </p>
-                <Link to="/portal/direct-deposit" className="portal-notice-link">
-                  Complete direct deposit form
-                  <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
-                </Link>
-              </div>
-            </div>
-          )}
-
-          {pendingTodos.length > 0 && (
-            <button
-              type="button"
-              className="portal-urgent-banner portal-urgent-banner-btn"
-              onClick={() => setChecklistOpen(true)}
-            >
-              <PortalUrgentIcon />
-              <p>
-                <strong>{pendingTodos.length} onboarding item{pendingTodos.length === 1 ? "" : "s"} left</strong>
-                <span>
-                  {pendingRequiredForms
-                    ? "Complete your required forms first — sign your ICA, submit your W-9, and set up direct deposit before getting started."
-                    : "Open your checklist and keep working toward sales ready."}
-                </span>
-              </p>
-              <ArrowUpRight size={18} strokeWidth={2.5} aria-hidden="true" />
-            </button>
-          )}
-
-          <div className="portal-columns">
-            <div className="portal-main">
-              <PortalLeadSpplySnapshot userId={authUser?.id} />
-              <PortalReferralPanel />
-
-              <div className="portal-tiles">
-                {displaySections.map((section) => {
-              const count = isLinksDashboardSection(section)
-                ? section.links.length
-                : isDownloadsDashboardSection(section)
-                  ? section.files.length
-                : section.sectionType === "incentives"
-                  ? incentives.length
-                  : brandAssets.length;
-
-              return (
-                <PortalTile
-                  key={section.id}
-                  label={section.title}
-                  count={count}
-                  open={Boolean(openSections[section.id])}
-                  onToggle={() => toggleSection(section.id)}
-                >
-                  {isLinksDashboardSection(section) ? (
-                    section.links.map((link) => (
-                      <PortalSubLink key={link.id} link={link} />
-                    ))
-                  ) : isDownloadsDashboardSection(section) ? (
-                    section.files.length > 0 ? (
-                      <PortalDashboardFilesList items={section.files} />
-                    ) : (
-                      <p className="portal-panel-note">No files published yet.</p>
-                    )
-                  ) : section.sectionType === "incentives" ? (
-                    incentivesLoading ? (
-                      <div className="portal-incentives-loading">
-                        <span className="onboarding-spinner" aria-hidden="true" />
-                        <span>Loading incentives...</span>
-                      </div>
-                    ) : incentives.length > 0 ? (
-                      <PortalIncentivesList items={incentives} />
-                    ) : (
-                      <p className="portal-panel-note">No incentives published yet.</p>
-                    )
-                  ) : brandAssetsLoading ? (
-                    <div className="portal-incentives-loading">
-                      <span className="onboarding-spinner" aria-hidden="true" />
-                      <span>Loading brand assets...</span>
-                    </div>
-                  ) : brandAssets.length > 0 ? (
-                    <>
-                      <p className="portal-panel-note">
-                        Official PNCL logos, templates, and brand files.
-                      </p>
-                      <PortalBrandAssetsList items={brandAssets} />
-                      <Link to="/portal/brand-assets" className="portal-sub-link">
-                        <span>View all brand assets</span>
-                        <ArrowUpRight size={18} strokeWidth={2.5} aria-hidden="true" />
-                      </Link>
-                    </>
-                  ) : (
-                    <p className="portal-panel-note">No brand assets published yet.</p>
-                  )}
-                </PortalTile>
-              );
-            })}
-
-            {showAdminLink && (
-              <Link to={adminLink} className="portal-sub-link portal-admin-link">
-                <span>{adminLinkLabel}</span>
-                <Shield size={18} strokeWidth={2.5} aria-hidden="true" />
-              </Link>
-            )}
-
-            <button type="button" className="portal-signout" onClick={handleSignOut}>
-              <LogOut size={18} strokeWidth={2.5} aria-hidden="true" />
-              Sign out
-            </button>
-
-            <div className="portal-socials">
-              {PORTAL_SOCIAL_LINKS.map((link) => (
-                <a
-                  key={link.id}
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="portal-social-link"
-                  aria-label={link.label}
-                >
-                  <span
-                    className="portal-social-icon"
-                    style={{
-                      WebkitMaskImage: `url(${link.iconSrc})`,
-                      maskImage: `url(${link.iconSrc})`,
-                    }}
-                    aria-hidden="true"
-                  />
-                </a>
-              ))}
-            </div>
-              </div>
-            </div>
-
-            {resolvedTodos.length > 0 && (
-              <aside className="portal-checklist-rail" aria-label="Onboarding checklist">
-                <PortalOnboardingChecklist
-                  todos={resolvedTodos}
-                  agentEmail={agentEmail}
-                  completingTodoId={completingTodoId}
-                  onComplete={(id, options) => void handleCompleteTodo(id, options)}
-                  previewUnlocked={showAdminLink}
-                />
-              </aside>
-            )}
-          </div>
+          <PortalBentoStage>
+            <div className="portal-bento-grid">{tiles}</div>
+          </PortalBentoStage>
         </div>
 
-        {resolvedTodos.length > 0 && (
-          <>
-            {checklistOpen && (
-              <div
-                className="portal-checklist-overlay"
-                onClick={() => setChecklistOpen(false)}
-                aria-hidden="true"
-              />
-            )}
-            <div
-              className={`portal-checklist-drawer${checklistOpen ? " open" : ""}`}
-              role="dialog"
-              aria-modal="true"
-              aria-label="Onboarding checklist"
-              aria-hidden={!checklistOpen}
-            >
-              <button
-                type="button"
-                className="portal-checklist-drawer-close"
-                onClick={() => setChecklistOpen(false)}
-                aria-label="Close checklist"
-                tabIndex={checklistOpen ? 0 : -1}
-              >
-                <X size={18} strokeWidth={2.5} aria-hidden="true" />
-              </button>
-              <PortalOnboardingChecklist
-                todos={resolvedTodos}
-                agentEmail={agentEmail}
-                completingTodoId={completingTodoId}
-                onComplete={(id, options) => void handleCompleteTodo(id, options)}
-                previewUnlocked={showAdminLink}
-              />
-            </div>
+        <div className="portal-bento-footer">
+          {showAdminLink && (
+            <Link to={adminLink} className="portal-bento-footer-link">
+              <Shield size={15} strokeWidth={2} aria-hidden="true" />
+              <span>{adminLinkLabel}</span>
+            </Link>
+          )}
 
-            {!checklistOpen && (
-              <button
-                type="button"
-                className={`portal-checklist-fab${pendingTodos.length > 0 ? " has-pending" : ""}`}
-                onClick={() => setChecklistOpen(true)}
+          <button
+            type="button"
+            className="portal-bento-footer-link"
+            onClick={handleSignOut}
+          >
+            <LogOut size={15} strokeWidth={2} aria-hidden="true" />
+            Sign out
+          </button>
+
+          <div className="portal-bento-socials">
+            {PORTAL_SOCIAL_LINKS.map((link) => (
+              <a
+                key={link.id}
+                href={link.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="portal-bento-social"
+                aria-label={link.label}
               >
-                <ClipboardList size={18} strokeWidth={2.25} aria-hidden="true" />
-                Checklist
-                <span className="portal-checklist-fab-count">
-                  {completedTodoCount}/{resolvedTodos.length}
-                </span>
-              </button>
-            )}
-          </>
-        )}
-      </main>
+                <span
+                  style={{
+                    WebkitMaskImage: `url(${link.iconSrc})`,
+                    maskImage: `url(${link.iconSrc})`,
+                  }}
+                  aria-hidden="true"
+                />
+              </a>
+            ))}
+          </div>
+        </div>
+      </PortalBentoMain>
+
+      {/* Outside <main> so the fixed navigation keeps its viewport anchor. */}
+      <BottomNav />
     </div>
   );
 }

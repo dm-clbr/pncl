@@ -1,0 +1,138 @@
+/* Legacy workflow overlays share the portal materials without changing their
+   media playback, carrier submission, or dismissal logic. */
+.home2-page .portal-new-producer-modal[role="dialog"],
+.home2-page .portal-video-modal[role="dialog"],
+.home2-page .portal-incentive-lightbox .portal-incentive-lightbox-panel {
+  box-sizing: border-box;
+  padding: 20px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+  box-shadow: var(--portal-pane-shadow);
+  color: var(--portal-text);
+  font-family: var(--portal-font);
+}
+.home2-page .portal-new-producer-modal .portal-new-producer-head h2,
+.home2-page .portal-video-modal .portal-video-modal-head strong {
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-mid);
+  font-weight: 600;
+  font-style: normal;
+  text-transform: none;
+  color: var(--portal-text-strong);
+}
+.home2-page .portal-new-producer-modal :is(.portal-new-producer-prompt, .portal-new-producer-count),
+.home2-page .portal-video-modal .portal-video-fallback,
+.home2-page .portal-incentive-lightbox figcaption {
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text);
+}
+.home2-page .portal-new-producer-modal .portal-new-producer-warning {
+  border-color: var(--portal-border);
+  border-radius: var(--portal-radius-inner);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--portal-text);
+}
+.home2-page .portal-new-producer-modal .portal-new-producer-carrier {
+  min-height: var(--portal-control-h);
+  padding: 12px;
+  border-radius: var(--portal-control-radius);
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  color: var(--portal-text);
+}
+.home2-page .portal-new-producer-modal .portal-new-producer-carriers h3 {
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text-faint);
+}
+.home2-page .portal-new-producer-modal input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--portal-text-strong);
+}
+.home2-page .portal-new-producer-modal :is(.admin-modal-close, .portal-panel-btn, .admin-secondary-link),
+.home2-page .portal-video-modal .admin-modal-close,
+.home2-page .portal-incentive-lightbox :is(.portal-incentive-lightbox-close, .portal-incentive-lightbox-link),
+.home2-page .portal-video-modal .portal-video-fallback a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--portal-control-h);
+  padding: 0 16px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-control-radius);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--portal-text-strong);
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: pointer;
+}
+.home2-page .portal-new-producer-modal .portal-panel-btn { background: var(--portal-text-strong); color: var(--portal-bar-fill); }
+.home2-page .portal-new-producer-modal .admin-modal-close,
+.home2-page .portal-video-modal .admin-modal-close {
+  flex-shrink: 0;
+  width: var(--portal-control-h);
+  padding: 0;
+}
+.home2-page .portal-new-producer-modal :focus-visible,
+.home2-page .portal-video-modal :focus-visible,
+.home2-page .portal-incentive-lightbox :focus-visible { outline: var(--portal-focus-ring); outline-offset: var(--portal-focus-offset); }
+.home2-page .portal-new-producer-modal .portal-panel-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+@media (max-width: 620px) {
+  .home2-page .portal-incentive-lightbox { padding: 12px; }
+  .home2-page .portal-new-producer-modal .portal-new-producer-buttons { display: flex; width: 100%; gap: 8px; }
+  .home2-page .portal-new-producer-buttons > button { flex: 1; }
+}
+
+.home2-page .portal-new-producer-modal button svg,
+.home2-page .portal-video-modal button svg,
+.home2-page .portal-incentive-lightbox :is(button, a) svg {
+  width: var(--portal-control-icon);
+  height: var(--portal-control-icon);
+}
+
+.home2-page .portal-video-modal :is(.portal-video-watch-note, .portal-video-status) {
+  margin: var(--portal-gap) 0 0;
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-body);
+  line-height: 1.55;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text);
+}
+.home2-page .portal-video-modal .portal-video-frame {
+  overflow: hidden;
+  border: 1px solid var(--portal-rule);
+  border-radius: var(--portal-radius-inner);
+  background: black;
+}
+.home2-page .portal-video-modal .portal-video-frame video { width: 100%; height: 100%; object-fit: contain; }
+.home2-page .portal-video-modal .portal-todo-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--portal-control-h);
+  margin-top: var(--portal-gap);
+  padding: 8px 16px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-control-radius);
+  background: var(--portal-text-strong);
+  color: var(--portal-bar-fill);
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.home2-page .pcl-step .portal-todo-mandatory-warning { color: var(--portal-text-strong); font-weight: 600; }
+.home2-page .portal-video-modal .portal-video-status { margin: 0; }

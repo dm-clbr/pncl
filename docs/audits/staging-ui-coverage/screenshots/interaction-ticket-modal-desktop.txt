@@ -1,0 +1,125 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - complementary "Admin navigation panel":
+    - link "PNCL home":
+      - /url: /
+    - button "Collapse navigation" [expanded]:
+    - generic: J
+    - generic: Admin console
+    - generic: Jordan Example
+    - navigation "Admin navigation":
+      - link "Overview":
+        - /url: /portal/admin
+        - generic: Overview
+      - link "Hierarchy":
+        - /url: /portal/admin/hierarchy
+        - generic: Hierarchy
+      - link "Users":
+        - /url: /portal/admin/users
+        - generic: Users
+      - link "Profile review":
+        - /url: /portal/admin/profile-review
+        - generic: Profile review
+      - link "Gmail verification":
+        - /url: /portal/admin/gmail-verification
+        - generic: Gmail verification
+      - link "Agent enrollments":
+        - /url: /portal/admin/onboarding-holds
+        - generic: Agent enrollments
+      - link "Contracting":
+        - /url: /portal/admin/contracting
+        - generic: Contracting
+      - link "Lead charges":
+        - /url: /portal/admin/lead-charges
+        - generic: Lead charges
+      - link "Setter / Closer":
+        - /url: /portal/admin/setter-closer
+        - generic: Setter / Closer
+      - link "Tickets":
+        - /url: /portal/admin/tickets
+        - generic: Tickets
+      - link "Pay policy":
+        - /url: /portal/admin/pay-policy
+        - generic: Pay policy
+      - link "Add user":
+        - /url: /portal/admin/users/new
+        - generic: Add user
+      - link "Incentives":
+        - /url: /portal/admin/incentives
+        - generic: Incentives
+      - link "Brand assets":
+        - /url: /portal/admin/brand-assets
+        - generic: Brand assets
+      - link "Carriers":
+        - /url: /portal/admin/carriers
+        - generic: Carriers
+      - link "State availability":
+        - /url: /portal/admin/state-availability
+        - generic: State availability
+      - link "To-dos":
+        - /url: /portal/admin/todos
+        - generic: To-dos
+      - link "Clients":
+        - /url: /portal/admin/clients
+        - generic: Clients
+      - link "Dashboard tabs":
+        - /url: /portal/admin/dashboard-tabs
+        - generic: Dashboard tabs
+      - link "Onboarding preview":
+        - /url: /portal/admin/onboarding-preview
+        - generic: Onboarding preview
+      - link "W-9 preview":
+        - /url: /portal/admin/w9-preview
+        - generic: W-9 preview
+    - link "Agent portal":
+      - /url: /portal
+      - generic: Agent portal
+  - heading "Support tickets" [level=1]
+  - paragraph: Hierarchy changes, pay tier questions, and commission disputes raised by agents.
+  - generic: Status
+  - combobox "Status":
+    - option "All (1)" [selected]
+    - option "Open (1)"
+    - option "In progress (0)"
+    - option "Resolved (0)"
+  - table:
+    - rowgroup:
+      - row "Subject Agent Type Status Assigned Submitted Actions":
+        - columnheader "Subject"
+        - columnheader "Agent"
+        - columnheader "Type"
+        - columnheader "Status"
+        - columnheader "Assigned"
+        - columnheader "Submitted"
+        - columnheader "Actions"
+    - rowgroup:
+      - row "Example support request Jordan Example Other Open — Oct 14, 2026 Work ticket":
+        - cell "Example support request"
+        - cell "Jordan Example"
+        - cell "Other"
+        - cell "Open":
+          - generic: Open
+        - cell "—"
+        - cell "Oct 14, 2026"
+        - cell "Work ticket":
+          - button "Work ticket"
+  - dialog "Example support request":
+    - heading "Example support request" [level=2]
+    - paragraph: Other from Jordan Example (jordan@thepncl.com) · Oct 14, 2026
+    - button "Close" [active]:
+    - paragraph: Local fixture for reviewing the ticket detail sheet.
+    - generic: Status
+    - combobox "Status":
+      - option "Open" [selected]
+      - option "In progress"
+      - option "Resolved"
+    - generic: Assigned to
+    - combobox "Assigned to":
+      - option "Unassigned" [selected]
+    - generic: Resolution note (visible to the agent)
+    - textbox "Resolution note (visible to the agent)":
+      - /placeholder: What was done to resolve this?
+    - button "Cancel"
+    - button "Save ticket"

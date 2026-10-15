@@ -39,9 +39,9 @@ export default function AdminProfileCompleteness() {
             <tbody>
               {queue.map(({ agent, gaps }) => (
                 <tr key={agent.id}>
-                  <td><strong>{agent.name}</strong><br /><span className="admin-table-subtext">{agent.email}</span></td>
-                  <td>{gaps.map((item) => item.label).join(" · ")}</td>
-                  <td><Link className="admin-secondary-link" to={`/portal/admin/users/${agent.id}`}>Open profile</Link></td>
+                  <td data-label="Agent"><strong>{agent.name}</strong><br /><span className="admin-table-subtext">{agent.email}</span></td>
+                  <td data-label="Missing requirements">{gaps.map((item) => item.label).join(" · ")}</td>
+                  <td data-label="Review"><Link className="admin-secondary-link" to={`/portal/admin/users/${agent.id}`}>Open profile</Link></td>
                 </tr>
               ))}
             </tbody>

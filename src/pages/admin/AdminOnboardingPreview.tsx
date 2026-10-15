@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import PortalBackground from "@/components/portal/PortalBackground";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 import AgentOnboarding from "@/pages/AgentOnboarding";
 import { clearAllPreviewContractSessions } from "@/lib/onboarding-contract";
 import { trackPageView } from "@/lib/analytics";
+import "@/styles/portal-admin.css";
 
 export default function AdminOnboardingPreview() {
   const navigate = useNavigate();
@@ -24,6 +26,7 @@ export default function AdminOnboardingPreview() {
 
   return (
     <div className="admin-onboarding-preview-shell">
+      <PortalBackground />
       <div className="admin-onboarding-preview-bar" role="status" aria-live="polite">
         <div className="admin-onboarding-preview-bar-copy">
           <span className="admin-onboarding-preview-badge">Admin preview</span>

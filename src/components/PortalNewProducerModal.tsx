@@ -1,3 +1,4 @@
+import "@/styles/portal-overlays.css";
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { AlertTriangle, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,7 +39,11 @@ export default function PortalNewProducerModal({
   useEffect(() => {
     document.body.style.overflow = "hidden";
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key !== "Escape") return;
+      // Handled here, so the onboarding dock's dialog under it does not also
+      // take the Escape as its own close request.
+      event.preventDefault();
+      onClose();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => {

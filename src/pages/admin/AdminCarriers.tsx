@@ -426,7 +426,7 @@ export default function AdminCarriers() {
                       )}
                       <tr>
                       {sheetEditing && draft && (
-                        <td>
+                        <td data-label="Section">
                           <input
                             type="text"
                             className="admin-table-input"
@@ -438,7 +438,7 @@ export default function AdminCarriers() {
                           />
                         </td>
                       )}
-                      <td>
+                      <td data-label="Carrier">
                         {sheetEditing && draft ? (
                           <input
                             type="text"
@@ -452,7 +452,7 @@ export default function AdminCarriers() {
                           carrier.carrier || "—"
                         )}
                       </td>
-                      <td>
+                      <td data-label="Company #">
                         {sheetEditing && draft ? (
                           <input
                             type="text"
@@ -469,7 +469,7 @@ export default function AdminCarriers() {
                       </td>
                       {sheetEditing && draft ? (
                         <>
-                          <td>
+                          <td data-label="E-App label">
                             <input
                               type="text"
                               className="admin-table-input"
@@ -480,7 +480,7 @@ export default function AdminCarriers() {
                               placeholder="Label"
                             />
                           </td>
-                          <td>
+                          <td data-label="E-App URL">
                             <input
                               type="url"
                               className="admin-table-input admin-table-input-wide"
@@ -493,7 +493,7 @@ export default function AdminCarriers() {
                           </td>
                         </>
                       ) : (
-                        <td>
+                        <td data-label="E-App link">
                           {carrier.eAppUrl ? (
                             <a
                               href={carrier.eAppUrl}
@@ -508,7 +508,7 @@ export default function AdminCarriers() {
                           )}
                         </td>
                       )}
-                      <td>
+                      <td data-label="Status">
                         {sheetEditing && draft ? (
                           <label className="admin-table-checkbox">
                             <input
@@ -526,11 +526,11 @@ export default function AdminCarriers() {
                           </span>
                         )}
                       </td>
-                      <td>
+                      <td data-label="Actions">
                         <div className="admin-incentive-actions">
                           <button
                             type="button"
-                            className="admin-icon-btn"
+                            className="admin-icon-btn admin-icon-only"
                             disabled={index === 0 || savingSheet}
                             onClick={() => moveCarrier(index, -1)}
                             aria-label={`Move ${rowLabel(carrier)} up`}
@@ -539,7 +539,7 @@ export default function AdminCarriers() {
                           </button>
                           <button
                             type="button"
-                            className="admin-icon-btn"
+                            className="admin-icon-btn admin-icon-only"
                             disabled={index === rows.length - 1 || savingSheet}
                             onClick={() => moveCarrier(index, 1)}
                             aria-label={`Move ${rowLabel(carrier)} down`}

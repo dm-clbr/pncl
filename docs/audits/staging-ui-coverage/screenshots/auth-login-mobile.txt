@@ -1,0 +1,13 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - link "PNCL home":
+    - /url: /
+  - generic: Employee Portal
+  - heading "Welcome back" [level=1]
+  - paragraph: Sign in with your @thepncl.com Google account.
+  - button "Sign in with Google"
+  - paragraph:
+    - link "Need help?":
+      - /url: /contact

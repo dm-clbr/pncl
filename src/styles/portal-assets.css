@@ -1,0 +1,38 @@
+/* Brand kit uses the same pane, text ladder and controls as other tools. */
+.passets-page .brand-assets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: var(--portal-gap);
+}
+.passets-page .brand-asset-card {
+  min-width: 0;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius-inner);
+  background: rgba(0, 0, 0, 0.28);
+}
+.passets-page .brand-asset-preview { border-radius: 0; }
+.passets-page .brand-asset-copy { padding: 16px; }
+.passets-page .brand-asset-copy h2 {
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-mid);
+  font-weight: 600;
+  color: var(--portal-text-strong);
+  overflow-wrap: anywhere;
+}
+.passets-page .brand-asset-copy p { font-size: var(--portal-t-body); color: var(--portal-text); }
+.passets-page .brand-asset-type {
+  font-family: var(--portal-font);
+  font-size: var(--portal-t-label);
+  color: var(--portal-text-strong);
+  background: var(--portal-bar-fill);
+  border: 1px solid var(--portal-border);
+}
+.passets-page .brand-asset-copy .ptools-cta {
+  width: 100%;
+  margin-top: 12px;
+  font-family: var(--portal-font);
+  font-size: var(--portal-control-fs);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--portal-text-strong);
+}

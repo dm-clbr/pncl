@@ -1,6 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth, isEmailConfirmed } from "@/contexts/AuthContext";
-import OnboardingLayout from "@/components/OnboardingLayout";
+import PortalLoading from "@/components/portal/PortalLoading";
 import PortalConfirmEmail from "@/pages/PortalConfirmEmail";
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -8,11 +8,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   const location = useLocation();
 
   if (loading) {
-    return (
-      <OnboardingLayout>
-        <div className="onboarding-spinner" aria-label="Loading" />
-      </OnboardingLayout>
-    );
+    return <PortalLoading />;
   }
 
   if (!user) {

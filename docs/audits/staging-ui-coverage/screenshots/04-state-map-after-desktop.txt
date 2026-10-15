@@ -1,0 +1,342 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - link "PNCL home":
+    - /url: /
+  - paragraph: Employee Portal
+  - 'button "On-Board ·1 of 2 steps complete Next: Complete your W-9 , open the checklist"':
+    - text: On-Board
+    - text: ·1 of 2
+    - generic: steps complete
+    - generic: "Next: Complete your W-9"
+    - generic: ", open the checklist"
+    - generic: 50%
+  - link "Jordan Example, view profile":
+    - /url: /portal/profile
+    - generic: Jordan Example
+    - generic: audit@thepncl.com
+    - generic: JE
+  - navigation "Agent portal":
+    - link "Dashboard":
+      - /url: /portal
+      - text: Dashboard
+    - link "Calendar":
+      - /url: /portal/calendar
+      - text: Calendar
+    - link "State Map":
+      - /url: /portal/state-map
+      - text: State Map
+  - link "Back to portal":
+    - /url: /portal
+    - generic: Back to portal
+  - heading "State map" [level=1]
+  - button "About this map":
+  - complementary "Find a state":
+    - generic: Search states
+    - searchbox "Search states"
+    - radiogroup "Filter states":
+      - radio "All 51" [checked]:
+        - text: All
+        - generic: "51"
+      - radio "Active 17":
+        - text: Active
+        - generic: "17"
+      - radio "Pending 17":
+        - text: Pending
+        - generic: "17"
+      - radio "Inactive 17":
+        - text: Inactive
+        - generic: "17"
+      - radio "Licensed 1":
+        - text: Licensed
+        - generic: "1"
+    - article "Colorado":
+      - generic: CO
+      - heading "Colorado" [level=2]
+      - term: PNCL status
+      - definition:
+        - generic: Inactive
+        - paragraph: PNCL is not currently operating in this state.
+      - term: Your license
+      - definition:
+        - paragraph:
+          - text: Licensed on your profile
+          - generic: CO-TEST-42
+      - term: Updated
+      - definition:
+        - generic: Oct 14, 2026
+    - paragraph:
+      - generic: "5"
+      - generic: "1"
+      - text: results
+    - list:
+      - button "Alabama Active":
+        - generic: AL
+        - generic: Alabama
+        - generic: Active
+      - button "Alaska Pending":
+        - generic: AK
+        - generic: Alaska
+        - generic: Pending
+      - button "Arizona Inactive":
+        - generic: AZ
+        - generic: Arizona
+        - generic: Inactive
+      - button "Arkansas Active":
+        - generic: AR
+        - generic: Arkansas
+        - generic: Active
+      - button "California Pending":
+        - generic: CA
+        - generic: California
+        - generic: Pending
+      - button "Colorado Inactive Licensed":
+        - generic: CO
+        - generic: Colorado
+        - generic: Inactive
+        - generic: Licensed
+      - button "Connecticut Active":
+        - generic: CT
+        - generic: Connecticut
+        - generic: Active
+      - button "Delaware Pending":
+        - generic: DE
+        - generic: Delaware
+        - generic: Pending
+      - button "District of Columbia Inactive":
+        - generic: DC
+        - generic: District of Columbia
+        - generic: Inactive
+      - button "Florida Active":
+        - generic: FL
+        - generic: Florida
+        - generic: Active
+      - button "Georgia Pending":
+        - generic: GA
+        - generic: Georgia
+        - generic: Pending
+      - button "Hawaii Inactive":
+        - generic: HI
+        - generic: Hawaii
+        - generic: Inactive
+      - button "Idaho Active":
+        - generic: ID
+        - generic: Idaho
+        - generic: Active
+      - button "Illinois Pending":
+        - generic: IL
+        - generic: Illinois
+        - generic: Pending
+      - button "Indiana Inactive":
+        - generic: IN
+        - generic: Indiana
+        - generic: Inactive
+      - button "Iowa Active":
+        - generic: IA
+        - generic: Iowa
+        - generic: Active
+      - button "Kansas Pending":
+        - generic: KS
+        - generic: Kansas
+        - generic: Pending
+      - button "Kentucky Inactive":
+        - generic: KY
+        - generic: Kentucky
+        - generic: Inactive
+      - button "Louisiana Active":
+        - generic: LA
+        - generic: Louisiana
+        - generic: Active
+      - button "Maine Pending":
+        - generic: ME
+        - generic: Maine
+        - generic: Pending
+      - button "Maryland Inactive":
+        - generic: MD
+        - generic: Maryland
+        - generic: Inactive
+      - button "Massachusetts Active":
+        - generic: MA
+        - generic: Massachusetts
+        - generic: Active
+      - button "Michigan Pending":
+        - generic: MI
+        - generic: Michigan
+        - generic: Pending
+      - button "Minnesota Inactive":
+        - generic: MN
+        - generic: Minnesota
+        - generic: Inactive
+      - button "Mississippi Active":
+        - generic: MS
+        - generic: Mississippi
+        - generic: Active
+      - button "Missouri Pending":
+        - generic: MO
+        - generic: Missouri
+        - generic: Pending
+      - button "Montana Inactive":
+        - generic: MT
+        - generic: Montana
+        - generic: Inactive
+      - button "Nebraska Active":
+        - generic: NE
+        - generic: Nebraska
+        - generic: Active
+      - button "Nevada Pending":
+        - generic: NV
+        - generic: Nevada
+        - generic: Pending
+      - button "New Hampshire Inactive":
+        - generic: NH
+        - generic: New Hampshire
+        - generic: Inactive
+      - button "New Jersey Active":
+        - generic: NJ
+        - generic: New Jersey
+        - generic: Active
+      - button "New Mexico Pending":
+        - generic: NM
+        - generic: New Mexico
+        - generic: Pending
+      - button "New York Inactive":
+        - generic: NY
+        - generic: New York
+        - generic: Inactive
+      - button "North Carolina Active":
+        - generic: NC
+        - generic: North Carolina
+        - generic: Active
+      - button "North Dakota Pending":
+        - generic: ND
+        - generic: North Dakota
+        - generic: Pending
+      - button "Ohio Inactive":
+        - generic: OH
+        - generic: Ohio
+        - generic: Inactive
+      - button "Oklahoma Active":
+        - generic: OK
+        - generic: Oklahoma
+        - generic: Active
+      - button "Oregon Pending":
+        - generic: OR
+        - generic: Oregon
+        - generic: Pending
+      - button "Pennsylvania Inactive":
+        - generic: PA
+        - generic: Pennsylvania
+        - generic: Inactive
+      - button "Rhode Island Active":
+        - generic: RI
+        - generic: Rhode Island
+        - generic: Active
+      - button "South Carolina Pending":
+        - generic: SC
+        - generic: South Carolina
+        - generic: Pending
+      - button "South Dakota Inactive":
+        - generic: SD
+        - generic: South Dakota
+        - generic: Inactive
+      - button "Tennessee Active":
+        - generic: TN
+        - generic: Tennessee
+        - generic: Active
+      - button "Texas Pending":
+        - generic: TX
+        - generic: Texas
+        - generic: Pending
+      - button "Utah Inactive":
+        - generic: UT
+        - generic: Utah
+        - generic: Inactive
+      - button "Vermont Active":
+        - generic: VT
+        - generic: Vermont
+        - generic: Active
+      - button "Virginia Pending":
+        - generic: VA
+        - generic: Virginia
+        - generic: Pending
+      - button "Washington Inactive":
+        - generic: WA
+        - generic: Washington
+        - generic: Inactive
+      - button "West Virginia Active":
+        - generic: WV
+        - generic: West Virginia
+        - generic: Active
+      - button "Wisconsin Pending":
+        - generic: WI
+        - generic: Wisconsin
+        - generic: Pending
+      - button "Wyoming Inactive":
+        - generic: WY
+        - generic: Wyoming
+        - generic: Inactive
+  - group "Map zoom":
+    - button "Zoom in":
+    - button "Zoom out" [disabled]:
+  - button "Reset zoom" [disabled]:
+  - 'img "PNCL availability map: 17 active, 17 pending, 17 inactive. Use the state list to pick a state."':
+    - generic: AL
+    - generic: AK
+    - generic: AZ
+    - generic: CO
+    - generic: FL
+    - generic: GA
+    - generic: IN
+    - generic: KS
+    - generic: ME
+    - generic: MN
+    - generic: NC
+    - generic: ND
+    - generic: OK
+    - generic: PA
+    - generic: SD
+    - generic: TX
+    - generic: WY
+    - generic: MO
+    - generic: WV
+    - generic: IL
+    - generic: NM
+    - generic: AR
+    - generic: CA
+    - generic: IA
+    - generic: KY
+    - generic: MI
+    - generic: MS
+    - generic: MT
+    - generic: NY
+    - generic: OH
+    - generic: OR
+    - generic: UT
+    - generic: VA
+    - generic: WA
+    - generic: WI
+    - generic: NE
+    - generic: SC
+    - generic: ID
+    - generic: NV
+    - generic: LA
+  - group "Small states":
+    - button "Vermont, Active":
+      - generic: VT
+    - button "New Hampshire, Inactive":
+      - generic: NH
+    - button "Massachusetts, Active":
+      - generic: MA
+    - button "Rhode Island, Active":
+      - generic: RI
+    - button "Connecticut, Active":
+      - generic: CT
+    - button "New Jersey, Active":
+      - generic: NJ
+    - button "Delaware, Pending":
+      - generic: DE
+    - button "Maryland, Inactive":
+      - generic: MD
+    - button "District of Columbia, Inactive":
+      - generic: DC

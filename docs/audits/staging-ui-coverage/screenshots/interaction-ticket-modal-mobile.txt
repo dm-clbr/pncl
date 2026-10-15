@@ -1,0 +1,56 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - button "Open navigation":
+  - link "PNCL home":
+    - /url: /
+  - generic: Admin console
+  - heading "Support tickets" [level=1]
+  - paragraph: Hierarchy changes, pay tier questions, and commission disputes raised by agents.
+  - generic: Status
+  - combobox "Status":
+    - option "All (1)" [selected]
+    - option "Open (1)"
+    - option "In progress (0)"
+    - option "Resolved (0)"
+  - table:
+    - rowgroup:
+      - row "Subject Agent Type Status Assigned Submitted Actions":
+        - columnheader "Subject"
+        - columnheader "Agent"
+        - columnheader "Type"
+        - columnheader "Status"
+        - columnheader "Assigned"
+        - columnheader "Submitted"
+        - columnheader "Actions"
+    - rowgroup:
+      - row "Subject Example support request Agent Jordan Example Type Other Status Open Assigned — Submitted Oct 14, 2026 Work ticket":
+        - cell "Subject Example support request"
+        - cell "Agent Jordan Example"
+        - cell "Type Other"
+        - cell "Status Open":
+          - text: Status
+          - generic: Open
+        - cell "Assigned —"
+        - cell "Submitted Oct 14, 2026"
+        - cell "Work ticket":
+          - button "Work ticket"
+  - dialog "Example support request":
+    - heading "Example support request" [level=2]
+    - paragraph: Other from Jordan Example (jordan@thepncl.com) · Oct 14, 2026
+    - button "Close" [active]:
+    - paragraph: Local fixture for reviewing the ticket detail sheet.
+    - generic: Status
+    - combobox "Status":
+      - option "Open" [selected]
+      - option "In progress"
+      - option "Resolved"
+    - generic: Assigned to
+    - combobox "Assigned to":
+      - option "Unassigned" [selected]
+    - generic: Resolution note (visible to the agent)
+    - textbox "Resolution note (visible to the agent)":
+      - /placeholder: What was done to resolve this?
+    - button "Cancel"
+    - button "Save ticket"

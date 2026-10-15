@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAdminModal } from "@/components/admin/useAdminModal";
 import { Link } from "react-router-dom";
 import { Check, FileSignature, FileUp, RotateCcw, X } from "lucide-react";
 import AdminCompAttachmentPanel from "@/components/admin/AdminCompAttachmentPanel";
@@ -61,11 +62,17 @@ function CompAttachmentModal({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  useAdminModal(modalRef, true, onClose);
+
   return (
     <div className="admin-modal-overlay" role="presentation" onClick={onClose}>
       <div
         className="admin-modal"
         role="dialog"
+        ref={modalRef}
+        tabIndex={-1}
+        aria-modal="true"
         aria-labelledby="admin-comp-attachment-title"
         onClick={(event) => event.stopPropagation()}
       >
@@ -230,20 +237,20 @@ export default function AdminContracting() {
                 const isMarking = markingId === row.userId;
                 return (
                   <tr key={row.userId}>
-                    <td>
+                    <td data-label="Name">
                       <Link to={`/portal/admin/users/${row.userId}`} className="admin-secondary-link">
                         {row.name}
                       </Link>
                       <div className="admin-inline-note muted">{row.email}</div>
                     </td>
-                    <td>{row.npn ?? "—"}</td>
-                    <td>
+                    <td data-label="NPN">{row.npn ?? "—"}</td>
+                    <td data-label="E&O">
                       {row.eoPolicyNumber ?? "—"}
                       <div className="admin-inline-note muted">
                         {row.hasEoCertificate ? "Certificate uploaded" : "No certificate"}
                       </div>
                     </td>
-                    <td>
+                    <td data-label="ICA">
                       {row.icaSigned ? (
                         <span className="admin-status active">
                           Signed{row.icaSignedAt ? ` ${formatDate(row.icaSignedAt)}` : ""}
@@ -252,7 +259,7 @@ export default function AdminContracting() {
                         <span className="admin-status pending">Not signed</span>
                       )}
                     </td>
-                    <td>
+                    <td data-label="Comp attachment">
                       {row.compStatus === "signed" ? (
                         <span className="admin-status active">
                           Signed {formatDate(row.compSignedAt)}
@@ -265,7 +272,7 @@ export default function AdminContracting() {
                         <span className="admin-status skipped">Not assigned</span>
                       )}
                     </td>
-                    <td>
+                    <td data-label="Actions">
                       <div className="admin-row-actions">
                         {row.contractingInitiatedAt ? (
                           <button

@@ -1,0 +1,58 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - button "Open navigation":
+  - link "PNCL home":
+    - /url: /
+  - generic: Genesis admin
+  - heading "Genesis accounts" [level=1]
+  - paragraph: Track Pinnacle Genesis provisioning and notify agents when their account is ready.
+  - generic: Search
+  - searchbox "Search"
+  - generic: Status
+  - combobox "Status":
+    - option "Pending (2)" [selected]
+    - option "Created (0)"
+    - option "Skipped (0)"
+  - button "Sort oldest to newest":
+    - text: Oldest first
+  - button "Send test email":
+    - text: Send test email
+  - table:
+    - rowgroup:
+      - row "Name Email Account created Genesis status Actions":
+        - columnheader "Name"
+        - columnheader "Email"
+        - columnheader "Account created"
+        - columnheader "Genesis status"
+        - columnheader "Actions"
+    - rowgroup:
+      - row "Name Jordan Example Email jordan@thepncl.com Account created Oct 14, 2026, 6:00 AM Genesis status Pending No onboarding details available Skip Genesis account created":
+        - cell "Name Jordan Example"
+        - cell "Email jordan@thepncl.com"
+        - cell "Account created Oct 14, 2026, 6:00 AM"
+        - cell "Genesis status Pending":
+          - text: Genesis status
+          - generic: Pending
+        - cell "No onboarding details available Skip Genesis account created":
+          - button "No onboarding details available" [disabled]:
+            - text: Onboarding
+          - button "Skip":
+            - text: Skip
+          - button "Genesis account created":
+            - text: Genesis account created
+      - row "Name Taylor Example Email taylor@thepncl.com Account created Oct 14, 2026, 6:00 AM Genesis status Pending No onboarding details available Skip Genesis account created":
+        - cell "Name Taylor Example"
+        - cell "Email taylor@thepncl.com"
+        - cell "Account created Oct 14, 2026, 6:00 AM"
+        - cell "Genesis status Pending":
+          - text: Genesis status
+          - generic: Pending
+        - cell "No onboarding details available Skip Genesis account created":
+          - button "No onboarding details available" [disabled]:
+            - text: Onboarding
+          - button "Skip":
+            - text: Skip
+          - button "Genesis account created":
+            - text: Genesis account created

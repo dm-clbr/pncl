@@ -120,9 +120,9 @@ export default function AdminOnboardingSteps() {
                           <strong>{todo.title}</strong>
                           <span className="admin-todo-slug">{todo.description}</span>
                         </th>
-                        <td><span className={`admin-status${todo.published ? " active" : ""}`}>{todo.published ? "Published" : "Unpublished"}</span></td>
-                        <td><input type="checkbox" checked={selected.showLoa} disabled={saving} onChange={(event) => toggle(todo, "showLoa", event.target.checked)} aria-label={`Show ${todo.title} for LOA`} /></td>
-                        <td><input type="checkbox" checked={selected.showIbo} disabled={saving} onChange={(event) => toggle(todo, "showIbo", event.target.checked)} aria-label={`Show ${todo.title} for IBO`} /></td>
+                        <td data-label="Status"><span className={`admin-status${todo.published ? " active" : ""}`}>{todo.published ? "Published" : "Unpublished"}</span></td>
+                        <td data-label="LOA"><label className="admin-onboarding-check"><input type="checkbox" checked={selected.showLoa} disabled={saving} onChange={(event) => toggle(todo, "showLoa", event.target.checked)} aria-label={`Show ${todo.title} for LOA`} /></label></td>
+                        <td data-label="IBO"><label className="admin-onboarding-check"><input type="checkbox" checked={selected.showIbo} disabled={saving} onChange={(event) => toggle(todo, "showIbo", event.target.checked)} aria-label={`Show ${todo.title} for IBO`} /></label></td>
                       </tr>;
                     });
                   })}

@@ -1,0 +1,83 @@
+[
+  {
+    "controls": [
+      {
+        "background": "rgba(0, 0, 0, 0.28)",
+        "font": "Manrope, sans-serif",
+        "height": 51.99573516845703,
+        "text": "Refresh data"
+      },
+      {
+        "background": "rgba(255, 255, 255, 0.95)",
+        "font": "Manrope, sans-serif",
+        "height": 51.99573516845703,
+        "text": "Open LeadSpply"
+      },
+      {
+        "background": "rgba(0, 0, 0, 0.28)",
+        "font": "Manrope, sans-serif",
+        "height": 51.99573516845703,
+        "text": "Connect / manage"
+      }
+    ],
+    "overflow": false,
+    "url": "/portal",
+    "width": 354
+  },
+  {
+    "controls": [
+      {
+        "background": "rgba(0, 0, 0, 0.28)",
+        "font": "Manrope, sans-serif",
+        "height": 51.99573516845703,
+        "text": "Open LeadSpply verification"
+      },
+      {
+        "background": "rgba(0, 0, 0, 0.28)",
+        "font": "Manrope, sans-serif",
+        "height": 51.99573516845703,
+        "text": "Refresh status"
+      }
+    ],
+    "overflow": false,
+    "url": "/portal/leadspply",
+    "width": 354
+  },
+  {
+    "controls": [],
+    "overflow": false,
+    "url": "/portal/admin/leadspply",
+    "width": 354
+  },
+  {
+    "controls": [],
+    "overflow": false,
+    "url": "/portal/admin/onboarding-steps",
+    "width": 354
+  },
+  {
+    "controls": [
+      {
+        "background": "rgba(0, 0, 0, 0.28)",
+        "font": "Manrope, sans-serif",
+        "height": 43.99857711791992,
+        "text": "Refresh data"
+      },
+      {
+        "background": "rgba(255, 255, 255, 0.95)",
+        "font": "Manrope, sans-serif",
+        "height": 43.99857711791992,
+        "text": "Open LeadSpply"
+      },
+      {
+        "background": "rgba(0, 0, 0, 0.28)",
+        "font": "Manrope, sans-serif",
+        "height": 43.99857711791992,
+        "text": "Connect / manage"
+      }
+    ],
+    "overflow": false,
+    "url": "/portal",
+    "width": 1253
+  }
+]

@@ -63,6 +63,7 @@ import AdminTodos from "./pages/admin/AdminTodos.tsx";
 import AdminOnboardingPreview from "./pages/admin/AdminOnboardingPreview.tsx";
 import AdminW9Preview from "./pages/admin/AdminW9Preview.tsx";
 import AdminLeadSpplyIntegration from "./pages/admin/AdminLeadSpplyIntegration.tsx";
+import PortalTabLayout from "./components/portal/PortalTabLayout.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -101,22 +102,19 @@ const App = () => (
           <Route path="/onboarding/activate" element={<OnboardingActivate />} />
           <Route path="/portal/login" element={<PortalLogin />} />
           <Route path="/portal/set-password" element={<PortalSetPassword />} />
+
           <Route
-            path="/portal"
             element={
               <ProtectedRoute>
-                <PortalDashboard />
+                <PortalTabLayout />
               </ProtectedRoute>
             }
-          />
-          <Route
-            path="/portal/calendar"
-            element={
-              <ProtectedRoute>
-                <PortalCalendar />
-              </ProtectedRoute>
-            }
-          />
+          >
+            <Route path="/portal" element={<PortalDashboard />} />
+            <Route path="/portal/calendar" element={<PortalCalendar />} />
+            <Route path="/portal/state-map" element={<PortalStateMap />} />
+            <Route path="/portal/profile" element={<PortalProfile />} />
+          </Route>
           <Route path="/portal/leadspply" element={<ProtectedRoute><PortalLeadSpply /></ProtectedRoute>} />
           <Route
             path="/portal/carriers"
@@ -126,14 +124,7 @@ const App = () => (
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/portal/state-map"
-            element={
-              <ProtectedRoute>
-                <PortalStateMap />
-              </ProtectedRoute>
-            }
-          />
+
           <Route
             path="/portal/brand-assets"
             element={
@@ -142,14 +133,7 @@ const App = () => (
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/portal/profile"
-            element={
-              <ProtectedRoute>
-                <PortalProfile />
-              </ProtectedRoute>
-            }
-          />
+
           <Route
             path="/portal/w9"
             element={

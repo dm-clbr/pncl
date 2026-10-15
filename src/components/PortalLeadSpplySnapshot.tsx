@@ -1,3 +1,6 @@
+import Chip from "@/components/portal/Chip";
+import Pane from "@/components/portal/Pane";
+import "@/styles/portal-integrations.css";
 import { ExternalLink, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePortalLeadSpplySnapshot } from "@/hooks/usePortalLeadSpplySnapshot";
@@ -53,7 +56,7 @@ function ConnectedSnapshot({ snapshot }: { snapshot: LeadSpplySnapshot }) {
     <>
       <div className="portal-leadspply-account">
         <div><span className="portal-leadspply-eyebrow">Connected account</span><strong>{account.name}</strong></div>
-        <span className="portal-leadspply-status">{formatLeadSpplySyncStatus(account.syncStatus)}</span>
+        <Chip variant={account.syncStatus === "synced" ? "active" : "pending"}>{formatLeadSpplySyncStatus(account.syncStatus)}</Chip>
       </div>
       <div className="portal-leadspply-grid" aria-label="LeadSpply lead metrics">
         <Metric label="To work" value={leads.toWork} />
@@ -87,9 +90,8 @@ export default function PortalLeadSpplySnapshot({ userId }: { userId: string | u
     : "Connect your LeadSpply account to view your sales data here.";
 
   return (
-    <section className="portal-leadspply-card" aria-labelledby="leadspply-snapshot-title">
-      <header className="portal-leadspply-head">
-        <div><span className="portal-leadspply-eyebrow">LeadSpply · Read-only</span><h2 id="leadspply-snapshot-title">Your sales snapshot</h2></div>
+    <div className="portal-leadspply-card">
+      <Pane title="Your sales snapshot" aside={
         <div className="portal-leadspply-actions">
           <button type="button" className="portal-leadspply-refresh" onClick={() => void reload()} disabled={loading}>
             <RefreshCw size={15} className={loading ? "portal-leadspply-spin" : ""} aria-hidden="true" />
@@ -100,11 +102,13 @@ export default function PortalLeadSpplySnapshot({ userId }: { userId: string | u
           </a>
           <Link to="/portal/leadspply" className="portal-leadspply-refresh">Connect / manage</Link>
         </div>
-      </header>
+      }>
+      <p className="portal-leadspply-eyebrow">LeadSpply · Read-only</p>
       {loading && !snapshot ? <p className="portal-leadspply-state" role="status">Loading your LeadSpply snapshot…</p> : null}
       {error ? <div className="portal-leadspply-state portal-leadspply-error" role="alert"><p>{error}</p><button type="button" onClick={() => void reload()}>Try again</button></div> : null}
       {!loading && !error && disconnected ? <p className="portal-leadspply-state">{unavailableMessage}</p> : null}
       {!error && snapshot?.state === "connected" ? <ConnectedSnapshot snapshot={snapshot} /> : null}
-    </section>
+      </Pane>
+    </div>
   );
 }

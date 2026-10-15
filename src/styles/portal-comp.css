@@ -1,0 +1,46 @@
+/* Compensation documents retain their content; the surrounding UI is a portal tool. */
+.pcomp-page .portal-comp-signing-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  gap: var(--portal-gap);
+  margin-top: 16px;
+}
+.pcomp-page .portal-comp-signing-doc {
+  min-width: 0;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius-inner);
+  background: rgba(0, 0, 0, 0.28);
+}
+.pcomp-page .portal-comp-signing-side {
+  padding: 16px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius-inner);
+  background: var(--portal-pane-sheen), var(--portal-bar-fill);
+}
+.pcomp-page .pcomp-form { display: grid; gap: 16px; }
+.pcomp-page .pcomp-agree {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  color: var(--portal-text);
+  font-size: var(--portal-t-body);
+  line-height: 1.6;
+  cursor: pointer;
+}
+.pcomp-page .pcomp-agree input {
+  flex: 0 0 20px;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  accent-color: var(--portal-text-strong);
+}
+.pcomp-page .pcomp-agree:has(input:focus-visible) {
+  outline: var(--portal-focus-ring);
+  outline-offset: var(--portal-focus-offset);
+}
+.pcomp-page .pcomp-actions .ptools-cta { width: 100%; }
+.pcomp-page .portal-w9-submitted { display: grid; gap: var(--portal-gap); }
+@media (max-width: 760px) {
+  .pcomp-page .portal-comp-signing-layout { grid-template-columns: minmax(0, 1fr); }
+  .pcomp-page .portal-comp-signing-pdf { min-height: 50svh; }
+}

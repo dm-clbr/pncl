@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import PortalBackground from "@/components/portal/PortalBackground";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, RotateCcw } from "lucide-react";
 import W9SigningStep from "@/components/W9SigningStep";
@@ -7,6 +8,7 @@ import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 import "@/styles/home2.css";
 import "@/styles/onboarding.css";
+import "@/styles/portal-admin.css";
 
 type PreviewPhase = "form" | "complete";
 
@@ -35,6 +37,7 @@ export default function AdminW9Preview() {
 
   return (
     <div className="admin-onboarding-preview-shell">
+      <PortalBackground />
       <div className="admin-onboarding-preview-bar" role="status" aria-live="polite">
         <div className="admin-onboarding-preview-bar-copy">
           <span className="admin-onboarding-preview-badge">Admin preview</span>

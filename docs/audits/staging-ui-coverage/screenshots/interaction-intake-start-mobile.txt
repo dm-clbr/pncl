@@ -1,0 +1,42 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - link "PNCL home":
+    - /url: /
+  - paragraph: Employee Portal
+  - link "Jordan Example, view profile":
+    - /url: /portal/profile
+    - generic: JE
+  - link "My clients":
+    - /url: /portal/clients
+    - generic: My clients
+  - heading "Client intake" [level=1]
+  - list "Intake stages":
+    - generic: "01"
+    - generic: Script
+    - generic: "02"
+    - generic: Form
+    - generic: "03"
+    - generic: Review
+  - paragraph: Question 1
+  - region "Verify the legal spelling of your first and last name for me.":
+    - heading "Verify the legal spelling of your first and last name for me." [level=2]
+    - generic: Step 1 of 64
+    - generic: Verify the legal spelling of your first and last name for me.
+    - textbox "Verify the legal spelling of your first and last name for me." [active]:
+      - /placeholder: Jane Smith
+  - button "Continue" [disabled]
+- navigation "Portal sections":
+  - link "Dashboard":
+    - /url: /portal
+    - generic: Dashboard
+  - link "Calendar":
+    - /url: /portal/calendar
+    - generic: Calendar
+  - link "State Map":
+    - /url: /portal/state-map
+    - generic: State Map
+  - link "Profile":
+    - /url: /portal/profile
+    - generic: Profile

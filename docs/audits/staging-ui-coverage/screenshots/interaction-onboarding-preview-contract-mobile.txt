@@ -1,0 +1,149 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- status:
+  - generic: Admin preview
+  - paragraph: Walk through the new-agent onboarding flow. Nothing is saved or submitted.
+  - button "Restart":
+    - text: Restart
+  - link "Back to admin":
+    - /url: /portal/admin
+    - text: Back to admin
+- banner:
+  - link "PNCL home":
+    - /url: /
+- main:
+  - generic: Step 1
+  - heading "Review and sign your agreement" [level=2]
+  - paragraph: Read the agreement one page at a time and complete the highlighted fields on the Introduction, Signature, and Debit-Check pages. Amber callouts mark each required line. Click a callout to jump to that field, or use the section shortcuts above the document.
+  - paragraph:
+    - strong: Email is required.
+    - text: The address you enter on the signature page becomes your account recovery email and is where PNCL delivers your electronic 1099. Use a personal address you will keep access to, not your @thepncl.com address.
+  - tablist "Agreement sections":
+    - tab "Introduction"
+    - tab "Signature"
+    - tab "Debit-Check"
+  - group "Page 1 of 14":
+    - region "Page ⁨1⁩":
+      - generic: Empowering People, Securing Futures
+      - generic: Confidential · Legal Agreement
+      - generic: A G R E E M E N T
+      - generic: Independent
+      - generic: Contractor
+      - generic: Agreement
+      - generic: PNCL, LLC
+      - generic: A W YO M I N G L I M I T E D L I A B I L I T Y C O M PA N Y
+      - generic: E F F E C T I V E D AT E
+      - generic: C O N T R A C T O R
+      - generic: PNCL
+      - generic: © 2026 PNCL, LLC / All rights reserved
+      - generic: Conﬁdential
+    - region "Page ⁨2⁩":
+      - generic: I N D E P E N D E N T C O N T R A C T O R A G R E E M E N T
+      - generic: P N C L , L L C
+      - generic: Independent Contractor Agreement
+      - generic: THIS INDEPENDENT CONTRACTOR AGREEMENT (
+      - generic: ) is made and entered into as of this
+      - textbox: "14"
+      - text: day of
+      - textbox: October
+      - text: ", 20"
+      - textbox: "26"
+      - generic: (
+      - generic: ) by and between PNCL, LLC, a Wyoming limited liability company (
+      - text: ),
+      - text: and
+      - textbox
+      - generic: (
+      - generic: ) (Company and Contractor from time to time each referred to herein as a
+      - generic: or collectively as the
+      - generic: ).
+      - generic: R E C I T A L S
+      - generic: ", the Company has, either directly or through one or more Ailiates, relationships with various insurance carriers oering insurance products ("
+      - generic: );
+      - generic: ", the Company intends to authorize Contractor to sell life insurance and related products for certain of the Company Carriers on the terms and conditions set forth herein; and"
+      - generic: ", the Parties are entering into this Agreement to establish the terms and conditions of their contractual relationship."
+      - generic: ", in consideration of the mutual covenants, agreements and conditions set forth herein, the receipt and suiciency of which are hereby acknowledged, the Parties agree as follows:"
+      - generic: A G R E E M E N T
+      - generic: "1."
+      - generic: Contractor’s Services.
+      - generic: a.
+      - generic: Performance of Contractor’s Services.
+      - generic: Contractor acknowledges that Contractor is an independent contractor and not an employee of Company and shall not receive beneﬁts the Company may oer to its employees. Subject to the terms and conditions herein, Contractor shall determine the method, manner and means of producing insurance product and related sales for the Company Carriers (the
+      - generic: ). Contractor may, at Contractor’s own expense, employ such employees and engage such independent contractors as Contractor deems necessary to perform the Contractor Services. If Contractor or its Ailiates engages other entities or individuals in connection with the Contractor Services hereunder (
+      - generic: ), Contractor acknowledges and agrees that the Contractor Parties are subject to the same obligations of Contractor hereunder and that Contractor shall be independently responsible with respect thereto as if such Contractor Parties were parties hereto. The Parties acknowledge and agree that the Company shall not control, direct, or supervise Contractor or Contractor Parties in the performance of the Contractor Services. Contractor shall be exclusively responsible for the payment of all state and federal taxes, including sales taxes, unemployment or workers compensation insurance, retirement, pension or other social security or similar beneﬁts, for any Contractor Parties employed or engaged by Contractor in connection with this Agreement. Contractor expressly acknowledges and agrees that neither Contractor nor Contractor Parties shall be treated as employees of Company or any of its Ailiates for purposes of the Federal Insurance Contributions Act (FICA), the Social Security Act, the Federal Unemployment Tax Act (FUTA), tax withholding, or any state or local law providing for such beneﬁts, or unemployment beneﬁts, disability beneﬁts, workers compensation, or other beneﬁts. Contractor shall further assume exclusive responsibility for all self-employment and other taxes incurred by Contractor with respect to the performance of Services under this Agreement. Contractor shall have no authority to bind the Company or any Ailiate of the Company with any third party. As an independent contractor, Contractor will also pay all expenses in connection with Contractor’s business and hereby warrants that Contractor shall not incur any indebtedness on behalf of the Company in connection with expenses resulting from Contractor’s business as a self-employed independent contractor.
+      - generic: b.
+      - generic: Hours and Location.
+      - generic: Contractor shall work those hours at such locations as deemed necessary by Contractor to fulﬁll the Services. Unless speciﬁcally requested by the Company in the case of a meeting, Contractor is not required to perform the Contractor Services during a ﬁxed hourly or daily time frame.
+      - generic: c.
+      - generic: Materials, Tools, and Equipment.
+      - generic: Contractor shall furnish all materials, supplies, equipment, and tools necessary or convenient to perform the Contractor Services, including, but not limited to, vehicles, computers, oice space, and phones.
+      - generic: PNCL
+      - generic: Independent Contractor Agreement
+      - generic: "01"
+      - generic: “Agreement”
+      - generic: “Eective Date”
+      - generic: “Company”
+      - generic: “Contractor”
+      - generic: “Party”
+      - generic: “Parties”
+      - generic: WHEREAS
+      - generic: "\"Company Carriers\""
+      - generic: WHEREAS
+      - generic: WHEREAS
+      - generic: NOW, THEREFORE
+      - generic: “Contractor Services”
+      - generic: “Contractor Parties"
+    - region "Page ⁨3⁩":
+      - generic: I N D E P E N D E N T C O N T R A C T O R A G R E E M E N T
+      - generic: "2."
+      - generic: Company’s Services.
+      - generic: a.
+      - generic: Company Carriers.
+      - generic: The Company agrees to use commercially reasonable eorts, subject in each case to Company Carrier approval, to contract, or cause one or more of the Company’s Ailiates to contract the Contractor and Contractor’s Ailiates to produce life insurance and related product sales for one or more of the Company Carriers, on and subject to such Company Carriers’ contracting and other requirements, the terms and conditions contained herein, and during the term of this Agreement. To the extent Contractor or any of Contractor’s Ailiates is already contracted with any Company Carriers through the Company or any of its Ailiates as of the Eective Date, those contracts shall be deemed to have been made subject to the terms and conditions of this Agreement.
+      - generic: b.
+      - generic: Resources and Training.
+      - generic: The Company may provide or otherwise make available resources and training from time to time related to the Contractor Services. Neither Contractor nor Contractor’s Ailiates shall be required to utilize any such training; provided, that access to certain products may be conditioned on having successfully completed certain training and maintaining such training for such product.
+      - generic: "3."
+      - generic: Compensation and Chargebacks.
+      - generic: a.
+      - generic: Commissions.
+      - generic: Subject to subsections 3.b. and 3.c. hereof, Contractor shall be entitled to receive from the Company Carriers, on newly wrien insurance and related products sold and placed by Contractor for and with the Company Carriers under this Agreement, the commissions and other compensation at the levels in eect at the time of such sale and placement, plus any renewals payable pursuant to the applicable Company Carrier agreements, as may be amended from time, in each case based on the Company’s policies (
+      - generic: ). The Commission payments will be made directly by the Company Carriers to the Contractor. The applicable Company Carriers will issue Federal Form 1099 Information Returns to Contractor for each calendar year, reporting to Contractor and appropriate government agencies the gross amount paid to Contractor. The Company shall provide Contractor’s initial Commission levels or grid to Contractor upon execution of this Agreement, in a separate document “Aachment A.”
+      - generic: b.
+      - generic: Commission Levels; Contractor Downline Hierarchy.
+      - generic: During the term of this Agreement, Company shall not modify any Commission or other compensation level of Contractor without Contractor’s prior wrien consent. In the event Contractor has a downline hierarchy of one or more insurance agents for whom the Contractor receives Commission or other compensation from one or more Company Carriers or the Company or any of its Ailiates in connection with the sales of such insurance agents (
+      - generic: ), the Company shall not modify the composition or such Downline Hierarchy, the Commission or other compensation levels of insurance agents within such Downline Hierarchy, or the Commission or other compensation levels of Contractor with respect to the sales of insurance agents within such Downline Hierarchy, without Contractor’s prior wrien consent.
+      - generic: c.
+      - generic: Chargebacks.
+      - generic: Contractor is responsible for any amounts distributed by an applicable Company Carrier in Commission that are unearned by Contractor when distributed (
+      - generic: ). Any Unearned Commissions are distributed with the expectation that they will be fully earned, based on the applicable Company Carrier guidelines. Any Unearned Commissions shall upon distribution to the Contractor be considered a loan from the applicable Company Carrier and the Company to the Contractor, until such Commissions become earned. If at any time the Company or any of its Ailiates is charged or otherwise pays or becomes in any way responsible to any third party, including without limitation a Company Carrier, for any Unearned Commissions for which the Contractor is responsible pursuant to this Agreement (
+      - generic: ), the Company or any of its Ailiates may immediately (i) with or seven (7) calendar days’ notice to Contractor, oset such amounts against any compensation or other amounts due or payable to the Contractor for any reason, (ii) with seven (7) calendar days’ notice to Contractor, instruct the applicable Company Carrier to oset such amounts against any compensation or other amounts due or payable to the Contractor from such Company Carrier for any reason, and to pay any and all such oset amounts to the Company, and (iii) provide notice of such to the Contractor and immediately seek repayment from the Contractor. The Contractor shall, upon receipt of notice, have seven (7) calendar days to repay to the Company. The Contractor shall, immediately upon receipt of notice, repay to the Company all Company Paid Commissions. In the event the Company, any of its Ailiates, or anyone on their behalf pursues or engages in collection procedures to collect from Contractor any Company Paid Commissions, Contractor agrees to and shall be responsible to pay any and all expenses of collection of any such indebtedness, including but not limited to, the fees of collection agents, aorneys, or other costs of collection, including court costs. In the event Contractor has a Downline Hierarchy, Contractor shall be responsible to the Company and its Ailiates for any Unearned Commissions associated with any and all insurance agents in the Contractor’s Downline Hierarchy as if such Unearned Commissions had been earned by Contractor, and all such Unearned Commissions shall be considered to be a loan from the Company Carrier and the Company to the Contractor and subject to the provisions of this Agreement.
+      - generic: PNCL
+      - generic: Independent Contractor Agreement
+      - generic: "02"
+      - generic: “Commissions”
+      - generic: “Downline Hierarchy”
+      - generic: “Unearned Commissions”
+      - generic: “Company Paid Commission”
+    - region "Page ⁨4⁩"
+    - region "Page ⁨5⁩"
+    - region "Page ⁨6⁩"
+    - region "Page ⁨7⁩"
+    - region "Page ⁨8⁩"
+    - region "Page ⁨9⁩"
+    - region "Page ⁨10⁩"
+    - region "Page ⁨11⁩"
+    - region "Page ⁨12⁩"
+    - region "Page ⁨13⁩"
+    - region "Page ⁨14⁩"
+  - button "Prev" [disabled]:
+    - text: Prev
+  - generic: Page number
+  - spinbutton "Page number of 14": "1"
+  - generic: of 14
+  - button "Next":
+    - text: Next
+  - button "Back"
+  - link "Open full agreement in a new tab":
+    - /url: /documents/pncl-ica-standard.pdf

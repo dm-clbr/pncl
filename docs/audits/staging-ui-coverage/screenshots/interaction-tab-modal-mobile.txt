@@ -1,0 +1,62 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - button "Open navigation":
+  - link "PNCL home":
+    - /url: /
+  - generic: Admin console
+  - heading "Dashboard tabs" [level=1]
+  - paragraph: Manage every collapsible tab on the agent portal dashboard. Drag tabs and link tiles to reorder them, then save when you are done.
+  - paragraph: 3 published tabs
+  - paragraph: New dashboard tab
+  - generic: Tab id
+  - textbox "Tab id":
+    - /placeholder: sales-tools
+  - generic: Tab title
+  - textbox "Tab title":
+    - /placeholder: Sales Tools
+  - generic: Tab type
+  - combobox "Tab type":
+    - option "Links — navigation to pages and tools" [selected]
+    - option "Downloads — PDFs and files to download"
+  - checkbox "Published in agent portal" [checked]
+  - generic: Published in agent portal
+  - button "Add tab"
+  - button "Cancel"
+  - article:
+    - button "Drag Sales Tools":
+    - heading "Sales Tools" [level=2]
+    - paragraph: sales-tools · 1 link
+    - generic: Published
+    - button "Edit":
+      - text: Edit
+    - button "Delete":
+      - text: Delete
+    - button "Add link":
+      - text: Add link
+    - button "My Clients Edit My Clients Delete My Clients":
+      - generic: My Clients
+      - button "Edit My Clients":
+      - button "Delete My Clients":
+  - article:
+    - button "Drag Incentives":
+    - heading "Incentives" [level=2]
+    - paragraph: incentives · Incentives content
+    - generic: Published
+    - button "Edit":
+      - text: Edit
+    - paragraph: Incentive posters and videos are managed in the Incentives admin. You can reorder and hide this tab here.
+    - link "Manage incentives":
+      - /url: /portal/admin/incentives
+  - article:
+    - button "Drag Brand assets":
+    - heading "Brand assets" [level=2]
+    - paragraph: brand-assets · Brand assets content
+    - generic: Published
+    - button "Edit":
+      - text: Edit
+    - paragraph: Logos, colors, and brand files are managed in the Brand assets admin. You can reorder and hide this tab here.
+    - link "Manage brand assets":
+      - /url: /portal/admin/brand-assets
+  - status

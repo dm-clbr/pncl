@@ -1,0 +1,31 @@
+- region "Notifications (F8)":
+  - list
+- region "Notifications alt+T"
+- main:
+  - link "PNCL home":
+    - /url: /
+  - paragraph: Employee Portal
+  - link "Jordan Example, view profile":
+    - /url: /portal/profile
+    - generic: JE
+  - link "Back to portal":
+    - /url: /portal
+    - generic: Back to portal
+  - heading "Brand assets" [level=1]
+  - paragraph: Logos, templates, brand colors, and other official assets for agent use.
+  - region "PNCL brand kit":
+    - heading "PNCL brand kit" [level=2]
+    - status "Loading brand assets"
+- navigation "Portal sections":
+  - link "Dashboard":
+    - /url: /portal
+    - generic: Dashboard
+  - link "Calendar":
+    - /url: /portal/calendar
+    - generic: Calendar
+  - link "State Map":
+    - /url: /portal/state-map
+    - generic: State Map
+  - link "Profile":
+    - /url: /portal/profile
+    - generic: Profile

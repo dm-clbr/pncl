@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAdminModal } from "@/components/admin/useAdminModal";
 import { Download, Handshake, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -279,11 +280,17 @@ function PolicyModal({
     }
   };
 
+  const modalRef = useRef<HTMLDivElement>(null);
+  useAdminModal(modalRef, true, saving ? undefined : onClose);
+
   return (
     <div className="admin-modal-overlay" role="presentation" onClick={saving ? undefined : onClose}>
       <div
         className="admin-modal admin-ticket-modal"
         role="dialog"
+        ref={modalRef}
+        tabIndex={-1}
+        aria-modal="true"
         aria-labelledby="admin-setter-closer-title"
         onClick={(event) => event.stopPropagation()}
       >
@@ -651,22 +658,22 @@ export default function AdminSetterCloser() {
             <tbody>
               {policies.map((policy) => (
                 <tr key={policy.id}>
-                  <td>
+                  <td data-label="Policy">
                     <strong>{policy.policyNumber}</strong>
                     {policy.carrier && <p className="admin-table-sub">{policy.carrier}</p>}
                   </td>
-                  <td>{formatPolicyDate(policy.policyDate)}</td>
-                  <td>
+                  <td data-label="Date">{formatPolicyDate(policy.policyDate)}</td>
+                  <td data-label="Split">
                     <span className="admin-badge">{policy.splitLabel}</span>
                   </td>
-                  <td>{agentCell(policy.setterNpn, policy.setterName)}</td>
-                  <td>{agentCell(policy.closerNpn, policy.closerName)}</td>
-                  <td>{policy.clientName ?? "—"}</td>
-                  <td>
+                  <td data-label="Setter">{agentCell(policy.setterNpn, policy.setterName)}</td>
+                  <td data-label="Closer">{agentCell(policy.closerNpn, policy.closerName)}</td>
+                  <td data-label="Client">{policy.clientName ?? "—"}</td>
+                  <td data-label="Actions">
                     <div className="admin-table-actions">
                       <button
                         type="button"
-                        className="admin-icon-btn"
+                        className="admin-icon-btn admin-icon-only"
                         aria-label={`Edit ${policy.policyNumber}`}
                         onClick={() => setDraft(policyToDraft(policy))}
                       >
@@ -674,7 +681,7 @@ export default function AdminSetterCloser() {
                       </button>
                       <button
                         type="button"
-                        className="admin-icon-btn"
+                        className="admin-icon-btn admin-icon-only"
                         aria-label={`Delete ${policy.policyNumber}`}
                         disabled={deletingId === policy.id}
                         onClick={() => void handleDelete(policy)}

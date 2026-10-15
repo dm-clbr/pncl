@@ -1,3 +1,5 @@
+import { useRef } from "react";
+import { useAdminModal } from "@/components/admin/useAdminModal";
 import { X } from "lucide-react";
 import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
 import type { AssistHierarchyMember, AssistHierarchyNode } from "@/lib/admin-api";
@@ -44,11 +46,16 @@ export function HierarchyAssistDetailModal({
   const directDownline = node.children.flatMap(getNodePeople);
   const totalDownline = countTotalDownline(node);
 
+  const modalRef = useRef<HTMLDivElement>(null);
+  useAdminModal(modalRef, true, onClose);
+
   return (
     <div className="admin-modal-overlay" role="presentation" onClick={onClose}>
       <div
         className="admin-modal admin-hierarchy-assist-modal"
         role="dialog"
+        ref={modalRef}
+        tabIndex={-1}
         aria-modal="true"
         aria-labelledby="hierarchy-assist-detail-title"
         onClick={(event) => event.stopPropagation()}
