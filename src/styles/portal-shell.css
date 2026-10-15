@@ -446,6 +446,23 @@
 
 /* ── Sub-page header ────────────────────────────────────────────────────── */
 
+/* Page sections share one gap. Reset child margins so legacy description,
+   document and form margins cannot add a second gap. Header chrome retains
+   its existing clearance above the page content. */
+.home2-page :is(.carrier-sheet-wrap, .portal-training-wrap, .pintake-wrap) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--portal-gap);
+}
+
+.home2-page .portal-dash.dark :is(.carrier-sheet-wrap, .portal-training-wrap, .pintake-wrap) > * {
+  margin-block: 0;
+}
+
+.home2-page .portal-dash.dark :is(.carrier-sheet-wrap, .portal-training-wrap, .pintake-wrap) > .portal-header {
+  margin-bottom: calc(20px - var(--portal-gap));
+}
+
 .portal-subhead {
   box-sizing: border-box;
   position: static;
@@ -511,12 +528,6 @@
   padding-inline: 0;
 }
 
-/* Bento pages already space these siblings with flex gap. Other sub-pages
-   need space after the description, outside the following content stack. */
-.home2-page:has(> .portal-backdrop) .portal-subhead + .portal-panel-note {
-  margin-bottom: var(--portal-gap);
-}
-
 /* The same note-to-content separation inside form/document panes. Grid and
    flex stacks own their gaps; this applies to the pane's block children. */
 .home2-page .portal-pane > .portal-panel-note:not(:last-child) {
@@ -524,6 +535,9 @@
 }
 
 @media (max-width: 620px) {
+  .home2-page .portal-dash.dark :is(.carrier-sheet-wrap, .portal-training-wrap, .pintake-wrap) > .portal-header {
+    margin-bottom: calc(12px - var(--portal-gap));
+  }
   /* Avoid a nested scrollport on sub-pages with sticky form/save controls. */
   .home2-page:has(.portal-subhead) {
     overflow-x: clip;

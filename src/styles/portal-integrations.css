@@ -1,6 +1,6 @@
 /* LeadSpply surfaces use the same panes, spacing, type and controls as the portal. */
 .home2-page .portal-leadspply-card {
-  margin: 0 0 var(--portal-gap);
+  margin: 0;
   padding: 0;
   border: 0;
   border-radius: 0;

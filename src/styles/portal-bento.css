@@ -161,6 +161,33 @@
   margin-block: 0;
 }
 
+/* One owner for the space around notices, the snapshot and the tile grid.
+   The gap also leaves clearance for the camera's 3px vertical drift. */
+.portal-dashboard-sections {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: var(--portal-gap);
+  margin-top: var(--portal-gap);
+}
+
+.home2-page .portal-dashboard-sections > * {
+  margin-block: 0;
+}
+
+.portal-dashboard-sections > .portal-stage {
+  padding-block: 0;
+}
+
+@media (max-width: 620px) {
+  /* Primary tabs live in the bottom dock on phones. The content gap and
+     header margin together retain the shared 12px masthead clearance. */
+  .portal-bento-wrap > .portal-header {
+    margin-bottom: calc(12px - var(--portal-gap));
+  }
+}
+
 /* ── Notice banners ─────────────────────────────────────────────────────── */
 
 /* Re-sign notices and the recovery-email notice, between the nav and the grid.
@@ -173,7 +200,7 @@
   gap: 12px 14px;
   flex-shrink: 0;
   min-height: 44px;
-  margin-top: 14px;
+  margin-top: var(--portal-gap);
   padding: 12px 16px;
   box-sizing: border-box;
   border: 1px solid var(--portal-border);
@@ -390,7 +417,7 @@
   gap: 20px;
   flex-wrap: wrap;
   flex-shrink: 0;
-  margin-top: 14px;
+  margin-top: var(--portal-gap);
   padding-top: 12px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }

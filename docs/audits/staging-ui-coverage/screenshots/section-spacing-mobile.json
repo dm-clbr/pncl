@@ -1,0 +1,2723 @@
+[
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 72,
+            "cls": "portal-header",
+            "gap": null,
+            "margin": "0px 0px 2px",
+            "title": "Employee PortalJordan Exampleaudit@thepncl.co",
+            "top": 16,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 137,
+            "cls": "portal-subhead",
+            "gap": 12,
+            "margin": "0px",
+            "title": "Carriers",
+            "top": 84,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 217,
+            "cls": "portal-panel-note",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Read-only reference for PNCL carrier contacts",
+            "top": 147,
+            "type": "P"
+          },
+          {
+            "bottom": 349,
+            "cls": "ptools-stack",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Life",
+            "top": 227,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "wrap carrier-sheet-wrap"
+      },
+      {
+        "children": [
+          {
+            "bottom": 349,
+            "cls": "portal-pane",
+            "gap": null,
+            "margin": "0px",
+            "title": "Life",
+            "top": 227,
+            "type": "SECTION"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "ptools-stack"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/carriers",
+    "width": 390
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 72,
+            "cls": "portal-header",
+            "gap": null,
+            "margin": "0px 0px 2px",
+            "title": "Employee PortalJordan Exampleaudit@thepncl.co",
+            "top": 16,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 137,
+            "cls": "portal-subhead",
+            "gap": 12,
+            "margin": "0px",
+            "title": "Brand assets",
+            "top": 84,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 217,
+            "cls": "portal-panel-note",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Logos, templates, brand colors, and other off",
+            "top": 147,
+            "type": "P"
+          },
+          {
+            "bottom": 1204,
+            "cls": "portal-pane",
+            "gap": 10,
+            "margin": "0px",
+            "title": "PNCL brand kit",
+            "top": 227,
+            "type": "SECTION"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "wrap carrier-sheet-wrap"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/brand-assets",
+    "width": 390
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 72,
+            "cls": "portal-header",
+            "gap": null,
+            "margin": "0px 0px 2px",
+            "title": "Onboarding",
+            "top": 16,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 137,
+            "cls": "portal-subhead",
+            "gap": 12,
+            "margin": "0px",
+            "title": "My profile",
+            "top": 84,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 191,
+            "cls": "portal-segmented",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Profile detailsTeamLicensingDocumentsCarrier ",
+            "top": 147,
+            "type": "DIV"
+          },
+          {
+            "bottom": 2524,
+            "cls": "portal-profile-tabpanel portal-profile-details",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Profile photo",
+            "top": 201,
+            "type": "DIV"
+          },
+          {
+            "bottom": 2676,
+            "cls": "portal-bento-footer portal-profile-foot",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Admin consoleSign out",
+            "top": 2534,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "wrap carrier-sheet-wrap"
+      },
+      {
+        "children": [
+          {
+            "bottom": 286,
+            "cls": "portal-profile-lede",
+            "gap": null,
+            "margin": "0px",
+            "title": "Keep your name, home address, apparel sizes, ",
+            "top": 201,
+            "type": "P"
+          },
+          {
+            "bottom": 615,
+            "cls": "portal-pane",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Profile photo",
+            "top": 296,
+            "type": "SECTION"
+          },
+          {
+            "bottom": 1055,
+            "cls": "portal-pane",
+            "gap": 10,
+            "margin": "0px",
+            "title": "PDF business card",
+            "top": 625,
+            "type": "SECTION"
+          },
+          {
+            "bottom": 2524,
+            "cls": "portal-profile-form",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Contact",
+            "top": 1065,
+            "type": "FORM"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "portal-profile-tabpanel portal-profile-details"
+      },
+      {
+        "children": [
+          {
+            "bottom": 1646,
+            "cls": "portal-pane",
+            "gap": null,
+            "margin": "0px",
+            "title": "Contact",
+            "top": 1065,
+            "type": "SECTION"
+          },
+          {
+            "bottom": 2107,
+            "cls": "portal-pane",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Address",
+            "top": 1656,
+            "type": "SECTION"
+          },
+          {
+            "bottom": 2436,
+            "cls": "portal-pane",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Apparel",
+            "top": 2117,
+            "type": "SECTION"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "portal-profile-form"
+      },
+      {
+        "children": [],
+        "display": "none",
+        "gap": "normal",
+        "parent": "portal-profile-tabpanel"
+      },
+      {
+        "children": [],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "portal-profile-team"
+      },
+      {
+        "children": [],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "portal-profile-form"
+      },
+      {
+        "children": [],
+        "display": "none",
+        "gap": "normal",
+        "parent": "portal-profile-tabpanel"
+      },
+      {
+        "children": [],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "portal-profile-licensing"
+      },
+      {
+        "children": [],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "portal-profile-form"
+      },
+      {
+        "children": [],
+        "display": "none",
+        "gap": "normal",
+        "parent": "portal-profile-tabpanel"
+      },
+      {
+        "children": [],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "portal-profile-docs"
+      },
+      {
+        "children": [],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "portal-profile-form"
+      },
+      {
+        "children": [],
+        "display": "none",
+        "gap": "normal",
+        "parent": "portal-profile-tabpanel"
+      },
+      {
+        "children": [],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "portal-profile-carriers"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/profile",
+    "width": 390
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 72,
+            "cls": "portal-header",
+            "gap": null,
+            "margin": "0px 0px 2px",
+            "title": "Employee PortalJordan Exampleaudit@thepncl.co",
+            "top": 16,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 137,
+            "cls": "portal-subhead",
+            "gap": 12,
+            "margin": "0px",
+            "title": "Form W-9",
+            "top": 84,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 1043,
+            "cls": "onboarding-step onboarding-contract-step ica-flow ica-flow-fillable pforms portal-w9-signing",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Complete your W-9",
+            "top": 147,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "wrap carrier-sheet-wrap"
+      },
+      {
+        "children": [
+          {
+            "bottom": 317,
+            "cls": "pforms-intro",
+            "gap": null,
+            "margin": "0px",
+            "title": "Complete your W-9",
+            "top": 147,
+            "type": "DIV"
+          },
+          {
+            "bottom": 1043,
+            "cls": "pforms-doc",
+            "gap": 10,
+            "margin": "10px 0px 0px",
+            "title": "FormInstructionsPNCL LLC\n8927 E Wethersfield ",
+            "top": 327,
+            "type": "DIV"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "onboarding-step onboarding-contract-step ica-flow ica-flow-fillable pforms portal-w9-signing"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/w9",
+    "width": 390
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 72,
+            "cls": "portal-header",
+            "gap": null,
+            "margin": "0px 0px 2px",
+            "title": "Employee PortalJordan Exampleaudit@thepncl.co",
+            "top": 16,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 137,
+            "cls": "portal-subhead",
+            "gap": 12,
+            "margin": "0px",
+            "title": "Independent Contractor Agreement",
+            "top": 84,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 1175,
+            "cls": "onboarding-step onboarding-contract-step ica-flow ica-flow-fillable pforms portal-ica-signing",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Review and sign your agreement",
+            "top": 147,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "wrap carrier-sheet-wrap"
+      },
+      {
+        "children": [
+          {
+            "bottom": 317,
+            "cls": "pforms-intro",
+            "gap": null,
+            "margin": "0px",
+            "title": "Review and sign your agreement",
+            "top": 147,
+            "type": "DIV"
+          },
+          {
+            "bottom": 457,
+            "cls": "pforms-note",
+            "gap": 10,
+            "margin": "10px 0px 0px",
+            "title": "Email is required. The address you enter on t",
+            "top": 327,
+            "type": "P"
+          },
+          {
+            "bottom": 1175,
+            "cls": "pforms-doc",
+            "gap": 10,
+            "margin": "10px 0px 0px",
+            "title": "IntroductionSignatureDebit-CheckEmpowering Pe",
+            "top": 467,
+            "type": "DIV"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "onboarding-step onboarding-contract-step ica-flow ica-flow-fillable pforms portal-ica-signing"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/ica",
+    "width": 390
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 72,
+            "cls": "portal-header",
+            "gap": null,
+            "margin": "0px 0px 2px",
+            "title": "Employee PortalJordan Exampleaudit@thepncl.co",
+            "top": 16,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 137,
+            "cls": "portal-subhead",
+            "gap": 12,
+            "margin": "0px",
+            "title": "Direct deposit",
+            "top": 84,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 2125,
+            "cls": "pforms-dd-col",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Direct deposit request",
+            "top": 147,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "wrap carrier-sheet-wrap"
+      },
+      {
+        "children": [
+          {
+            "bottom": 1925,
+            "cls": "pforms-dd",
+            "gap": null,
+            "margin": "0px",
+            "title": "Direct deposit request",
+            "top": 147,
+            "type": "FORM"
+          },
+          {
+            "bottom": 2125,
+            "cls": "portal-pane",
+            "gap": 10,
+            "margin": "0px",
+            "title": "About this form",
+            "top": 1935,
+            "type": "ASIDE"
+          }
+        ],
+        "display": "grid",
+        "gap": "10px",
+        "parent": "pforms-dd-col"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/direct-deposit",
+    "width": 390
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 72,
+            "cls": "portal-header",
+            "gap": null,
+            "margin": "0px 0px 2px",
+            "title": "Employee PortalJordan Exampleaudit@thepncl.co",
+            "top": 16,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 137,
+            "cls": "portal-subhead",
+            "gap": 12,
+            "margin": "0px",
+            "title": "Compensation agreement",
+            "top": 84,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 217,
+            "cls": "portal-panel-note",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Review and sign your compensation attachment ",
+            "top": 147,
+            "type": "P"
+          },
+          {
+            "bottom": 1182,
+            "cls": "ptools-stack",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Example compensation attachment",
+            "top": 227,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "wrap carrier-sheet-wrap"
+      },
+      {
+        "children": [
+          {
+            "bottom": 1182,
+            "cls": "portal-pane",
+            "gap": null,
+            "margin": "0px",
+            "title": "Example compensation attachment",
+            "top": 227,
+            "type": "SECTION"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "ptools-stack"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/comp-agreement",
+    "width": 390
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 72,
+            "cls": "portal-header",
+            "gap": null,
+            "margin": "0px 0px 2px",
+            "title": "Employee PortalJordan Exampleaudit@thepncl.co",
+            "top": 16,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 137,
+            "cls": "portal-subhead",
+            "gap": 12,
+            "margin": "0px",
+            "title": "Video Trainings",
+            "top": 84,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 217,
+            "cls": "portal-panel-note",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Complete each module in order, then confirm y",
+            "top": 147,
+            "type": "P"
+          },
+          {
+            "bottom": 550,
+            "cls": "ptr",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Your progress",
+            "top": 227,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "wrap portal-training-wrap"
+      },
+      {
+        "children": [
+          {
+            "bottom": 373,
+            "cls": "portal-pane",
+            "gap": null,
+            "margin": "0px",
+            "title": "Your progress",
+            "top": 227,
+            "type": "SECTION"
+          },
+          {
+            "bottom": 550,
+            "cls": "portal-pane",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Welcome to PNCL",
+            "top": 383,
+            "type": "SECTION"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "ptr"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/disclosures",
+    "width": 390
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 72,
+            "cls": "portal-header",
+            "gap": null,
+            "margin": "0px 0px 2px",
+            "title": "Employee PortalJordan Exampleaudit@thepncl.co",
+            "top": 16,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 137,
+            "cls": "portal-subhead",
+            "gap": 12,
+            "margin": "0px",
+            "title": "Support",
+            "top": 84,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 217,
+            "cls": "portal-panel-note",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Request hierarchy changes, dispute commission",
+            "top": 147,
+            "type": "P"
+          },
+          {
+            "bottom": 873,
+            "cls": "ptools-stack",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Open a ticket",
+            "top": 227,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "wrap carrier-sheet-wrap"
+      },
+      {
+        "children": [
+          {
+            "bottom": 741,
+            "cls": "portal-pane",
+            "gap": null,
+            "margin": "0px",
+            "title": "Open a ticket",
+            "top": 227,
+            "type": "SECTION"
+          },
+          {
+            "bottom": 873,
+            "cls": "portal-pane",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Your tickets",
+            "top": 751,
+            "type": "SECTION"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "ptools-stack"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/support",
+    "width": 390
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 72,
+            "cls": "portal-header",
+            "gap": null,
+            "margin": "0px 0px 2px",
+            "title": "Employee PortalJordan Exampleaudit@thepncl.co",
+            "top": 16,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 137,
+            "cls": "portal-subhead",
+            "gap": 12,
+            "margin": "0px",
+            "title": "Pay & Commissions",
+            "top": 84,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 216,
+            "cls": "portal-panel-note",
+            "gap": 10,
+            "margin": "0px",
+            "title": "How you get paid: policies, examples, and ans",
+            "top": 147,
+            "type": "P"
+          },
+          {
+            "bottom": 498,
+            "cls": "ptools-stack",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Pay policies",
+            "top": 226,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "wrap carrier-sheet-wrap"
+      },
+      {
+        "children": [
+          {
+            "bottom": 358,
+            "cls": "portal-pane",
+            "gap": null,
+            "margin": "0px",
+            "title": "Pay policies",
+            "top": 226,
+            "type": "SECTION"
+          },
+          {
+            "bottom": 498,
+            "cls": "portal-pane",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Frequently asked questions",
+            "top": 368,
+            "type": "SECTION"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "ptools-stack"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/pay-policy",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 72,
+            "cls": "portal-header",
+            "gap": null,
+            "margin": "0px 0px 2px",
+            "title": "Employee PortalJordan Exampleaudit@thepncl.co",
+            "top": 16,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 137,
+            "cls": "portal-subhead",
+            "gap": 12,
+            "margin": "0px",
+            "title": "My Clients",
+            "top": 84,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 216,
+            "cls": "portal-panel-note",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Financial inventory forms you have submitted ",
+            "top": 147,
+            "type": "P"
+          },
+          {
+            "bottom": 439,
+            "cls": "ptools-stack",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Client list",
+            "top": 226,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "wrap carrier-sheet-wrap"
+      },
+      {
+        "children": [
+          {
+            "bottom": 439,
+            "cls": "portal-pane",
+            "gap": null,
+            "margin": "0px",
+            "title": "Client list",
+            "top": 226,
+            "type": "SECTION"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "ptools-stack"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/clients",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 72,
+            "cls": "portal-header",
+            "gap": null,
+            "margin": "0px 0px 2px",
+            "title": "Employee PortalJordan Exampleaudit@thepncl.co",
+            "top": 16,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 137,
+            "cls": "portal-subhead",
+            "gap": 12,
+            "margin": "0px",
+            "title": "Client intake",
+            "top": 84,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 191,
+            "cls": "portal-stepper",
+            "gap": 10,
+            "margin": "0px",
+            "title": "01Script02Form03Review",
+            "top": 147,
+            "type": "OL"
+          },
+          {
+            "bottom": 413,
+            "cls": "ptools-stack",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Client intake form",
+            "top": 201,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "wrap pintake-wrap"
+      },
+      {
+        "children": [
+          {
+            "bottom": 413,
+            "cls": "portal-pane",
+            "gap": null,
+            "margin": "0px",
+            "title": "Client intake form",
+            "top": 201,
+            "type": "SECTION"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "ptools-stack"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/clients/new",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 1776,
+            "cls": "admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "Admin overview",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 185,
+            "cls": "admin-panel-head",
+            "gap": null,
+            "margin": "0px",
+            "title": "Admin overview",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 353,
+            "cls": "admin-stats",
+            "gap": 10,
+            "margin": "0px",
+            "title": "2Total agents2Active portal users0Admins",
+            "top": 195,
+            "type": "DIV"
+          },
+          {
+            "bottom": 676,
+            "cls": "admin-stats admin-phase-stats",
+            "gap": 10,
+            "margin": "0px",
+            "title": "1On-Board0Pre-License1Licensing0New Producer0",
+            "top": 363,
+            "type": "DIV"
+          },
+          {
+            "bottom": 1759,
+            "cls": "admin-card-grid",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Referral hierarchyView the referral and conne",
+            "top": 686,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 1072,
+            "cls": "admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "Referral hierarchy",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 233,
+            "cls": "admin-panel-head",
+            "gap": null,
+            "margin": "0px",
+            "title": "Referral hierarchy",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 518,
+            "cls": "admin-toolbar admin-hierarchy-toolbar",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Focus on agentFull organizationJordan Example",
+            "top": 243,
+            "type": "DIV"
+          },
+          {
+            "bottom": 1055,
+            "cls": "admin-hierarchy-shell",
+            "gap": 10,
+            "margin": "0px",
+            "title": "100%100%FitTETaylor ExampleTier 70%JEJordan E",
+            "top": 528,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/hierarchy",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 1810,
+            "cls": "admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "User management",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 273,
+            "cls": "admin-panel-head admin-panel-head-row",
+            "gap": null,
+            "margin": "0px",
+            "title": "User management",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 723,
+            "cls": "admin-toolbar",
+            "gap": 10,
+            "margin": "0px",
+            "title": "SearchGoogle statusAll (2)Active (2)Auto-susp",
+            "top": 283,
+            "type": "DIV"
+          },
+          {
+            "bottom": 1793,
+            "cls": "admin-table-wrap",
+            "gap": 10,
+            "margin": "0px",
+            "title": "NameEmailUplineNPNStageCompStatusGoogleRoleJo",
+            "top": 733,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/users",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 1004,
+            "cls": "admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "Gmail verification",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 233,
+            "cls": "admin-panel-head",
+            "gap": null,
+            "margin": "0px",
+            "title": "Gmail verification",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 510,
+            "cls": "admin-toolbar",
+            "gap": 10,
+            "margin": "0px",
+            "title": "SearchRefreshPreview auto-suspendedSend to au",
+            "top": 243,
+            "type": "DIV"
+          },
+          {
+            "bottom": 988,
+            "cls": "admin-table-wrap",
+            "gap": 10,
+            "margin": "0px",
+            "title": "NamePNCL emailPersonal emailOnboarding status",
+            "top": 520,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/gmail-verification",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 1338,
+            "cls": "admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "Agent enrollments",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 281,
+            "cls": "admin-panel-head",
+            "gap": null,
+            "margin": "0px",
+            "title": "Agent enrollments",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 581,
+            "cls": "admin-toolbar",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Search enrollmentsQueueAll recentNeeds attent",
+            "top": 291,
+            "type": "FORM"
+          },
+          {
+            "bottom": 1321,
+            "cls": "admin-table-wrap",
+            "gap": 10,
+            "margin": "0px",
+            "title": "AgentEnrollmentProgressAttentionReservationUp",
+            "top": 591,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/onboarding-holds",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 715,
+            "cls": "admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "Profile review",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 321,
+            "cls": "admin-panel-head admin-panel-head-row",
+            "gap": null,
+            "margin": "0px",
+            "title": "Profile review",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 698,
+            "cls": "admin-table-wrap",
+            "gap": 10,
+            "margin": "0px",
+            "title": "AgentMissing requirementsReviewJordan Example",
+            "top": 331,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/profile-review",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 737,
+            "cls": "admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "Add user manually",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 233,
+            "cls": "admin-panel-head",
+            "gap": null,
+            "margin": "0px",
+            "title": "Add user manually",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 720,
+            "cls": "admin-form",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Legal namePNCL emailReferrer (optional)No ref",
+            "top": 243,
+            "type": "FORM"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/users/new",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 697,
+            "cls": "admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "Incentives",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 249,
+            "cls": "admin-panel-head admin-panel-head-row",
+            "gap": null,
+            "margin": "0px",
+            "title": "Incentives",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 680,
+            "cls": "admin-table-wrap",
+            "gap": 10,
+            "margin": "0px",
+            "title": "PreviewTitleTypeStatusExample incentiveExampl",
+            "top": 259,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/incentives",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 1124,
+            "cls": "admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "Brand assets",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 257,
+            "cls": "admin-panel-head",
+            "gap": null,
+            "margin": "0px",
+            "title": "Brand assets",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 415,
+            "cls": "admin-panel-head-row",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Add a new brand asset or colorAdd colorUpload",
+            "top": 267,
+            "type": "DIV"
+          },
+          {
+            "bottom": 1107,
+            "cls": "admin-table-wrap",
+            "gap": 10,
+            "margin": "0px",
+            "title": "AssetFile / HexTypeStatusPNCL bone#F0EDE4Colo",
+            "top": 425,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/brand-assets",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 722,
+            "cls": "admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "Carrier sheet",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 209,
+            "cls": "admin-panel-head",
+            "gap": null,
+            "margin": "0px",
+            "title": "Carrier sheet",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 371,
+            "cls": "admin-sheet-toolbar",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Move carriers freely, then save the completed",
+            "top": 219,
+            "type": "DIV"
+          },
+          {
+            "bottom": 705,
+            "cls": "admin-table-wrap",
+            "gap": 10,
+            "margin": "0px",
+            "title": "CarrierCompany #E-App linkStatusLifeMutual of",
+            "top": 381,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/carriers",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 12704,
+            "cls": "admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "State availability",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 381,
+            "cls": "admin-panel-head-row",
+            "gap": null,
+            "margin": "0px",
+            "title": "State availability",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 549,
+            "cls": "admin-stats state-availability-admin-stats",
+            "gap": 10,
+            "margin": "0px",
+            "title": "17Active17Pending17Inactive",
+            "top": 391,
+            "type": "DIV"
+          },
+          {
+            "bottom": 680,
+            "cls": "state-availability-admin-note",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Supported jurisdictions start Inactive. Chang",
+            "top": 559,
+            "type": "P"
+          },
+          {
+            "bottom": 12688,
+            "cls": "admin-table-wrap",
+            "gap": 10,
+            "margin": "0px",
+            "title": "State / jurisdictionCompany statusLast update",
+            "top": 690,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/state-availability",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 560,
+            "cls": "admin-section",
+            "gap": null,
+            "margin": "0px",
+            "title": "Clients",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 185,
+            "cls": "admin-section-head",
+            "gap": null,
+            "margin": "0px",
+            "title": "Clients",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 270,
+            "cls": "admin-field",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Search",
+            "top": 195,
+            "type": "DIV"
+          },
+          {
+            "bottom": 543,
+            "cls": "admin-table-wrap",
+            "gap": 10,
+            "margin": "0px",
+            "title": "ClientPhoneAgentDate metSubmittedCasey Exampl",
+            "top": 280,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-section"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/clients",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 1439,
+            "cls": "admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "Dashboard tabs",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 233,
+            "cls": "admin-panel-head",
+            "gap": null,
+            "margin": "0px",
+            "title": "Dashboard tabs",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 331,
+            "cls": "admin-panel-head-row",
+            "gap": 10,
+            "margin": "0px",
+            "title": "3 published tabsAdd tab",
+            "top": 243,
+            "type": "DIV"
+          },
+          {
+            "bottom": 1422,
+            "cls": "admin-dashboard-tabs-list",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Sales Tools",
+            "top": 341,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/dashboard-tabs",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 1290,
+            "cls": "admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "Portal to-dos",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 281,
+            "cls": "admin-panel-head",
+            "gap": null,
+            "margin": "0px",
+            "title": "Portal to-dos",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 339,
+            "cls": "admin-panel-note",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Choose steps for LOA and IBO onboarding",
+            "top": 291,
+            "type": "P"
+          },
+          {
+            "bottom": 437,
+            "cls": "admin-panel-head-row",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Add a new to-doAdd to-do",
+            "top": 349,
+            "type": "DIV"
+          },
+          {
+            "bottom": 1273,
+            "cls": "admin-table-wrap",
+            "gap": 10,
+            "margin": "0px",
+            "title": "To-doStageCompletionStatusComplete your profi",
+            "top": 447,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/todos",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 1185,
+            "cls": "admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "Genesis accounts",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 209,
+            "cls": "admin-panel-head",
+            "gap": null,
+            "margin": "0px",
+            "title": "Genesis accounts",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 509,
+            "cls": "admin-toolbar",
+            "gap": 10,
+            "margin": "0px",
+            "title": "SearchStatusPending (2)Created (0)Skipped (0)",
+            "top": 219,
+            "type": "DIV"
+          },
+          {
+            "bottom": 1168,
+            "cls": "admin-table-wrap",
+            "gap": 10,
+            "margin": "0px",
+            "title": "NameEmailAccount createdGenesis statusJordan ",
+            "top": 519,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/genesis",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 851,
+            "cls": "admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "Contracting",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 233,
+            "cls": "admin-panel-head",
+            "gap": null,
+            "margin": "0px",
+            "title": "Contracting",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 405,
+            "cls": "admin-toolbar",
+            "gap": 10,
+            "margin": "0px",
+            "title": "SearchQueueReady for contracting (1)Contracti",
+            "top": 243,
+            "type": "DIV"
+          },
+          {
+            "bottom": 834,
+            "cls": "admin-table-wrap",
+            "gap": 10,
+            "margin": "0px",
+            "title": "NameNPNE&OICAComp attachmentJordan Examplejor",
+            "top": 415,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/contracting",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 1066,
+            "cls": "admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "LeadSpply charges",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 257,
+            "cls": "admin-panel-head",
+            "gap": null,
+            "margin": "0px",
+            "title": "LeadSpply charges",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 493,
+            "cls": "admin-toolbar",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Week ofLeadSpply CSVChoose CSVUpload charges",
+            "top": 267,
+            "type": "DIV"
+          },
+          {
+            "bottom": 642,
+            "cls": "admin-toolbar",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Report weekWeek of 2026-10-12Download per-rep",
+            "top": 503,
+            "type": "DIV"
+          },
+          {
+            "bottom": 809,
+            "cls": "admin-stats",
+            "gap": 10,
+            "margin": "0px",
+            "title": "$150.00Total charges1Reps charged0Unmatched r",
+            "top": 652,
+            "type": "DIV"
+          },
+          {
+            "bottom": 1049,
+            "cls": "admin-table-wrap",
+            "gap": 10,
+            "margin": "0px",
+            "title": "AgentEmailMatchedChargesTotalJordan Examplejo",
+            "top": 819,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/lead-charges",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 1125,
+            "cls": "admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "Setter / Closer tracker",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 257,
+            "cls": "admin-panel-head",
+            "gap": null,
+            "margin": "0px",
+            "title": "Setter / Closer tracker",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 527,
+            "cls": "admin-panel-head-row",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Search policiesSearchExport CSVAdd policy",
+            "top": 267,
+            "type": "DIV"
+          },
+          {
+            "bottom": 695,
+            "cls": "admin-stats",
+            "gap": 10,
+            "margin": "0px",
+            "title": "1Policies tracked150/50 splits070/30 splits",
+            "top": 537,
+            "type": "DIV"
+          },
+          {
+            "bottom": 1108,
+            "cls": "admin-table-wrap",
+            "gap": 10,
+            "margin": "0px",
+            "title": "PolicyDateSplitSetterCloserClientTEST-POLICY-",
+            "top": 705,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/setter-closer",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 688,
+            "cls": "admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "Support tickets",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 209,
+            "cls": "admin-panel-head",
+            "gap": null,
+            "margin": "0px",
+            "title": "Support tickets",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 294,
+            "cls": "admin-toolbar",
+            "gap": 10,
+            "margin": "0px",
+            "title": "StatusAll (1)Open (1)In progress (0)Resolved ",
+            "top": 219,
+            "type": "DIV"
+          },
+          {
+            "bottom": 671,
+            "cls": "admin-table-wrap",
+            "gap": 10,
+            "margin": "0px",
+            "title": "SubjectAgentTypeStatusAssignedSubmittedExampl",
+            "top": 304,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/tickets",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 847,
+            "cls": "admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "Pay & Commissions page",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 209,
+            "cls": "admin-panel-head",
+            "gap": null,
+            "margin": "0px",
+            "title": "Pay & Commissions page",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 271,
+            "cls": "admin-toolbar",
+            "gap": 10,
+            "margin": "0px",
+            "title": "New entry",
+            "top": 219,
+            "type": "DIV"
+          },
+          {
+            "bottom": 830,
+            "cls": "admin-table-wrap",
+            "gap": 10,
+            "margin": "0px",
+            "title": "TitleTypeOrderStatusCommission schedulePay po",
+            "top": 281,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/pay-policy",
+    "width": 354
+  },
+  {
+    "groups": [],
+    "overflow": false,
+    "path": "/portal/admin/onboarding-preview",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 403,
+            "cls": "pforms-intro",
+            "gap": null,
+            "margin": "0px",
+            "title": "Test the W-9 form",
+            "top": 194,
+            "type": "DIV"
+          },
+          {
+            "bottom": 1063,
+            "cls": "pforms-doc",
+            "gap": 10,
+            "margin": "10px 0px 0px",
+            "title": "FormInstructionsForm W-9(Rev. March 2024)Requ",
+            "top": 413,
+            "type": "DIV"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "onboarding-step onboarding-contract-step ica-flow ica-flow-fillable pforms portal-w9-signing"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/w9-preview",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 72,
+            "cls": "portal-header",
+            "gap": null,
+            "margin": "0px 0px 2px",
+            "title": "Employee PortalJordan Exampleaudit@thepncl.co",
+            "top": 16,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 137,
+            "cls": "portal-subhead",
+            "gap": 12,
+            "margin": "0px",
+            "title": "Connect your account",
+            "top": 84,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 216,
+            "cls": "portal-panel-note",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Confirm your own LeadSpply account. PNCL mana",
+            "top": 147,
+            "type": "P"
+          },
+          {
+            "bottom": 588,
+            "cls": "portal-leadspply-page",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Connected",
+            "top": 226,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "wrap carrier-sheet-wrap"
+      },
+      {
+        "children": [
+          {
+            "bottom": 338,
+            "cls": "portal-leadspply-page-actions",
+            "gap": null,
+            "margin": "0px",
+            "title": "Open LeadSpply verification  Refresh status",
+            "top": 226,
+            "type": "DIV"
+          },
+          {
+            "bottom": 526,
+            "cls": "portal-pane",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Connected",
+            "top": 348,
+            "type": "SECTION"
+          },
+          {
+            "bottom": 588,
+            "cls": "ptools-cta",
+            "gap": 10,
+            "margin": "0px",
+            "title": "View your dashboard snapshot",
+            "top": 536,
+            "type": "A"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "portal-leadspply-page"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/leadspply",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 1964,
+            "cls": "admin-panel leadspply-admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "LeadSpply integration",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 209,
+            "cls": "admin-panel-head",
+            "gap": null,
+            "margin": "0px",
+            "title": "LeadSpply integration",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 445,
+            "cls": "admin-toolbar leadspply-toolbar",
+            "gap": 10,
+            "margin": "0px",
+            "title": "SearchStatusalllinkedsuggestedname reviewconf",
+            "top": 219,
+            "type": "DIV"
+          },
+          {
+            "bottom": 557,
+            "cls": "leadspply-summary",
+            "gap": 10,
+            "margin": "0px",
+            "title": "linked: 1suggested: 1name review: 0conflict: ",
+            "top": 455,
+            "type": "DIV"
+          },
+          {
+            "bottom": 1365,
+            "cls": "admin-table-wrap",
+            "gap": 10,
+            "margin": "0px",
+            "title": "PNCL repMatchLeadSpply profileTierHierarchy a",
+            "top": 567,
+            "type": "DIV"
+          },
+          {
+            "bottom": 1643,
+            "cls": "leadspply-sync-review",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Sync is manual. It applies PNCL tiers and hie",
+            "top": 1375,
+            "type": "SECTION"
+          },
+          {
+            "bottom": 1947,
+            "cls": "leadspply-audit",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Co-manager pairs",
+            "top": 1653,
+            "type": "SECTION"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel leadspply-admin-panel"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/leadspply",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 1422,
+            "cls": "admin-panel admin-onboarding-steps",
+            "gap": null,
+            "margin": "0px",
+            "title": "Onboarding steps",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 209,
+            "cls": "admin-panel-head",
+            "gap": null,
+            "margin": "0px",
+            "title": "Onboarding steps",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 339,
+            "cls": "admin-panel-note",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Changes apply to existing and future agents w",
+            "top": 219,
+            "type": "P"
+          },
+          {
+            "bottom": 556,
+            "cls": "admin-onboarding-toolbar",
+            "gap": 10,
+            "margin": "0px",
+            "title": "LOA 2 published stepsIBO 1 published stepsSta",
+            "top": 349,
+            "type": "DIV"
+          },
+          {
+            "bottom": 686,
+            "cls": "admin-panel-note",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Checked = shown for that agent type. Unpublis",
+            "top": 566,
+            "type": "P"
+          },
+          {
+            "bottom": 1228,
+            "cls": "admin-table-wrap",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Onboarding stepStatusLOAIBOOn-BoardComplete y",
+            "top": 696,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel admin-onboarding-steps"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/onboarding-steps",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 72,
+            "cls": "portal-header",
+            "gap": null,
+            "margin": "0px 0px 2px",
+            "title": "Employee Portal",
+            "top": 16,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 2155,
+            "cls": "portal-dashboard-sections",
+            "gap": 12,
+            "margin": "10px 0px 0px",
+            "title": "Your sales snapshot",
+            "top": 84,
+            "type": "DIV"
+          },
+          {
+            "bottom": 2302,
+            "cls": "portal-bento-footer",
+            "gap": 10,
+            "margin": "10px 0px 0px",
+            "title": "Admin consoleSign out",
+            "top": 2165,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "normal",
+        "parent": "portal-bento-wrap"
+      },
+      {
+        "children": [
+          {
+            "bottom": 1265,
+            "cls": "portal-leadspply-card",
+            "gap": null,
+            "margin": "0px",
+            "title": "Your sales snapshot",
+            "top": 84,
+            "type": "DIV"
+          },
+          {
+            "bottom": 2155,
+            "cls": "portal-stage ",
+            "gap": 10,
+            "margin": "0px",
+            "title": "01Referral links0201Sales Tools1 item0301Ince",
+            "top": 1275,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "portal-dashboard-sections"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 72,
+            "cls": "portal-header",
+            "gap": null,
+            "margin": "0px 0px 2px",
+            "title": "Onboarding",
+            "top": 16,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 517,
+            "cls": "portal-bento-page pcal-column",
+            "gap": 12,
+            "margin": "10px 0px 0px",
+            "title": "Calendar",
+            "top": 84,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "normal",
+        "parent": "portal-bento-wrap"
+      },
+      {
+        "children": [
+          {
+            "bottom": 137,
+            "cls": "portal-subhead",
+            "gap": null,
+            "margin": "0px",
+            "title": "Calendar",
+            "top": 84,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 209,
+            "cls": "portal-panel-note",
+            "gap": 10,
+            "margin": "0px",
+            "title": "A read-only preview of what is next, visible ",
+            "top": 147,
+            "type": "P"
+          },
+          {
+            "bottom": 517,
+            "cls": "pcal",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Bring your schedule into the portal",
+            "top": 219,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "portal-bento-page pcal-column"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/calendar",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 72,
+            "cls": "portal-header",
+            "gap": null,
+            "margin": "0px 0px 2px",
+            "title": "Onboarding",
+            "top": 16,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 521,
+            "cls": "portal-bento-page smap-page",
+            "gap": 12,
+            "margin": "10px 0px 0px",
+            "title": "State map",
+            "top": 84,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "normal",
+        "parent": "portal-bento-wrap"
+      },
+      {
+        "children": [
+          {
+            "bottom": 137,
+            "cls": "portal-subhead",
+            "gap": null,
+            "margin": "0px",
+            "title": "State map",
+            "top": 84,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 521,
+            "cls": "smap-layout",
+            "gap": 10,
+            "margin": "0px",
+            "title": "AKTXCAVTNHMARICTNJDEMDDC",
+            "top": 147,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "portal-bento-page smap-page"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/state-map",
+    "width": 354
+  },
+  {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 5447,
+            "cls": "admin-panel",
+            "gap": null,
+            "margin": "0px",
+            "title": "Jordan Example",
+            "top": 92,
+            "type": "SECTION"
+          }
+        ],
+        "display": "block",
+        "gap": "normal",
+        "parent": "admin-content"
+      },
+      {
+        "children": [
+          {
+            "bottom": 249,
+            "cls": "admin-panel-head admin-panel-head-row",
+            "gap": null,
+            "margin": "0px",
+            "title": "Jordan Example",
+            "top": 109,
+            "type": "DIV"
+          },
+          {
+            "bottom": 5431,
+            "cls": "admin-user-profile-layout",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Jordan Example",
+            "top": 259,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-panel"
+      },
+      {
+        "children": [
+          {
+            "bottom": 749,
+            "cls": "admin-user-profile-summary",
+            "gap": null,
+            "margin": "0px",
+            "title": "Jordan Example",
+            "top": 259,
+            "type": "DIV"
+          },
+          {
+            "bottom": 990,
+            "cls": "admin-user-profile-section",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Google Workspace",
+            "top": 759,
+            "type": "DIV"
+          },
+          {
+            "bottom": 1231,
+            "cls": "admin-user-profile-section",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Onboarding information",
+            "top": 1000,
+            "type": "DIV"
+          },
+          {
+            "bottom": 2304,
+            "cls": "admin-user-profile-section",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Portal profile",
+            "top": 1241,
+            "type": "DIV"
+          },
+          {
+            "bottom": 2613,
+            "cls": "admin-user-profile-section",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Internal designations",
+            "top": 2314,
+            "type": "DIV"
+          },
+          {
+            "bottom": 2878,
+            "cls": "admin-user-profile-section",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Carrier applications",
+            "top": 2623,
+            "type": "DIV"
+          },
+          {
+            "bottom": 3243,
+            "cls": "admin-user-profile-section",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Onboarding checklist",
+            "top": 2888,
+            "type": "DIV"
+          },
+          {
+            "bottom": 3796,
+            "cls": "admin-user-profile-section",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Compensation attachment",
+            "top": 3253,
+            "type": "DIV"
+          },
+          {
+            "bottom": 5431,
+            "cls": "admin-user-profile-section",
+            "gap": 10,
+            "margin": "0px",
+            "title": "Saved documents",
+            "top": 3806,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "10px",
+        "parent": "admin-user-profile-layout"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal/admin/users/00000000-0000-4000-8000-000000000001",
+    "width": 354
+  }
+]

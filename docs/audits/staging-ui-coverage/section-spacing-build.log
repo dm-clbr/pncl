@@ -1,0 +1,26 @@
+vite v5.4.19 building for production...
+transforming...
+✓ 2217 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/manifest.webmanifest                                0.56 kB
+dist/index.html                                          3.06 kB │ gzip:   1.18 kB
+dist/assets/cursor-editorTextHighlight-kG3uUOwL.svg      5.40 kB │ gzip:   2.15 kB
+dist/assets/index-BrtSO7NM.css                         505.71 kB │ gzip:  84.22 kB
+dist/assets/workbox-window.prod.es5-BqEJf4Xk.js          5.71 kB │ gzip:   2.34 kB
+dist/assets/StateMapSvg-WAyjN0tq.js                     95.11 kB │ gzip:  36.21 kB
+dist/assets/index-RkJxfDWJ.js                        2,961.29 kB │ gzip: 886.56 kB
+dist/assets/zip-county-data-QAzdIfDR.js              6,239.72 kB │ gzip: 691.07 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 7.17s
+
+PWA v1.3.0
+mode      generateSW
+precache  24 entries (3547.36 KiB)
+files generated
+  dist/sw.js
+  dist/workbox-9c191d2f.js

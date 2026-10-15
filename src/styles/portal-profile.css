@@ -89,6 +89,20 @@
   gap: var(--portal-gap);
 }
 
+/* Match the form's pane spacing in every profile tab, including the photo,
+   business card and saved-document groups that used legacy 24px margins. */
+.home2-page .portal-profile-tabpanel:not([hidden]),
+.home2-page :is(.portal-profile-team, .portal-profile-licensing, .portal-profile-docs, .portal-profile-carriers) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--portal-gap);
+}
+
+.home2-page .portal-profile-tabpanel > *,
+.home2-page :is(.portal-profile-team, .portal-profile-licensing, .portal-profile-docs, .portal-profile-carriers) > * {
+  margin-block: 0;
+}
+
 /* ── Photo and agent meta ───────────────────────────────────────────────── */
 
 .home2-page .portal-profile-identity {

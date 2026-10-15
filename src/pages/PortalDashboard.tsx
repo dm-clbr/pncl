@@ -446,35 +446,37 @@ export default function PortalDashboard() {
 
         <PortalPrimaryNav />
 
-        {resignNotices.map((notice) => (
-          <PortalNoticeBanner
-            key={notice.href}
-            role="alert"
-            icon={<FileSignature size={20} strokeWidth={2.25} />}
-            title={notice.title}
-            body={notice.body}
-            href={notice.href}
-            cta={notice.cta}
-          />
-        ))}
+        <div className="portal-dashboard-sections">
+          {resignNotices.map((notice) => (
+            <PortalNoticeBanner
+              key={notice.href}
+              role="alert"
+              icon={<FileSignature size={20} strokeWidth={2.25} />}
+              title={notice.title}
+              body={notice.body}
+              href={notice.href}
+              cta={notice.cta}
+            />
+          ))}
 
-        {recoveryEmailNoticeContent && (
-          <PortalNoticeBanner
-            role={recoveryEmailNotice === "error" ? "alert" : "status"}
-            icon={<Shield size={20} strokeWidth={2.25} />}
-            title={recoveryEmailNoticeContent.title}
-            body={recoveryEmailNoticeContent.description}
-            href="/portal/profile?tab=details"
-            cta={recoveryEmailNoticeContent.action}
-            dismissKey={`portal-notice-dismissed:recovery-${recoveryEmailNotice}`}
-          />
-        )}
+          {recoveryEmailNoticeContent && (
+            <PortalNoticeBanner
+              role={recoveryEmailNotice === "error" ? "alert" : "status"}
+              icon={<Shield size={20} strokeWidth={2.25} />}
+              title={recoveryEmailNoticeContent.title}
+              body={recoveryEmailNoticeContent.description}
+              href="/portal/profile?tab=details"
+              cta={recoveryEmailNoticeContent.action}
+              dismissKey={`portal-notice-dismissed:recovery-${recoveryEmailNotice}`}
+            />
+          )}
 
-        <PortalLeadSpplySnapshot userId={portalUser?.id} />
+          <PortalLeadSpplySnapshot userId={portalUser?.id} />
 
-        <PortalBentoStage>
-          <div className="portal-bento-grid">{tiles}</div>
-        </PortalBentoStage>
+          <PortalBentoStage>
+            <div className="portal-bento-grid">{tiles}</div>
+          </PortalBentoStage>
+        </div>
 
         <div className="portal-bento-footer">
           {showAdminLink && (

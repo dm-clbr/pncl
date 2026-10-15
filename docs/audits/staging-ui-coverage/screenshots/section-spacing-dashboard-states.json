@@ -1,0 +1,161 @@
+{
+  "completed": {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 97,
+            "cls": "portal-header",
+            "gap": null,
+            "margin": "0px 0px 20px",
+            "title": "Employee Portal",
+            "top": 22,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 161,
+            "cls": "portal-primary-nav",
+            "gap": 20,
+            "margin": "0px",
+            "title": "DashboardCalendarState MapLeadSpply",
+            "top": 117,
+            "type": "NAV"
+          },
+          {
+            "bottom": 1295,
+            "cls": "portal-dashboard-sections",
+            "gap": 14,
+            "margin": "14px 0px 0px",
+            "title": "Your sales snapshot",
+            "top": 175,
+            "type": "DIV"
+          },
+          {
+            "bottom": 1366,
+            "cls": "portal-bento-footer",
+            "gap": 14,
+            "margin": "14px 0px 0px",
+            "title": "Admin consoleSign out",
+            "top": 1309,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "normal",
+        "parent": "portal-bento-wrap"
+      },
+      {
+        "children": [
+          {
+            "bottom": 761,
+            "cls": "portal-leadspply-card",
+            "gap": null,
+            "margin": "0px",
+            "title": "Your sales snapshot",
+            "top": 175,
+            "type": "DIV"
+          },
+          {
+            "bottom": 1295,
+            "cls": "portal-stage ",
+            "gap": 14,
+            "margin": "0px",
+            "title": "01Referral links0201Sales Tools1 item0301Ince",
+            "top": 775,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "14px",
+        "parent": "portal-dashboard-sections"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal",
+    "width": 1254
+  },
+  "empty": {
+    "groups": [
+      {
+        "children": [
+          {
+            "bottom": 97,
+            "cls": "portal-header",
+            "gap": null,
+            "margin": "0px 0px 20px",
+            "title": "Employee Portal",
+            "top": 22,
+            "type": "HEADER"
+          },
+          {
+            "bottom": 161,
+            "cls": "portal-primary-nav",
+            "gap": 20,
+            "margin": "0px",
+            "title": "DashboardCalendarState MapLeadSpply",
+            "top": 117,
+            "type": "NAV"
+          },
+          {
+            "bottom": 982,
+            "cls": "portal-dashboard-sections",
+            "gap": 14,
+            "margin": "14px 0px 0px",
+            "title": "Your sales snapshot",
+            "top": 175,
+            "type": "DIV"
+          },
+          {
+            "bottom": 1053,
+            "cls": "portal-bento-footer",
+            "gap": 14,
+            "margin": "14px 0px 0px",
+            "title": "Admin consoleSign out",
+            "top": 996,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "normal",
+        "parent": "portal-bento-wrap"
+      },
+      {
+        "children": [
+          {
+            "bottom": 257,
+            "cls": "pbanner",
+            "gap": null,
+            "margin": "0px",
+            "title": "Add your personal recovery emailAdd a persona",
+            "top": 175,
+            "type": "DIV"
+          },
+          {
+            "bottom": 422,
+            "cls": "portal-leadspply-card",
+            "gap": 14,
+            "margin": "0px",
+            "title": "Your sales snapshot",
+            "top": 271,
+            "type": "DIV"
+          },
+          {
+            "bottom": 982,
+            "cls": "portal-stage ",
+            "gap": 14,
+            "margin": "0px",
+            "title": "01Referral links0200Incentives0 items0300Bran",
+            "top": 436,
+            "type": "DIV"
+          }
+        ],
+        "display": "flex",
+        "gap": "14px",
+        "parent": "portal-dashboard-sections"
+      }
+    ],
+    "overflow": false,
+    "path": "/portal",
+    "width": 1254
+  }
+}

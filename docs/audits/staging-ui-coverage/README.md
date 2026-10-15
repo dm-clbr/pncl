@@ -231,3 +231,15 @@ Extended the local-only fixture server with synthetic LeadSpply snapshots, conne
 Desktop and phone checks covered the snapshot, account connection, admin integration, LOA/IBO step controls/save state, Gmail reveal and native tutorial dialog. The phone CSS viewport was 354px at the in-app browser zoom (390px device capture); no checked page overflowed. Escape closes the tutorial while leaving its checklist open, then closes the checklist. [Measurements](screenshots/new-elements-measurements.json) · [Snapshot desktop](screenshots/new-elements-dashboard-desktop.jpg) · [Snapshot phone](screenshots/new-elements-dashboard-mobile.jpg) · [Connection](screenshots/new-elements-connection-desktop.jpg) · [Admin integration](screenshots/new-elements-admin-integration-desktop.jpg) · [Admin phone](screenshots/new-elements-admin-integration-mobile.jpg) · [Onboarding steps phone](screenshots/new-elements-onboarding-steps-mobile.jpg) · [Gmail](screenshots/new-elements-gmail-desktop.jpg) · [Tutorial error](screenshots/new-elements-tutorial-desktop.jpg).
 
 All 107 files / 521 tests passed; TypeScript and production build passed. Lint retains the same 2 errors / 30 warnings.
+
+## Section-spacing sweep — October 14, 2026
+
+The sales snapshot touched the primary tabs above it, while its own bottom margin combined with the camera stage's padding below. A shared dashboard section stack now owns the gap between optional notices, the snapshot and tiles. The stack also leaves clearance for the tile camera's vertical drift.
+
+Portal subpage frames, all five Profile tabs, and admin pane sections now use `--portal-gap` (14px desktop / 10px phone). Direct section margins reset inside those stacks so old 20px/24px margins cannot compound the gap. Masthead clearance remains 20px desktop / 12px phone, and title heights remain 115px / 53px. The W-9/ICA preview gap and admin user-detail sections use the same responsive token. Removed Admin Clients' extra inline search-field bottom margin.
+
+Verified the 41 protected portal/admin routes with synthetic populated data at desktop and phone widths, all five Profile tabs at both widths, and dashboard completed/empty variants (including the recovery notice). No horizontal overflow or irregular gaps in the measured page-section stacks. Sticky/fixed controls and internal field/typography spacing are excluded from section-pair measurements. Routes that render a standalone preview or one section have no section pair to compare.
+
+Evidence: `screenshots/section-spacing-{desktop,mobile}.json`, `section-spacing-profile-tabs.json`, `section-spacing-dashboard-states.json`, and `section-spacing-*.jpg`. Phone emulation overrides were cleared.
+
+Validation: 107 test files / 521 tests passed; TypeScript and production build passed; changed TSX files pass ESLint; `git diff --check` passed. Browser checks use local synthetic data and do not validate live services.

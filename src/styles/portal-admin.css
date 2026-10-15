@@ -536,6 +536,9 @@
    admin-section; it takes the same recipe. */
 .admin-dash .admin-panel,
 .admin-dash .admin-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--portal-gap);
   box-sizing: border-box;
   min-width: 0;
   padding: 24px;
@@ -544,6 +547,12 @@
   background: var(--portal-pane-sheen), var(--portal-pane-fill);
   box-shadow: var(--portal-pane-shadow);
   color: var(--portal-text);
+}
+
+/* Pane sections own their separation, including optional notes and errors.
+   Head, toolbar, stats and table margins must not stack with that gap. */
+.admin-dash .admin-main .admin-content :is(.admin-panel, .admin-section) > * {
+  margin-block: 0;
 }
 
 .admin-dash .admin-panel-head,
@@ -3109,7 +3118,7 @@
 .admin-dash .admin-user-profile-layout {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: var(--portal-gap);
 }
 
 /* Sections inside the page pane: recessed, not a second pane of glass. */

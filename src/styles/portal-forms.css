@@ -36,6 +36,12 @@
   font-family: var(--portal-font);
 }
 
+/* The portal's document preview and guidance are page sections. Keep public
+   onboarding's document layout independent of the portal section rhythm. */
+.home2-page :is(.portal-w9-signing, .portal-ica-signing) > :is(.pforms-doc, .pforms-note) {
+  margin-top: var(--portal-gap);
+}
+
 .pforms-jumps {
   padding: 12px 12px 0;
 }

@@ -44,7 +44,7 @@ export default function AdminClients() {
         </div>
       </div>
 
-      <div className="admin-field" style={{ maxWidth: "420px", marginBottom: "1rem" }}>
+      <div className="admin-field" style={{ maxWidth: "420px" }}>
         <label htmlFor="admin-client-search">Search</label>
         <input
           id="admin-client-search"
