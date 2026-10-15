@@ -177,7 +177,7 @@
   font-family: var(--portal-font);
   font-size: 16px;
 }
-.admin-dash .leadspply-admin-panel :is(.leadspply-sync-review, .leadspply-audit) {
+.admin-dash .leadspply-admin-panel :is(.leadspply-automation, .leadspply-sync-review, .leadspply-audit) {
   display: flex;
   flex-direction: column;
   gap: var(--portal-gap);
@@ -192,6 +192,10 @@
   line-height: 1.55;
 }
 .admin-dash .leadspply-admin-panel .leadspply-audit :is(h2, p, ul) { margin: 0; }
+.admin-dash .leadspply-admin-panel .leadspply-automation :is(h2, p) { margin: 0; }
+.admin-dash .leadspply-admin-panel .leadspply-automation { display: grid; gap: 8px; }
+.admin-dash .leadspply-admin-panel .leadspply-automation h2 { font-size: var(--portal-t-mid); color: var(--portal-text-strong); }
+.admin-dash .leadspply-admin-panel .leadspply-automation p { color: var(--portal-text); font-size: var(--portal-t-body); line-height: 1.5; }
 .admin-dash .leadspply-admin-panel .leadspply-audit h2 { font-size: var(--portal-t-mid); color: var(--portal-text-strong); }
 .admin-dash .leadspply-admin-panel .leadspply-audit ul { padding-left: 18px; }
 .admin-dash .leadspply-admin-panel .leadspply-audit li + li { margin-top: 8px; }

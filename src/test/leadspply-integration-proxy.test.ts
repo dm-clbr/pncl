@@ -13,7 +13,8 @@ const account = { id: target, email: 'agent@example.com', first_name: 'Agent', l
 const status = { state: 'connected', account: { name: 'Agent One', email: 'agent@example.com', sync_status: 'pending', synced_at: null, pay_tier: null, linked_at: stamp }, pending: true };
 const preview = { matches: [{ source, status: 'suggested', reason: 'Email + NPN', candidates: [{ target: account, reasons: ['Email', 'NPN'] }] }], targets: [account], links: [{ pncl_user_id: actor, leadspply_user_id: target, pay_tier: 80, pncl_parent_id: null, sync_status: 'synced', synced_at: stamp }], partners: [], token, revision: 1,
   recentRuns: [{ id: actor, created_at: stamp, revision: 1, linked_count: 1, synced_count: 1, unresolved_count: 0, pncl_actor_id: actor, actor_id: null }],
-  events: [{ id: target, created_at: stamp, kind: 'agent_connected', pncl_user_id: actor, leadspply_user_id: target, pncl_actor_id: actor }] };
+  events: [{ id: target, created_at: stamp, kind: 'agent_connected', pncl_user_id: actor, leadspply_user_id: target, pncl_actor_id: actor }],
+  autoLink: { enabled: false, cadenceMinutes: 15, lastRun: { created_at: stamp, status: 'failed', scanned_count: 4, linked_count: 1, review_count: 2, error_code: 'target_unavailable' } } };
 class AuthError extends Error { constructor(message: string, public status: number, public code: string) { super(message); } }
 function handler(opts: { adminError?: AuthError; userError?: AuthError; configured?: boolean; payload?: unknown; upstreamStatus?: number; fetchError?: boolean } = {}) {
   let route: (req: Request) => Promise<Response>;
@@ -55,7 +56,7 @@ describe('PNCL integration projection', () => {
     for (const state of ['not_linked', 'account_unavailable']) expect(sanitizePortalIntegrationStatus({ ...status, state, otherAccount: account })).toEqual({ state, account: null });
   });
   it('fails closed on malformed upstream values', () => {
-    for (const payload of [{ ...preview, revision: -1 }, { ...preview, token: 'not-a-token' }, { ...preview, links: [{ ...preview.links[0], pay_tier: 81 }] }, { ...preview, events: [{ ...preview.events[0], pncl_actor_id: null }] }]) expect(() => sanitizePortalIntegrationPreview(payload)).toThrow();
+    for (const payload of [{ ...preview, revision: -1 }, { ...preview, token: 'not-a-token' }, { ...preview, links: [{ ...preview.links[0], pay_tier: 81 }] }, { ...preview, events: [{ ...preview.events[0], pncl_actor_id: null }] }, { ...preview, autoLink: { ...preview.autoLink, cadenceMinutes: 0 } }, { ...preview, autoLink: { ...preview.autoLink, lastRun: { ...preview.autoLink.lastRun, status: 'running' } } }]) expect(() => sanitizePortalIntegrationPreview(payload)).toThrow();
     expect(() => sanitizePortalIntegrationStatus({ ...status, account: { ...status.account, sync_status: 'invented' } })).toThrow();
     expect(() => sanitizePortalIntegrationSync({ linked: 1.5, synced: 1, unresolved: 0, revision: 2 })).toThrow();
   });

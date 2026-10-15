@@ -41,6 +41,26 @@ function syncStatus(value: unknown): string {
   if (!['pending', 'synced', 'upline_unlinked', 'source_missing'].includes(result)) throw new Error('Invalid integration data');
   return result;
 }
+function boolean(value: unknown): boolean {
+  if (typeof value !== 'boolean') throw new Error('Invalid integration data');
+  return value;
+}
+function autoLink(value: unknown) {
+  const row = record(value);
+  const cadenceMinutes = count(row.cadenceMinutes);
+  if (cadenceMinutes < 1 || cadenceMinutes > 1440) throw new Error('Invalid integration data');
+  const lastRun = nullable(row.lastRun, value => {
+    const run = record(value);
+    const status = text(run.status, 30);
+    if (!['success', 'failed'].includes(status)) throw new Error('Invalid integration data');
+    return {
+      created_at: date(run.created_at), status,
+      scanned_count: count(run.scanned_count), linked_count: count(run.linked_count), review_count: count(run.review_count),
+      error_code: nullable(run.error_code, value => text(value, 80)),
+    };
+  });
+  return { enabled: boolean(row.enabled), cadenceMinutes, lastRun };
+}
 function linkIdentity(value: unknown) {
   const row = record(value);
   return { pncl_user_id: uuid(row.pncl_user_id), leadspply_user_id: uuid(row.leadspply_user_id) };
@@ -130,6 +150,7 @@ export function sanitizePortalIntegrationPreview(value: unknown) {
         pncl_user_id: nullable(row.pncl_user_id, uuid), leadspply_user_id: nullable(row.leadspply_user_id, uuid),
         pncl_actor_id: uuid(row.pncl_actor_id) };
     }, 50),
+    ...(body.autoLink === undefined ? {} : { autoLink: autoLink(body.autoLink) }),
   };
 }
 export function sanitizePortalIntegrationStatus(value: unknown) {

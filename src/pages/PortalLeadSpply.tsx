@@ -24,7 +24,7 @@ export default function PortalLeadSpply() {
   const connected = status?.state === "connected";
   return (
     <PortalToolLayout title="Connect your account">
-      <p className="portal-panel-note">Confirm your own LeadSpply account. PNCL manages hierarchy and pay tiers separately.</p>
+      <p className="portal-panel-note">PNCL automatically checks email, NPN, or exact full name every 15 minutes. Duplicate, conflicting, or unavailable accounts need admin review. A connection code remains available as a fallback; PNCL applies hierarchy and pay tiers during manual sync.</p>
       <div className="portal-leadspply-page">
         <div className="portal-leadspply-page-actions">
           <a className="ptools-cta" href={VERIFY_URL} target="_blank" rel="noopener noreferrer">
@@ -45,7 +45,7 @@ export default function PortalLeadSpply() {
                 <small>{account.synced_at ? `Last manually synced ${new Date(account.synced_at).toLocaleString()}` : "Awaiting manual admin sync."}</small>
               </> : <p>{status.state === "account_unavailable"
                 ? <>Your connection needs PNCL support review. <Link to="/portal/support">Contact support</Link>.</>
-                : "Create or sign in to your LeadSpply account, then paste a verification code below."}</p>}
+                : "Automatic matching checks your email, NPN, or exact full name every 15 minutes. You can also use a connection code below."}</p>}
             </div>
           </Pane>
         )}
@@ -59,7 +59,7 @@ export default function PortalLeadSpply() {
                 disabled={busy || !formVisible || !code.trim() || user?.id !== session?.user?.id}>
                 <Link2 size={16} aria-hidden="true" /> {busy ? "Submitting…" : "Submit connection code"}
               </button>
-              <p>Codes expire. This links only your account; hierarchy and pay tiers remain under PNCL admin review.</p>
+              <p>Codes expire. This is a fallback when automatic matching cannot safely connect an account; hierarchy and pay tiers remain under PNCL admin review.</p>
             </form>
           </Pane>
         )}
