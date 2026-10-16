@@ -382,7 +382,11 @@ export default function OnboardingSuccess() {
       {viewState === "failed" && (
         <>
           <StatusBadge tone="error">Setup Failed</StatusBadge>
-          <h1 className="pauth-title">We couldn&apos;t finish creating your PNCL email.</h1>
+          <h1 className="pauth-title">
+            {statusData?.steps?.google === "ready"
+              ? "Your PNCL email is created. Account setup needs attention."
+              : "We couldn’t finish your PNCL account setup."}
+          </h1>
           <p className="pauth-lede">
             {statusData?.message ?? "Your progress is saved. Retry the failed step or contact PNCL support."}
           </p>

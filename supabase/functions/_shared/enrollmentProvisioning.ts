@@ -342,6 +342,7 @@ export async function provisionEnrollment(
       onboardingId,
       firstName: row.first_name,
       lastName: row.last_name,
+      recoveryEmail: row.personal_email,
       npn: row.npn,
       driversLicense: options.driversLicense,
       profilePhoto: options.profilePhoto,

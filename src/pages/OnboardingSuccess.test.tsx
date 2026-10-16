@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import OnboardingSuccess from "./OnboardingSuccess";
-import { getOnboardingStatus, revealOnboardingCredentials } from "@/lib/onboarding-api";
+import { getOnboardingStatus, revealOnboardingCredentials, retryOnboardingEnrollment } from "@/lib/onboarding-api";
 
 vi.mock("@/components/ui/liquid-gradient", async (importOriginal) => ({ ...await importOriginal<typeof import("@/components/ui/liquid-gradient")>(), default: () => null }));
 vi.mock("@/lib/analytics", () => ({ trackPageView: vi.fn() }));
@@ -10,6 +10,7 @@ vi.mock("@/lib/onboarding-api", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/lib/onboarding-api")>(),
   getOnboardingStatus: vi.fn(),
   revealOnboardingCredentials: vi.fn(),
+  retryOnboardingEnrollment: vi.fn(),
 }));
 
 const status = {
@@ -44,6 +45,28 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("Gmail onboarding password handoff", () => {
+  it("acknowledges the created email when finalization fails and resumes the saved enrollment", async () => {
+    vi.mocked(getOnboardingStatus).mockResolvedValueOnce({
+      status: "failed", email: status.email, failedStep: "finalization", retryable: true,
+      steps: { google: "ready", portal: "ready", finalization: "failed" },
+      message: "Your progress is saved and it is safe to retry.",
+    });
+    vi.mocked(retryOnboardingEnrollment).mockResolvedValue({ status: "creating_email", enrollmentStatus: "awaiting_google_sign_in" });
+    renderHandoff();
+    expect(await screen.findByRole("heading", { name: "Your PNCL email is created. Account setup needs attention." })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show My Temporary Gmail Password" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Retry saved enrollment" }));
+    expect(await screen.findByRole("button", { name: "Show My Temporary Gmail Password" })).toBeInTheDocument();
+    expect(retryOnboardingEnrollment).toHaveBeenCalledWith("enrollment-1", "test-handoff");
+  });
+
+  it.each([undefined, { google: "failed" }])("does not claim email creation succeeded without a ready Google step (%s)", async (steps) => {
+    vi.mocked(getOnboardingStatus).mockResolvedValue({ status: "failed", steps });
+    renderHandoff();
+    expect(await screen.findByRole("heading", { name: "We couldn’t finish your PNCL account setup." })).toBeInTheDocument();
+    expect(screen.queryByText("Your PNCL email is created. Account setup needs attention.")).not.toBeInTheDocument();
+  });
+
   it("makes the password explicit, reveals it through the secure API, and copies the exact password", async () => {
     renderHandoff();
     const show = await screen.findByRole("button", { name: "Show My Temporary Gmail Password" });
