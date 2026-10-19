@@ -4,7 +4,7 @@ PNCL and LeadSpply use the saved UUID account link. Their native profile tables 
 
 ## Data flow
 
-Native profile/document writes (including user, admin, and onboarding paths) commit an outbox event in the same transaction. A signed database HTTP kick requests delivery after commit; a minute cron retries durably. The scheduler enqueues individual accounts, and each worker handles at most four fields before queuing remaining work, keeping request bursts bounded. Delivery locks the destination profile, compares per-field causal clocks, and commits its native projection and receipt together. A stale event cannot replace a newer value. The latest server-recorded save wins for each changed field, including simultaneous changes and saves from an older form. A deterministic source/event tie-break makes both replicas converge when timestamps match. Initial data never overrides a deliberate edit or clear. Existing conflicts are requeued with their original save order and fresh delivery IDs; historical events and receipts remain intact.
+Native profile/document writes (including user, admin, and onboarding paths) commit an outbox event in the same transaction. A signed database HTTP kick requests delivery after commit; a minute cron retries durably. The scheduler enqueues individual accounts, and each worker handles at most four fields before queuing remaining work, keeping request bursts bounded. Delivery locks the destination profile, compares per-field save order, and commits its native projection and receipt together. A stale event cannot replace a newer value. The latest server-recorded save wins for each changed field, including simultaneous changes and saves from an older form. A deterministic source/event tie-break makes both replicas converge when timestamps match. Initial data never overrides a deliberate edit or clear. Existing conflicts are requeued with their original save order and fresh delivery IDs; historical events and receipts remain intact.
 
 Both existing Save buttons include counterpart drafts. Native user edits preserve unrelated fields. Older clients may still submit expected clocks; these no longer block an intentional save. Native follow-up workflows do not write synced fields a second time. Private files are copied and hashed before references are committed. File uploads use immutable paths; a storage trigger detects replacement by older clients using a fixed path. Removal is a tombstone. Photos retain their existing public visibility; private documents retain private access. New counterpart documents use a service-only bucket and owner-bound, 60-second signed links.
 
@@ -23,7 +23,7 @@ Rollback: set `profile_sync_private.settings.enabled=false` in both projects, an
 ## Verification
 
 - PNCL complete suite: 575 tests passed for automatic saves and song selection.
-- LeadSpply integration/connection/snapshot/UI selection: 50 passed. Full suite: 5,186 passed, one skipped, one pre-existing signing-guide navigation test failed with seven AbortSignal errors; the identical failure and errors reproduce on unchanged main (93d0945b).
+- LeadSpply full CI: 5,292 tests passed, one skipped; lint, typecheck, build, database checks, Deno syntax, migration sanity, and secret scan passed. Profile/admin/song UI checks: 11 passed.
 - Both production bundles passed. LeadSpply typecheck ratchet stayed at 99/99 existing errors. PNCL application typecheck passed.
 - Isolated actual PostgreSQL checks cover both migrations, native capture, normalization, bidirectional projection, automatic concurrent resolution, deliberate saves from stale forms, receipt replay, NPN validation/audit, privacy, retry exhaustion, fixed-path photos, and concurrent sessions. Upgrade tests also cover existing conflicts, receipts accepted before deployment, and exact timestamp ties.
 - Twenty-three real handler checks against isolated databases cover auth/CORS, forged actor and file references, field allowlists, derived county, lost responses, private file transport/deletion, document collections/labels, suspension, and signed wake-up forgery, expiry, action scope, and browser-origin rejection, and large backlogs draining across bounded jobs.
@@ -41,7 +41,7 @@ python3 "$PNCL_SYNC_REPO/scripts/test-production-profile-sync-upgrade.py"
 node "$PNCL_SYNC_REPO/scripts/test-production-profile-sync.mjs"
 ```
 
-The scripts recreate only `mirror_pncl` and `mirror_leadspply` on localhost, use synthetic identities and files, and require a local PostgreSQL superuser named `postgres`. Native services and external CRM calls are stubbed in the isolated HTTP harness; hosted smoke checks validate the deployed database separately.
+The scripts recreate only `mirror_pncl`, `mirror_leadspply`, `mirror_upgrade_pncl`, and `mirror_upgrade_leadspply` on localhost, use synthetic identities and files, and require a local PostgreSQL superuser named `postgres`. Native services and external CRM calls are stubbed in the isolated HTTP harness; hosted smoke checks validate the deployed database separately.
 
 ## Release SQL safeguards
 
