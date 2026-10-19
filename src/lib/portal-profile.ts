@@ -269,6 +269,7 @@ export async function savePortalProfile(
   photoFile: File | null,
   existingPhotoPath: string | null,
   previousProfile?: PortalProfile | null,
+  alreadySyncedColumns: string[] = [],
 ): Promise<PortalProfile> {
   const supabase = getSupabaseClient();
   const firstName = values.firstName.trim();
@@ -312,6 +313,8 @@ export async function savePortalProfile(
 
   const changes=previousProfile?Object.fromEntries(Object.entries(payload).filter(([key,value])=>key!=='user_id' && JSON.stringify(value)!==JSON.stringify(previousProfile[key as keyof PortalProfile]))):payload;
   if(previousProfile && !photoFile)delete changes.profile_photo_path;
+  // Sync already committed these fields. A second write could undo a newer remote save.
+  for(const column of alreadySyncedColumns)delete changes[column];
   const { data, error } = await (previousProfile
     ? supabase.from("portal_profiles").update(changes).eq("user_id",user.id)
     : supabase.from("portal_profiles").upsert(payload,{onConflict:"user_id"})).select("*").single();

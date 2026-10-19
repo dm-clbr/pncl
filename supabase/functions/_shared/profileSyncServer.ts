@@ -28,6 +28,8 @@ const allowedCodes=['account_unavailable','identity_mismatch','not_linked','requ
 export function createProfileSyncHandler(d:SyncDependencies){
   const {db,system}=d,other:System=system==='pncl'?'leadspply':'pncl';
   const rpc=async(action:string,user:string|null=null,body:ObjectValue={})=>{const {data,error}=await db.rpc('profile_sync',{p_action:action,p_user:user,p_body:body});if(error){console.warn('profile_sync_rpc',JSON.stringify({system,action,code:error.code}));throw new MirrorError(allowedCodes.includes(error.message)?error.message:'sync_unavailable',503);}return data;};
+  const songCache=new Map<string,{expires:number;songs:Json[]}>();
+  const songRequests=new Map<string,number>();
   const available=async(user:string)=>{if(!await rpc('available',user))throw new MirrorError('account_unavailable',409);};
   async function peer(key:string,body:ObjectValue){
     let response:Response;try{response=await d.fetch(`${HOSTS[other]}/functions/v1/profile-sync`,{method:'POST',redirect:'error',signal:AbortSignal.timeout(25000),headers:{'Content-Type':'application/json','X-Profile-Sync-Key':key},body:JSON.stringify(body)});}catch(error){console.warn('profile_sync_transport',JSON.stringify({system,action:body.action,error:error instanceof Error?error.message.replaceAll(key,'[redacted]').slice(0,160):'unknown'}));throw error;}
@@ -67,13 +69,15 @@ export function createProfileSyncHandler(d:SyncDependencies){
       // Do not let malformed legacy values escape the field contract.
       e={...e,value:normalize(e.field,value)};
     }
-    return {id:e.id,user_id:user,source:system,field:e.field,value:e.value,clock:e.clock,baseline:e.baseline,bytes:e.bytes};
+    return {id:e.id,user_id:user,source:system,field:e.field,value:e.value,clock:e.clock,baseline:e.baseline,write_version:e.write_version,bytes:e.bytes};
   }
   async function receive(key:string,pair:ObjectValue,raw:ObjectValue){
     await checkPair(key,pair);
     if(!object(raw)||raw.source!==other||uuid(raw.user_id)!==pair[other]||typeof raw.field!=='string'||typeof raw.baseline!=='boolean')throw new MirrorError('invalid_event');
     uuid(raw.id);validateClock(raw.clock);fieldFor(raw.field);
-    const event={id:raw.id,user_id:raw.user_id,source:other,field:raw.field,value:raw.value,clock:raw.clock,baseline:raw.baseline,file:null as ObjectValue|null};
+    const version=raw.write_version;
+    if(!object(version)||Object.keys(version).sort().join(',')!=='at,baseline,id,source'||typeof version.at!=='string'||!/^\d{4}-\d{2}-\d{2}T/.test(version.at)||!Number.isFinite(Date.parse(version.at))||!['pncl','leadspply'].includes(version.source)||typeof version.baseline!=='boolean'||typeof version.id!=='string'||!/^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.test(version.id))throw new MirrorError('invalid_event');
+    const event={id:raw.id,user_id:raw.user_id,source:other,field:raw.field,value:raw.value,clock:raw.clock,baseline:raw.baseline,write_version:version,file:null as ObjectValue|null};
     if(assetField(raw.field)&&raw.value!==null){
       if(!object(raw.value))throw new MirrorError('invalid_asset');
       location(pair[other],raw.value,other);
@@ -109,13 +113,41 @@ export function createProfileSyncHandler(d:SyncDependencies){
     const data=await rpc('read',user),values:ObjectValue={},clocks:ObjectValue={},conflicts:ObjectValue={},urls:ObjectValue={};
     for(const f of data.fields){
       values[f.field]=f.value;clocks[f.field]=f.clock;
-      if(f.conflict)conflicts[f.field]={...f.conflict,file:undefined};
+      // Differences are resolved automatically by server save order.
       if(f.file&&f.value!==null){
         const file=location(user,f.file);const {data:signed}=await db.storage.from(file.bucket).createSignedUrl(file.path,60);
         if(signed?.signedUrl)urls[f.field]=signed.signedUrl;
       }
     }
     return {version:3,values,clocks,conflicts,urls,pending:data.pending,errors:data.errors,linked:data.linked,lastError:data.lastError};
+  }
+  async function searchSongs(user:string,query:unknown){
+    if(typeof query!=='string'||query.trim().length<2||query.length>100)throw new MirrorError('invalid_song_query');
+    const term=query.trim(),cacheKey=term.toLocaleLowerCase('en-US'),cached=songCache.get(cacheKey);
+    if(cached&&cached.expires>Date.now())return {songs:cached.songs};
+    if(Date.now()-(songRequests.get(user)??0)<1500)throw new MirrorError('song_search_busy',429);
+    if(songRequests.size>=500)songRequests.delete(songRequests.keys().next().value!);
+    songRequests.set(user,Date.now());
+    const url=new URL('https://itunes.apple.com/search');
+    url.search=new URLSearchParams({term,entity:'song',media:'music',country:'US',limit:'20'}).toString();
+    let data:ObjectValue;
+    try{
+      const response=await d.fetch(url.toString(),{redirect:'error',signal:AbortSignal.timeout(8000),headers:{Accept:'application/json'}});
+      if(!response.ok)throw new Error('provider_unavailable');
+      data=await response.json();
+    }catch{throw new MirrorError('song_search_unavailable',503);}
+    if(!object(data)||!Array.isArray(data.results))throw new MirrorError('song_search_unavailable',503);
+    const songs:Json[]=[],seen=new Set<string>();
+    for(const track of data.results.slice(0,20)){
+      if(!object(track)||track.kind!=='song'||!Number.isSafeInteger(track.trackId)||seen.has(String(track.trackId)))continue;
+      try{
+        const song=normalize('close_out_song',{provider:'apple',id:String(track.trackId),title:track.trackName,artist:track.artistName,url:track.trackViewUrl});
+        songs.push(song);seen.add(String(track.trackId));
+      }catch{/* Ignore malformed provider metadata; never return audio or artwork. */}
+    }
+    if(songCache.size>=100)songCache.delete(songCache.keys().next().value!);
+    songCache.set(cacheKey,{expires:Date.now()+60*60*1000,songs});
+    return {songs};
   }
   async function userSave(user:string,request:ObjectValue){
     if(!object(request)||Object.keys(request).some(k=>!['id','changes','expected','resolve'].includes(k))||!object(request.changes)||!object(request.expected))throw new MirrorError('invalid_request');
@@ -194,7 +226,8 @@ export function createProfileSyncHandler(d:SyncDependencies){
       const authorization=req.headers.get('Authorization')??'';if(!authorization.startsWith('Bearer '))throw new MirrorError('unauthorized',401);
       const {data,error}=await db.auth.getUser(authorization.slice(7));if(error||!data.user)throw new MirrorError('unauthorized',401);
       const user=data.user.id;await available(user);
-      if(Object.keys(body).some(k=>!['action','request','field','id','clock','name','mime','base64','label'].includes(k)))throw new MirrorError('invalid_request');
+      if(Object.keys(body).some(k=>!['action','request','field','id','clock','name','mime','base64','label','query'].includes(k)))throw new MirrorError('invalid_request');
+      if(body.action==='search_songs')return json(await searchSongs(user,body.query));
       if(body.action==='read'){defer(syncUser(config.secret,user));return json(await getView(user));}
       if(body.action==='save'){const result=await userSave(user,body.request);defer(syncUser(config.secret,user));return json(result,result.outcome==='conflict'?409:200);}
       if(body.action==='upload'){const result=await upload(user,body);defer(syncUser(config.secret,user));return json(result,result.outcome==='conflict'?409:200);}

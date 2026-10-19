@@ -42,6 +42,7 @@ for system,root in roots.items():
  if system=='pncl':
   for fix in root.glob('supabase/migrations/*_profile_sync_native_phone_format.sql'):sql(db,fix.read_text())
  for fix in root.glob('supabase/migrations/*_profile_sync_bounded_workers.sql'):sql(db,fix.read_text())
+ for fix in root.glob('supabase/migrations/*_profile_sync_latest_save.sql'):sql(db,fix.read_text())
  print(system,'migration compiled')
 a=str(uuid.uuid4());b=str(uuid.uuid4());pair={'pncl':a,'leadspply':b}
 for system,user in pair.items():
@@ -51,7 +52,7 @@ sql('mirror_leadspply',f"insert into pncl_account_links values('{a}','{b}')")
 for system,user in pair.items():rpc('mirror_'+system,'bind',user,{'peer':pair['leadspply' if system=='pncl' else 'pncl']})
 def events(system):return rpc('mirror_'+system,'outbox',pair[system])
 def deliver(system,e):
- other='leadspply' if system=='pncl' else 'pncl';e={k:e[k] for k in ['id','user_id','field','value','clock','baseline']};e['source']=system;e['file']=None
+ other='leadspply' if system=='pncl' else 'pncl';e={k:e[k] for k in ['id','user_id','field','value','clock','baseline','write_version']};e['source']=system;e['file']=None
  r=rpc('mirror_'+other,'receive',pair[other],{'events':[e]});rpc('mirror_'+system,'ack',pair[system],{'receipts':r});return r
 for system in pair:
  for e in events(system):deliver(system,e)
@@ -71,19 +72,21 @@ sql('mirror_pncl',f"update portal_profiles set first_name='PNCL' where user_id='
 sql('mirror_leadspply',f"update agent_profiles set first_name='Lead' where user_id='{b}'")
 for system in pair:
  for e in events(system):deliver(system,e)
-assert all(view(s)['first_name']['conflict'] for s in pair)
+assert all(view(s)['first_name']['value']=='Lead' and view(s)['first_name']['conflict'] is None for s in pair)
 v=view('pncl')['first_name'];request={'id':str(uuid.uuid4()),'changes':{'first_name':'Resolved'},'expected':{'first_name':v['clock']},'resolve':['first_name']}
 assert rpc('mirror_pncl','save',a,request)['outcome']=='saved'
 for e in events('pncl'):deliver('pncl',e)
 assert view('leadspply')['first_name']['value']=='Resolved' and view('leadspply')['first_name']['conflict'] is None
 assert rpc('mirror_pncl','save',a,request)['outcome']=='saved'
-print('PASS concurrent conflict, explicit resolution, lost-response replay')
+print('PASS concurrent saves converge automatically and lost-response retry is idempotent')
 request['changes']['first_name']='Reused'
 try:rpc('mirror_pncl','save',a,request);raise AssertionError('reused accepted')
 except RuntimeError as e:assert 'request_id_reused' in str(e)
 stale={'id':str(uuid.uuid4()),'changes':{'first_name':'Stale'},'expected':{'first_name':{'pncl':0,'leadspply':0}}}
-assert rpc('mirror_pncl','save',a,stale)['outcome']=='conflict'
-print('PASS stale saves and changed idempotency payload rejected')
+assert rpc('mirror_pncl','save',a,stale)['outcome']=='saved'
+for e in events('pncl'):deliver('pncl',e)
+assert view('leadspply')['first_name']['value']=='Stale'
+print('PASS deliberate save from stale form wins; changed idempotency payload rejected')
 request={'id':str(uuid.uuid4()),'changes':{'business_ein':'123456789','state_license_numbers':{'UT':'A123'}},'expected':{k:view('pncl')[k]['clock'] for k in ['business_ein','state_license_numbers']}}
 assert rpc('mirror_pncl','save',a,request)['outcome']=='saved'
 for e in events('pncl'):deliver('pncl',e)
@@ -129,3 +132,23 @@ assert all(p.returncode==0 for p in processes),results
 assert results[0][0]==results[1][0]
 assert sql('mirror_pncl',f"select count(*) from profile_sync_private.outbox where user_id='{a}' and field='eo_policy_number' and value='\"synthetic-concurrent\"'::jsonb")=='1'
 print('PASS concurrent database sessions share one durable save receipt')
+
+# Reverse delivery order cannot resurrect an older concurrent save.
+sql('mirror_leadspply',f"update agent_profiles set last_name='Earlier' where user_id='{b}'")
+old=next(x for x in events('leadspply') if x['field']=='last_name')
+sql('mirror_pncl',f"update portal_profiles set last_name='Latest' where user_id='{a}'")
+new=next(x for x in events('pncl') if x['field']=='last_name')
+deliver('pncl',new);deliver('leadspply',old)
+assert all(view(s)['last_name']['value']=='Latest' for s in pair)
+# Retries keep their original save version, even after a newer save.
+deliver('leadspply',old)
+assert view('pncl')['last_name']['value']=='Latest'
+print('PASS reverse delivery and late retries preserve newest save')
+# A delayed baseline never overwrites a deliberate clear.
+sql('mirror_pncl',f"select profile_sync_private.record('{a}','business_legal_name','\"Legacy\"',true)")
+old=next(x for x in events('pncl') if x['field']=='business_legal_name')
+rpc('mirror_leadspply','save',b,{'id':str(uuid.uuid4()),'changes':{'business_legal_name':None},'expected':{'business_legal_name':{'pncl':0,'leadspply':0}}})
+new=next(x for x in events('leadspply') if x['field']=='business_legal_name')
+deliver('leadspply',new);deliver('pncl',old)
+assert all(view(s)['business_legal_name']['value'] is None for s in pair)
+print('PASS explicit clearing wins over delayed initialization')

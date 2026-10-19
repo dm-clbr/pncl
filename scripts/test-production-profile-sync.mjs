@@ -12,7 +12,8 @@ const {createProfileSyncHandler}=await import(testRoot+'/server.mjs');
 const users=JSON.parse(readFileSync(testRoot+'/identities.json','utf8'));
 const key='test-only-profile-sync-key-not-a-production-secret';
 const roots={pncl:'https://dpnajpojbxgsckwrmvnm.supabase.co',leadspply:'https://lhxvbtiepsuohunfmnkm.supabase.co'};
-let dispatches=0;
+let dispatches=0,songSearchCalls=0;
+const testSong={provider:"apple",id:"123456789",title:"Synthetic Song",artist:"Synthetic Artist",url:"https://music.apple.com/us/song/123456789"};
 const storage={pncl:new Map(),leadspply:new Map()},handlers={},pending=[];
 const literal=v=>"'"+JSON.stringify(v).replaceAll("'","''")+"'::jsonb";
 const sql=(system,query)=>execFileSync(process.env.PSQL??'psql',['-h','127.0.0.1','-p',process.env.PROFILE_SYNC_TEST_PORT??'55439','-U','postgres','-d','mirror_'+system,'-v','ON_ERROR_STOP=1','-At','-c',query],{encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
@@ -28,7 +29,7 @@ for(const system of Object.keys(users)){
     createSignedUrl:async(path,seconds)=>({data:{signedUrl:roots[system]+'/private/'+bucket+'/'+path+'?expires='+seconds},error:null})
   })}
  };
- handlers[system]=createProfileSyncHandler({system,db,county:zip=>zip==='84101'?'Salt Lake':null,defer:promise=>pending.push(promise),fetch:async(url,options)=>{const target=url.startsWith(roots.pncl)?'pncl':'leadspply';return handlers[target](new Request(url,options));}});
+ handlers[system]=createProfileSyncHandler({system,db,county:zip=>zip==='84101'?'Salt Lake':null,defer:promise=>pending.push(promise),fetch:async(url,options)=>{if(String(url).startsWith('https://itunes.apple.com/search?')){songSearchCalls++;return Response.json({results:[{kind:'song',trackId:123456789,trackName:testSong.title,artistName:testSong.artist,trackViewUrl:testSong.url,previewUrl:'https://example.com/never-download.mp3',artworkUrl100:'https://example.com/never-download.jpg'}]});}const target=url.startsWith(roots.pncl)?'pncl':'leadspply';return handlers[target](new Request(url,options));}});
 }
 async function call(system,body,headers={}){const response=await handlers[system](new Request(roots[system]+'/functions/v1/profile-sync',{method:'POST',headers:{Authorization:'Bearer '+system,Origin:system==='pncl'?'https://www.thepncl.com':'https://leadspply.com','Content-Type':'application/json',...headers},body:JSON.stringify(body)}));return {status:response.status,body:await response.json()};}
 async function drain(){let count=0;while(pending.length){assert.ok(count++<40,'background sync must terminate');await Promise.all(pending.splice(0));}}
@@ -70,3 +71,19 @@ const backlog={business_legal_name:'Synthetic Agency',business_ein:'123456789',b
 assert.equal((await call('pncl',{action:'save',request:{id:crypto.randomUUID(),changes:backlog,expected:Object.fromEntries(Object.keys(backlog).map(k=>[k,current.clocks[k]]))}})).status,200);await drain();
 remote=(await call('leadspply',{action:'read'})).body;await drain();for(const [field,value]of Object.entries(backlog))assert.equal(remote.values[field],value,field);assert.ok(dispatches>=2);ok('large profile backlog drains through bounded independent jobs');
 console.log(`${checks} HTTP/FILE INTEGRATION CHECKS PASSED`);
+
+const songs=await call('pncl',{action:'search_songs',query:'Synthetic Song'});
+assert.equal(songs.status,200);assert.deepEqual(songs.body,{songs:[testSong]});
+assert.equal((await call('pncl',{action:'search_songs',query:'synthetic song'})).status,200);assert.equal(songSearchCalls,1);
+assert.equal((await call('pncl',{action:'search_songs',query:'x'})).status,400);
+assert.equal((await call('pncl',{action:'search_songs',query:'Valid query'},{Authorization:'Bearer invalid'})).status,401);
+ok('authenticated song metadata search caches results and excludes audio/artwork');
+let songSave={id:crypto.randomUUID(),changes:{close_out_song:testSong},expected:{close_out_song:{pncl:0,leadspply:0}}};
+assert.equal((await call('pncl',{action:'save',request:songSave})).status,200);await drain();
+remote=(await call('leadspply',{action:'read'})).body;await drain();assert.deepEqual(remote.values.close_out_song,testSong);
+songSave={id:crypto.randomUUID(),changes:{close_out_song:null},expected:{close_out_song:{pncl:0,leadspply:0}}};
+assert.equal((await call('leadspply',{action:'save',request:songSave})).status,200);await drain();
+remote=(await call('pncl',{action:'read'})).body;await drain();assert.equal(remote.values.close_out_song,null);
+assert.equal((await call('pncl',{action:'save',request:{...songSave,id:crypto.randomUUID(),changes:{close_out_song:{...testSong,url:'javascript:alert(1)'}}}})).status,400);
+ok('song choice and removal sync both ways; untrusted links rejected');
+console.log(`${checks} TOTAL HTTP/FILE/SONG CHECKS PASSED`);
