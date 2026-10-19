@@ -32,13 +32,15 @@ for system,root in roots.items():
  create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
  create function net.http_post(url text,headers jsonb,body jsonb,timeout_milliseconds int) returns bigint language sql as $$select 1::bigint$$;
  create table public."""+native+'('+','.join(columns)+');'
- if system=='pncl':stub+='create table public.portal_profile_documents(id uuid primary key default gen_random_uuid(),user_id uuid references public.portal_profiles(user_id),label text,file_path text,mime_type text,size_bytes bigint,created_at timestamptz default now());'
+ if system=='pncl':stub+="alter table portal_profiles add constraint portal_profiles_phone_number_valid check(phone_number is null or (phone_number ~ '^[0-9]{3}-[0-9]{3}-[0-9]{4}$' and phone_number<>'000-000-0000'));"+'create table public.portal_profile_documents(id uuid primary key default gen_random_uuid(),user_id uuid references public.portal_profiles(user_id),label text,file_path text,mime_type text,size_bytes bigint,created_at timestamptz default now());'
  else:
   stub+='create table public.pncl_account_links(pncl_user_id uuid primary key,leadspply_user_id uuid unique); create table public.admin_audit_log(admin_user_id uuid,action text,target_type text,target_id text,details jsonb);'
   npn=(root/'supabase/migrations/20260824050000_npn_is_an_identity_not_a_field.sql').read_text();start=npn.index('CREATE OR REPLACE FUNCTION public.set_my_npn(');end=npn.index('END $$;',start)+len('END $$;');stub+=npn[start:end]
  sql(db,stub)
  migration=next(root.glob('supabase/migrations/*_production_profile_sync.sql')).read_text()
  sql(db,'\n'.join(line for line in migration.splitlines() if not line.startswith('create extension')))
+ if system=='pncl':
+  for fix in root.glob('supabase/migrations/*_profile_sync_native_phone_format.sql'):sql(db,fix.read_text())
  print(system,'migration compiled')
 a=str(uuid.uuid4());b=str(uuid.uuid4());pair={'pncl':a,'leadspply':b}
 for system,user in pair.items():
@@ -59,6 +61,11 @@ sql('mirror_pncl',f"update portal_profiles set phone_number='801-555-0150' where
 e=next(x for x in events('pncl') if x['field']=='phone');r=deliver('pncl',e);assert r[0]['outcome']=='applied';assert view('leadspply')['phone']['value']=='+18015550150'
 assert deliver('pncl',e)==r
 print('PASS native capture, inbound projection, receipt replay')
+sql('mirror_leadspply',f"update agent_profiles set phone='+18015550151' where user_id='{b}'")
+for e in events('leadspply'):deliver('leadspply',e)
+assert sql('mirror_pncl',f"select phone_number from portal_profiles where user_id='{a}'")=='801-555-0151'
+assert view('pncl')['phone']['value']=='+18015550151'
+print('PASS canonical phone retains native PNCL format and constraint')
 sql('mirror_pncl',f"update portal_profiles set first_name='PNCL' where user_id='{a}'")
 sql('mirror_leadspply',f"update agent_profiles set first_name='Lead' where user_id='{b}'")
 for system in pair:
