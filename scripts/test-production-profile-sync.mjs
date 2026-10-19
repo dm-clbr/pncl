@@ -1,6 +1,7 @@
 import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import assert from 'node:assert/strict';
+import {createHmac} from 'node:crypto';
 import {createRequire} from 'node:module';
 const pnclRoot=process.env.PNCL_SYNC_REPO;
 const testRoot=process.env.PROFILE_SYNC_TEST_ROOT??'/tmp/profile-sync-test';
@@ -56,4 +57,11 @@ assert.equal((await call('leadspply',docUpload)).status,200);await drain();asser
 const suspendedSql=`update agent_profiles set suspended_at=now() where user_id='${users.leadspply}'`;sql('leadspply',suspendedSql);
 assert.equal((await call('leadspply',{action:'read'})).status,409);ok('suspended accounts denied');
 sql('leadspply',`update agent_profiles set suspended_at=null where user_id='${users.leadspply}'`);
+async function signedWakeup(body,{signature,origin}={}){const raw=JSON.stringify(body);return handlers.pncl(new Request(roots.pncl+'/functions/v1/profile-sync',{method:'POST',headers:{'Content-Type':'application/json','X-Profile-Sync-Kick':signature??createHmac('sha256',key).update(raw).digest('hex'),...(origin?{Origin:origin}:{})},body:raw}));}
+const wakeup={action:'sync',userId:users.pncl,issuedAt:Math.floor(Date.now()/1000)};
+assert.equal((await signedWakeup(wakeup)).status,202);await drain();ok('signed database wake-up accepted without exposing persistent key');
+assert.equal((await signedWakeup({...wakeup,issuedAt:wakeup.issuedAt-301})).status,401);ok('expired database signature rejected');
+assert.equal((await signedWakeup(wakeup,{signature:'0'.repeat(64)})).status,401);ok('forged database signature rejected');
+assert.equal((await signedWakeup({...wakeup,action:'link'})).status,401);ok('database signatures cannot authorize profile reads or delivery');
+assert.equal((await signedWakeup(wakeup,{origin:'https://www.thepncl.com'})).status,401);ok('signed database wake-ups rejected from browser origin');
 console.log(`${checks} HTTP/FILE INTEGRATION CHECKS PASSED`);

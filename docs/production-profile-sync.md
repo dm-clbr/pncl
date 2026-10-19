@@ -12,7 +12,7 @@ NPN projection calls LeadSpply's existing `set_my_npn` validation and audit func
 
 ## Operations and retention
 
-The dedicated random shared credential is stored only in each private settings row. Browser callers authenticate through Supabase Auth and cannot supply an actor or target. Server calls reject browser Origins and check the durable account pair and account availability. No service credential is shipped to the frontend.
+The dedicated random shared credential is stored only in each private settings row. Browser callers authenticate through Supabase Auth and cannot supply an actor or target. Server calls reject browser Origins and check the durable account pair and account availability. No service credential is shipped to the frontend. Database wake-ups carry a five-minute HMAC signature restricted to starting sync jobs, so the managed HTTP queue never contains the persistent credential.
 
 Ten failed field deliveries become inspectable errors; Retry keeps the event identity. Account unavailability pauses delivery. Unreferenced generated `/mirror/` files older than 30 days are removed by the worker, excluding current/conflict files and pending events. Existing original files retain each app's current retention behavior. Service-only operation/event receipts and conflict history remain until their profile is deleted, preserving idempotency. General audit records contain field and outcome, not profile values.
 
@@ -24,7 +24,7 @@ Rollback: set `profile_sync_private.settings.enabled=false` in both projects, an
 - LeadSpply integration/connection/snapshot/UI selection: 50 passed. Full suite: 5,186 passed, one skipped, one pre-existing signing-guide navigation test failed with seven AbortSignal errors; the identical failure and errors reproduce on unchanged main (93d0945b).
 - Both production bundles passed. LeadSpply typecheck ratchet stayed at 99/99 existing errors. PNCL application typecheck passed.
 - Isolated actual PostgreSQL checks cover both migrations, native capture, normalization, bidirectional projection, baseline conflicts, explicit resolution, stale saves, receipt replay, NPN validation/audit, privacy, retry exhaustion, fixed-path photos, and concurrent sessions.
-- Real handler tests against isolated databases cover auth/CORS, forged actor and file references, field allowlists, derived county, lost responses, private file transport/deletion, document collections/labels, and suspension.
+- Twenty real handler checks against isolated databases cover auth/CORS, forged actor and file references, field allowlists, derived county, lost responses, private file transport/deletion, document collections/labels, suspension, and signed wake-up forgery, expiry, action scope, and browser-origin rejection.
 - Both hosted migrations passed rollback-only transaction/replay/RLS/grant checks. New advisor findings are informational missing-policy notices on intentionally service-only private tables.
 
 Run the integration scripts against an isolated PostgreSQL server (never production):
@@ -39,3 +39,9 @@ node "$PNCL_SYNC_REPO/scripts/test-production-profile-sync.mjs"
 ```
 
 The scripts recreate only `mirror_pncl` and `mirror_leadspply` on localhost, use synthetic identities and files, and require a local PostgreSQL superuser named `postgres`. Native services and external CRM calls are stubbed in the isolated HTTP harness; hosted smoke checks validate the deployed database separately.
+
+## Release SQL safeguards
+
+Production migrations are additive. They do not drop or truncate native tables, delete profiles, rewrite account links, or expand browser access to private sync state. Dynamic native projection uses the fixed service-owned mapping and quoted identifiers, with values passed as parameters. The account pair must match the existing durable link; source-owned account controls are excluded. Empty counterparts can be filled; concurrent nonempty values require explicit review.
+
+Activation changes only the singleton enabled flag and installs the named minute worker. Disable that flag in both projects to stop delivery while retaining queued changes and receipts. The existing HTTP queue belongs to Supabase and retains owner-granted public permissions; wake-ups therefore contain only short-lived HMAC signatures limited to starting sync, never the persistent credential.

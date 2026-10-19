@@ -165,7 +165,17 @@ export function createProfileSyncHandler(d:SyncDependencies){
       const raw=await req.text();if(raw.length>8*1024*1024)throw new MirrorError('request_too_large',413);
       let body;try{body=JSON.parse(raw);}catch{throw new MirrorError('invalid_request');}if(!object(body))throw new MirrorError('invalid_request');
       const config=await rpc('config');if(!config.enabled||!config.secret)throw new MirrorError('sync_disabled',503);
-      const key=req.headers.get('X-Profile-Sync-Key');
+      let key=req.headers.get('X-Profile-Sync-Key');
+      const kickSignature=req.headers.get('X-Profile-Sync-Kick');
+      if(kickSignature){
+        // Managed pg_net queues can be readable. Sign only a short-lived wake-up;
+        // never put the persistent server credential into that queue.
+        if(origin||!['tick','sync'].includes(body.action)||!Number.isSafeInteger(body.issuedAt)||Math.abs(Date.now()/1000-body.issuedAt)>300||!/^[a-f0-9]{64}$/.test(kickSignature))throw new MirrorError('unauthorized',401);
+        const signingKey=await crypto.subtle.importKey('raw',new TextEncoder().encode(config.secret),{name:'HMAC',hash:'SHA-256'},false,['verify']);
+        const signature=Uint8Array.from(kickSignature.match(/../g)!,v=>parseInt(v,16));
+        if(!await crypto.subtle.verify('HMAC',signingKey,signature,new TextEncoder().encode(raw)))throw new MirrorError('unauthorized',401);
+        key=config.secret;
+      }
       if(key){
         if(origin||key.length!==config.secret.length)throw new MirrorError('unauthorized',401);
         const a=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(key))),b=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(config.secret)));let mismatch=0;for(let i=0;i<a.length;i++)mismatch|=a[i]^b[i];if(mismatch)throw new MirrorError('unauthorized',401);
