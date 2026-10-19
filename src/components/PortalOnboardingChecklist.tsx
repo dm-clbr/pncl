@@ -20,13 +20,14 @@ import {
   isTodoGateLocked,
   PORTAL_TODO_PHASES,
   SUBMIT_NEW_PRODUCER_TODO_ID,
-  SURELC_TUTORIAL_TODO_ID,
+  isSureLcTutorialTodo,
   type TodoCompletionOptions,
   type PortalTodo,
 } from "@/lib/portal-todos";
 import { isSureLcAccountTodo } from "@/lib/surelc-accounts";
 import PortalNewProducerModal from "@/components/PortalNewProducerModal";
 import PortalTutorialVideoModal from "@/components/PortalTutorialVideoModal";
+import PortalSureLcReferenceLink from "@/components/PortalSureLcReferenceLink";
 
 export function PortalUrgentIcon({ size = 22 }: { size?: number }) {
   return (
@@ -233,7 +234,7 @@ function PortalTodoItem({
   const videoEmbedUrl = getVideoEmbedUrl(todo.href);
   const [videoOpen, setVideoOpen] = useState(false);
   const needsNewProducerConfirmation = todo.id === SUBMIT_NEW_PRODUCER_TODO_ID;
-  const requiresVideoPlayback = todo.id === SURELC_TUTORIAL_TODO_ID;
+  const requiresVideoPlayback = isSureLcTutorialTodo(todo.id);
   const [confirmingNewProducer, setConfirmingNewProducer] = useState(false);
   const keepCompletedLink = isSureLcAccountTodo(todo.id) && Boolean(todo.href);
 
@@ -290,7 +291,14 @@ function PortalTodoItem({
       )}
 
       {todo.completed ? (
-        keepCompletedLink && (
+        requiresVideoPlayback ? (
+          <div className="pcl-step-body">
+            <button type="button" className="pcl-step-link" onClick={() => setVideoOpen(true)}>
+              <Play size={16} strokeWidth={2.5} aria-hidden="true" />
+              Replay SureLC walkthrough
+            </button>
+          </div>
+        ) : keepCompletedLink && (
           <div className="pcl-step-body">
             <a
               href={todo.href}
@@ -359,12 +367,6 @@ function PortalTodoItem({
               </Link>
             )
           )}
-          {videoOpen && requiresVideoPlayback && (
-            <PortalTutorialVideoModal title={todo.title} sourceUrl={todo.href}
-              progressKey={`pncl-tutorial:${agentEmail}:${todo.href}`} completing={completing}
-              onComplete={() => onComplete(todo.id, { videoPlaybackVerified: true })}
-              onClose={() => setVideoOpen(false)} />
-          )}
           {videoOpen && videoEmbedUrl && !requiresVideoPlayback && (
             <PortalVideoModal
               title={todo.title}
@@ -383,6 +385,18 @@ function PortalTodoItem({
             />
           )}
         </div>
+      )}
+      {requiresVideoPlayback && (
+        <div className="pcl-step-body">
+          <PortalSureLcReferenceLink className="pcl-step-link" />
+        </div>
+      )}
+      {videoOpen && requiresVideoPlayback && (
+        <PortalTutorialVideoModal title={todo.title} sourceUrl={todo.href}
+          progressKey={`pncl-tutorial:${agentEmail}:${todo.href}${todo.completed ? ":replay" : ""}`}
+          completed={Boolean(todo.completed)} completing={completing}
+          onComplete={() => onComplete(todo.id, { videoPlaybackVerified: true })}
+          onClose={() => setVideoOpen(false)} />
       )}
     </li>
   );

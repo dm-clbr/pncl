@@ -79,9 +79,10 @@ describe("SureLC playback and final submission", () => {
   const account = todo({ id: "surelc_account_1", title: "Create SureLC account #1", href: "https://example.com/account", external: true, actionLabel: "Open SureLC #1", gated: true });
   const submission = todo({ id: "submit_new_producer", title: "Submit for New Producer", actionLabel: "Submit for New Producer", gated: true, description: "MANDATORY - YOU WILL NOT GET ANY CARRIER CONTRACTS WITHOUT COMPLETING THIS STEP. Once every step above is complete, submit for New Producer. This notifies the PNCL team so your profile can be built in PLG's back-end system." });
 
-  it("verifies actual played ranges, prevents skipping, and offers no manual tutorial check-off", () => {
+  it.each(["surelc_tutorial", "surelc_tutorial_ibo"])("verifies playback and prevents manual check-off for %s", (tutorialId) => {
     const onComplete = vi.fn();
-    render(<MemoryRouter><PortalOnboardingChecklist todos={[tutorial, account, submission]} agentEmail="agent@thepncl.com" completingTodoId={null} onComplete={onComplete} /></MemoryRouter>);
+    render(<MemoryRouter><PortalOnboardingChecklist todos={[{ ...tutorial, id: tutorialId }, account, submission]} agentEmail="agent@thepncl.com" completingTodoId={null} onComplete={onComplete} /></MemoryRouter>);
+    expect(screen.getByRole("link", { name: "SureLC quick reference (PDF)" })).toHaveAttribute("href", "/documents/PNCL-SureLC-Quick-Reference.pdf");
     expect(screen.queryByRole("button", { name: 'Mark "Watch the SureLC tutorial video" as complete' })).toBeNull();
     expect(screen.queryByRole("link", { name: "Open SureLC #1" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Watch SureLC walkthrough" }));
@@ -97,9 +98,21 @@ describe("SureLC playback and final submission", () => {
     ranges = [[0, 10]];
     fireEvent.timeUpdate(video);
     fireEvent.ended(video);
-    expect(onComplete).toHaveBeenCalledExactlyOnceWith("surelc_tutorial", { videoPlaybackVerified: true });
+    expect(onComplete).toHaveBeenCalledExactlyOnceWith(tutorialId, { videoPlaybackVerified: true });
     fireEvent.ended(video);
     expect(onComplete).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the IBO tutorial and PDF available after completion without resubmitting playback", () => {
+    const onComplete = vi.fn();
+    render(<MemoryRouter><PortalOnboardingChecklist todos={[{ ...tutorial, id: "surelc_tutorial_ibo", completed: true }, account]} agentEmail="agent@thepncl.com" completingTodoId={null} onComplete={onComplete} /></MemoryRouter>);
+    expect(screen.getByRole("link", { name: "SureLC quick reference (PDF)" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Replay SureLC walkthrough" }));
+    const dialog = screen.getByRole("dialog", { name: tutorial.title });
+    expect(within(dialog).getByRole("link", { name: "SureLC quick reference (PDF)" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("status")).toHaveTextContent("Tutorial complete");
+    expect(screen.queryByRole("button", { name: "Save video completion" })).toBeNull();
+    expect(onComplete).not.toHaveBeenCalled();
   });
 
   it("shows the mandatory producer step last in Licensing and makes the submission actionable", () => {

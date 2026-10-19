@@ -91,8 +91,7 @@ export function isTodoGateLocked(todos: PortalTodo[], todoId: string): boolean {
   const todo = todos[index];
   if (todo.completed) return false;
   if (SURELC_VIDEO_DEPENDENT_TODO_IDS.includes(todoId)) {
-    const tutorial = todos.find((entry) => entry.id === SURELC_TUTORIAL_TODO_ID);
-    return Boolean(tutorial && !tutorial.completed);
+    return todos.some((entry) => isSureLcTutorialTodo(entry.id) && !entry.completed);
   }
   if (!todo.gated) return false;
   return todos.some(
@@ -359,6 +358,12 @@ export function groupTodosByPhase(todos: PortalTodo[]): Map<PortalTodoPhase, Por
 
 export const SUBMIT_NEW_PRODUCER_TODO_ID = "submit_new_producer";
 export const SURELC_TUTORIAL_TODO_ID = "surelc_tutorial";
+export const SURELC_IBO_TUTORIAL_TODO_ID = "surelc_tutorial_ibo";
+export const SURELC_QUICK_REFERENCE_URL = "/documents/PNCL-SureLC-Quick-Reference.pdf";
+
+export function isSureLcTutorialTodo(todoId: string): boolean {
+  return todoId === SURELC_TUTORIAL_TODO_ID || todoId === SURELC_IBO_TUTORIAL_TODO_ID;
+}
 const SURELC_VIDEO_DEPENDENT_TODO_IDS = [
   "surelc_account_1", "surelc_account_2", "surelc_account_3", "carrier_applications",
 ];
@@ -394,7 +399,7 @@ async function notifyNewProducerSubmission(): Promise<void> {
 }
 
 export async function completePortalTodo(todoId: string, todos: PortalTodo[], options?: TodoCompletionOptions): Promise<void> {
-  if (todoId === SURELC_TUTORIAL_TODO_ID && !options?.videoPlaybackVerified) {
+  if (isSureLcTutorialTodo(todoId) && !options?.videoPlaybackVerified) {
     throw new Error("Watch the full SureLC tutorial before completing this step.");
   }
   if (isTodoGateLocked(todos, todoId)) {
