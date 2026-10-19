@@ -284,12 +284,12 @@ export async function computeAutoCompletionSets(
         .eq("type", "new_producer").in("user_id", userIds);
       if (error) throw new Error(error.message);
       const ids = collectUserIds(data);
-      // Preserve submissions accepted before tickets were introduced, using the
-      // server's notification record rather than a user-editable metadata flag.
-      const { data: legacy, error: legacyError } = await adminClient.from("portal_profiles")
-        .select("user_id, new_producer_notification_sent_at").in("user_id", userIds);
+      // Preserve the rollout snapshot, including old submissions whose optional
+      // notification failed. Current user metadata never grants completion.
+      const { data: legacy, error: legacyError } = await adminClient.from("portal_new_producer_legacy_completions")
+        .select("user_id").in("user_id", userIds);
       if (legacyError) throw new Error(legacyError.message);
-      for (const row of legacy ?? []) if (row.new_producer_notification_sent_at) ids.add(row.user_id);
+      for (const row of legacy ?? []) ids.add(row.user_id);
       sets.set("new_producer", ids);
     })());
   }
