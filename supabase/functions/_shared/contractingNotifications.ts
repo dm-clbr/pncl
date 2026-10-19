@@ -127,6 +127,7 @@ export async function notifyAdminsOfNewProducerSubmission(
 
   const recipients = await listGenesisAdminEmails(adminClient);
   if (!recipients.length) {
+    await adminClient.from("portal_profiles").update({ new_producer_notification_sent_at: null }).eq("user_id", input.userId);
     logOnboarding("new_producer_notification_skipped", {
       userId: input.userId,
       reason: "no_admins",
@@ -134,7 +135,7 @@ export async function notifyAdminsOfNewProducerSubmission(
     return false;
   }
 
-  const contractingUrl = getContractingAdminUrl();
+  const contractingUrl = getContractingAdminUrl().replace(/\/contracting$/, "/tickets");
   const errors: string[] = [];
 
   for (const to of recipients) {

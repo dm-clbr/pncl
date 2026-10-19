@@ -13,6 +13,7 @@ import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 
 const TYPE_LABELS: Record<AdminTicket["type"], string> = {
+  new_producer: "New Producer",
   hierarchy_change: "Hierarchy change",
   pay_tier: "Pay tier",
   commission_dispute: "Commission dispute",

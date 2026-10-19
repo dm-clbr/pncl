@@ -14,6 +14,7 @@ export interface SureLcAccountLink {
   branch: string;
   href: string;
   actionLabel: string;
+  carriers: readonly string[];
 }
 
 export const DEFAULT_SURELC_ACCOUNT_LINKS: readonly SureLcAccountLink[] = [
@@ -23,6 +24,7 @@ export const DEFAULT_SURELC_ACCOUNT_LINKS: readonly SureLcAccountLink[] = [
     branch: "Basso Montemurro",
     href: "https://accounts.surancebay.com/oauth/authorize?redirect_uri=https:%2F%2Fsurelc.surancebay.com%2Fproducer%2Foauth%3FreturnUrl%3D%252Fprofile%252Fcontact-info%253FgaId%253D323%2526branch%253DBasso-Montemurro&gaId=323&client_id=surecrmweb&response_type=code",
     actionLabel: "Open SureLC #1",
+    carriers: ["American Amicable", "American General Life (AIG/Corebridge)", "American Home Life", "Liberty Bankers Life", "Royal Neighbors"],
   },
   {
     todoId: "surelc_account_2",
@@ -30,6 +32,7 @@ export const DEFAULT_SURELC_ACCOUNT_LINKS: readonly SureLcAccountLink[] = [
     branch: "The Pinnacle Life Group",
     href: "https://accounts.surancebay.com/oauth/authorize?redirect_uri=https:%2F%2Fsurelc.surancebay.com%2Fproducer%2Foauth%3FreturnUrl%3D%252Fprofile%252Fcontact-info%253FgaId%253D233%2526gaId%253D233%2526branch%253DJoe%252520Basso%2526branchVisible%253Dtrue%2526branchEditable%253Dfalse%2526branchRequired%253Dtrue%2526autoAdd%253Dfalse%2526requestMethod%253DGET&gaId=233&client_id=surecrmweb&response_type=code",
     actionLabel: "Open SureLC #2",
+    carriers: ["Banner (Beyond Term)", "Fidelity & Guaranty"],
   },
   {
     todoId: "surelc_account_3",
@@ -37,6 +40,7 @@ export const DEFAULT_SURELC_ACCOUNT_LINKS: readonly SureLcAccountLink[] = [
     branch: "Pinnacle Life Group",
     href: "https://accounts.surancebay.com/oauth/authorize?redirect_uri=https:%2F%2Fsurelc.surancebay.com%2Fproducer%2Foauth%3FreturnUrl%3D%252Fprofile%252Fcontact-info%253FgaId%253D1313%2526gaId%253D1313%2526branchVisible%253Dtrue%2526branchEditable%253Dfalse%2526branchRequired%253Dtrue%2526autoAdd%253Dfalse%2526requestMethod%253DGET&gaId=1313&client_id=surecrmweb&response_type=code",
     actionLabel: "Open SureLC #3",
+    carriers: ["AuguStar", "Foresters", "Kansas City Life", "Mutual of Omaha", "Transamerica"],
   },
 ];
 

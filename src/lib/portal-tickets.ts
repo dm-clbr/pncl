@@ -1,6 +1,6 @@
 import { getSupabaseConfig } from "@/lib/supabase";
 
-export type PortalTicketType = "hierarchy_change" | "pay_tier" | "commission_dispute" | "other";
+export type PortalTicketType = "hierarchy_change" | "pay_tier" | "commission_dispute" | "new_producer" | "other";
 export type PortalTicketStatus = "open" | "in_progress" | "resolved";
 
 export const TICKET_TYPE_OPTIONS: { value: PortalTicketType; label: string }[] = [
@@ -11,6 +11,7 @@ export const TICKET_TYPE_OPTIONS: { value: PortalTicketType; label: string }[] =
 ];
 
 export const TICKET_TYPE_LABELS: Record<PortalTicketType, string> = {
+  new_producer: "New Producer",
   hierarchy_change: "Hierarchy change",
   pay_tier: "Pay tier",
   commission_dispute: "Commission dispute",

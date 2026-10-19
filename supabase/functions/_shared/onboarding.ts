@@ -103,6 +103,7 @@ export interface SubmitOnboardingPayload {
   addressLine1: string;
   addressCity: string;
   addressZip: string;
+  county: string;
   uplineNetwork: string;
   hasLicense: string;
   npn?: string;

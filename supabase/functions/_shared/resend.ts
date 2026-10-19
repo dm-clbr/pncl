@@ -411,7 +411,7 @@ export function buildNewProducerNotificationEmailHtml(input: {
           <a href="${input.contractingUrl}"
              style="display:inline-block;background:#c8ff00;color:#0f0f0f;padding:12px 20px;
                     text-decoration:none;font-weight:600;border-radius:4px;">
-            Open contracting queue
+            Open New Producer tickets
           </a>
         </p>
       </div>

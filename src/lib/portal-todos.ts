@@ -324,7 +324,7 @@ export function isTodoCompleted(
   // older `completed_portal_todos.disclosures` metadata flag cannot satisfy
   // the current published curriculum.
   if (
-    todo.id === "disclosures"
+    (todo.id === "disclosures" || todo.id === "submit_new_producer")
     && todo.completionType === "auto"
   ) {
     return todo.completed === true;
@@ -373,29 +373,30 @@ export interface TodoCompletionOptions {
 }
 
 /**
- * Best-effort ping so admins get a "New Producer submission" email when the
- * agent checks off the gated Submit for New Producer step. Server dedupes.
+ * The server validates prerequisites and atomically saves a ticket and completion.
+ * A failed submission must remain incomplete so the agent can retry.
  */
 async function notifyNewProducerSubmission(): Promise<void> {
-  try {
-    const supabase = getSupabaseClient();
-    const { data } = await supabase.auth.getSession();
-    const accessToken = data.session?.access_token;
-    if (!accessToken) return;
+  const supabase = getSupabaseClient();
+  const { data } = await supabase.auth.getSession();
+  const accessToken = data.session?.access_token;
+  if (!accessToken) throw new Error("You must be signed in to submit for New Producer.");
 
-    const { url, anonKey } = getSupabaseConfig();
-    await fetch(`${url.replace(/\/$/, "")}/functions/v1/notify-new-producer`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        apikey: anonKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({}),
-    });
-  } catch {
-    // Notification is best-effort; the check-off itself already succeeded.
+  const { url, anonKey } = getSupabaseConfig();
+  const response = await fetch(`${url.replace(/\/$/, "")}/functions/v1/notify-new-producer`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      apikey: anonKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({}),
+  });
+  const result = await response.json();
+  if (!response.ok || !result.ticketId) {
+    throw new Error(result.message ?? "Unable to create your New Producer ticket. Please retry.");
   }
+  // The caller reloads the checklist; the saved ticket resolves this auto step.
 }
 
 export async function completePortalTodo(todoId: string, todos: PortalTodo[], options?: TodoCompletionOptions): Promise<void> {
@@ -407,6 +408,11 @@ export async function completePortalTodo(todoId: string, todos: PortalTodo[], op
   }
   if (!canCompleteTodo(todos, todoId)) {
     throw new Error("Complete the current stage before working on later steps.");
+  }
+
+  if (todoId === SUBMIT_NEW_PRODUCER_TODO_ID) {
+    await notifyNewProducerSubmission();
+    return;
   }
 
   const supabase = getSupabaseClient();
@@ -425,8 +431,4 @@ export async function completePortalTodo(todoId: string, todos: PortalTodo[], op
   });
 
   if (error) throw error;
-
-  if (todoId === SUBMIT_NEW_PRODUCER_TODO_ID) {
-    await notifyNewProducerSubmission();
-  }
 }

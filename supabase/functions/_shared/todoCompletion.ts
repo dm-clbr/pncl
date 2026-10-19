@@ -13,8 +13,8 @@ export function isTodoCompleteForUser(
 ): boolean {
   // This step represents the current published training. Legacy metadata must
   // never bypass current-version module acknowledgments.
-  if (row.completion_type === "auto" && row.auto_key === "disclosures") {
-    return autoSets.get("disclosures")?.has(userId) ?? false;
+  if (row.completion_type === "auto" && (row.auto_key === "disclosures" || row.auto_key === "new_producer")) {
+    return autoSets.get(row.auto_key)?.has(userId) ?? false;
   }
 
   if (completedMetadata[row.slug] === true) return true;

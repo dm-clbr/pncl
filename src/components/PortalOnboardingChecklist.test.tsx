@@ -67,9 +67,13 @@ describe("PortalOnboardingChecklist completed SureLC links", () => {
     fireEvent.click(screen.getByRole("button", { name: /Licensing/ }));
 
     for (const accountNumber of [1, 2, 3]) {
-      const link = screen.getByRole("link", { name: `Open SureLC #${accountNumber}` });
+      fireEvent.click(screen.getByRole("button", { name: `Open SureLC #${accountNumber}` }));
+      const warning = screen.getByRole("alertdialog");
+      expect(warning).toHaveTextContent("You must create a separate SureLC account");
+      const link = within(warning).getByRole("link", { name: `Continue to SureLC #${accountNumber}` });
       expect(link).toHaveAttribute("href", `https://example.com/surelc-${accountNumber}`);
       expect(link).toHaveAttribute("target", "_blank");
+      fireEvent.click(within(warning).getByRole("button", { name: "Cancel" }));
     }
   });
 });

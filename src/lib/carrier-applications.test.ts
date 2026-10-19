@@ -29,7 +29,7 @@ describe("buildCarrierApplicationsDescription", () => {
     ]);
 
     expect(description).toBe([
-      "Submit carrier applications in each SureLC account:",
+      "Submit applications ONLY for the carriers listed under each separate SureLC account:",
       "• SureLC #1: American Amicable",
       "• SureLC #2: Banner - Beyond Term, TransAmerica",
       "• SureLC #3: Foresters",
@@ -66,11 +66,21 @@ describe("buildCarrierApplicationsDescription", () => {
     ]);
 
     expect(description).toContain(
-      "• Ethos and United Home Life happen automatically — no action needed.",
+      "• Ethos and United Home Life: links are sent to your PNCL email automatically. No SureLC request is needed.",
     );
   });
 
   it("falls back to the saved to-do description when no carriers are available", () => {
     expect(buildCarrierApplicationsDescription([])).toBeNull();
+  });
+
+  it("does not send agents to SureLC for unassigned carriers or Ethos", () => {
+    const description = buildCarrierApplicationsDescription([
+      carrier("ethos", "Ethos", ""), carrier("gtl", "Guarantee Trust Life", ""),
+      carrier("transamerica", "Transamerica", "SureLC #3"),
+    ]);
+    expect(description).toContain("Ethos: links are sent to your PNCL email automatically");
+    expect(description).toContain("SureLC #3: Transamerica");
+    expect(description).not.toContain("Guarantee Trust Life");
   });
 });
