@@ -16,7 +16,7 @@ Sources: [Brandon's October 18 email](https://mail.google.com/mail/u/2/#inbox/FM
 | Mandatory New Producer submission | Last Licensing step, after every prerequisite; no approved contracts or writing numbers required |
 | Create New Producer support ticket | Server validates the applicable onboarding path; one durable ticket resolves completion |
 | Replace premature contracting email | Profile saves no longer alert contracting; legacy endpoint authenticates and returns a retired-action response |
-| Preserve prior completed submissions | Existing server notification timestamps remain authoritative for historical completion |
+| Preserve prior completed submissions | A protected rollout snapshot preserves historical completion, including older submissions whose optional notification failed |
 
 Stage placement follows Brandon's explicit September 21 instruction to put New Producer last in Licensing. The October 6 checklist still labels it Stage 4; the prior implemented stage consolidation is preserved.
 
@@ -29,6 +29,7 @@ Stage placement follows Brandon's explicit September 21 instruction to put New P
 - Eight concurrent service-role submissions returned one ticket ID and persisted exactly one ticket. The service role did not have access to `auth.users`.
 - Browser checks use the actual checklist and dialogs with clearly labeled test data. Verified initial IBO exclusions, locked stages, video/PDF rendering, account warnings, required submission acknowledgment, and transition to Sales Ready.
 - The prior notification-only response is rejected by the new client. Ticket-save failures remain incomplete; optional email failure does not erase a saved request.
+- Live compatibility verification found 13 older completed submissions without notification timestamps. The follow-up migration records all 82 historical completions in a read-only table, creating no tickets or notifications. Subsequent user-metadata edits cannot create historical completion records.
 
 ## Test boundaries and existing findings
 

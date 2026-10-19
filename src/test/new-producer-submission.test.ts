@@ -16,6 +16,7 @@ function scenario(designation = "ibo") {
   const tables: Record<string, Record<string, unknown>[]> = {
     portal_todos: inventory.map((r) => ({ ...r, published: true })),
     portal_tickets: [],
+    portal_new_producer_legacy_completions: [],
     portal_agent_designations: [{ user_id: user.id, designation }],
     portal_comp_attachments: [{ user_id: user.id }],
     portal_profiles: [{ user_id: user.id, first_name: "Test", last_name: "Agent", npn: "123", eo_policy_number: "TEST-EO", address_line1: "123 Test St", address_city: "Test", address_state: "UT", address_zip: "84001", drivers_license_path: "test/license.png" }],
@@ -96,7 +97,7 @@ describe("New Producer server submission", () => {
     expect(() => validateSubmitTicketPayload({ type: "new_producer", subject: "Skip", description: "Skip" })).toThrow("Invalid ticket type");
   });
   it("preserves legitimate historical submissions without creating retroactive tickets", async () => {
-    const s = scenario(); s.tables.portal_profiles[0].new_producer_notification_sent_at = "2026-10-01T00:00:00Z";
+    const s = scenario(); s.tables.portal_new_producer_legacy_completions = [{ user_id: "agent" }];
     const sets = await computeAutoCompletionSets(s.client as never, new Set(["new_producer"]), ["agent"]);
     expect(sets.get("new_producer")?.has("agent")).toBe(true);
     expect(s.rpc).not.toHaveBeenCalled();
