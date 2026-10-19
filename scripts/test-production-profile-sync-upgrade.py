@@ -27,7 +27,7 @@ assert all(view(s)['first_name']['conflict'] is None for s in pair)
 for s in reversed(pair):
  for e in events(s):deliver(s,e)
 assert view('pncl')['first_name']['value']==view('leadspply')['first_name']['value']=='leadspply'
-assert all(sql('mirror_upgrade_'+s,'select count(*) from profile_sync_private.receipts')>=counts[s] for s in pair)
+assert all(int(sql('mirror_upgrade_'+s,'select count(*) from profile_sync_private.receipts'))>=int(counts[s]) for s in pair)
 print('PASS existing conflicts automatically converge with history retained')
 # A delivery accepted before upgrade but acknowledged afterwards must replay safely.
 for s in pair:

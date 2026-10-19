@@ -6,12 +6,12 @@ alter table profile_sync_private.fields add column write_version jsonb;
 alter table profile_sync_private.outbox add column write_version jsonb;
 
 update profile_sync_private.outbox set write_version=jsonb_build_object(
-  'at',created_at,'source','pncl','id',id,'baseline',baseline);
+  'at',created_at,'source','pncl','id',id,'baseline',baseline) where write_version is null;
 -- Recover each local value's original save order, not the time of deployment.
 update profile_sync_private.fields f set write_version=(
   select e.write_version from profile_sync_private.outbox e
   where e.user_id=f.user_id and e.field=f.field and e.value=f.value
-  order by e.created_at desc,e.id desc limit 1);
+  order by e.created_at desc,e.id desc limit 1) where f.write_version is null;
 -- A received value may have no local event. Old receipts predate save timestamps.
 -- Keep its last known application time until a timestamped event arrives.
 update profile_sync_private.fields f set write_version=jsonb_build_object(

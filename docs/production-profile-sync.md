@@ -22,11 +22,11 @@ Rollback: set `profile_sync_private.settings.enabled=false` in both projects, an
 
 ## Verification
 
-- PNCL complete suite: 571 tests passed before release.
+- PNCL complete suite: 575 tests passed for automatic saves and song selection.
 - LeadSpply integration/connection/snapshot/UI selection: 50 passed. Full suite: 5,186 passed, one skipped, one pre-existing signing-guide navigation test failed with seven AbortSignal errors; the identical failure and errors reproduce on unchanged main (93d0945b).
 - Both production bundles passed. LeadSpply typecheck ratchet stayed at 99/99 existing errors. PNCL application typecheck passed.
-- Isolated actual PostgreSQL checks cover both migrations, native capture, normalization, bidirectional projection, baseline conflicts, explicit resolution, stale saves, receipt replay, NPN validation/audit, privacy, retry exhaustion, fixed-path photos, and concurrent sessions.
-- Twenty-one real handler checks against isolated databases cover auth/CORS, forged actor and file references, field allowlists, derived county, lost responses, private file transport/deletion, document collections/labels, suspension, and signed wake-up forgery, expiry, action scope, and browser-origin rejection, and large backlogs draining across bounded jobs.
+- Isolated actual PostgreSQL checks cover both migrations, native capture, normalization, bidirectional projection, automatic concurrent resolution, deliberate saves from stale forms, receipt replay, NPN validation/audit, privacy, retry exhaustion, fixed-path photos, and concurrent sessions. Upgrade tests also cover existing conflicts, receipts accepted before deployment, and exact timestamp ties.
+- Twenty-three real handler checks against isolated databases cover auth/CORS, forged actor and file references, field allowlists, derived county, lost responses, private file transport/deletion, document collections/labels, suspension, and signed wake-up forgery, expiry, action scope, and browser-origin rejection, and large backlogs draining across bounded jobs.
 - Both hosted migrations passed rollback-only transaction/replay/RLS/grant checks. New advisor findings are informational missing-policy notices on intentionally service-only private tables.
 
 Run the integration scripts against an isolated PostgreSQL server (never production):
@@ -37,6 +37,7 @@ export LEADSPPLY_SYNC_REPO=/path/to/agent-s-advantage
 export PROFILE_SYNC_TEST_PORT=55439
 export PROFILE_SYNC_TEST_ROOT=/tmp/profile-sync-test
 python3 "$PNCL_SYNC_REPO/scripts/test-production-profile-sync.py"
+python3 "$PNCL_SYNC_REPO/scripts/test-production-profile-sync-upgrade.py"
 node "$PNCL_SYNC_REPO/scripts/test-production-profile-sync.mjs"
 ```
 
