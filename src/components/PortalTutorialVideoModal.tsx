@@ -21,6 +21,9 @@ export default function PortalTutorialVideoModal({
   const [error, setError] = useState(false);
   const [finished, setFinished] = useState(false);
   const [percent, setPercent] = useState(0);
+  // Completing the todo changes the parent's key to its replay key. Keep the
+  // active player session intact; reopening the modal starts a fresh replay.
+  const [sessionProgressKey] = useState(progressKey);
   const watched = useRef(0);
   const submitted = useRef(false);
   const embedUrl = getBunnyVideoEmbedUrl(sourceUrl);
@@ -43,7 +46,7 @@ export default function PortalTutorialVideoModal({
     watched.current = seconds;
     if (Number.isFinite(duration) && duration > 0) {
       setPercent(Math.min(100, Math.floor(seconds / duration * 100)));
-      try { sessionStorage.setItem(progressKey, String(watched.current)); } catch { /* Storage is optional. */ }
+      try { sessionStorage.setItem(sessionProgressKey, String(watched.current)); } catch { /* Storage is optional. */ }
     }
   };
 
@@ -71,13 +74,13 @@ export default function PortalTutorialVideoModal({
         </div>
         <div className="portal-video-frame">
           {embedUrl ? <PortalBunnyTutorialPlayer title={title} embedUrl={embedUrl}
-            progressKey={progressKey} onProgress={saveProgress} onFinished={finishPlayback}
+            progressKey={sessionProgressKey} onProgress={saveProgress} onFinished={finishPlayback}
             onError={() => setError(true)} /> : <video src={sourceUrl} aria-label={title} controls playsInline preload="metadata"
             controlsList="nodownload noremoteplayback" disablePictureInPicture
             onLoadedMetadata={(event) => {
               const video = event.currentTarget;
               try {
-                const saved = Number(sessionStorage.getItem(progressKey));
+                const saved = Number(sessionStorage.getItem(sessionProgressKey));
                 if (Number.isFinite(saved) && saved > 0 && saved <= video.duration) {
                   watched.current = saved;
                   video.currentTime = Math.min(saved, Math.max(0, video.duration - 0.5));
