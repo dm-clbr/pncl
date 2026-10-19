@@ -253,7 +253,7 @@ export async function uploadProfilePhoto(userId: string, file: File): Promise<st
   }
 
   const supabase = getSupabaseClient();
-  const path = `${userId}/avatar.${getPhotoExtension(file)}`;
+  const path = `${userId}/avatar-${crypto.randomUUID()}.${getPhotoExtension(file)}`;
 
   const { error } = await supabase.storage
     .from(PROFILE_PHOTO_BUCKET)
@@ -268,6 +268,7 @@ export async function savePortalProfile(
   values: PortalProfileFormValues,
   photoFile: File | null,
   existingPhotoPath: string | null,
+  previousProfile?: PortalProfile | null,
 ): Promise<PortalProfile> {
   const supabase = getSupabaseClient();
   const firstName = values.firstName.trim();
@@ -309,20 +310,20 @@ export async function savePortalProfile(
     profile_photo_path: profilePhotoPath,
   };
 
-  const { data, error } = await supabase
-    .from("portal_profiles")
-    .upsert(payload, { onConflict: "user_id" })
-    .select("*")
-    .single();
+  const changes=previousProfile?Object.fromEntries(Object.entries(payload).filter(([key,value])=>key!=='user_id' && JSON.stringify(value)!==JSON.stringify(previousProfile[key as keyof PortalProfile]))):payload;
+  if(previousProfile && !photoFile)delete changes.profile_photo_path;
+  const { data, error } = await (previousProfile
+    ? supabase.from("portal_profiles").update(changes).eq("user_id",user.id)
+    : supabase.from("portal_profiles").upsert(payload,{onConflict:"user_id"})).select("*").single();
 
   if (error) throw error;
 
-  const fullName = `${firstName} ${lastName}`.trim();
+  const fullName = `${data.first_name} ${data.last_name}`.trim();
   const { error: metadataError } = await supabase.auth.updateUser({
     data: {
       ...user.user_metadata,
-      first_name: firstName,
-      last_name: lastName,
+      first_name: data.first_name,
+      last_name: data.last_name,
       full_name: fullName,
     },
   });
@@ -372,7 +373,7 @@ export async function uploadDriversLicense(userId: string, file: File): Promise<
   }
 
   const supabase = getSupabaseClient();
-  const path = `${userId}/drivers-license.${getPhotoExtension(file)}`;
+  const path = `${userId}/drivers-license-${crypto.randomUUID()}.${getPhotoExtension(file)}`;
 
   const { error } = await supabase.storage
     .from(PROFILE_DOCUMENTS_BUCKET)
@@ -399,7 +400,7 @@ export async function uploadEoCertificate(userId: string, file: File): Promise<s
   }
 
   const supabase = getSupabaseClient();
-  const path = `${userId}/eo-certificate.${extension}`;
+  const path = `${userId}/eo-certificate-${crypto.randomUUID()}.${extension}`;
 
   const { error } = await supabase.storage
     .from(PROFILE_DOCUMENTS_BUCKET)
