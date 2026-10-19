@@ -20,9 +20,12 @@ describe('production profile fields',()=>{
   request.mockResolvedValue({outcome:'saved',view:{...view,values:{...view.values,business_legal_name:'My agency'}},conflicts:[]});await act(()=>ref.current!.save());
   expect(request).toHaveBeenLastCalledWith(expect.objectContaining({action:'save',request:expect.objectContaining({changes:{business_legal_name:'My agency'}})}));expect(dirty).toHaveBeenLastCalledWith(false);
  });
- it('honors an explicit conflict choice over a stale native form value',async()=>{
-  const view=base();view.values.first_name='Here';const withConflict={...view,conflicts:{first_name:{value:'Other',clock:{pncl:1,leadspply:1}}}};request.mockResolvedValue(withConflict);const ref=createRef<ProfileSyncHandle>();render(<ProfileSyncFields ref={ref} userId="u" system="pncl"/>);
-  expect(await screen.findByText('Some profile details need your review.')).toBeInTheDocument();fireEvent.click(await screen.findByRole('button',{name:'Use other value'}));request.mockResolvedValue({outcome:'saved',view:{...view,values:{...view.values,first_name:'Other'}},conflicts:[]});await act(()=>ref.current!.save({first_name:'Stale'}));
-  expect(request).toHaveBeenLastCalledWith(expect.objectContaining({request:expect.objectContaining({changes:{first_name:'Other'},resolve:['first_name']})}));
+ it('saves the edited value without a review step even if an older response contains a conflict',async()=>{
+  const view=base();const withConflict={...view,conflicts:{first_name:{value:'Other',clock:{pncl:1,leadspply:1}}}};request.mockResolvedValue(withConflict);const ref=createRef<ProfileSyncHandle>();render(<ProfileSyncFields ref={ref} userId="u" system="pncl"/>);
+  await screen.findByLabelText('Business legal name');
+  expect(screen.queryByRole('button',{name:'Use other value'})).not.toBeInTheDocument();
+  expect(screen.queryByText(/needs review/)).not.toBeInTheDocument();
+  request.mockResolvedValue({outcome:'saved',view:{...view,values:{...view.values,first_name:'My latest name'}},conflicts:[]});await act(()=>ref.current!.save({first_name:'My latest name'}));
+  expect(request).toHaveBeenLastCalledWith(expect.objectContaining({request:expect.objectContaining({changes:{first_name:'My latest name'}})}));
  });
 });

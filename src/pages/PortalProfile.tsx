@@ -491,7 +491,7 @@ export default function PortalProfile() {
       const changed=Object.fromEntries(Object.entries(mapped).filter(([,key])=>form[key]!==previous[key]).map(([field,key])=>[field,form[key]||null]));
       const synced=await profileSyncRef.current?.save(changed);
       const submitted={...form};if(synced)for(const [field,key]of Object.entries(mapped))if(field in synced)submitted[key]=String(synced[field]??'');
-      const profile = await savePortalProfile(user, submitted, pendingPhotoFile, photoPath,profileRow);
+      const profile = await savePortalProfile(user, submitted, pendingPhotoFile, photoPath,profileRow,synced?['first_name','last_name','phone_number','address_line1','address_city','address_state','address_zip','county','shirt_size','polo_shirt_size','hoodie_size','waist_size','shoe_size']:[]);
       setForm(profileToFormValues(profile));
       setProfileRow(profile);
       setPhotoPath(profile.profile_photo_path);

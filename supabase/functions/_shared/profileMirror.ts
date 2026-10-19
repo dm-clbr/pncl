@@ -4,12 +4,14 @@ export type Clock = { pncl: number; leadspply: number };
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export type Section = 'personal' | 'home' | 'sizes' | 'business' | 'licensing' | 'email' | 'documents';
 export interface Field {
-  key: string; label: string; section: Section; kind: 'name'|'text'|'phone'|'npn'|'state'|'zip'|'size'|'ein'|'url'|'timezone'|'email'|'boolean'|'licenses'|'asset';
+  key: string; label: string; section: Section; kind: 'name'|'text'|'phone'|'npn'|'state'|'zip'|'size'|'ein'|'url'|'timezone'|'email'|'boolean'|'licenses'|'asset'|'song';
   pncl?: string; leadspply?: string; options?: string[]; derived?: boolean;
 }
 export const STATES = 'AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY'.split(' ');
 const sizes = ['XS','S','M','L','XL','2XL','3XL','4XL'];
+export type CloseOutSong = {provider:'apple';id:string;title:string;artist:string;url:string};
 export const FIELDS: Field[] = [
+  {key:'close_out_song',label:'Close out song',section:'personal',kind:'song'},
   {key:'first_name',label:'First name',section:'personal',kind:'name',pncl:'first_name',leadspply:'first_name'},
   {key:'last_name',label:'Last name',section:'personal',kind:'name',pncl:'last_name',leadspply:'last_name'},
   {key:'phone',label:'Phone number',section:'personal',kind:'phone',pncl:'phone_number',leadspply:'phone'},
@@ -62,6 +64,13 @@ export function fieldFor(key:string):Field {
 export function normalize(key:string,value:unknown):Json {
   const f=fieldFor(key);
   if(value===null){if(f.kind==='name')throw new MirrorError('name_required');return null;}
+  if(f.kind==='song'){
+    if(!record(value)||Object.keys(value).sort().join(',')!=='artist,id,provider,title,url'||value.provider!=='apple'||typeof value.id!=='string'||!/^\d{1,20}$/.test(value.id))throw new MirrorError('invalid_song');
+    const title=safeText(value.title,240),artist=safeText(value.artist,240),url=safeText(value.url,1000);
+    let parsed;try{parsed=new URL(url);}catch{throw new MirrorError('invalid_song');}
+    if(!title||!artist||parsed.protocol!=='https:'||parsed.hostname!=='music.apple.com'||parsed.port||parsed.username||parsed.password)throw new MirrorError('invalid_song');
+    return {provider:'apple',id:value.id,title,artist,url};
+  }
   if(f.kind==='boolean'){if(typeof value!=='boolean')throw new MirrorError('invalid_value');return value;}
   if(f.kind==='licenses'){
     if(!record(value) || Object.keys(value).length>51)throw new MirrorError('invalid_licenses');
