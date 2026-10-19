@@ -344,3 +344,7 @@ verify_jwt = true
 
 [functions.manage-leadspply-integration]
 verify_jwt = true
+
+# Validates user JWTs and the dedicated server sync key inside the handler.
+[functions.profile-sync]
+verify_jwt = false

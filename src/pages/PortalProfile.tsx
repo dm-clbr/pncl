@@ -1,3 +1,4 @@
+import {ProfileSyncFields,type ProfileSyncHandle} from '@/components/ProfileSyncFields';
 import { resolveAgentDesignation } from "@/lib/agent-designation";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -158,6 +159,8 @@ export default function PortalProfile() {
     ica: { ica, submitted: icaSubmitted, loading: icaLoading },
     todos: resolvedTodos, loading: todosLoading } = onboarding;
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const profileSyncRef=useRef<ProfileSyncHandle>(null);
+  const [syncDirty,setSyncDirty]=useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [syncingRecoveryEmail, setSyncingRecoveryEmail] = useState(false);
@@ -483,7 +486,13 @@ export default function PortalProfile() {
 
     setSubmitting(true);
     try {
-      const profile = await savePortalProfile(user, form, pendingPhotoFile, photoPath);
+      const previous=profileToFormValues(profileRow);
+      const mapped:Record<string,keyof PortalProfileFormValues>={first_name:'firstName',last_name:'lastName',phone:'phoneNumber',home_address_line1:'addressLine1',home_address_city:'addressCity',home_address_state:'addressState',home_address_zip:'addressZip',shirt_size:'shirtSize',polo_shirt_size:'poloShirtSize',hoodie_size:'hoodieSize',waist_size:'waistSize',shoe_size:'shoeSize'};
+      const changed=Object.fromEntries(Object.entries(mapped).filter(([,key])=>form[key]!==previous[key]).map(([field,key])=>[field,form[key]||null]));
+      const synced=await profileSyncRef.current?.save(changed);
+      const submitted={...form};if(synced)for(const [field,key]of Object.entries(mapped))if(field in synced)submitted[key]=String(synced[field]??'');
+      const profile = await savePortalProfile(user, submitted, pendingPhotoFile, photoPath,profileRow);
+      setForm(profileToFormValues(profile));
       setProfileRow(profile);
       setPhotoPath(profile.profile_photo_path);
       setPhotoCacheBuster(profile.updated_at);
@@ -540,6 +549,10 @@ export default function PortalProfile() {
     }
   };
 
+  useEffect(()=>{
+    const refresh=()=>{if(!user||dirty||submitting||pendingPhotoFile)return;void fetchPortalProfile(user.id).then(row=>{if(row){setProfileRow(row);setForm(profileToFormValues(row));setPhotoPath(row.profile_photo_path);setPhotoCacheBuster(row.updated_at);}});};
+    window.addEventListener('profile-sync-updated',refresh);return()=>window.removeEventListener('profile-sync-updated',refresh);
+  },[user,dirty,submitting,pendingPhotoFile]);
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -841,14 +854,15 @@ export default function PortalProfile() {
                     </div>
                   </Pane>
 
+                  {user?.id&&<ProfileSyncFields ref={profileSyncRef} userId={user.id} system="pncl" nativeDirty={dirty} onDirty={setSyncDirty}/>}
                   <div className="portal-profile-savebar">
                     <p className="portal-profile-savebar-note">
-                      {dirty ? "Unsaved changes" : "All changes saved"}
+                      {dirty || syncDirty ? "Unsaved changes" : "All changes saved"}
                     </p>
                     <button
                       type="submit"
                       className="portal-profile-save"
-                      disabled={submitting || !dirty}
+                      disabled={submitting || (!dirty && !syncDirty)}
                     >
                       {submitting ? "Saving..." : "Save profile"}
                     </button>
