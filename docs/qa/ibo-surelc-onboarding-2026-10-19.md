@@ -22,12 +22,13 @@ Stage placement follows Brandon's explicit September 21 instruction to put New P
 
 ## Verification
 
-- 568 Vitest tests pass, including complete 29-step IBO and 32-step LOA progression, referral designation, enrollment, training, playback, and submission failure tests.
+- 569 Vitest tests pass, including complete 29-step IBO and 32-step LOA progression, referral designation, enrollment, training, playback, and submission failure tests.
 - Frontend TypeScript check, changed frontend ESLint checks, and production build pass.
 - Deno checks pass for `notify-new-producer`, `notify-licensing-complete`, and `list-portal-todos` and their imports.
 - The migration was applied to an isolated UTF-8 PostgreSQL database seeded with the production step inventory. Tests verify carrier copy, permissions, failure rollback, unique tickets, and preservation of unrelated data.
 - Eight concurrent service-role submissions returned one ticket ID and persisted exactly one ticket. The service role did not have access to `auth.users`.
 - Browser checks use the actual checklist and dialogs with clearly labeled test data. Verified initial IBO exclusions, locked stages, video/PDF rendering, account warnings, required submission acknowledgment, and transition to Sales Ready.
+- Played the real 558.65-second IBO video through its natural end and observed automatic completion and unlocked SureLC actions. Closing it exposed a Player.js cleanup exception; the follow-up fix runs cleanup before the iframe is detached and preserves the active session when completion changes the replay key. Regression tests cover closing during playback, resuming, completion, and replay. Browser retests confirm saved progress resumes, both unfinished and completed players close safely, and account warnings remain usable with no new console errors.
 - The prior notification-only response is rejected by the new client. Ticket-save failures remain incomplete; optional email failure does not erase a saved request.
 - Live compatibility verification found 13 older completed submissions without notification timestamps. The follow-up migration records all 82 historical completions in a read-only table, creating no tickets or notifications. Subsequent user-metadata edits cannot create historical completion records.
 

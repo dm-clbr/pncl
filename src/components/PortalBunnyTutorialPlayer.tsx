@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { BunnyWatchTracker, loadBunnyPlayer, type BunnyPlayerConstructor } from "@/lib/bunny-player";
 import { isVideoPlaybackComplete } from "@/lib/video-playback";
 
@@ -25,7 +25,9 @@ export default function PortalBunnyTutorialPlayer({
     return () => { disposed = true; };
   }, []);
 
-  useEffect(() => {
+  // Player.js off() posts to the iframe, so cleanup must run before React
+  // detaches it and its contentWindow becomes null.
+  useLayoutEffect(() => {
     if (!Player || !frame.current) return;
     const player = new Player(frame.current);
     const tracker = new BunnyWatchTracker();
