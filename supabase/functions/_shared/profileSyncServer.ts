@@ -27,12 +27,12 @@ const safeCode=(e:unknown)=>e instanceof MirrorError?e.code:'sync_unavailable';
 const allowedCodes=['account_unavailable','identity_mismatch','not_linked','request_id_reused','event_id_reused','npn_rejected'];
 export function createProfileSyncHandler(d:SyncDependencies){
   const {db,system}=d,other:System=system==='pncl'?'leadspply':'pncl';
-  const rpc=async(action:string,user:string|null=null,body:ObjectValue={})=>{const {data,error}=await db.rpc('profile_sync',{p_action:action,p_user:user,p_body:body});if(error)throw new MirrorError(allowedCodes.includes(error.message)?error.message:'sync_unavailable',503);return data;};
+  const rpc=async(action:string,user:string|null=null,body:ObjectValue={})=>{const {data,error}=await db.rpc('profile_sync',{p_action:action,p_user:user,p_body:body});if(error){console.warn('profile_sync_rpc',JSON.stringify({system,action,code:error.code}));throw new MirrorError(allowedCodes.includes(error.message)?error.message:'sync_unavailable',503);}return data;};
   const available=async(user:string)=>{if(!await rpc('available',user))throw new MirrorError('account_unavailable',409);};
   async function peer(key:string,body:ObjectValue){
-    const response=await d.fetch(`${HOSTS[other]}/functions/v1/profile-sync`,{method:'POST',redirect:'error',signal:AbortSignal.timeout(25000),headers:{'Content-Type':'application/json','X-Profile-Sync-Key':key},body:JSON.stringify(body)});
+    let response:Response;try{response=await d.fetch(`${HOSTS[other]}/functions/v1/profile-sync`,{method:'POST',redirect:'error',signal:AbortSignal.timeout(25000),headers:{'Content-Type':'application/json','X-Profile-Sync-Key':key},body:JSON.stringify(body)});}catch(error){console.warn('profile_sync_transport',JSON.stringify({system,action:body.action,error:error instanceof Error?error.message.replaceAll(key,'[redacted]').slice(0,160):'unknown'}));throw error;}
     const value=await response.json().catch(()=>null);
-    if(!response.ok)throw new MirrorError(allowedCodes.includes(value?.error)?value.error:'sync_unavailable',response.status);
+    if(!response.ok){console.warn('profile_sync_peer',JSON.stringify({system,action:body.action,status:response.status,code:allowedCodes.includes(value?.error)?value.error:'sync_unavailable'}));throw new MirrorError(allowedCodes.includes(value?.error)?value.error:'sync_unavailable',response.status);}
     return value;
   }
   async function link(key:string,user:string){
@@ -92,12 +92,14 @@ export function createProfileSyncHandler(d:SyncDependencies){
   async function syncUserBody(key:string,user:string,reverse=true){
     const pair=await link(key,user);
     await peer(key,{action:'bind',pair});
-    const events=await rpc('outbox',user);
+    const pendingEvents=await rpc('outbox',user);
+    const events=pendingEvents.slice(0,4);
     // Bound fan-out and keep a failed field independent of the rest of the profile.
     for(let i=0;i<events.length;i+=4)await Promise.all(events.slice(i,i+4).map(async(raw:ObjectValue)=>{
       try{const event=await enrich(user,raw);const receipts=await peer(key,{action:'deliver',pair,event});await rpc('ack',user,{receipts});}
       catch(error){await rpc('fail',user,{id:raw.id,error:safeCode(error)});}
     }));
+    if(pendingEvents.length>events.length)await rpc('dispatch',user);
     if(reverse)await peer(key,{action:'flush',pair});
     return {processed:events.length};
   }
@@ -182,7 +184,7 @@ export function createProfileSyncHandler(d:SyncDependencies){
         if(body.action==='link'&&system==='leadspply'){
           const pair=await rpc('link',uuid(body.userId),{system:body.system});if(pair)await available(pair.leadspply);return json(pair);
         }
-        if(body.action==='tick'){const users=await rpc('tick_users');defer((async()=>{const garbage=await rpc('gc_candidates');for(const file of garbage)await db.storage.from(file.bucket).remove([file.path]);for(const user of users)try{await syncUser(key,user);}catch{ /* Retry at the next scheduled pass. */ }})());return json({accepted:true,accounts:users.length},202);}
+        if(body.action==='tick'){const users=await rpc('tick_users');defer((async()=>{const garbage=await rpc('gc_candidates');for(const file of garbage)await db.storage.from(file.bucket).remove([file.path]);for(const user of users)await rpc('dispatch',user);})());return json({accepted:true,accounts:users.length},202);}
         if(body.action==='sync'){const user=uuid(body.userId);defer(syncUser(key,user));return json({accepted:true},202);}
         if(body.action==='bind'){await checkPair(key,body.pair);return json({ok:true});}
         if(body.action==='deliver')return json(await receive(key,body.pair,body.event));

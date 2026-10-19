@@ -12,13 +12,14 @@ const {createProfileSyncHandler}=await import(testRoot+'/server.mjs');
 const users=JSON.parse(readFileSync(testRoot+'/identities.json','utf8'));
 const key='test-only-profile-sync-key-not-a-production-secret';
 const roots={pncl:'https://dpnajpojbxgsckwrmvnm.supabase.co',leadspply:'https://lhxvbtiepsuohunfmnkm.supabase.co'};
+let dispatches=0;
 const storage={pncl:new Map(),leadspply:new Map()},handlers={},pending=[];
 const literal=v=>"'"+JSON.stringify(v).replaceAll("'","''")+"'::jsonb";
 const sql=(system,query)=>execFileSync(process.env.PSQL??'psql',['-h','127.0.0.1','-p',process.env.PROFILE_SYNC_TEST_PORT??'55439','-U','postgres','-d','mirror_'+system,'-v','ON_ERROR_STOP=1','-At','-c',query],{encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
 for(const system of Object.keys(users)){
  sql(system,`update profile_sync_private.settings set enabled=true,secret='${key}'; grant select on public.pncl_account_links to service_role;`.replace(' grant select on public.pncl_account_links to service_role;',system==='leadspply'?' grant select on public.pncl_account_links to service_role;':''));
  const db={
-  rpc:async(name,{p_action,p_user,p_body})=>{try{const result=sql(system,`set role service_role; select public.profile_sync('${p_action}',${p_user?`'${p_user}'::uuid`:'null'},${literal(p_body)});`).replace(/^SET(?:\n|$)/,'');return {data:result?JSON.parse(result):null,error:null};}catch(error){console.error('RPC failed',system,p_action,error.stderr.toString());return {data:null,error:{message:error.stderr.toString().split('\n')[0].replace('ERROR:  ','')}};}},
+  rpc:async(name,{p_action,p_user,p_body})=>{try{const result=sql(system,`set role service_role; select public.profile_sync('${p_action}',${p_user?`'${p_user}'::uuid`:'null'},${literal(p_body)});`).replace(/^SET(?:\n|$)/,'');if(p_action==='dispatch'){dispatches++;pending.push(Promise.resolve().then(()=>handlers[system](new Request(roots[system]+'/functions/v1/profile-sync',{method:'POST',headers:{'Content-Type':'application/json','X-Profile-Sync-Key':key},body:JSON.stringify({action:'sync',userId:p_user})}))));}return {data:result?JSON.parse(result):null,error:null};}catch(error){console.error('RPC failed',system,p_action,error.stderr.toString());return {data:null,error:{message:error.stderr.toString().split('\n')[0].replace('ERROR:  ','')}};}},
   auth:{getUser:async token=>token===system?{data:{user:{id:users[system]}},error:null}:{data:{user:null},error:{message:'invalid'}}},
   functions:{invoke:async()=>({data:{ok:true},error:null})},
   storage:{from:bucket=>({
@@ -64,4 +65,8 @@ assert.equal((await signedWakeup({...wakeup,issuedAt:wakeup.issuedAt-301})).stat
 assert.equal((await signedWakeup(wakeup,{signature:'0'.repeat(64)})).status,401);ok('forged database signature rejected');
 assert.equal((await signedWakeup({...wakeup,action:'link'})).status,401);ok('database signatures cannot authorize profile reads or delivery');
 assert.equal((await signedWakeup(wakeup,{origin:'https://www.thepncl.com'})).status,401);ok('signed database wake-ups rejected from browser origin');
+current=(await call('pncl',{action:'read'})).body;await drain();
+const backlog={business_legal_name:'Synthetic Agency',business_ein:'123456789',business_address_city:'Salt Lake City',business_address_state:'UT',business_address_postal:'84101',business_website:'https://example.com/',timezone:'America/Denver',email_from_name:'Synthetic Agent',email_reply_to:'sync@example.com',show_on_leaderboard:true,shirt_size:'M',polo_shirt_size:'L',hoodie_size:'XL',waist_size:'32',shoe_size:'10'};
+assert.equal((await call('pncl',{action:'save',request:{id:crypto.randomUUID(),changes:backlog,expected:Object.fromEntries(Object.keys(backlog).map(k=>[k,current.clocks[k]]))}})).status,200);await drain();
+remote=(await call('leadspply',{action:'read'})).body;await drain();for(const [field,value]of Object.entries(backlog))assert.equal(remote.values[field],value,field);assert.ok(dispatches>=2);ok('large profile backlog drains through bounded independent jobs');
 console.log(`${checks} HTTP/FILE INTEGRATION CHECKS PASSED`);
