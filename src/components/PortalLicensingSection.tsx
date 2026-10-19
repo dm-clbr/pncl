@@ -7,13 +7,11 @@ import Pane from "@/components/portal/Pane";
 import {
   getDriversLicenseUrl,
   getEoCertificateUrl,
-  notifyLicensingComplete,
   profileToLicensingValues,
   saveLicensingProfile,
   type PortalLicensingFormValues,
   type PortalProfile,
 } from "@/lib/portal-profile";
-import { isReadyForContracting } from "@/lib/licensing-contracting";
 import { US_STATES } from "@/lib/us-states";
 import { toast } from "sonner";
 
@@ -177,12 +175,6 @@ export default function PortalLicensingSection({
       setLicensePreviewUrl(null);
       onSaved?.(saved);
       toast.success("Licensing details saved.");
-      if (isReadyForContracting({
-        npn: saved.npn,
-        eoCertificatePath: saved.eo_certificate_path,
-      })) {
-        void notifyLicensingComplete();
-      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Unable to save licensing details.");
     } finally {

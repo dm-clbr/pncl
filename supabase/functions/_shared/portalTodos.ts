@@ -31,6 +31,7 @@ export const PORTAL_TODO_AUTO_KEYS = [
   "writing_numbers",
   "carrier_credentials",
   "disclosures",
+  "new_producer",
 ] as const;
 export type PortalTodoAutoKey = (typeof PORTAL_TODO_AUTO_KEYS)[number];
 
@@ -275,7 +276,23 @@ export async function computeAutoCompletionSets(
     sets.set("account_created", new Set(userIds));
   }
 
-  const tasks: Promise<void>[] = [];
+  const tasks: PromiseLike<void>[] = [];
+
+  if (autoKeys.has("new_producer")) {
+    tasks.push((async () => {
+      const { data, error } = await adminClient.from("portal_tickets").select("user_id")
+        .eq("type", "new_producer").in("user_id", userIds);
+      if (error) throw new Error(error.message);
+      const ids = collectUserIds(data);
+      // Preserve submissions accepted before tickets were introduced, using the
+      // server's notification record rather than a user-editable metadata flag.
+      const { data: legacy, error: legacyError } = await adminClient.from("portal_profiles")
+        .select("user_id, new_producer_notification_sent_at").in("user_id", userIds);
+      if (legacyError) throw new Error(legacyError.message);
+      for (const row of legacy ?? []) if (row.new_producer_notification_sent_at) ids.add(row.user_id);
+      sets.set("new_producer", ids);
+    })());
+  }
 
   if (autoKeys.has("ica")) {
     tasks.push(

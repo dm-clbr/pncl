@@ -24,7 +24,8 @@ import {
   type TodoCompletionOptions,
   type PortalTodo,
 } from "@/lib/portal-todos";
-import { isSureLcAccountTodo } from "@/lib/surelc-accounts";
+import { isSureLcAccountTodo, resolveSureLcAccountLinks } from "@/lib/surelc-accounts";
+import PortalSureLcAccountLink from "@/components/PortalSureLcAccountLink";
 import PortalNewProducerModal from "@/components/PortalNewProducerModal";
 import PortalTutorialVideoModal from "@/components/PortalTutorialVideoModal";
 import PortalSureLcReferenceLink from "@/components/PortalSureLcReferenceLink";
@@ -237,6 +238,9 @@ function PortalTodoItem({
   const requiresVideoPlayback = isSureLcTutorialTodo(todo.id);
   const [confirmingNewProducer, setConfirmingNewProducer] = useState(false);
   const keepCompletedLink = isSureLcAccountTodo(todo.id) && Boolean(todo.href);
+  const sureLcAccount = isSureLcAccountTodo(todo.id)
+    ? resolveSureLcAccountLinks([todo]).find((account) => account.todoId === todo.id)
+    : undefined;
 
   const disabled = locked || gateLocked;
   const urgent = isRequiredForm && !disabled && !todo.completed;
@@ -300,15 +304,7 @@ function PortalTodoItem({
           </div>
         ) : keepCompletedLink && (
           <div className="pcl-step-body">
-            <a
-              href={todo.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="pcl-step-link"
-            >
-              {todo.actionLabel || "Open SureLC"}
-              <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
-            </a>
+            {sureLcAccount && <PortalSureLcAccountLink account={sureLcAccount} />}
           </div>
         )
       ) : (
@@ -352,6 +348,8 @@ function PortalTodoItem({
                 <Play size={16} strokeWidth={2.5} aria-hidden="true" />
                 {todo.actionLabel || "Watch video"}
               </button>
+            ) : sureLcAccount ? (
+              <PortalSureLcAccountLink account={sureLcAccount} />
             ) : todo.external ? (
               <a
                 href={todo.href}

@@ -15,7 +15,11 @@ function groupCarriersBySection(carriers: PortalCarrier[]): CarrierSection[] {
     const carrierName = carrier.carrier.trim();
     if (!carrierName) continue;
 
-    const title = carrier.section.trim() || "Other";
+    const automatic = /^(ethos|united home life)$/i.test(carrierName);
+    const title = automatic ? "Automatic" : carrier.section.trim();
+    // The carrier directory also contains carriers outside these three accounts.
+    // Never present an unassigned carrier as a SureLC application requirement.
+    if (!/^SureLC #\d/i.test(title) && title.toLowerCase() !== "automatic") continue;
     const existingIndex = sectionIndexes.get(title);
     if (existingIndex !== undefined) {
       sections[existingIndex].carrierNames.push(carrierName);
@@ -45,12 +49,11 @@ export function buildCarrierApplicationsDescription(
   const bullets = sections.map(({ title, carrierNames }) => {
     if (title.toLowerCase() === "automatic") {
       const carrierList = formatNaturalList(carrierNames);
-      const verb = carrierNames.length === 1 ? "happens" : "happen";
-      return `• ${carrierList} ${verb} automatically — no action needed.`;
+      return `• ${carrierList}: links are sent to your PNCL email automatically. No SureLC request is needed.`;
     }
 
     return `• ${title}: ${carrierNames.join(", ")}`;
   });
 
-  return ["Submit carrier applications in each SureLC account:", ...bullets].join("\n");
+  return ["Submit applications ONLY for the carriers listed under each separate SureLC account:", ...bullets].join("\n");
 }

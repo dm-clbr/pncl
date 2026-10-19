@@ -1,0 +1,17 @@
+.portal-workflow-overlay { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 20px; background: rgb(0 0 0 / 72%); }
+.portal-workflow-dialog { box-sizing: border-box; width: min(560px, 100%); max-height: calc(100dvh - 40px); overflow-y: auto; padding: 24px; border: 1px solid var(--portal-border, #444); border-radius: 16px; background: var(--portal-bar-fill, #181818); color: var(--portal-text, #eee); font-family: var(--portal-font, sans-serif); font-size: 14px; line-height: 1.6; box-shadow: 0 24px 80px #0008; }
+.portal-workflow-dialog header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.portal-workflow-dialog h2 { margin: 0; font-size: 20px; font-weight: 600; color: var(--portal-text-strong, #fff); }
+.portal-workflow-dialog p, .portal-workflow-dialog ul { margin: 18px 0; }
+.portal-workflow-dialog ul { padding-left: 24px; list-style: disc; }
+.portal-workflow-dialog li { margin: 6px 0; }
+.portal-workflow-warning { padding: 14px; border: 1px solid #b08b4d80; border-radius: 8px; background: #b08b4d15; }
+.home2-page .portal-workflow-dialog footer, .portal-workflow-dialog footer { display: flex; justify-content: flex-end; gap: 10px; margin: 24px 0 0; padding: 0; background: transparent; border: 0; flex-wrap: wrap; }
+.portal-workflow-dialog button, .portal-workflow-dialog footer a { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; border: 1px solid var(--portal-border, #555); border-radius: 8px; padding: 10px 16px; background: transparent; color: inherit; text-decoration: none; cursor: pointer; font: inherit; }
+.portal-workflow-dialog header button { padding: 10px; }
+.portal-workflow-dialog .portal-workflow-primary { background: var(--portal-text-strong, #fff); color: var(--portal-bar-fill, #181818); }
+.portal-workflow-dialog button:disabled { opacity: .4; cursor: not-allowed; }
+.portal-workflow-dialog :focus-visible { outline: 2px solid #c8a66c; outline-offset: 3px; }
+.portal-workflow-confirm { display: flex; align-items: flex-start; gap: 12px; cursor: pointer; }
+.portal-workflow-confirm input { flex-shrink: 0; width: 20px; height: 20px; margin-top: 2px; }
+@media (max-width: 520px) { .portal-workflow-overlay { padding: 12px; } .portal-workflow-dialog { padding: 20px; max-height: calc(100dvh - 24px); } .portal-workflow-dialog footer > * { flex: 1; } }

@@ -1444,7 +1444,7 @@ export async function listLeadCharges(
   return adminFetch(`admin-list-lead-charges${query}`, accessToken, { method: "GET" });
 }
 
-export type AdminTicketType = "hierarchy_change" | "pay_tier" | "commission_dispute" | "other";
+export type AdminTicketType = "hierarchy_change" | "pay_tier" | "commission_dispute" | "new_producer" | "other";
 export type AdminTicketStatus = "open" | "in_progress" | "resolved";
 
 export interface AdminTicket {

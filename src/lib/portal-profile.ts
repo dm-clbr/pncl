@@ -332,32 +332,6 @@ export async function savePortalProfile(
   return { ...data, agent_designation: await fetchAgentDesignation(user.id) } as PortalProfile;
 }
 
-/**
- * Best-effort ping so admins get a "ready for contracting" email once the
- * agent has both an NPN and E&O policy number on file. Server dedupes.
- */
-export async function notifyLicensingComplete(): Promise<void> {
-  try {
-    const supabase = getSupabaseClient();
-    const { data } = await supabase.auth.getSession();
-    const accessToken = data.session?.access_token;
-    if (!accessToken) return;
-
-    const { url, anonKey } = getSupabaseConfig();
-    await fetch(`${url.replace(/\/$/, "")}/functions/v1/notify-licensing-complete`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        apikey: anonKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({}),
-    });
-  } catch {
-    // Notification is best-effort; saving licensing details already succeeded.
-  }
-}
-
 /** Formats the auto-assigned agent number as the display ID, e.g. PNCL-00042. */
 export function formatAgentNumber(agentNumber: number | null | undefined): string | null {
   if (agentNumber === null || agentNumber === undefined) return null;

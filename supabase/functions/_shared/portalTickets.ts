@@ -4,12 +4,14 @@ export const PORTAL_TICKET_TYPES = [
   "commission_dispute",
   "other",
 ] as const;
-export type PortalTicketType = (typeof PORTAL_TICKET_TYPES)[number];
+// New Producer tickets can only be created by the gated onboarding endpoint.
+export type PortalTicketType = (typeof PORTAL_TICKET_TYPES)[number] | "new_producer";
 
 export const PORTAL_TICKET_STATUSES = ["open", "in_progress", "resolved"] as const;
 export type PortalTicketStatus = (typeof PORTAL_TICKET_STATUSES)[number];
 
 export const PORTAL_TICKET_TYPE_LABELS: Record<PortalTicketType, string> = {
+  new_producer: "New Producer",
   hierarchy_change: "Hierarchy change",
   pay_tier: "Pay tier",
   commission_dispute: "Commission dispute",

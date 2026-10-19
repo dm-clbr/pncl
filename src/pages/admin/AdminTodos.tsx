@@ -38,6 +38,7 @@ const COMPLETION_TYPE_OPTIONS: { value: AdminPortalTodoCompletionType; label: st
 ];
 
 const AUTO_KEY_OPTIONS: { value: string; label: string }[] = [
+  { value: "new_producer", label: "New Producer ticket submitted" },
   { value: "account_created", label: "Portal account created" },
   { value: "ica", label: "ICA signed" },
   { value: "w9", label: "W-9 submitted" },

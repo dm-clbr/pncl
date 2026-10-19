@@ -54,7 +54,7 @@ describe("OnboardingSuccess", () => {
     renderAt("/onboarding/ob-1/success?token=t");
 
     expect(
-      await screen.findByRole("heading", { name: "We couldn't finish creating your PNCL email." }),
+      await screen.findByRole("heading", { name: "We couldn’t finish your PNCL account setup." }),
     ).toBeInTheDocument();
     expect(screen.getByText("Setup Failed")).toBeInTheDocument();
     expect(screen.getByText("Workspace account creation did not finish.")).toBeInTheDocument();
