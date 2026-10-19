@@ -5,13 +5,15 @@ import { X } from "lucide-react";
 import { getWatchedVideoTime, isVideoPlaybackComplete } from "@/lib/video-playback";
 import { getBunnyVideoEmbedUrl } from "@/lib/bunny-player";
 import PortalBunnyTutorialPlayer from "@/components/PortalBunnyTutorialPlayer";
+import PortalSureLcReferenceLink from "@/components/PortalSureLcReferenceLink";
 
 export default function PortalTutorialVideoModal({
-  title, sourceUrl, progressKey, completing, onComplete, onClose,
+  title, sourceUrl, progressKey, completed = false, completing, onComplete, onClose,
 }: {
   title: string;
   sourceUrl: string;
   progressKey: string;
+  completed?: boolean;
   completing: boolean;
   onComplete: () => void;
   onClose: () => void;
@@ -50,7 +52,7 @@ export default function PortalTutorialVideoModal({
     submitted.current = true;
     setFinished(true);
     setPercent(100);
-    onComplete();
+    if (!completed) onComplete();
   };
 
   const updateProgress = (video: HTMLVideoElement) => {
@@ -103,11 +105,13 @@ export default function PortalTutorialVideoModal({
           </p>
         ) : (
           <p className="portal-video-watch-note" role="status">
-            {finished ? "You’ve finished the tutorial. Saving completion unlocks the SureLC steps below."
+            {completed ? "Tutorial complete. You can replay it or open the quick reference below."
+              : finished ? "You’ve finished the tutorial. Saving completion unlocks the SureLC steps below."
               : `Watch the full tutorial to unlock your SureLC steps. ${percent}% watched. You can pause and resume; skipping ahead is disabled.`}
           </p>
         )}
-        {finished && (
+        <PortalSureLcReferenceLink className="portal-todo-link" />
+        {finished && !completed && (
           <button type="button" className="portal-todo-link" disabled={completing} onClick={onComplete}>
             {completing ? "Saving completion…" : "Save video completion"}
           </button>

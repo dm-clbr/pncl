@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { canCompleteTodo, completePortalTodo, derivePortalPhase, isTodoGateLocked, PORTAL_TODO_PHASES, type PortalTodo } from "./portal-todos";
+import { canCompleteTodo, completePortalTodo, derivePortalPhase, filterPortalTodosForAgent, isTodoCompleted, isTodoGateLocked, PORTAL_TODO_PHASES, type PortalTodo } from "./portal-todos";
+import type { User } from "@supabase/supabase-js";
 
 function step(id: string, completed = false, gated = false): PortalTodo {
   return { id, title: id, description: "", href: "", external: false, actionLabel: "", phase: "licensing", completionType: "agent", completed, gated };
 }
 
 describe("SureLC onboarding gates", () => {
-  it("locks all accounts and applications until the tutorial is watched", () => {
-    const todos = [step("surelc_tutorial"), step("surelc_account_1", false, true), step("surelc_account_2", false, true), step("surelc_account_3", false, true), step("carrier_applications", false, true)];
+  it.each(["surelc_tutorial", "surelc_tutorial_ibo"])("locks all accounts and applications until %s is watched", (tutorialId) => {
+    const todos = [step(tutorialId), step("surelc_account_1", false, true), step("surelc_account_2", false, true), step("surelc_account_3", false, true), step("carrier_applications", false, true)];
     for (const todo of todos.slice(1)) expect(canCompleteTodo(todos, todo.id)).toBe(false);
     todos[0].completed = true;
     for (const todo of todos.slice(1)) expect(canCompleteTodo(todos, todo.id)).toBe(true);
@@ -25,7 +26,20 @@ describe("SureLC onboarding gates", () => {
     expect(PORTAL_TODO_PHASES.map((phase) => phase.id)).toEqual(["on_board", "pre_license", "licensing", "sales_ready"]);
   });
 
-  it("rejects manually checking off the tutorial without verified playback", async () => {
-    await expect(completePortalTodo("surelc_tutorial", [step("surelc_tutorial")])).rejects.toThrow("Watch the full SureLC tutorial");
+  it.each(["surelc_tutorial", "surelc_tutorial_ibo"])("rejects manually checking off %s without verified playback", async (tutorialId) => {
+    await expect(completePortalTodo(tutorialId, [step(tutorialId)])).rejects.toThrow("Watch the full SureLC tutorial");
+  });
+
+  it("uses each audience's own tutorial and keeps LOA completion from satisfying IBO playback", () => {
+    const tutorials = [
+      { ...step("surelc_tutorial"), showLoa: true, showIbo: false },
+      { ...step("surelc_tutorial_ibo"), showLoa: false, showIbo: true },
+    ];
+    expect(filterPortalTodosForAgent(tutorials, "loa").map(t => t.id)).toEqual(["surelc_tutorial"]);
+    const ibo = filterPortalTodosForAgent(tutorials, "ibo");
+    expect(ibo.map(t => t.id)).toEqual(["surelc_tutorial_ibo"]);
+    const user = { user_metadata: { completed_portal_todos: { surelc_tutorial: true } } } as User;
+    expect(isTodoCompleted(user, ibo[0])).toBe(false);
+    expect(canCompleteTodo([...ibo, step("surelc_account_1")], "surelc_account_1")).toBe(false);
   });
 });
