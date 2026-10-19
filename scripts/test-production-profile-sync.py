@@ -41,6 +41,7 @@ for system,root in roots.items():
  sql(db,'\n'.join(line for line in migration.splitlines() if not line.startswith('create extension')))
  if system=='pncl':
   for fix in root.glob('supabase/migrations/*_profile_sync_native_phone_format.sql'):sql(db,fix.read_text())
+ for fix in root.glob('supabase/migrations/*_profile_sync_bounded_workers.sql'):sql(db,fix.read_text())
  print(system,'migration compiled')
 a=str(uuid.uuid4());b=str(uuid.uuid4());pair={'pncl':a,'leadspply':b}
 for system,user in pair.items():
