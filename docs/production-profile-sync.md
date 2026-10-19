@@ -8,6 +8,8 @@ Native profile/document writes (including user, admin, and onboarding paths) com
 
 Both existing Save buttons include counterpart drafts. Native user edits use expected field clocks before the existing local workflow, and preserve unrelated fields. Private files are copied and hashed before references are committed. File uploads use immutable paths; a storage trigger detects replacement by older clients using a fixed path. Removal is a tombstone. Photos retain their existing public visibility; private documents retain private access. New counterpart documents use a service-only bucket and owner-bound, 60-second signed links.
 
+The shared phone value uses E.164, while PNCL projection keeps its existing `555-555-5555` format and database constraint.
+
 NPN projection calls LeadSpply's existing `set_my_npn` validation and audit function under the verified linked owner's transaction identity. License approval and account controls are not mirrored. Legacy licensed states are retained until reconciled with a number. PNCL's Google recovery-email flow is retained. Inbound LeadSpply business updates invoke its existing `sync-business-profile` service workflow for CRM propagation.
 
 ## Operations and retention
