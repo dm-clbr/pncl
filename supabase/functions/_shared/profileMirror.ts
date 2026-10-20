@@ -11,7 +11,7 @@ export const STATES = 'AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA 
 const sizes = ['XS','S','M','L','XL','2XL','3XL','4XL'];
 export const CLOSE_OUT_CLIP_SECONDS = 10;
 export const MAX_SONG_PREVIEW_SECONDS = 600;
-export type CloseOutSong = {provider:'apple';id:string;title:string;artist:string;url:string;clipSource?:'apple_preview';previewDurationSeconds?:number;clipStartSeconds?:number;clipDurationSeconds?:10};
+export type CloseOutSong = {provider:'apple';id:string;title:string;artist:string;url:string;clipSource?:'apple_preview';previewDurationSeconds?:number;clipStartSeconds?:number;clipDurationSeconds?:6|10};
 export const FIELDS: Field[] = [
   {key:'close_out_song',label:'Close out song',section:'personal',kind:'song'},
   {key:'first_name',label:'First name',section:'personal',kind:'name',pncl:'first_name',leadspply:'first_name'},
@@ -73,9 +73,9 @@ export function normalize(key:string,value:unknown):Json {
     if(!title||!artist||parsed.protocol!=='https:'||parsed.hostname!=='music.apple.com'||parsed.port||parsed.username||parsed.password)throw new MirrorError('invalid_song');
     const song:CloseOutSong={provider:'apple',id:value.id,title,artist,url};
     if(['clipSource','previewDurationSeconds','clipStartSeconds','clipDurationSeconds'].some(k=>k in value)){
-      if(value.clipSource!=='apple_preview'||!Number.isSafeInteger(value.previewDurationSeconds)||Number(value.previewDurationSeconds)<CLOSE_OUT_CLIP_SECONDS||Number(value.previewDurationSeconds)>MAX_SONG_PREVIEW_SECONDS||!Number.isSafeInteger(value.clipStartSeconds)||Number(value.clipStartSeconds)<0||value.clipDurationSeconds!==CLOSE_OUT_CLIP_SECONDS||Number(value.clipStartSeconds)+CLOSE_OUT_CLIP_SECONDS>Number(value.previewDurationSeconds))throw new MirrorError('invalid_song');
+      if(value.clipSource!=='apple_preview'||!Number.isSafeInteger(value.previewDurationSeconds)||Number(value.previewDurationSeconds)<6||Number(value.previewDurationSeconds)>MAX_SONG_PREVIEW_SECONDS||!Number.isSafeInteger(value.clipStartSeconds)||Number(value.clipStartSeconds)<0||![6,10].includes(Number(value.clipDurationSeconds))||typeof value.clipDurationSeconds!=='number'||Number(value.clipStartSeconds)+Number(value.clipDurationSeconds)>Number(value.previewDurationSeconds))throw new MirrorError('invalid_song');
       song.clipSource='apple_preview';song.previewDurationSeconds=Number(value.previewDurationSeconds);
-      song.clipStartSeconds=Number(value.clipStartSeconds);song.clipDurationSeconds=CLOSE_OUT_CLIP_SECONDS;
+      song.clipStartSeconds=Number(value.clipStartSeconds);song.clipDurationSeconds=value.clipDurationSeconds as 6|10; // Preserve legacy receipts; new selections use ten seconds.
     }
     return song;
   }

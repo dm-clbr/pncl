@@ -59,7 +59,7 @@ export function SongPreviewPicker({ song, onChange, disabled }: { song: CloseOut
       stop(); setUrl(null); setDuration(0); setLoading(false); setError('This preview cannot provide a 10-second section. Choose another song.'); return;
     }
     setDuration(seconds); setLoading(false);
-    if (song.clipSource !== 'apple_preview' || song.previewDurationSeconds !== seconds || (song.clipStartSeconds ?? 0) + CLOSE_OUT_CLIP_SECONDS > seconds) choose(song.clipStartSeconds ?? 0, seconds);
+    if (song.clipDurationSeconds !== CLOSE_OUT_CLIP_SECONDS || song.clipSource !== 'apple_preview' || song.previewDurationSeconds !== seconds || (song.clipStartSeconds ?? 0) + CLOSE_OUT_CLIP_SECONDS > seconds) choose(song.clipStartSeconds ?? 0, seconds);
   }
   async function playSection() {
     const player = audio.current;
@@ -111,6 +111,6 @@ export function SongPreviewPicker({ song, onChange, disabled }: { song: CloseOut
       </div>
     </>}
     {error && <p role="status" className="profile-sync-note">{error}</p>}
-    <p className="profile-sync-note">Preview provided courtesy of iTunes. This selection is for your profile; office playback is not enabled.</p>
+    <p className="profile-sync-note">Preview provided courtesy of iTunes. Your saved ten-second section is used for policy-issued TV celebrations when sound is enabled.</p>
   </fieldset>;
 }
