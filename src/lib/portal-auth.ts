@@ -9,13 +9,6 @@ export function isPendingPortalEnrollment(metadata: unknown): boolean {
   return enrollment.enrollment_version === 3 && enrollment.enrollment_ready !== true;
 }
 
-export function canPendingPortalEnrollmentUsePath(pathname: string): boolean {
-  return pathname === PORTAL_LOGIN_PATH
-    || pathname === PORTAL_ACTIVATE_PATH
-    || pathname === "/"
-    || pathname === "";
-}
-
 export function storePortalOAuthReturn(path: string): void {
   const normalized = path.startsWith("/") ? path : `/${path}`;
   localStorage.setItem(PORTAL_OAUTH_RETURN_KEY, normalized);

@@ -1,20 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, Navigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import PortalAuthLayout from "@/components/portal/PortalAuthLayout";
 import Chip from "@/components/portal/Chip";
 import { trackPageView } from "@/lib/analytics";
 import { useAuth } from "@/contexts/AuthContext";
-import { getSupabaseClient, getSupabaseConfig } from "@/lib/supabase";
+import { activatePortalEnrollment, PortalActivationSignInError } from "@/lib/portal-activation";
 import { isPendingPortalEnrollment } from "@/lib/portal-auth";
 import { toast } from "sonner";
 
 export default function OnboardingActivate() {
-  const { user, session, loading } = useAuth();
+  const { user, session, loading, signInWithGoogle } = useAuth();
   const [checking, setChecking] = useState(false);
+  const [signingIn, setSigningIn] = useState(false);
+  const [needsSignIn, setNeedsSignIn] = useState(false);
   const [verificationError, setVerificationError] = useState<string | null>(null);
   const attemptedUserId = useRef<string | null>(null);
   const verificationInFlight = useRef(false);
   const userId = user?.id;
+  const currentUserId = useRef(userId);
+  currentUserId.current = userId;
   const accessToken = session?.access_token;
   const pendingEnrollment = isPendingPortalEnrollment(user?.app_metadata);
   useEffect(() => {
@@ -27,22 +31,14 @@ export default function OnboardingActivate() {
     verificationInFlight.current = true;
     setChecking(true);
     setVerificationError(null);
+    setNeedsSignIn(false);
     try {
-      const { url, anonKey } = getSupabaseConfig();
-      const response = await fetch(`${url.replace(/\/$/, "")}/functions/v1/activate-onboarding-google-signin`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}`, apikey: anonKey },
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message ?? "Google sign-in is not complete yet.");
-      const { data: refreshed, error } = await getSupabaseClient().auth.refreshSession();
-      if (error) throw error;
-      if (!refreshed.session || refreshed.session.user.id !== userId
-        || refreshed.session.user.app_metadata?.enrollment_ready !== true) {
-        throw new Error("Unable to confirm portal activation. Please try again.");
-      }
+      await activatePortalEnrollment(userId);
+      if (currentUserId.current !== userId) return;
       toast.success("Google sign-in confirmed. Your PNCL portal is ready.");
     } catch (error) {
+      if (currentUserId.current !== userId) return;
+      setNeedsSignIn(error instanceof PortalActivationSignInError);
       setVerificationError(error instanceof Error ? error.message : "Unable to verify Google sign-in.");
     } finally {
       verificationInFlight.current = false;
@@ -51,12 +47,30 @@ export default function OnboardingActivate() {
   }, [accessToken, userId, pendingEnrollment]);
 
   useEffect(() => {
-    if (loading || !userId || !accessToken || !pendingEnrollment || attemptedUserId.current === userId) return;
+    if (!userId) {
+      attemptedUserId.current = null;
+      return;
+    }
+    if (loading || checking || verificationInFlight.current || !accessToken || !pendingEnrollment || attemptedUserId.current === userId) return;
     // Retry only on request after a failure; session refreshes and rerenders
     // must not restart activation or send duplicate verification requests.
     attemptedUserId.current = userId;
     void verifyGoogleSignIn();
-  }, [loading, userId, accessToken, pendingEnrollment, verifyGoogleSignIn]);
+  }, [loading, checking, userId, accessToken, pendingEnrollment, verifyGoogleSignIn]);
+
+  const handleSignIn = async () => {
+    setSigningIn(true);
+    setVerificationError(null);
+    try {
+      // Start OAuth directly, even if a revoked session is still in React state.
+      // Going through /portal/login would send pending users right back here.
+      await signInWithGoogle();
+    } catch (error) {
+      setNeedsSignIn(true);
+      setVerificationError(error instanceof Error ? error.message : "Unable to sign in with Google.");
+      setSigningIn(false);
+    }
+  };
 
   if (!loading && user && !pendingEnrollment) {
     return <Navigate to="/portal" replace />;
@@ -72,17 +86,17 @@ export default function OnboardingActivate() {
           : "After setting up Gmail, sign in with your new @thepncl.com Google account. We’ll verify your sign-in and open the portal automatically."}
       </p>
       {verificationError && <div className="pauth-banner" role="alert">{verificationError}</div>}
-      {loading || (user && !verificationError) ? (
+      {loading || (user && !verificationError && !needsSignIn) ? (
         <p className="pauth-lede" role="status" aria-busy="true">
           {loading ? "Loading…" : "Checking Google sign-in…"}
         </p>
       ) : <div className="pauth-actions">
-        {user ? <button type="button" className="pauth-btn is-primary" onClick={() => void verifyGoogleSignIn()} disabled={checking}>
+        {user && !needsSignIn ? <button type="button" className="pauth-btn is-primary" onClick={() => void verifyGoogleSignIn()} disabled={checking}>
           {checking ? "Checking Google…" : "Try verification again"}
         </button> :
-        <Link to="/portal/login" className="pauth-btn is-primary">
-          Continue to PNCL sign-in
-        </Link>}
+        <button type="button" className="pauth-btn is-primary" onClick={() => void handleSignIn()} disabled={signingIn}>
+          {signingIn ? "Redirecting to Google…" : "Sign in with Google"}
+        </button>}
       </div>}
     </PortalAuthLayout>
   );
