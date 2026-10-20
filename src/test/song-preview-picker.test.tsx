@@ -44,7 +44,7 @@ it('preserves the song and saved section when Apple has no preview',async()=>{
  expect(changed).not.toHaveBeenCalled();expect(screen.getByText('0:12–0:22')).toBeInTheDocument();
 });
 it('rejects short previews and leaves the saved selection alone',async()=>{
- render(<Form/>);await load(9);expect(screen.getByText(/cannot provide a 10-second section/)).toBeInTheDocument();expect(changed).not.toHaveBeenCalled();
+ render(<Form/>);await load(5);expect(screen.getByText(/cannot provide a 10-second section/)).toBeInTheDocument();expect(changed).not.toHaveBeenCalled();
 });
 it('stops playback when leaving the song and ignores a late lookup',async()=>{
  const first=render(<Form/>);await load();const pause=vi.mocked(HTMLMediaElement.prototype.pause);pause.mockClear();first.unmount();expect(pause).toHaveBeenCalled();

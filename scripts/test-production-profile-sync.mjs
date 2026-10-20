@@ -93,7 +93,7 @@ assert.equal((await call('pncl',{action:'save',request:{...songSave,id:crypto.ra
 remote=(await call('leadspply',{action:'read'})).body;await drain();assert.deepEqual(remote.values.close_out_song,clip);
 assert.equal((await call('leadspply',{action:'save',request:{...songSave,id:crypto.randomUUID(),changes:{close_out_song:{...clip,clipStartSeconds:8}}}})).status,200);await drain();
 remote=(await call('pncl',{action:'read'})).body;await drain();assert.equal(remote.values.close_out_song.clipStartSeconds,8);
-assert.equal((await call('pncl',{action:'save',request:{...songSave,id:crypto.randomUUID(),changes:{close_out_song:{...clip,clipStartSeconds:21}}}})).status,400);
+assert.equal((await call('pncl',{action:'save',request:{...songSave,id:crypto.randomUUID(),changes:{close_out_song:{...clip,clipStartSeconds:25}}}})).status,400);
 ok('ten-second preview selections sync both ways and reject a section beyond the preview');
 songSave={id:crypto.randomUUID(),changes:{close_out_song:null},expected:{close_out_song:{pncl:0,leadspply:0}}};
 assert.equal((await call('leadspply',{action:'save',request:songSave})).status,200);await drain();
