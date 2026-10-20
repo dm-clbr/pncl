@@ -9,7 +9,9 @@ export interface Field {
 }
 export const STATES = 'AL AK AZ AR CA CO CT DE DC FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY'.split(' ');
 const sizes = ['XS','S','M','L','XL','2XL','3XL','4XL'];
-export type CloseOutSong = {provider:'apple';id:string;title:string;artist:string;url:string};
+export const CLOSE_OUT_CLIP_SECONDS = 10;
+export const MAX_SONG_PREVIEW_SECONDS = 600;
+export type CloseOutSong = {provider:'apple';id:string;title:string;artist:string;url:string;clipSource?:'apple_preview';previewDurationSeconds?:number;clipStartSeconds?:number;clipDurationSeconds?:10};
 export const FIELDS: Field[] = [
   {key:'close_out_song',label:'Close out song',section:'personal',kind:'song'},
   {key:'first_name',label:'First name',section:'personal',kind:'name',pncl:'first_name',leadspply:'first_name'},
@@ -65,11 +67,17 @@ export function normalize(key:string,value:unknown):Json {
   const f=fieldFor(key);
   if(value===null){if(f.kind==='name')throw new MirrorError('name_required');return null;}
   if(f.kind==='song'){
-    if(!record(value)||Object.keys(value).sort().join(',')!=='artist,id,provider,title,url'||value.provider!=='apple'||typeof value.id!=='string'||!/^\d{1,20}$/.test(value.id))throw new MirrorError('invalid_song');
+    if(!record(value)||Object.keys(value).some(k=>!['artist','id','provider','title','url','clipSource','previewDurationSeconds','clipStartSeconds','clipDurationSeconds'].includes(k))||value.provider!=='apple'||typeof value.id!=='string'||!/^\d{1,20}$/.test(value.id))throw new MirrorError('invalid_song');
     const title=safeText(value.title,240),artist=safeText(value.artist,240),url=safeText(value.url,1000);
     let parsed;try{parsed=new URL(url);}catch{throw new MirrorError('invalid_song');}
     if(!title||!artist||parsed.protocol!=='https:'||parsed.hostname!=='music.apple.com'||parsed.port||parsed.username||parsed.password)throw new MirrorError('invalid_song');
-    return {provider:'apple',id:value.id,title,artist,url};
+    const song:CloseOutSong={provider:'apple',id:value.id,title,artist,url};
+    if(['clipSource','previewDurationSeconds','clipStartSeconds','clipDurationSeconds'].some(k=>k in value)){
+      if(value.clipSource!=='apple_preview'||!Number.isSafeInteger(value.previewDurationSeconds)||Number(value.previewDurationSeconds)<CLOSE_OUT_CLIP_SECONDS||Number(value.previewDurationSeconds)>MAX_SONG_PREVIEW_SECONDS||!Number.isSafeInteger(value.clipStartSeconds)||Number(value.clipStartSeconds)<0||value.clipDurationSeconds!==CLOSE_OUT_CLIP_SECONDS||Number(value.clipStartSeconds)+CLOSE_OUT_CLIP_SECONDS>Number(value.previewDurationSeconds))throw new MirrorError('invalid_song');
+      song.clipSource='apple_preview';song.previewDurationSeconds=Number(value.previewDurationSeconds);
+      song.clipStartSeconds=Number(value.clipStartSeconds);song.clipDurationSeconds=CLOSE_OUT_CLIP_SECONDS;
+    }
+    return song;
   }
   if(f.kind==='boolean'){if(typeof value!=='boolean')throw new MirrorError('invalid_value');return value;}
   if(f.kind==='licenses'){
