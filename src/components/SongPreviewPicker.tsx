@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { CLOSE_OUT_CLIP_SECONDS, MAX_SONG_PREVIEW_SECONDS, type CloseOutSong, type Json } from '../../supabase/functions/_shared/profileMirror';
 import { profileSyncRequest } from '../lib/profile-sync';
+import { loadSongWaveform } from '../lib/song-waveform';
+import { SongWaveform } from './SongWaveform';
 
 const formatTime = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 const storeLink = (url: string) => { const link = new URL(url); link.searchParams.set('app', 'itunes'); return link.toString(); };
@@ -16,6 +18,9 @@ export function SongPreviewPicker({ song, onChange, disabled }: { song: CloseOut
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [playingSection, setPlayingSection] = useState(false);
+  const [peaks, setPeaks] = useState<number[] | null>(null);
+  const [waveformLoading, setWaveformLoading] = useState(false);
+  const [playhead, setPlayhead] = useState<number | null>(null);
   const start = Math.min(song.clipStartSeconds ?? 0, Math.max(0, (duration || song.previewDurationSeconds || CLOSE_OUT_CLIP_SECONDS) - CLOSE_OUT_CLIP_SECONDS));
 
   const stop = useCallback(() => {
@@ -23,14 +28,30 @@ export function SongPreviewPicker({ song, onChange, disabled }: { song: CloseOut
     end.current = null;
     audio.current?.pause();
     setPlayingSection(false);
+    setPlayhead(null);
   }, []);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   useEffect(() => { const player = audio.current; player?.setAttribute('disableremoteplayback', ''); return () => { player?.pause(); }; }, [url]);
   useEffect(() => { if (disabled) stop(); }, [disabled, stop]);
   useEffect(() => {
+    setPeaks(null);
+    if (!url || !duration) { setWaveformLoading(false); return; }
+    const abort = new AbortController();
+    setWaveformLoading(true);
+    void loadSongWaveform(url, abort.signal).then(values => {
+      if (!abort.signal.aborted) setPeaks(values.length ? values : null);
+    }).catch(() => {
+      // Native playback still works when CORS or decoding prevents analysis.
+    }).finally(() => { if (!abort.signal.aborted) setWaveformLoading(false); });
+    return () => abort.abort();
+  }, [url, duration]);
+  useEffect(() => {
     if (!playingSection) return;
     const timer = window.setInterval(() => {
-      if (end.current !== null && audio.current && audio.current.currentTime >= end.current) stop();
+      if (end.current !== null && audio.current) {
+        if (audio.current.currentTime >= end.current) stop();
+        else setPlayhead(audio.current.currentTime);
+      }
     }, 50);
     return () => window.clearInterval(timer);
   }, [playingSection, stop]);
@@ -61,16 +82,17 @@ export function SongPreviewPicker({ song, onChange, disabled }: { song: CloseOut
     setDuration(seconds); setLoading(false);
     if (song.clipDurationSeconds !== CLOSE_OUT_CLIP_SECONDS || song.clipSource !== 'apple_preview' || song.previewDurationSeconds !== seconds || (song.clipStartSeconds ?? 0) + CLOSE_OUT_CLIP_SECONDS > seconds) choose(song.clipStartSeconds ?? 0, seconds);
   }
-  async function playSection() {
+  async function playSection(from = start, restart = false) {
     const player = audio.current;
     if (!player || !duration || disabled) return;
-    if (playingSection) { stop(); return; }
+    if (playingSection && !restart) { stop(); return; }
     const request = ++epoch.current;
     setError('');
-    end.current = start + CLOSE_OUT_CLIP_SECONDS;
+    end.current = from + CLOSE_OUT_CLIP_SECONDS;
+    setPlayhead(from);
     setPlayingSection(true);
     try {
-      player.currentTime = start;
+      player.currentTime = from;
       if (player.seeking) await new Promise<void>((resolve, reject) => {
         const cleanup = () => { window.clearTimeout(timer); player.removeEventListener('seeked', seeked); player.removeEventListener('error', failed); };
         const seeked = () => { cleanup(); resolve(); };
@@ -79,37 +101,46 @@ export function SongPreviewPicker({ song, onChange, disabled }: { song: CloseOut
         player.addEventListener('seeked', seeked, { once: true }); player.addEventListener('error', failed, { once: true });
       });
       if (!mounted.current || request !== epoch.current) return;
-      if (Math.abs(player.currentTime - start) > 0.25) throw new Error('seek_failed');
+      if (Math.abs(player.currentTime - from) > 0.25) throw new Error('seek_failed');
       await player.play();
       if (!mounted.current) { player.pause(); return; }
       if (request !== epoch.current) { if (end.current === null) player.pause(); return; }
       setPlayingSection(true);
-    } catch { if (mounted.current && request === epoch.current) { end.current = null; setPlayingSection(false); player.pause(); setError('Your browser could not play that section. Try the audio controls or load it again.'); } }
+    } catch { if (mounted.current && request === epoch.current) { end.current = null; setPlayingSection(false); setPlayhead(null); player.pause(); setError('Your browser could not play that section. Try the full preview controls or load it again.'); } }
   }
   const maxStart = Math.max(0, duration - CLOSE_OUT_CLIP_SECONDS);
   return <fieldset className="profile-sync-song-clip" disabled={disabled}>
     <legend>Choose a 10-second preview section</legend>
-    <p className="profile-sync-note">Listen to Apple’s preview, then move the slider to choose your section. Times start at the beginning of this preview, not the full song.</p>
+    <p className="profile-sync-note">Move the highlighted window to find your celebration moment. Times are within Apple’s preview, not the full song.</p>
     <div className="profile-sync-song-store">
       <strong>{song.title} — {song.artist}</strong>
       <a href={storeLink(song.url)} target="_blank" rel="noreferrer"><img src="https://www.apple.com/ca/itunes/link/images/link-badge-itunes.png" width="138" height="40" alt="Get it on iTunes" /></a>
     </div>
     {!url && <button type="button" disabled={disabled || loading} onClick={() => void load()}>{loading ? 'Loading preview…' : 'Load preview'}</button>}
-    {url && <audio ref={audio} src={url} controls preload="metadata" controlsList="nodownload noplaybackrate noremoteplayback" aria-label="Apple song preview"
-      onLoadedMetadata={loaded} onPause={() => { end.current = null; setPlayingSection(false); }} onEnded={() => { end.current = null; setPlayingSection(false); }}
-      onTimeUpdate={() => { if (end.current !== null && audio.current && audio.current.currentTime >= end.current) stop(); }}
-      onError={() => { stop(); setUrl(null); setDuration(0); setLoading(false); setError('The preview could not be played. Load it again or choose another song.'); }} />}
     {url && loading && <p role="status" className="profile-sync-note">Loading preview audio…</p>}
-    {(duration > 0 || song.clipStartSeconds !== undefined) && <p id={id + '-window'} className="profile-sync-song-window">{formatTime(start)}–{formatTime(start + CLOSE_OUT_CLIP_SECONDS)}<span> within Apple’s preview</span></p>}
+    {(duration > 0 || song.clipStartSeconds !== undefined) && <div className="profile-sync-song-selection-heading">
+      <div><span className="profile-sync-song-selection-label">Your celebration clip</span>
+        <p id={id + '-window'} className="profile-sync-song-window">{formatTime(start)}–{formatTime(start + CLOSE_OUT_CLIP_SECONDS)}</p>
+      </div><span className="profile-sync-song-duration">10 seconds</span>
+    </div>}
     {duration > 0 && <>
-      <label htmlFor={id + '-start'}>Section start</label>
-      <input id={id + '-start'} type="range" min={0} max={maxStart} step={1} value={start} aria-valuetext={formatTime(start)} aria-describedby={id + '-window'} onChange={event => choose(Number(event.target.value))} />
+      <SongWaveform duration={duration} start={start} peaks={peaks} loading={waveformLoading}
+        playhead={playhead} disabled={disabled} onChange={choose} onCommit={value => void playSection(value, true)} />
       <div className="profile-sync-song-time">
         <div><label htmlFor={id + '-seconds'}>Start at (seconds)</label><input id={id + '-seconds'} type="number" inputMode="numeric" min={0} max={maxStart} step={1} value={start}
           onChange={event => { if (event.target.value !== '') choose(Number(event.target.value)); }} /></div>
-        <button type="button" disabled={disabled} onClick={() => void playSection()}>{playingSection ? 'Stop section' : 'Play 10 seconds'}</button>
+        <button className="profile-sync-song-play" type="button" disabled={disabled} onClick={() => void playSection()}>
+          <span aria-hidden="true">{playingSection ? '■' : '▶'}</span> {playingSection ? 'Stop section' : 'Play 10 seconds'}
+        </button>
       </div>
     </>}
+    {url && <details className="profile-sync-song-full-preview" onToggle={stop}>
+      <summary>Listen to the full preview</summary>
+      <audio ref={audio} src={url} controls preload="metadata" controlsList="nodownload noplaybackrate noremoteplayback" aria-label="Apple song preview"
+        onLoadedMetadata={loaded} onPause={() => { if (audio.current?.paused) { end.current = null; setPlayingSection(false); setPlayhead(null); } }} onEnded={stop}
+        onTimeUpdate={() => { if (end.current !== null && audio.current && audio.current.currentTime >= end.current) stop(); }}
+        onError={() => { stop(); setUrl(null); setDuration(0); setLoading(false); setError('The preview could not be played. Load it again or choose another song.'); }} />
+    </details>}
     {error && <p role="status" className="profile-sync-note">{error}</p>}
     <p className="profile-sync-note">Preview provided courtesy of iTunes. Your saved ten-second section is used for policy-issued TV celebrations when sound is enabled.</p>
   </fieldset>;

@@ -4,3 +4,32 @@
 .profile-sync-song-clip{min-width:0;border:0;padding:12px 0 0;margin:0;display:grid;gap:10px}.profile-sync-song-clip legend{font-weight:600;padding:0}.profile-sync-song-window{font-size:18px;font-variant-numeric:tabular-nums;margin:0}.profile-sync-song-window span{font-size:13px;opacity:.7}.profile-sync-song-time{display:grid;grid-template-columns:minmax(0,120px) auto;align-items:end;gap:12px}.profile-sync-song-time>div{display:grid;gap:6px}.profile-sync-fields .profile-sync-song-clip input[type=range]{padding:0;border:0;background:transparent;accent-color:#83a269;height:28px}
 
 .profile-sync-song-store{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}.profile-sync-song-store a{flex:none;padding:4px}.profile-sync-song-store img{display:block;width:138px;height:40px}.profile-sync-song-clip audio{width:100%;max-width:440px}.profile-sync-song-time button{margin:0;white-space:nowrap;min-height:40px}
+
+.profile-sync-song-selection-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:8px}
+.profile-sync-song-selection-label{display:block;font-size:12px;opacity:.7;margin-bottom:4px}
+.profile-sync-song-selection-heading .profile-sync-song-window{font-size:26px;font-weight:650;letter-spacing:-.03em;line-height:1.2}
+.profile-sync-song-duration{font-size:12px;font-weight:600;white-space:nowrap;border:1px solid color-mix(in srgb,currentColor 20%,transparent);border-radius:999px;padding:6px 10px}
+.profile-sync-waveform{min-width:0;margin:2px 0}
+.profile-sync-waveform-track{position:relative;height:116px;background:#181e1b;border:1px solid #3d4942;border-radius:12px;overflow:hidden;touch-action:none;user-select:none;cursor:grab}
+.profile-sync-waveform-track:active{cursor:grabbing}
+.profile-sync-waveform-track[aria-disabled=true]{opacity:.5;cursor:default}
+.profile-sync-waveform-track:focus-visible{outline:3px solid #83a269;outline-offset:4px}
+.profile-sync-waveform-track svg{display:block;width:100%;height:100%;pointer-events:none}
+.profile-sync-waveform-bars{stroke:#6f7c74;stroke-width:2.2;stroke-linecap:round;fill:none}
+.profile-sync-waveform-bars-selected{stroke:#d1ecb9}
+.profile-sync-waveform-baseline{stroke:#69766e;stroke-width:1;stroke-dasharray:1 8}
+.profile-sync-waveform-selection{position:absolute;top:0;bottom:0;min-width:12px;border:3px solid #c0e6a1;background:rgba(192,230,161,.07);border-radius:9px;pointer-events:none;box-sizing:border-box}
+.profile-sync-waveform-selection>span{position:absolute;top:50%;transform:translateY(-50%);width:7px;height:28px;background:#c0e6a1;border-radius:4px}
+.profile-sync-waveform-selection>span:first-child{left:-2px}
+.profile-sync-waveform-selection>span:last-child{right:-2px}
+.profile-sync-waveform-playhead{position:absolute;top:12px;bottom:12px;width:2px;background:#fff;box-shadow:0 0 7px rgba(255,255,255,.4);pointer-events:none}
+.profile-sync-waveform-ruler{display:flex;justify-content:space-between;gap:4px;margin-top:8px;font-size:11px;font-variant-numeric:tabular-nums;opacity:.65}
+.profile-sync-waveform-help{margin:10px 0 0;font-size:12px;line-height:1.5;opacity:.75}
+.profile-sync-song-time{grid-template-columns:minmax(0,120px) auto;justify-content:space-between;align-items:end}
+.profile-sync-song-time label{font-size:12px;opacity:.75}
+.profile-sync-fields .profile-sync-song-time button.profile-sync-song-play{display:flex;align-items:center;gap:9px;justify-content:center;background:#c0e6a1;color:#18241a;border:0;border-radius:9px;padding:12px 16px;min-height:44px;font-weight:650;font-size:14px}
+.profile-sync-song-full-preview{border-top:1px solid color-mix(in srgb,currentColor 15%,transparent);padding-top:12px;margin-top:6px}
+.profile-sync-song-full-preview summary{font-size:13px;cursor:pointer;width:fit-content}
+.profile-sync-song-full-preview summary:focus-visible{outline:2px solid #83a269;outline-offset:4px}
+.profile-sync-song-full-preview audio{margin-top:12px;max-width:none}
+@media(max-width:480px){.profile-sync-waveform-track{height:100px}.profile-sync-song-store{align-items:flex-start}.profile-sync-song-time{grid-template-columns:minmax(0,104px) auto;gap:8px}.profile-sync-fields .profile-sync-song-time button.profile-sync-song-play{padding:12px}.profile-sync-waveform-ruler{font-size:10px}}
