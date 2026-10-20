@@ -1,6 +1,7 @@
 import { useId, useRef, useState } from 'react';
-import type { CloseOutSong, Json } from '../../supabase/functions/_shared/profileMirror';
+import { type CloseOutSong, type Json } from '../../supabase/functions/_shared/profileMirror';
 import { profileSyncRequest } from '../lib/profile-sync';
+import { SongPreviewPicker } from './SongPreviewPicker';
 
 export function CloseOutSongField({ value, onChange, disabled = false }: { value: Json | undefined; onChange: (value: Json) => void; disabled?: boolean }) {
   const id = useId();
@@ -39,12 +40,12 @@ export function CloseOutSongField({ value, onChange, disabled = false }: { value
     </div>
     <label htmlFor={id + '-song'}>Close out song</label>
     <select id={id + '-song'} value={selected?.id ?? ''} disabled={disabled} aria-describedby={id + '-hint'}
-      onChange={event => onChange(options.find(song => song.id === event.target.value) ?? null)}>
+      onChange={event => onChange(event.target.value === selected?.id ? selected : options.find(song => song.id === event.target.value) ?? null)}>
       <option value="">No song selected</option>
       {options.map(song => <option key={song.id} value={song.id}>{song.title} — {song.artist}</option>)}
     </select>
-    <p id={id + '-hint'} className="profile-sync-note">Save your profile to keep this song on both platforms. Audio playback is not enabled.</p>
-    {selected && <a href={selected.url} target="_blank" rel="noreferrer">View {selected.title} on Apple Music</a>}
+    {selected && <SongPreviewPicker key={selected.id} song={selected} onChange={onChange} disabled={disabled} />}
+    <p id={id + '-hint'} className="profile-sync-note">Save your profile to keep this song and section on both platforms.</p>
     {message && <p role="status" className="profile-sync-note">{message}</p>}
   </div>;
 }

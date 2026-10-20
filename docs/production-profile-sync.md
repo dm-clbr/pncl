@@ -51,6 +51,21 @@ Activation changes only the singleton enabled flag and installs the named minute
 
 ## Close out song
 
-`close_out_song` stores only the selected Apple catalog ID, title, artist, and store link in the private shared-field store. It has no native profile column and uses the same save/clear/delivery mechanism on both platforms. Owner-authenticated search calls Apple's public metadata search on demand, with bounded result counts, timeouts, per-instance caching, and rate-limit feedback. Search text is sent to Apple; profile data and credentials are not. Audio preview and artwork URLs are discarded. No audio is downloaded, stored, or played. Playback and clip licensing are deferred by the product owner.
+`close_out_song` stores the selected Apple catalog ID, title, artist, and store link in the private shared-field store. An optional section adds `clipSource: apple_preview`, the observed preview duration, an integer start offset, and a fixed 10-second duration. Times are relative to Apple's available preview, not the full song. Existing selections without timing remain valid. The same save/clear/delivery mechanism mirrors the complete choice in both directions. This release requires no SQL migration or data backfill.
 
-Reference: https://performance-partners.apple.com/search-api
+Owner-authenticated search and preview lookup call Apple's public catalog on demand, with bounded caches, timeouts, and rate-limit feedback. Only the search text or selected catalog ID is sent to Apple; profile data and credentials are not. Lookup accepts numeric IDs and returns only an HTTPS `audio-ssl.itunes.apple.com` preview URL for the matching song. Audio streams directly from Apple after the user loads the preview. The application does not download, store, export, or cache audio, and does not save preview URLs in profiles. The picker displays iTunes attribution and the official store badge/link.
+
+Users can listen with native audio controls, move a slider or enter a start second, and play their selected 10-second window. The window must fit within the loaded preview. Leaving the picker or changing the selection stops playback; unavailable previews leave the saved choice intact. Save profile commits the song and timing together. Office playback remains disabled.
+
+Validation for preview sections: PNCL 599 tests (including 30 focused tests) and application typecheck; LeadSpply 35 focused tests and unchanged 99/99 typecheck baseline; both production builds; 25 real handler checks against isolated databases including preview authentication, provider URL validation, and bidirectional timing delivery. A browser check using synthetic audio verified playback from 12 seconds to 22 seconds and profile save.
+
+References: https://performance-partners.apple.com/search-api and https://www.apple.com/ca/itunes/link/
+
+## Existing office displays (LeadSpply)
+
+- `/tv` and `/tv/:token`: public office leaderboard, daily/weekly statistics, rotating rep pages, and a six-second policy-issued celebration. Data refreshes every minute; celebration events poll every 12 seconds. There is currently no song playback.
+- `/tv/history`: date-range history and detailed statistics.
+- `/tv/raffle`: weekly ticket standings and prize drawings.
+- `/live-transfer-dashboard/:token` (also `/transfers/:token`): token-gated live transfer activity, ringing, active closers, and answer/connect/talk-time statistics, refreshed every two seconds.
+
+These displays are implemented in LeadSpply, with PNCL branding. No equivalent office display pages were found in the PNCL repository. The preview-section release does not change any display routes or playback.

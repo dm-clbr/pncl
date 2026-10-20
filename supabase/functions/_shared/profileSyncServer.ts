@@ -30,6 +30,8 @@ export function createProfileSyncHandler(d:SyncDependencies){
   const rpc=async(action:string,user:string|null=null,body:ObjectValue={})=>{const {data,error}=await db.rpc('profile_sync',{p_action:action,p_user:user,p_body:body});if(error){console.warn('profile_sync_rpc',JSON.stringify({system,action,code:error.code}));throw new MirrorError(allowedCodes.includes(error.message)?error.message:'sync_unavailable',503);}return data;};
   const songCache=new Map<string,{expires:number;songs:Json[]}>();
   const songRequests=new Map<string,number>();
+  const previewCache=new Map<string,{expires:number;url:string|null}>();
+  const previewRequests=new Map<string,number>();
   const available=async(user:string)=>{if(!await rpc('available',user))throw new MirrorError('account_unavailable',409);};
   async function peer(key:string,body:ObjectValue){
     let response:Response;try{response=await d.fetch(`${HOSTS[other]}/functions/v1/profile-sync`,{method:'POST',redirect:'error',signal:AbortSignal.timeout(25000),headers:{'Content-Type':'application/json','X-Profile-Sync-Key':key},body:JSON.stringify(body)});}catch(error){console.warn('profile_sync_transport',JSON.stringify({system,action:body.action,error:error instanceof Error?error.message.replaceAll(key,'[redacted]').slice(0,160):'unknown'}));throw error;}
@@ -149,6 +151,27 @@ export function createProfileSyncHandler(d:SyncDependencies){
     songCache.set(cacheKey,{expires:Date.now()+60*60*1000,songs});
     return {songs};
   }
+  async function songPreview(user:string,id:unknown){
+    if(typeof id!=='string'||!/^\d{1,20}$/.test(id))throw new MirrorError('invalid_song');
+    const cached=previewCache.get(id);if(cached&&cached.expires>Date.now())return {url:cached.url};
+    if(Date.now()-(previewRequests.get(user)??0)<1500)throw new MirrorError('song_search_busy',429);
+    if(previewRequests.size>=500)previewRequests.delete(previewRequests.keys().next().value!);
+    previewRequests.set(user,Date.now());
+    let data:ObjectValue;
+    try{
+      const response=await d.fetch('https://itunes.apple.com/lookup?'+new URLSearchParams({id,entity:'song',country:'US'}),{redirect:'error',signal:AbortSignal.timeout(8000),headers:{Accept:'application/json'}});
+      if(!response.ok)throw new Error('provider_unavailable');data=await response.json();
+    }catch{throw new MirrorError('song_preview_unavailable',503);}
+    if(!object(data)||!Array.isArray(data.results))throw new MirrorError('song_preview_unavailable',503);
+    const track=data.results.find((t:unknown)=>object(t)&&t.kind==='song'&&String(t.trackId)===id);
+    let url:string|null=null;
+    if(track&&typeof track.previewUrl==='string'){
+      try{const parsed=new URL(track.previewUrl);if(parsed.protocol==='https:'&&parsed.hostname==='audio-ssl.itunes.apple.com'&&!parsed.username&&!parsed.password&&!parsed.port&&track.previewUrl.length<=2048)url=parsed.toString();}catch{/* No arbitrary media hosts. */}
+    }
+    if(previewCache.size>=100)previewCache.delete(previewCache.keys().next().value!);
+    // Only the provider URL is cached. Audio streams directly from Apple to the browser.
+    previewCache.set(id,{expires:Date.now()+15*60*1000,url});return {url};
+  }
   async function userSave(user:string,request:ObjectValue){
     if(!object(request)||Object.keys(request).some(k=>!['id','changes','expected','resolve'].includes(k))||!object(request.changes)||!object(request.expected))throw new MirrorError('invalid_request');
     uuid(request.id);const keys=Object.keys(request.changes);
@@ -228,6 +251,7 @@ export function createProfileSyncHandler(d:SyncDependencies){
       const user=data.user.id;await available(user);
       if(Object.keys(body).some(k=>!['action','request','field','id','clock','name','mime','base64','label','query'].includes(k)))throw new MirrorError('invalid_request');
       if(body.action==='search_songs')return json(await searchSongs(user,body.query));
+      if(body.action==='song_preview')return json(await songPreview(user,body.id));
       if(body.action==='read'){defer(syncUser(config.secret,user));return json(await getView(user));}
       if(body.action==='save'){const result=await userSave(user,body.request);defer(syncUser(config.secret,user));return json(result,result.outcome==='conflict'?409:200);}
       if(body.action==='upload'){const result=await upload(user,body);defer(syncUser(config.secret,user));return json(result,result.outcome==='conflict'?409:200);}

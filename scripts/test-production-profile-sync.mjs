@@ -12,7 +12,7 @@ const {createProfileSyncHandler}=await import(testRoot+'/server.mjs');
 const users=JSON.parse(readFileSync(testRoot+'/identities.json','utf8'));
 const key='test-only-profile-sync-key-not-a-production-secret';
 const roots={pncl:'https://dpnajpojbxgsckwrmvnm.supabase.co',leadspply:'https://lhxvbtiepsuohunfmnkm.supabase.co'};
-let dispatches=0,songSearchCalls=0;
+let dispatches=0,songSearchCalls=0,songLookupCalls=0;
 const testSong={provider:"apple",id:"123456789",title:"Synthetic Song",artist:"Synthetic Artist",url:"https://music.apple.com/us/song/123456789"};
 const storage={pncl:new Map(),leadspply:new Map()},handlers={},pending=[];
 const literal=v=>"'"+JSON.stringify(v).replaceAll("'","''")+"'::jsonb";
@@ -29,7 +29,7 @@ for(const system of Object.keys(users)){
     createSignedUrl:async(path,seconds)=>({data:{signedUrl:roots[system]+'/private/'+bucket+'/'+path+'?expires='+seconds},error:null})
   })}
  };
- handlers[system]=createProfileSyncHandler({system,db,county:zip=>zip==='84101'?'Salt Lake':null,defer:promise=>pending.push(promise),fetch:async(url,options)=>{if(String(url).startsWith('https://itunes.apple.com/search?')){songSearchCalls++;return Response.json({results:[{kind:'song',trackId:123456789,trackName:testSong.title,artistName:testSong.artist,trackViewUrl:testSong.url,previewUrl:'https://example.com/never-download.mp3',artworkUrl100:'https://example.com/never-download.jpg'}]});}const target=url.startsWith(roots.pncl)?'pncl':'leadspply';return handlers[target](new Request(url,options));}});
+ handlers[system]=createProfileSyncHandler({system,db,county:zip=>zip==='84101'?'Salt Lake':null,defer:promise=>pending.push(promise),fetch:async(url,options)=>{if(String(url).startsWith('https://itunes.apple.com/lookup?')){songLookupCalls++;assert.deepEqual(options.headers,{Accept:'application/json'});const id=new URL(url).searchParams.get('id');return Response.json({results:[{kind:'song',trackId:Number(id),previewUrl:id==='987654321'?'https://evil.example/audio.mp3':'https://audio-ssl.itunes.apple.com/test.m4a'}]});}if(String(url).startsWith('https://itunes.apple.com/search?')){songSearchCalls++;return Response.json({results:[{kind:'song',trackId:123456789,trackName:testSong.title,artistName:testSong.artist,trackViewUrl:testSong.url,previewUrl:'https://example.com/never-download.mp3',artworkUrl100:'https://example.com/never-download.jpg'}]});}const target=url.startsWith(roots.pncl)?'pncl':'leadspply';return handlers[target](new Request(url,options));}});
 }
 async function call(system,body,headers={}){const response=await handlers[system](new Request(roots[system]+'/functions/v1/profile-sync',{method:'POST',headers:{Authorization:'Bearer '+system,Origin:system==='pncl'?'https://www.thepncl.com':'https://leadspply.com','Content-Type':'application/json',...headers},body:JSON.stringify(body)}));return {status:response.status,body:await response.json()};}
 async function drain(){let count=0;while(pending.length){assert.ok(count++<40,'background sync must terminate');await Promise.all(pending.splice(0));}}
@@ -78,9 +78,23 @@ assert.equal((await call('pncl',{action:'search_songs',query:'synthetic song'}))
 assert.equal((await call('pncl',{action:'search_songs',query:'x'})).status,400);
 assert.equal((await call('pncl',{action:'search_songs',query:'Valid query'},{Authorization:'Bearer invalid'})).status,401);
 ok('authenticated song metadata search caches results and excludes audio/artwork');
+assert.equal((await call('pncl',{action:'song_preview',id:testSong.id},{Authorization:'Bearer invalid'})).status,401);
+assert.equal((await call('pncl',{action:'song_preview',id:'https://evil.example/audio.mp3'})).status,400);
+assert.deepEqual((await call('pncl',{action:'song_preview',id:testSong.id})).body,{url:'https://audio-ssl.itunes.apple.com/test.m4a'});
+assert.equal((await call('pncl',{action:'song_preview',id:testSong.id})).status,200);assert.equal(songLookupCalls,1);
+assert.deepEqual((await call('leadspply',{action:'song_preview',id:'987654321'})).body,{url:null});
+assert.equal((await call('pncl',{action:'song_preview',id:'987654321'})).status,429);
+ok('preview lookup requires auth, validates IDs and Apple hosts, caches metadata, and rate limits');
 let songSave={id:crypto.randomUUID(),changes:{close_out_song:testSong},expected:{close_out_song:{pncl:0,leadspply:0}}};
 assert.equal((await call('pncl',{action:'save',request:songSave})).status,200);await drain();
 remote=(await call('leadspply',{action:'read'})).body;await drain();assert.deepEqual(remote.values.close_out_song,testSong);
+const clip={...testSong,clipSource:'apple_preview',previewDurationSeconds:30,clipStartSeconds:12,clipDurationSeconds:10};
+assert.equal((await call('pncl',{action:'save',request:{...songSave,id:crypto.randomUUID(),changes:{close_out_song:clip}}})).status,200);await drain();
+remote=(await call('leadspply',{action:'read'})).body;await drain();assert.deepEqual(remote.values.close_out_song,clip);
+assert.equal((await call('leadspply',{action:'save',request:{...songSave,id:crypto.randomUUID(),changes:{close_out_song:{...clip,clipStartSeconds:8}}}})).status,200);await drain();
+remote=(await call('pncl',{action:'read'})).body;await drain();assert.equal(remote.values.close_out_song.clipStartSeconds,8);
+assert.equal((await call('pncl',{action:'save',request:{...songSave,id:crypto.randomUUID(),changes:{close_out_song:{...clip,clipStartSeconds:21}}}})).status,400);
+ok('ten-second preview selections sync both ways and reject a section beyond the preview');
 songSave={id:crypto.randomUUID(),changes:{close_out_song:null},expected:{close_out_song:{pncl:0,leadspply:0}}};
 assert.equal((await call('leadspply',{action:'save',request:songSave})).status,200);await drain();
 remote=(await call('pncl',{action:'read'})).body;await drain();assert.equal(remote.values.close_out_song,null);
