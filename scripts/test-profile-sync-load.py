@@ -43,7 +43,12 @@ for system,user in pair.items():
   u=str(uuid.uuid4());test_users.append(u)
   sql(db,f"insert into auth.users(id,email) values('{u}','load-{i}@thepncl.com');insert into {native}(user_id,first_name) values('{u}','Load');")
   if system=='leadspply':sql(db,f"insert into pncl_account_links values('{uuid.uuid4()}','{u}')")
- claims=[rpc(db,'claim',u) for u in test_users]
+ # Keep admission transactions open so a missing global lock would oversubscribe.
+ ps=[subprocess.Popen(base+['-d',db,'-c',f"with acquired as materialized (select public.profile_sync('claim','{u}') token), paused as materialized (select pg_sleep(0.5) from acquired) select token from acquired,paused"],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True) for u in test_users]
+ outputs=[p.communicate() for p in ps];assert all(p.returncode==0 for p in ps),outputs
+ claims=[json.loads(out.strip()) if out.strip() else None for out,err in outputs]
+ assert 1<=sum(t is not None for t in claims)<=4,claims
+ claims=[t or rpc(db,'claim',u) for u,t in zip(test_users,claims)]
  assert sum(t is not None for t in claims)==4
  for u,t in zip(test_users,claims):
   if t:rpc(db,'finish',u,{'token':t,'error':'synthetic_failure'})
