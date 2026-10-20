@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  canPendingPortalEnrollmentUsePath,
   isPendingPortalEnrollment,
   PORTAL_ACTIVATE_PATH,
   PORTAL_HOME_PATH,
@@ -12,13 +11,6 @@ describe("portal OAuth enrollment routing", () => {
     expect(isPendingPortalEnrollment({ enrollment_version: 3, enrollment_ready: false })).toBe(true);
     expect(isPendingPortalEnrollment({ enrollment_version: 3, enrollment_ready: true })).toBe(false);
     expect(isPendingPortalEnrollment({ enrollment_version: 2, enrollment_ready: false })).toBe(false);
-  });
-
-  it("preserves a pending session on OAuth return paths", () => {
-    expect(canPendingPortalEnrollmentUsePath("/portal/login")).toBe(true);
-    expect(canPendingPortalEnrollmentUsePath("/")).toBe(true);
-    expect(canPendingPortalEnrollmentUsePath("/onboarding/activate")).toBe(true);
-    expect(canPendingPortalEnrollmentUsePath("/portal")).toBe(false);
   });
 
   it.each([

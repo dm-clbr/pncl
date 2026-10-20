@@ -10,7 +10,6 @@ import {
 import type { Session, User } from "@supabase/supabase-js";
 import { getSupabaseClient, isSupabaseAuthConfigured } from "@/lib/supabase";
 import {
-  canPendingPortalEnrollmentUsePath,
   completePortalOAuthRedirect,
   isPendingPortalEnrollment,
   PORTAL_HOME_PATH,
@@ -56,15 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(`Only @${ALLOWED_EMAIL_DOMAIN} accounts can access the employee portal.`);
     }
 
-    if (isPendingPortalEnrollment(nextSession.user.app_metadata)
-      && !canPendingPortalEnrollmentUsePath(window.location.pathname)) {
-      const supabase = getSupabaseClient();
-      await supabase.auth.signOut();
-      setSession(null);
-      setUser(null);
-      throw new Error("Your PNCL enrollment is not ready yet. Resume onboarding or contact support.");
-    }
-
+    // Auth events are broadcast to every open tab, including the Gmail setup
+    // page. Preserve pending sessions here; ProtectedRoute gates portal access.
     setSession(nextSession);
     setUser(nextSession.user);
   }, []);
@@ -119,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         redirectTo,
         queryParams: {
           hd: ALLOWED_EMAIL_DOMAIN,
+          prompt: "select_account",
         },
       },
     });
