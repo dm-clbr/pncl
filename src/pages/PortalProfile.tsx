@@ -42,6 +42,7 @@ import {
   type PortalProfile,
   type PortalProfileFormValues,
 } from "@/lib/portal-profile";
+import PortalLeadSpplyUserId from "@/components/PortalLeadSpplyUserId";
 import { syncPortalRecoveryEmail } from "@/lib/portal-recovery-email";
 import { hasAdminConsoleAccess, isAdminAssist, isGenesisAdmin } from "@/lib/roles";
 import { getDirectDepositPdfUrl } from "@/lib/portal-direct-deposit";
@@ -713,6 +714,8 @@ export default function PortalProfile() {
                       <span className="portal-field-label">Verified PNCL work email</span>
                       <p>{agentEmail || "Not available"}</p>
                     </div>
+
+                    <PortalLeadSpplyUserId />
 
                     <Field
                       label="Personal recovery email"

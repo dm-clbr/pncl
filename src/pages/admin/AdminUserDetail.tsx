@@ -460,6 +460,10 @@ export default function AdminUserDetail() {
             </div>
 
             <dl className="admin-genesis-details-grid admin-user-profile-meta">
+              {profile.leadspply && <div className="admin-genesis-details-item">
+                <dt>LeadSpply user ID</dt>
+                <dd style={{ overflowWrap: "anywhere" }}>{profile.leadspply.error ?? profile.leadspply.userId ?? "Not linked"}</dd>
+              </div>}
               <div className="admin-genesis-details-item">
                 <dt>Role</dt>
                 <dd>{formatRoleLabel(agent.role)}</dd>

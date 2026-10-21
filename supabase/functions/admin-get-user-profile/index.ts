@@ -1,7 +1,9 @@
 import { filterAgentTodos, resolveAgentDesignation } from "../_shared/agentDesignation.ts";
 import { loadAgentDesignations } from "../_shared/portalAgentDesignations.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { AdminAuthError, requireGenesisAdminOrAdmin } from "../_shared/adminAuth.ts";
+import { AdminAuthError, getUserRole, requireGenesisAdminOrAdmin } from "../_shared/adminAuth.ts";
+import { isFullAdminRole } from "../_shared/adminRoles.ts";
+import { loadLeadSpplyUserIds, LINK_LOOKUP_ERROR } from "../_shared/leadspplyAccountLinks.ts";
 import { buildAgentSummaryForUser } from "../_shared/adminAgents.ts";
 import {
   getWorkspaceUser,
@@ -57,13 +59,20 @@ serve(async (req) => {
   }
 
   try {
-    const { adminClient } = await requireGenesisAdminOrAdmin(req);
+    const { user: viewer, adminClient } = await requireGenesisAdminOrAdmin(req);
     const { userId } = validateAdminUserProfileQuery(new URL(req.url));
 
     const agent = await buildAgentSummaryForUser(adminClient, userId, { includeSensitive: true });
     if (!agent) {
       return errorResponse("User not found", 404, "not_found");
     }
+
+    // This cross-product identifier is only available to full administrators.
+    const leadspplyLookup = isFullAdminRole(getUserRole(viewer))
+      ? loadLeadSpplyUserIds([userId], Deno.env.get("PNCL_INTEGRATION_KEY"))
+        .then(links => ({ userId: links.get(userId.toLowerCase()) ?? null, error: null }))
+        .catch(() => ({ userId: null, error: LINK_LOOKUP_ERROR }))
+      : Promise.resolve(undefined);
 
     const [
       { data: profileRow },
@@ -265,7 +274,9 @@ serve(async (req) => {
 
     logOnboarding("admin_user_profile_viewed", { userId });
 
+    const leadspply = await leadspplyLookup;
     return jsonResponse({
+      ...(leadspply === undefined ? {} : { leadspply }),
       agent,
       googleWorkspace,
       portalProfile: profile

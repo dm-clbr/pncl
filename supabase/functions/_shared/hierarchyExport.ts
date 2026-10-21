@@ -40,6 +40,7 @@ export interface BuildHierarchyExportInput {
   exportedAgents?: HierarchyExportAgent[];
   stateLicensesByUserId?: Map<string, string[]>;
   carrierWritingNumbersByUserId?: Map<string, CarrierWritingNumber[]>;
+  leadspplyUserIds?: Map<string, string>;
 }
 
 export type HierarchyExportUpline = Pick<
@@ -147,6 +148,7 @@ export function buildHierarchyExportCsv({
   exportedAgents = allAgents,
   stateLicensesByUserId = new Map(),
   carrierWritingNumbersByUserId = new Map(),
+  leadspplyUserIds = new Map(),
 }: BuildHierarchyExportInput): string {
   const agentsById = new Map(allAgents.map((agent) => [agent.id, agent]));
   const downlineCounts = computeDownlineCounts(allAgents);
@@ -181,6 +183,7 @@ export function buildHierarchyExportCsv({
     "Status",
     "Joined",
     ...uplineHeaders,
+    "LeadSpply User ID",
   ];
 
   const rows = exportedAgents.map((agent) => {
@@ -216,6 +219,7 @@ export function buildHierarchyExportCsv({
       agent.emailConfirmed ? "Active" : "Pending activation",
       agent.createdAt.slice(0, 10),
       ...uplineCells,
+      leadspplyUserIds.get(agent.id.toLowerCase()) ?? "",
     ].map(csvEscape).join(",");
   });
 

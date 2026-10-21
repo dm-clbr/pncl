@@ -158,7 +158,9 @@ export function sanitizePortalIntegrationStatus(value: unknown) {
   if (!['not_linked', 'connected', 'account_unavailable'].includes(String(body.state))) throw new Error('Invalid integration data');
   if (body.state !== 'connected') return { state: body.state as string, account: null };
   const account = record(body.account);
-  return { state: 'connected', account: { name: text(account.name), email: text(account.email),
+  return { state: 'connected', account: {
+    ...(account.leadspply_user_id === undefined ? {} : { leadspply_user_id: uuid(account.leadspply_user_id) }),
+    name: text(account.name), email: text(account.email),
     sync_status: syncStatus(account.sync_status), synced_at: nullable(account.synced_at, date),
     pay_tier: tier(account.pay_tier), linked_at: date(account.linked_at) },
     ...(body.pending === true ? { pending: true } : {}) };
