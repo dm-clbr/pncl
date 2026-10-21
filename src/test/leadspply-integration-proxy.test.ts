@@ -112,3 +112,9 @@ describe('PNCL integration authenticated proxy', () => {
     const h = handler(); expect((await h.request({}, 'OPTIONS')).status).toBe(204); expect(h.fetcher).not.toHaveBeenCalled(); expect(h.requireAdmin).not.toHaveBeenCalled();
   });
 });
+
+it('validates the own-account LeadSpply ID while supporting older upstream responses', () => {
+  expect(sanitizePortalIntegrationStatus({...status, account: {...status.account, leadspply_user_id: target}}).account).toMatchObject({leadspply_user_id: target});
+  expect(sanitizePortalIntegrationStatus(status)).toEqual(status);
+  expect(() => sanitizePortalIntegrationStatus({...status, account: {...status.account, leadspply_user_id: 'bad'}})).toThrow();
+});

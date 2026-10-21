@@ -4,6 +4,7 @@ import {
   buildAgentSummaries,
   loadCarrierWritingNumbersByUserId,
 } from "../_shared/adminAgents.ts";
+import { loadLeadSpplyUserIds } from "../_shared/leadspplyAccountLinks.ts";
 import { buildHierarchyExportCsv } from "../_shared/hierarchyExport.ts";
 import { corsHeaders, errorResponse, handleCors } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
@@ -48,7 +49,9 @@ serve(async (req) => {
         .map((row) => [row.user_id, row.state_licenses ?? []]),
     );
 
+    const leadspplyUserIds = await loadLeadSpplyUserIds(agents.map(agent => agent.id), Deno.env.get("PNCL_INTEGRATION_KEY"));
     const csv = buildHierarchyExportCsv({
+      leadspplyUserIds,
       allAgents,
       exportedAgents: agents,
       stateLicensesByUserId,

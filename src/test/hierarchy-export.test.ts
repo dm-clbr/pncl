@@ -136,3 +136,13 @@ describe("hierarchy CSV export", () => {
     expect(resolveUplineLevels(first, byId).map((entry) => entry.name)).toEqual(["Agent 2"]);
   });
 });
+
+ it("joins the LeadSpply UUID by PNCL ID, preserves filtered order and blanks unlinked users", () => {
+    const csv = buildHierarchyExportCsv({ allAgents: [agent(0), agent(1), agent(2)], exportedAgents: [agent(2), agent(0)], leadspplyUserIds: new Map([["agent-0", "10000000-0000-4000-8000-000000000001"], ["agent-1", "10000000-0000-4000-8000-000000000002"]]) });
+    const [header, ...rows] = csv.split("\r\n").map(row => row.split(","));
+    const column = header.indexOf("LeadSpply User ID");
+    expect(column).toBe(header.length - 1);
+    expect(rows.map(row => row[column])).toEqual(["", "10000000-0000-4000-8000-000000000001"]);
+    expect(rows.every(row => row.length === header.length)).toBe(true);
+    expect(csv).not.toContain("10000000-0000-4000-8000-000000000002");
+  });

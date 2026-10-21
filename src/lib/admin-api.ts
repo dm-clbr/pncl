@@ -1279,6 +1279,7 @@ export interface AdminUserCarrierStatus {
 }
 
 export interface AdminUserProfileDetail {
+  leadspply?: { userId: string | null; error: string | null };
   agent: AgentSummary;
   googleWorkspace: AdminUserGoogleWorkspaceSummary | null;
   portalProfile: AdminUserPortalProfile | null;

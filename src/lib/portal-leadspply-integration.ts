@@ -8,7 +8,7 @@ export interface IntegrationLink { pncl_user_id: string; leadspply_user_id: stri
 export interface IntegrationAutoLinkRun { created_at: string; status: string; scanned_count: number; linked_count: number; review_count: number; error_code: string | null }
 export interface IntegrationAutoLink { enabled: boolean; cadenceMinutes: number; lastRun: IntegrationAutoLinkRun | null }
 export interface IntegrationPreview { matches: IntegrationMatch[]; targets: IntegrationTarget[]; links: IntegrationLink[]; partners: Array<{ user_id_a: string; user_id_b: string }>; token: string; revision: number; recentRuns: Array<{ id: string; created_at: string; revision: number; linked_count: number; synced_count: number; unresolved_count: number; pncl_actor_id: string | null; actor_id: string | null }>; events: Array<{ id: string; created_at: string; kind: string; pncl_user_id: string | null; leadspply_user_id: string | null; pncl_actor_id: string | null }>; autoLink?: IntegrationAutoLink }
-export interface OwnIntegrationStatus { state: IntegrationState; account: null | { name: string; email: string; sync_status: string; synced_at: string | null; pay_tier: number | null; linked_at: string | null } }
+export interface OwnIntegrationStatus { state: IntegrationState; account: null | { leadspply_user_id?: string; name: string; email: string; sync_status: string; synced_at: string | null; pay_tier: number | null; linked_at: string | null } }
 
 const isRecord = (value: unknown): value is Record<string, unknown> => Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
