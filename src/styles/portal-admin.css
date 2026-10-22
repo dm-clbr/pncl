@@ -2480,6 +2480,130 @@
 }
 
 /* The canvas: a recessed frame with a dot grid, glass tiles on it. */
+.admin-dash .admin-hierarchy-search {
+  position: relative;
+  max-width: 640px;
+  margin: 0 0 16px;
+}
+
+.admin-dash .admin-hierarchy-search-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--portal-control-h);
+  margin-top: 6px;
+  padding: 0 12px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-control-radius);
+  background: var(--admin-inset);
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-hierarchy-search-control:focus-within {
+  outline: 2px solid var(--portal-text);
+  outline-offset: 2px;
+}
+
+.admin-dash .admin-hierarchy-search-control input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  height: var(--portal-control-h);
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-hierarchy-search-control input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.admin-dash .admin-hierarchy-search-control input:focus-visible {
+  outline: none;
+}
+
+.admin-dash .admin-hierarchy-search-control > svg {
+  flex-shrink: 0;
+}
+
+.admin-dash .admin-hierarchy-search-clear {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.admin-dash .admin-hierarchy-search-hint,
+.admin-dash .admin-hierarchy-search-status {
+  margin: 6px 0 0;
+  font-size: var(--portal-t-body);
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-hierarchy-search-status {
+  margin: -6px 0 14px;
+}
+
+.admin-dash .admin-hierarchy-search-results {
+  position: absolute;
+  top: calc(100% + 4px);
+  z-index: 10;
+  width: 100%;
+  max-height: 360px;
+  overflow: auto;
+  padding: 6px;
+  box-sizing: border-box;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-control-radius);
+  background: var(--portal-bg, #191511);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+}
+
+.admin-dash .admin-hierarchy-search-results ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.admin-dash .admin-hierarchy-search-results [role="option"] {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border-radius: 6px;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+.admin-dash .admin-hierarchy-search-results [aria-selected="true"],
+.admin-dash .admin-hierarchy-search-clear:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.admin-dash .admin-hierarchy-search-results strong {
+  font-weight: 600;
+  color: var(--portal-text-strong);
+}
+
+.admin-dash .admin-hierarchy-search-results span,
+.admin-dash .admin-hierarchy-search-results p {
+  font-size: var(--portal-t-body);
+  color: var(--portal-text);
+}
+
+.admin-dash .admin-hierarchy-search-results p {
+  margin: 8px 10px;
+}
+
 .admin-dash .admin-hierarchy-shell,
 .admin-dash .admin-hierarchy-scroll {
   margin-top: 4px;
@@ -2557,6 +2681,12 @@
   overflow: hidden;
   cursor: grab;
   touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.admin-dash .admin-hierarchy-viewport img {
+  -webkit-user-drag: none;
 }
 
 .admin-dash .admin-hierarchy-viewport-panning {
