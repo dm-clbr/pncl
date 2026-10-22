@@ -2,7 +2,7 @@ from pathlib import Path
 import os,json,uuid
 source=Path(os.environ['PNCL_SYNC_REPO'])/'scripts/test-production-profile-sync.py'
 setup=source.read_text().split('a=str(uuid.uuid4())')[0]
-setup='\n'.join(line for line in setup.splitlines() if "*_profile_sync_latest_save.sql" not in line)
+setup='\n'.join(line for line in setup.splitlines() if "*_profile_sync_latest_save.sql" not in line and "*_profile_sync_queue_limits.sql" not in line)
 exec(setup.replace("db='mirror_'+system","db='mirror_upgrade_'+system"))
 pair={'pncl':str(uuid.uuid4()),'leadspply':str(uuid.uuid4())}
 for system,user in pair.items():
@@ -45,3 +45,7 @@ for s in pair:
 for s in pair:deliver(s,old_events[s])
 assert all(view(s)['last_name']['value']=='pncl tie' for s in pair)
 print('PASS exact timestamp ties converge deterministically')
+
+for s,root in roots.items():sql('mirror_upgrade_'+s,next(root.glob('supabase/migrations/*_profile_sync_queue_limits.sql')).read_text())
+assert all(view(s)['last_name']['value']=='pncl tie' for s in pair)
+print('PASS queue-limit upgrade retains saved fields and delivery history')
