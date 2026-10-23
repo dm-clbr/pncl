@@ -236,3 +236,23 @@ describe("PortalOnboardingChecklist mark-complete rows", () => {
     expect(screen.queryByRole("button", { name: /Complete your W-9 form/ })).not.toBeInTheDocument();
   });
 });
+
+describe("Flow-specific supporting documents", () => {
+  it("shows configured PDFs under the video and in its player after completion", () => {
+    const complete = vi.fn();
+    render(<MemoryRouter><PortalOnboardingChecklist todos={[todo({ id: "surelc_tutorial_ibo", title: "IBO tutorial", href: "https://example.com/ibo.mp4", actionLabel: "Watch IBO tutorial", completed: true,
+      supportingFiles: [{ mode: "file", assetId: "ibo-pdf", url: "https://example.com/ibo.pdf", filename: "IBO quick reference.pdf" }] })]} agentEmail="test@example.com" completingTodoId={null} onComplete={complete} /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: /Licensing/ }));
+    expect(screen.getByRole("link", { name: "IBO quick reference.pdf" })).toHaveAttribute("href", "https://example.com/ibo.pdf");
+    expect(screen.queryByRole("link", { name: "SureLC quick reference (PDF)" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Replay SureLC walkthrough" }));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByRole("link", { name: "IBO quick reference.pdf" })).toBeInTheDocument();
+    expect(complete).not.toHaveBeenCalled();
+  });
+  it("does not restore the old reference when an admin explicitly removes supporting files", () => {
+    render(<MemoryRouter><PortalOnboardingChecklist todos={[todo({ id: "surelc_tutorial", title: "Tutorial", supportingFiles: [] })]} agentEmail="test@example.com" completingTodoId={null} onComplete={vi.fn()} /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: /Licensing/ }));
+    expect(screen.queryByRole("link", { name: "SureLC quick reference (PDF)" })).not.toBeInTheDocument();
+  });
+});

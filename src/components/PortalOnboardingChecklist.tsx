@@ -1,3 +1,4 @@
+import OnboardingSupportingFiles from "@/components/OnboardingSupportingFiles";
 import "@/styles/portal-overlays.css";
 import { useEffect, useMemo, useState, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
@@ -300,7 +301,7 @@ function PortalTodoItem({
           <div className="pcl-step-body">
             <button type="button" className="pcl-step-link" onClick={() => setVideoOpen(true)}>
               <Play size={16} strokeWidth={2.5} aria-hidden="true" />
-              Replay SureLC walkthrough
+              {isSureLcTutorialTodo(todo.id) ? "Replay SureLC walkthrough" : "Replay video"}
             </button>
           </div>
         ) : keepCompletedLink && (
@@ -385,14 +386,14 @@ function PortalTodoItem({
           )}
         </div>
       )}
-      {isSureLcTutorialTodo(todo.id) && (
-        <div className="pcl-step-body">
-          <PortalSureLcReferenceLink className="pcl-step-link" />
-        </div>
-      )}
+      {todo.supportingFiles !== undefined ? ((!disabled || todo.completed) && <div className="pcl-step-body">
+        <OnboardingSupportingFiles files={todo.supportingFiles} className="pcl-step-link" />
+      </div>) : isSureLcTutorialTodo(todo.id) && <div className="pcl-step-body">
+        <PortalSureLcReferenceLink className="pcl-step-link" />
+      </div>}
       {videoOpen && requiresVideoPlayback && (
         <PortalTutorialVideoModal title={todo.title} sourceUrl={todo.href}
-          sureLc={isSureLcTutorialTodo(todo.id)}
+          sureLc={isSureLcTutorialTodo(todo.id)} supportingFiles={todo.supportingFiles}
           progressKey={`pncl-tutorial:${agentEmail}:${todo.href}${todo.completed ? ":replay" : ""}`}
           completed={Boolean(todo.completed)} completing={completing}
           onComplete={() => onComplete(todo.id, { videoPlaybackVerified: true })}

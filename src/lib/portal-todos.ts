@@ -1,3 +1,4 @@
+import { SURELC_REFERENCE_FILE, type SupportingFile } from "../../supabase/functions/_shared/onboardingAttachments";
 import { isTodoApplicableToAgent } from "@/lib/agent-designation";
 import type { User } from "@supabase/supabase-js";
 import { fetchPortalCompAttachments } from "@/lib/portal-comp-attachments";
@@ -20,6 +21,7 @@ export type PortalTodoCompletionType = "auto" | "agent" | "admin";
 export interface PortalTodo {
   id: string;
   contentType?: string;
+  supportingFiles?: SupportingFile[];
   prerequisites?: string[];
   title: string;
   description: string;
@@ -211,6 +213,7 @@ export const FALLBACK_PORTAL_TODOS: PortalTodo[] = [
 interface PortalTodoResponse {
   id: string;
   contentType?: string;
+  supportingFiles?: SupportingFile[];
   prerequisites?: string[];
   title: string;
   description: string;
@@ -230,6 +233,7 @@ function mapPortalTodo(row: PortalTodoResponse): PortalTodo {
   return {
     id: row.id,
     contentType: row.contentType,
+    supportingFiles: row.supportingFiles,
     prerequisites: row.prerequisites,
     title: row.title,
     description: row.description,
@@ -366,7 +370,7 @@ export function groupTodosByPhase(todos: PortalTodo[]): Map<PortalTodoPhase, Por
 export const SUBMIT_NEW_PRODUCER_TODO_ID = "submit_new_producer";
 export const SURELC_TUTORIAL_TODO_ID = "surelc_tutorial";
 export const SURELC_IBO_TUTORIAL_TODO_ID = "surelc_tutorial_ibo";
-export const SURELC_QUICK_REFERENCE_URL = "/documents/PNCL-SureLC-Quick-Reference.pdf";
+export const SURELC_QUICK_REFERENCE_URL = SURELC_REFERENCE_FILE.url;
 
 export function isSureLcTutorialTodo(todoId: string): boolean {
   return todoId === SURELC_TUTORIAL_TODO_ID || todoId === SURELC_IBO_TUTORIAL_TODO_ID;

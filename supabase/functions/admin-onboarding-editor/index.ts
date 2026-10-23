@@ -1,3 +1,4 @@
+import { supportingFilesForFlow, validateSupportingFiles } from "../_shared/onboardingAttachments.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
 import { requireAdmin, AdminAuthError } from "../_shared/adminAuth.ts";
@@ -181,7 +182,7 @@ serve(async (req) => {
             row.content_type === "system"
               ? inferContentType(row.slug)
               : row.content_type;
-          const flowContent = { ...row.flow_content };
+          const flowContent = { loa: row.flow_content?.loa, ibo: row.flow_content?.ibo };
           const key =
             contentType === "ica"
               ? "ica"
@@ -217,9 +218,13 @@ serve(async (req) => {
             showIbo: sibling ? sibling.show_ibo : row.show_ibo,
             contentType,
             flowContent,
+            flowAttachments: {
+              loa: supportingFilesForFlow(row.slug, row.flow_content?.attachments, "loa"),
+              ibo: supportingFilesForFlow(row.slug, row.flow_content?.attachments, "ibo"),
+            },
           };
         });
-      return jsonResponse({ rows, flows: { loa, ibo }, limits });
+      return jsonResponse({ rows, flows: { loa, ibo }, limits, features: { supportingFiles: true } });
     }
     const body = await req.json();
     if (body.action === "saveFlow") {
@@ -314,6 +319,16 @@ serve(async (req) => {
             `Add ${designation.toUpperCase()} content before publishing.`,
           );
     }
+    const attachments = await validateSupportingFiles(
+      row.flowAttachments ?? previous?.flow_content?.attachments ?? {},
+      previous?.slug ?? todo.slug ?? "",
+      async (id) => {
+        const { data: asset, error } = await client.from("onboarding_content_assets")
+          .select("id, designation, kind, path, filename, size_bytes").eq("id", id).maybeSingle();
+        if (error) throw new Error("Unable to verify the supporting file. Please retry.");
+        return asset ? { ...asset, url: client.storage.from(ONBOARDING_CONTENT_BUCKET).getPublicUrl(asset.path).data.publicUrl } : null;
+      },
+    );
     const { data: id, error: saveError } = await client.rpc(
       "save_onboarding_editor_step",
       {
@@ -326,7 +341,7 @@ serve(async (req) => {
             (row.contentType.includes("video") ? "agent" : todo.completionType),
           autoKey: previous?.auto_key ?? todo.autoKey,
           contentType: row.contentType,
-          flowContent,
+          flowContent: { ...flowContent, attachments },
           updatedAt: previous ? row.updatedAt : null,
         },
       },

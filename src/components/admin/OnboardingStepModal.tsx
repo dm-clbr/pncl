@@ -1,3 +1,5 @@
+import { supportingFilesForFlow } from "../../../supabase/functions/_shared/onboardingAttachments";
+import OnboardingSupportingFilesEditor from "./OnboardingSupportingFilesEditor";
 import { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import {
@@ -14,18 +16,20 @@ export default function OnboardingStepModal({
   row,
   token,
   limits,
+  supportingFilesEnabled = false,
   onClose,
   onSaved,
 }: {
   row: EditorRow;
   token: string;
   limits: { video: number; document: number };
+  supportingFilesEnabled?: boolean;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [draft, setDraft] = useState<EditorRow>(() => structuredClone(row));
-  const [busy, setBusy] = useState({ loa: false, ibo: false });
+  const [busy, setBusy] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
@@ -38,7 +42,7 @@ export default function OnboardingStepModal({
       active?.focus();
     };
   }, []);
-  const preparing = busy.loa || busy.ibo;
+  const preparing = Object.values(busy).some(Boolean);
   const fileType = [
     "ica",
     "document",
@@ -303,13 +307,19 @@ export default function OnboardingStepModal({
                         Preview current standard ICA
                       </a>
                     )}
+                  {supportingFilesEnabled && <OnboardingSupportingFilesEditor
+                    designation={designation} token={token} limit={limits.document}
+                    files={supportingFilesForFlow(draft.slug, draft.flowAttachments, designation)}
+                    onChange={(files) => setDraft(previous => ({ ...previous, flowAttachments: { ...previous.flowAttachments, [designation]: files } }))}
+                    onBusy={(value) => setBusy(previous => ({ ...previous, [`${designation}-supporting`]: value }))}
+                  />}
                 </section>
               ))}
             </div>
             {fileType && (
               <p className="onboarding-hint onboarding-preserve-note">
                 {draft.contentType === "ica"
-                  ? "Existing signed agreements stay on file. New versions apply to future signatures."
+                  ? "Existing signed agreements stay on file. Only the main ICA PDF is signed; supporting files are separate reference documents."
                   : "Uploaded files are applied when you save. Cancel keeps the current content."}
               </p>
             )}

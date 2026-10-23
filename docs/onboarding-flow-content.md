@@ -8,6 +8,18 @@ The admin **Onboarding steps** page has separate LOA and IBO uploads for:
 
 Each row has an **Edit** modal with independent LOA/IBO content, drag-and-drop uploads, a file picker, visibility, stage, and draft/published status. **Add row** creates document, video, link, or manual steps. Uploads are staged first; **Save changes** commits the row and both flows atomically. Cancel does not replace published content. Saving a draft does not replace the active ICA or application video; publish it to apply those assets. Replacing content retains previous files and completion history. The PNCL training library remains independent of the welcome video.
 
+Each row also has a **Preview** action. Its LOA/IBO tabs show the selected flow's video, document, destination, and supporting files without recording progress or signing anything. Hidden and draft states remain visible to the admin.
+
+Preview and Edit use side-by-side eye and pencil buttons with accessible labels. Row descriptions appear in question-mark tooltips on hover, keyboard focus, or tap; they remain editable in the modal and visible in the step preview.
+
+Rows can include one primary video/document plus up to ten supporting PDF, DOC, or DOCX files **per flow**. Supporting files are staged and saved atomically alongside the primary content in `portal_todos.flow_content.attachments`; no schema migration is required. The server verifies every attachment's flow and document asset type and derives its URL from Storage. Existing clients preserve configured attachments. The portal response includes only the authenticated agent's supporting files. ICA supporting files are separate reference documents and are not appended to the signed agreement.
+
+The SureLC row initially displays the existing shared quick-reference PDF. Uploading the first replacement removes that shared reference only for the edited flow. An explicitly empty list removes it; missing settings preserve it. The agent Hub and tutorial player display the configured references, including after video completion. Jordan's new LOA and IBO PDFs must be uploaded separately to replace the legacy content. Supporting-file editing is enabled only when the backend advertises support, or in explicit local preview.
+
+Deploy `admin-onboarding-editor` and `list-portal-todos` before releasing the preview/supporting-file frontend update. The initial 2026-10-23 deployment below predates this extension.
+
+The follow-up release passed all 687 frontend tests across 132 files, TypeScript checking, the production build, and the isolated SQL checks for saving supporting files alongside videos. Browser checks verified row previews, independent LOA/IBO supporting files, description tooltips, and both icon actions.
+
 **Edit logic flow** opens a separate page. Admins can reorder application questions per flow, add conditions to optional NPN/profile-picture fields, reorder checklist steps within a stage, and add prerequisites. The agreement, final review, required application fields, and existing system gates remain mandatory. The preview simulates Yes/No answers without submitting an application. Stale revisions and cyclic, forward, or cross-stage prerequisites are rejected.
 
 ## Video uploads and links

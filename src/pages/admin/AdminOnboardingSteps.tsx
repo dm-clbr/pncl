@@ -1,14 +1,25 @@
+import OnboardingStepPreview from "@/components/admin/OnboardingStepPreview";
+import { supportingFilesForFlow } from "../../../supabase/functions/_shared/onboardingAttachments";
 import { Fragment, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Portal as TooltipPortal } from "@radix-ui/react-tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Workflow,
   Plus,
   Pencil,
+  Eye,
   FileText,
   Video,
   Link2,
   Search,
   Info,
+  CircleHelp,
   UserRound,
 } from "lucide-react";
 import { useOnboardingEditor } from "@/hooks/useOnboardingEditor";
@@ -23,9 +34,50 @@ import {
 import OnboardingStepModal from "@/components/admin/OnboardingStepModal";
 import { toast } from "sonner";
 import "@/styles/admin-onboarding-steps.css";
+
+function StepDescription({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  const [open, setOpen] = useState(false);
+  if (!description.trim()) return null;
+  return (
+    <Tooltip open={open} onOpenChange={setOpen}>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          className="onboarding-description-trigger"
+          aria-label={`Description for ${title}`}
+          onClick={(event) => {
+            event.preventDefault();
+            setOpen(true);
+          }}
+        >
+          <CircleHelp size={16} aria-hidden="true" />
+        </button>
+      </TooltipTrigger>
+      <TooltipPortal>
+        <TooltipContent
+          className="onboarding-description-tooltip"
+          side="top"
+          align="start"
+          sideOffset={8}
+          collisionPadding={16}
+        >
+          {description}
+        </TooltipContent>
+      </TooltipPortal>
+    </Tooltip>
+  );
+}
+
 export default function AdminOnboardingSteps() {
   const { data, loading, error, reload, token } = useOnboardingEditor();
   const [editing, setEditing] = useState<EditorRow | null>(null);
+  const [previewing, setPreviewing] = useState<EditorRow | null>(null);
   const [search, setSearch] = useState("");
   const [stage, setStage] = useState("all");
   const [flow, setFlow] = useState("all");
@@ -130,119 +182,158 @@ export default function AdminOnboardingSteps() {
         </div>
       )}
       {data && !loading && (
-        <div className="admin-table-wrap">
-          <table className="admin-table onboarding-content-table">
-            <thead>
-              <tr>
-                <th>Step</th>
-                <th>Content</th>
-                <th>Status</th>
-                <th>LOA</th>
-                <th>IBO</th>
-                <th>
-                  <span className="sr-only">Actions</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {STAGES.map((item) => {
-                const stageRows = rows.filter((row) => row.phase === item.id);
-                return stageRows.length ? (
-                  <Fragment key={item.id}>
-                    <tr className="onboarding-stage-row">
-                      <th colSpan={6}>{item.label}</th>
-                    </tr>
-                    {stageRows.map((row) => {
-                      const Icon = row.contentType.includes("video")
-                        ? Video
-                        : row.contentType === "link"
-                          ? Link2
-                          : row.contentType === "system"
-                            ? UserRound
-                            : FileText;
-                      const count = Object.values(row.flowContent).filter(
-                        Boolean,
-                      ).length;
-                      return (
-                        <tr key={row.id}>
-                          <th scope="row">
-                            <strong>{row.title}</strong>
-                            <span>{row.description}</span>
-                          </th>
-                          <td data-label="Content">
-                            <div className="onboarding-content-cell">
-                              <Icon size={20} />
-                              <div>
-                                {CONTENT_LABELS[row.contentType]}
-                                {count > 0 && (
-                                  <small>
-                                    {count} flow{count === 1 ? "" : "s"}{" "}
-                                    configured
-                                  </small>
-                                )}
+        <TooltipProvider delayDuration={200}>
+          <div className="admin-table-wrap">
+            <table className="admin-table onboarding-content-table">
+              <thead>
+                <tr>
+                  <th>Step</th>
+                  <th>Content</th>
+                  <th>Status</th>
+                  <th>LOA</th>
+                  <th>IBO</th>
+                  <th>
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {STAGES.map((item) => {
+                  const stageRows = rows.filter((row) => row.phase === item.id);
+                  return stageRows.length ? (
+                    <Fragment key={item.id}>
+                      <tr className="onboarding-stage-row">
+                        <th colSpan={6}>{item.label}</th>
+                      </tr>
+                      {stageRows.map((row) => {
+                        const Icon = row.contentType.includes("video")
+                          ? Video
+                          : row.contentType === "link"
+                            ? Link2
+                            : row.contentType === "system"
+                              ? UserRound
+                              : FileText;
+                        const count = Object.values(row.flowContent).filter(
+                          Boolean,
+                        ).length;
+                        return (
+                          <tr key={row.id}>
+                            <th scope="row">
+                              <div className="onboarding-step-title">
+                                <strong>{row.title}</strong>
+                                <StepDescription
+                                  title={row.title}
+                                  description={row.description}
+                                />
                               </div>
-                            </div>
-                          </td>
-                          <td data-label="Status">
-                            <span
-                              className={`onboarding-status ${row.published ? "published" : ""}`}
-                            >
-                              {row.published ? "Published" : "Draft"}
-                            </span>
-                          </td>
-                          <td data-label="LOA">
-                            <input
-                              aria-label={`Show ${row.title} for LOA`}
-                              type="checkbox"
-                              checked={!!row.showLoa}
-                              onChange={() =>
-                                setEditing({ ...row, showLoa: !row.showLoa })
-                              }
-                            />
-                          </td>
-                          <td data-label="IBO">
-                            <input
-                              aria-label={`Show ${row.title} for IBO`}
-                              type="checkbox"
-                              checked={!!row.showIbo}
-                              onChange={() =>
-                                setEditing({ ...row, showIbo: !row.showIbo })
-                              }
-                            />
-                          </td>
-                          <td>
-                            <button
-                              className="admin-secondary-link"
-                              aria-label={`Edit ${row.title}`}
-                              onClick={() => setEditing(row)}
-                            >
-                              <Pencil size={16} />
-                              Edit
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </Fragment>
-                ) : null;
-              })}
-            </tbody>
-          </table>
-          {!rows.length && (
-            <p className="admin-empty">No steps match these filters.</p>
-          )}
-        </div>
+                            </th>
+                            <td data-label="Content">
+                              <div className="onboarding-content-cell">
+                                <Icon size={20} />
+                                <div>
+                                  {CONTENT_LABELS[row.contentType]}
+                                  {(["loa", "ibo"] as const).some(
+                                    (designation) =>
+                                      supportingFilesForFlow(
+                                        row.slug,
+                                        row.flowAttachments,
+                                        designation,
+                                      ).length > 0,
+                                  ) && <small>Supporting files</small>}
+                                  {count > 0 && (
+                                    <small>
+                                      {count} flow{count === 1 ? "" : "s"}{" "}
+                                      configured
+                                    </small>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td data-label="Status">
+                              <span
+                                className={`onboarding-status ${row.published ? "published" : ""}`}
+                              >
+                                {row.published ? "Published" : "Draft"}
+                              </span>
+                            </td>
+                            <td data-label="LOA">
+                              <input
+                                aria-label={`Show ${row.title} for LOA`}
+                                type="checkbox"
+                                checked={!!row.showLoa}
+                                onChange={() =>
+                                  setEditing({ ...row, showLoa: !row.showLoa })
+                                }
+                              />
+                            </td>
+                            <td data-label="IBO">
+                              <input
+                                aria-label={`Show ${row.title} for IBO`}
+                                type="checkbox"
+                                checked={!!row.showIbo}
+                                onChange={() =>
+                                  setEditing({ ...row, showIbo: !row.showIbo })
+                                }
+                              />
+                            </td>
+                            <td>
+                              <div className="onboarding-row-actions">
+                                <button
+                                  type="button"
+                                  className="admin-secondary-link"
+                                  aria-label={`Preview ${row.title}`}
+                                  title="Preview step"
+                                  onClick={() => setPreviewing(row)}
+                                >
+                                  <Eye size={18} aria-hidden="true" />
+                                </button>
+                                <button
+                                  type="button"
+                                  className="admin-secondary-link"
+                                  aria-label={`Edit ${row.title}`}
+                                  title="Edit step"
+                                  onClick={() => setEditing(row)}
+                                >
+                                  <Pencil size={18} aria-hidden="true" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </Fragment>
+                  ) : null;
+                })}
+              </tbody>
+            </table>
+            {!rows.length && (
+              <p className="admin-empty">No steps match these filters.</p>
+            )}
+          </div>
+        </TooltipProvider>
       )}
       <p className="onboarding-table-note">
         <Info size={17} />
         Edit a row to update its content and files. Use logic flow to manage
         order and conditions.
       </p>
+      {previewing && (
+        <OnboardingStepPreview
+          row={previewing}
+          initialFlow={
+            flow === "ibo" || (!previewing.showLoa && previewing.showIbo)
+              ? "ibo"
+              : "loa"
+          }
+          onClose={() => setPreviewing(null)}
+        />
+      )}
       {editing && data && (
         <OnboardingStepModal
           row={editing}
           token={token}
           limits={data.limits}
+          supportingFilesEnabled={data.features?.supportingFiles ?? false}
           onClose={() => setEditing(null)}
           onSaved={() => {
             setEditing(null);

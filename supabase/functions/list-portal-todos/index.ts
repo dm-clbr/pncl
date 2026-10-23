@@ -1,3 +1,4 @@
+import { supportingFilesForFlow } from "../_shared/onboardingAttachments.ts";
 import { canonicalStepSlug } from "../_shared/onboardingEditorRules.ts";
 import { loadFlowRules } from "../_shared/onboardingFlowRules.ts";
 import { filterAgentTodos } from "../_shared/agentDesignation.ts";
@@ -67,6 +68,7 @@ serve(async (req) => {
         { ...row, href: row.flow_content?.[designation]?.url || row.href, external: row.flow_content?.[designation]?.url ? true : row.external },
         isTodoCompleteForUser(row, user.id, completedMetadata, autoSets),
       ),
+      supportingFiles: supportingFilesForFlow(row.slug, row.flow_content?.attachments, designation),
       prerequisites: (rules.prerequisites[canonicalStepSlug(row.slug)] ?? []).map(id => visibleRows.find(row => canonicalStepSlug(row.slug) === id)?.slug ?? id).filter(id => visibleSlugs.has(id)),
     }));
     const rank = (id: string) => { const index = rules.portalOrder.indexOf(canonicalStepSlug(id)); return index < 0 ? 10000 : index; };

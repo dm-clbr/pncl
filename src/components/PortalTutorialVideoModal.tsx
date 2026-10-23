@@ -1,3 +1,5 @@
+import OnboardingSupportingFiles from "./OnboardingSupportingFiles";
+import type { SupportingFile } from "../../supabase/functions/_shared/onboardingAttachments";
 import "@/styles/portal-overlays.css";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -8,7 +10,7 @@ import PortalBunnyTutorialPlayer from "@/components/PortalBunnyTutorialPlayer";
 import PortalSureLcReferenceLink from "@/components/PortalSureLcReferenceLink";
 
 export default function PortalTutorialVideoModal({
-  title, sourceUrl, progressKey, completed = false, completing, onComplete, onClose, sureLc = true,
+  title, sourceUrl, progressKey, completed = false, completing, onComplete, onClose, sureLc = true, supportingFiles,
 }: {
   title: string;
   sourceUrl: string;
@@ -18,6 +20,7 @@ export default function PortalTutorialVideoModal({
   onComplete: () => void;
   onClose: () => void;
   sureLc?: boolean;
+  supportingFiles?: SupportingFile[];
 }) {
   const [error, setError] = useState(false);
   const [finished, setFinished] = useState(false);
@@ -117,7 +120,7 @@ export default function PortalTutorialVideoModal({
               : `Watch the full tutorial to unlock your SureLC steps. ${percent}% watched. You can pause and resume; skipping ahead is disabled.`}
           </p>
         )}
-        {sureLc && <PortalSureLcReferenceLink className="portal-todo-link" />}
+        {supportingFiles !== undefined ? <OnboardingSupportingFiles files={supportingFiles} className="portal-todo-link" /> : sureLc && <PortalSureLcReferenceLink className="portal-todo-link" />}
         {finished && !completed && (
           <button type="button" className="portal-todo-link" disabled={completing} onClick={onComplete}>
             {completing ? "Saving completion…" : "Save video completion"}

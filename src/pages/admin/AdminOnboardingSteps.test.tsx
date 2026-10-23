@@ -14,6 +14,7 @@ import {
   blankEditorRow,
   defaultFlowRules,
   saveEditorStep,
+  stageEditorFile,
 } from "@/lib/onboarding-editor";
 vi.mock("@/hooks/useOnboardingEditor", () => ({
   useOnboardingEditor: vi.fn(),
@@ -21,6 +22,7 @@ vi.mock("@/hooks/useOnboardingEditor", () => ({
 vi.mock("@/lib/onboarding-editor", async (original) => ({
   ...(await original<typeof import("@/lib/onboarding-editor")>()),
   saveEditorStep: vi.fn(),
+  stageEditorFile: vi.fn(),
 }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 const reload = vi.fn();
@@ -59,6 +61,7 @@ beforeEach(() => {
   };
   vi.mocked(useOnboardingEditor).mockReturnValue({
     data: {
+      features: { supportingFiles: true },
       rows,
       limits: { video: 52428800, document: 20971520 },
       flows: {
@@ -173,5 +176,68 @@ describe("Onboarding content editor", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Bunny Stream");
     expect(saveEditorStep).not.toHaveBeenCalled();
+  });
+});
+
+describe("Row preview and supporting documents", () => {
+  it("previews every row without saving, signing or changing completion", () => {
+    show();
+    expect(screen.getAllByRole("button", { name: /^Preview / })).toHaveLength(rows.length);
+    fireEvent.click(screen.getByRole("button", { name: "Preview Sign ICA" }));
+    const modal = screen.getByRole("dialog");
+    expect(within(modal).getByTitle("LOA document preview")).toHaveAttribute("src", "/documents/pncl-ica-standard.pdf");
+    fireEvent.click(within(modal).getByRole("button", { name: "IBO", exact: true }));
+    expect(within(modal).getByTitle("IBO document preview")).toBeInTheDocument();
+    expect(within(modal).queryByRole("button", { name: /Sign agreement/ })).not.toBeInTheDocument();
+    fireEvent.click(within(modal).getByRole("button", { name: "Done" }));
+    expect(saveEditorStep).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  function sureLcRow() {
+    const state = vi.mocked(useOnboardingEditor).mock.results[0]?.value ?? useOnboardingEditor();
+    const row = { ...blankEditorRow(), id: "surelc", slug: "surelc_tutorial", title: "SureLC walkthrough", description: "Watch and read your guide", contentType: "surelc_video" as const,
+      published: true, flowContent: { loa: { mode: "link" as const, url: "https://example.com/loa.mp4" }, ibo: { mode: "link" as const, url: "https://example.com/ibo.mp4" } } };
+    vi.mocked(useOnboardingEditor).mockReturnValue({ ...state, data: { ...state.data!, rows: [row] } });
+  }
+
+  it("previews the selected flow's video and supporting PDF", () => {
+    sureLcRow();
+    const state = useOnboardingEditor();
+    state.data!.rows[0].flowAttachments = { loa: [{ mode: "file", assetId: "loa", url: "https://example.com/loa.pdf", filename: "LOA guide.pdf" }], ibo: [{ mode: "file", assetId: "ibo", url: "https://example.com/ibo.pdf", filename: "IBO guide.pdf" }] };
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Preview SureLC walkthrough" }));
+    const modal = screen.getByRole("dialog");
+    expect(within(modal).getByLabelText("LOA video preview")).toHaveAttribute("src", "https://example.com/loa.mp4");
+    expect(within(modal).getByRole("link", { name: "LOA guide.pdf" })).toHaveAttribute("href", "https://example.com/loa.pdf");
+    fireEvent.click(within(modal).getByRole("button", { name: "IBO", exact: true }));
+    expect(within(modal).getByLabelText("IBO video preview")).toHaveAttribute("src", "https://example.com/ibo.mp4");
+    expect(within(modal).queryByText("LOA guide.pdf")).not.toBeInTheDocument();
+    expect(within(modal).getByRole("link", { name: "IBO guide.pdf" })).toBeInTheDocument();
+  });
+
+  it("adds multiple LOA PDFs alongside the video without replacing the IBO reference", async () => {
+    sureLcRow();
+    vi.mocked(stageEditorFile)
+      .mockResolvedValueOnce({ mode: "file", assetId: "loa-guide", url: "https://example.com/guide.pdf", filename: "LOA guide.pdf", size: 100 })
+      .mockResolvedValueOnce({ mode: "file", assetId: "loa-checklist", url: "https://example.com/checklist.pdf", filename: "Checklist.pdf", size: 100 });
+    show();
+    fireEvent.click(screen.getByRole("button", { name: "Edit SureLC walkthrough" }));
+    const loa = screen.getByRole("region", { name: "LOA supporting files" });
+    const ibo = screen.getByRole("region", { name: "IBO supporting files" });
+    expect(within(loa).getByRole("link", { name: "SureLC quick reference (PDF)" })).toBeInTheDocument();
+    for (const filename of ["LOA guide.pdf", "Checklist.pdf"]) {
+      fireEvent.click(within(loa).getByRole("button", { name: "Add supporting file" }));
+      fireEvent.change(within(loa).getByLabelText("LOA document file"), { target: { files: [new File(["%PDF-test"], filename, { type: "application/pdf" })] } });
+      await within(loa).findByRole("link", { name: filename });
+    }
+    expect(within(loa).queryByText("SureLC quick reference (PDF)")).not.toBeInTheDocument();
+    expect(within(ibo).getByRole("link", { name: "SureLC quick reference (PDF)" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(saveEditorStep).toHaveBeenCalled());
+    const saved = vi.mocked(saveEditorStep).mock.calls[0][1];
+    expect(saved.flowContent.loa?.url).toBe("https://example.com/loa.mp4");
+    expect(saved.flowAttachments?.loa).toHaveLength(2);
+    expect(saved.flowAttachments?.ibo).toBeUndefined();
   });
 });

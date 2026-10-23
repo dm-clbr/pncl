@@ -226,7 +226,7 @@ export default function OnboardingMediaInput({
               setDrag(false);
               if (busy) return;
               if (e.dataTransfer.files.length !== 1) {
-                setError("Drop one file per flow.");
+                setError("Drop one file at a time.");
                 return;
               }
               void choose(e.dataTransfer.files[0]);

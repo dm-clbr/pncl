@@ -1,3 +1,4 @@
+import type { FlowAttachments } from "./onboardingAttachments.ts";
 import { filterAgentTodos, isTodoApplicableToAgent } from "./agentDesignation.ts";
 import { loadAgentDesignations } from "./portalAgentDesignations.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
@@ -39,7 +40,7 @@ export interface PortalTodoRecord {
   id: string;
   slug: string;
   content_type?: string;
-  flow_content?: Record<string, { url: string }>;
+  flow_content?: { loa?: { url: string }; ibo?: { url: string }; attachments?: FlowAttachments };
   title: string;
   description: string;
   href: string;

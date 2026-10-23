@@ -1,3 +1,4 @@
+import { supportingFilesForFlow, type FlowAttachments } from "../../supabase/functions/_shared/onboardingAttachments";
 import type { AdminPortalTodoSummary } from "./admin-api";
 import { getSupabaseConfig } from "./supabase";
 import { FALLBACK_PORTAL_TODOS } from "./portal-todos";
@@ -22,8 +23,10 @@ export type { FlowRules, FlowMedia, FlowMediaMap, StepContentType };
 export interface EditorRow extends AdminPortalTodoSummary {
   contentType: StepContentType;
   flowContent: FlowMediaMap;
+  flowAttachments?: FlowAttachments;
 }
 export interface EditorData {
+  features?: { supportingFiles: boolean };
   rows: EditorRow[];
   flows: Record<"loa" | "ibo", { rules: FlowRules; revision: number }>;
   limits: { video: number; document: number };
@@ -187,6 +190,7 @@ export async function fetchEditor(token: string): Promise<EditorData> {
   let data = await localGet<EditorData>("editor");
   if (!data) {
     data = {
+      features: { supportingFiles: true },
       rows: sampleRows(),
       flows: {
         loa: { rules: defaultFlowRules(), revision: 0 },
@@ -196,8 +200,9 @@ export async function fetchEditor(token: string): Promise<EditorData> {
     };
     await localPut("editor", data);
   }
+  data.features = { supportingFiles: true };
   for (const row of data.rows)
-    for (const media of Object.values(row.flowContent))
+    for (const media of [...Object.values(row.flowContent), ...supportingFilesForFlow(row.slug, row.flowAttachments, "loa"), ...supportingFilesForFlow(row.slug, row.flowAttachments, "ibo")])
       if (media?.assetId) {
         const blob = await localGet<Blob>(media.assetId);
         if (blob) {

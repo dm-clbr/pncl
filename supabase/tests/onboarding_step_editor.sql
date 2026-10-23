@@ -32,6 +32,12 @@ begin
  assert (select surelc_video_url='https://example.com/ibo.mp4' from public.onboarding_flow_content where designation='ibo');
  assert (select title='Updated SureLC' and not show_loa and show_ibo from public.portal_todos where slug='surelc_tutorial_ibo');
  assert (select show_loa and not show_ibo from public.portal_todos where slug='surelc_tutorial');
+ payload := jsonb_set(payload, '{flowContent,attachments}', '{"loa":[{"mode":"file","assetId":"00000000-0000-4000-8000-000000000301","url":"https://example.com/loa.pdf","filename":"LOA reference.pdf"}],"ibo":[]}'::jsonb);
+ perform public.save_onboarding_editor_step(payload);
+ assert (select flow_content->'attachments' = payload->'flowContent'->'attachments' from public.portal_todos where slug='surelc_tutorial'), 'Save keeps video and supporting documents together';
+ assert (select flow_content->'attachments' = payload->'flowContent'->'attachments' from public.portal_todos where slug='surelc_tutorial_ibo'), 'Paired IBO row keeps the independent attachment lists';
+ assert (select surelc_video_url='https://example.com/loa.mp4' from public.onboarding_flow_content where designation='loa'), 'Adding references must retain the video';
+
  perform public.save_onboarding_editor_step(payload || '{"published":false,"flowContent":{"loa":{"mode":"link","url":"https://example.com/draft.mp4"}}}'::jsonb);
  assert (select surelc_video_url='https://example.com/loa.mp4' from public.onboarding_flow_content where designation='loa');
  perform public.save_onboarding_editor_step(payload || '{"showLoa":false,"flowContent":{"ibo":{"mode":"link","url":"https://example.com/ibo.mp4"}}}'::jsonb);
