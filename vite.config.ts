@@ -55,7 +55,7 @@ export default defineConfig(({ mode }) => ({
         // Main bundle includes pdf.js and admin UI; default 2 MiB precache limit is too small.
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
         // The zipcodes-us dataset (~6 MB, lazy-loaded) is fetched on demand, not precached.
-        globIgnores: ["**/zip-county-data-*.js"],
+        globIgnores: ["**/zip-county-data-*.js", "ffmpeg/**"],
         globPatterns: [
           "**/*.{js,css,html,ico,svg,woff2}",
           "pwa-*.png",

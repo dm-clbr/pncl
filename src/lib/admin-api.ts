@@ -19,6 +19,8 @@ export interface AgentOnboardingDetails {
   npn: string | null;
   hasEoInsurance: string;
   hasOtherImo: string | null;
+  otherImoName?: string | null;
+  otherImoCarriers?: string[];
   workspaceEmail: string | null;
 }
 

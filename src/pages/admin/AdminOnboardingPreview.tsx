@@ -6,10 +6,12 @@ import AgentOnboarding from "@/pages/AgentOnboarding";
 import { clearAllPreviewContractSessions } from "@/lib/onboarding-contract";
 import { trackPageView } from "@/lib/analytics";
 import "@/styles/portal-admin.css";
+import type { AgentDesignation } from "@/lib/agent-designation";
 
 export default function AdminOnboardingPreview() {
   const navigate = useNavigate();
   const [instanceKey, setInstanceKey] = useState(0);
+  const [designation, setDesignation] = useState<AgentDesignation>("loa");
 
   useEffect(() => {
     document.title = "Onboarding preview — PNCL Admin";
@@ -33,6 +35,7 @@ export default function AdminOnboardingPreview() {
           <p>Walk through the new-agent onboarding flow. Nothing is saved or submitted.</p>
         </div>
         <div className="admin-onboarding-preview-actions">
+          <label>Preview flow <select aria-label="Preview flow" value={designation} onChange={(event) => { setDesignation(event.target.value as AgentDesignation); handleRestart(); }}><option value="loa">LOA</option><option value="ibo">IBO</option></select></label>
           <button type="button" className="admin-onboarding-preview-btn" onClick={handleRestart}>
             <RotateCcw size={14} aria-hidden="true" />
             Restart
@@ -47,6 +50,7 @@ export default function AdminOnboardingPreview() {
       <AgentOnboarding
         key={instanceKey}
         preview
+        previewDesignation={designation}
         onPreviewRestart={handleRestart}
         onPreviewExit={() => navigate("/portal/admin")}
       />

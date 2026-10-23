@@ -18,6 +18,9 @@ const authState = vi.hoisted(() => ({
 }));
 
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => authState }));
+vi.mock("@/hooks/useOnboardingContent", () => ({
+  useOnboardingContent: () => ({ content: { designation: "loa", ica: null, welcomeVideo: null, surelcVideo: null }, error: null, retry: vi.fn() }),
+}));
 
 vi.mock("@/hooks/usePortalIca", () => ({
   usePortalIca: () => ({ ...icaState, setIca: vi.fn() }),

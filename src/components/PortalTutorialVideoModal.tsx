@@ -8,7 +8,7 @@ import PortalBunnyTutorialPlayer from "@/components/PortalBunnyTutorialPlayer";
 import PortalSureLcReferenceLink from "@/components/PortalSureLcReferenceLink";
 
 export default function PortalTutorialVideoModal({
-  title, sourceUrl, progressKey, completed = false, completing, onComplete, onClose,
+  title, sourceUrl, progressKey, completed = false, completing, onComplete, onClose, sureLc = true,
 }: {
   title: string;
   sourceUrl: string;
@@ -17,6 +17,7 @@ export default function PortalTutorialVideoModal({
   completing: boolean;
   onComplete: () => void;
   onClose: () => void;
+  sureLc?: boolean;
 }) {
   const [error, setError] = useState(false);
   const [finished, setFinished] = useState(false);
@@ -108,12 +109,15 @@ export default function PortalTutorialVideoModal({
           </p>
         ) : (
           <p className="portal-video-watch-note" role="status">
-            {completed ? "Tutorial complete. You can replay it or open the quick reference below."
+            {!sureLc ? (completed ? "Video complete. You can replay it at any time."
+              : finished ? "You’ve finished the video. Saving your completion…"
+              : `Watch the full video to complete this step. ${percent}% watched.`)
+              : completed ? "Tutorial complete. You can replay it or open the quick reference below."
               : finished ? "You’ve finished the tutorial. Saving completion unlocks the SureLC steps below."
               : `Watch the full tutorial to unlock your SureLC steps. ${percent}% watched. You can pause and resume; skipping ahead is disabled.`}
           </p>
         )}
-        <PortalSureLcReferenceLink className="portal-todo-link" />
+        {sureLc && <PortalSureLcReferenceLink className="portal-todo-link" />}
         {finished && !completed && (
           <button type="button" className="portal-todo-link" disabled={completing} onClick={onComplete}>
             {completing ? "Saving completion…" : "Save video completion"}

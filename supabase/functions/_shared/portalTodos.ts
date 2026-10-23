@@ -38,6 +38,8 @@ export type PortalTodoAutoKey = (typeof PORTAL_TODO_AUTO_KEYS)[number];
 export interface PortalTodoRecord {
   id: string;
   slug: string;
+  content_type?: string;
+  flow_content?: Record<string, { url: string }>;
   title: string;
   description: string;
   href: string;
@@ -187,6 +189,7 @@ export function mapPortalTodoRecord(row: PortalTodoRecord) {
 export function mapPortalTodoForUser(row: PortalTodoRecord, completed: boolean) {
   return {
     id: row.slug,
+    contentType: row.content_type,
     title: row.title,
     description: row.description,
     href: row.href,

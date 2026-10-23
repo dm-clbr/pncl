@@ -1,7 +1,14 @@
+import { defaultFlowRules, applicationFieldVisible } from "../../supabase/functions/_shared/onboardingEditorRules";
+import { getBunnyVideoEmbedUrl } from "@/lib/bunny-player";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import OnboardingLayout from "@/components/OnboardingLayout";
 import OnboardingContractStep from "@/components/OnboardingContractStep";
+import OtherImoFields from "@/components/OtherImoFields";
+import { validateOtherImoDetails } from "../../supabase/functions/_shared/onboardingContentRules";
+import { useOnboardingContent } from "@/hooks/useOnboardingContent";
+import { useAuth } from "@/contexts/AuthContext";
+import type { AgentDesignation } from "@/lib/agent-designation";
 import { submitOnboarding, isSupabaseConfigured, readStoredEnrollmentHandoff } from "@/lib/onboarding-api";
 import { lookupCountyFromZip } from "@/lib/us-zip-county";
 import { OTHER_IMO_ONBOARDING_STEP } from "@/lib/onboarding-other-imo";
@@ -32,6 +39,7 @@ type OnboardingPhase = "intro" | "contract" | "form" | "previewComplete";
 
 interface AgentOnboardingProps {
   preview?: boolean;
+  previewDesignation?: AgentDesignation;
   onPreviewRestart?: () => void;
   onPreviewExit?: () => void;
 }
@@ -52,9 +60,11 @@ interface OnboardingData {
   npn: string;
   hasEoInsurance: string;
   hasOtherImo: string;
+  otherImoName: string;
+  otherImoCarriers: string;
 }
 
-type StepKey = Exclude<keyof OnboardingData, "legalName">;
+type StepKey = Exclude<keyof OnboardingData, "legalName" | "otherImoName" | "otherImoCarriers">;
 
 type FileStepKey = "driversLicense" | "profilePhoto";
 
@@ -312,29 +322,9 @@ const EMPTY_DATA: OnboardingData = {
   npn: "",
   hasEoInsurance: "",
   hasOtherImo: "",
+  otherImoName: "",
+  otherImoCarriers: "",
 };
-
-const UPLINE_STEP_INDEX = STEPS.findIndex((step) => step.key === "uplineNetwork");
-
-function isUplineStep(index: number): boolean {
-  return index === UPLINE_STEP_INDEX;
-}
-
-function getNextStepIndex(from: number, skipUpline: boolean): number {
-  let next = from + 1;
-  if (skipUpline && isUplineStep(next)) {
-    next += 1;
-  }
-  return next;
-}
-
-function getPreviousStepIndex(from: number, skipUpline: boolean): number {
-  let prev = from - 1;
-  if (skipUpline && isUplineStep(prev)) {
-    prev -= 1;
-  }
-  return prev;
-}
 
 function resolveInitialPhase(preview: boolean): OnboardingPhase {
   return readStoredContractSignatureId(preview) ? "form" : "intro";
@@ -342,11 +332,18 @@ function resolveInitialPhase(preview: boolean): OnboardingPhase {
 
 export default function AgentOnboarding({
   preview = false,
+  previewDesignation = "loa",
   onPreviewRestart,
   onPreviewExit,
 }: AgentOnboardingProps = {}) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { session } = useAuth();
+  const contentRefId = preview ? null : searchParams.get(REFERRAL_PARAM)?.trim() || readStoredReferralInviteId();
+  const { content, error: contentError, loading: contentLoading, retry: retryContent } = useOnboardingContent({
+    referralInviteId: contentRefId,
+    ...(preview ? { previewDesignation, accessToken: session?.access_token } : {}),
+  });
   const [phase, setPhase] = useState<OnboardingPhase>(() => resolveInitialPhase(preview));
   const [currentStep, setCurrentStep] = useState(0);
   const [data, setData] = useState<OnboardingData>(() => ({
@@ -368,9 +365,22 @@ export default function AgentOnboarding({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const storedHandoff = preview ? null : readStoredEnrollmentHandoff();
 
+  const rules = content?.rules ?? defaultFlowRules();
+  const orderedSteps = rules.applicationOrder.map(key => STEPS.find(step => step.key === key)).filter((step): step is Step => !!step);
+  const effectiveSteps = orderedSteps.length === STEPS.length ? orderedSteps : STEPS;
+  const isVisible = (index: number) => {
+    const entry = effectiveSteps[index];
+    return !entry || (!(referralLocked && entry.key === "uplineNetwork") && applicationFieldVisible(entry.key, data, rules));
+  };
+  const getNextStepIndex = (from: number, _skipUpline: boolean) => { let next = from + 1; while (next < effectiveSteps.length && !isVisible(next)) next++; return next; };
+  const getPreviousStepIndex = (from: number, _skipUpline: boolean) => { let next = from - 1; while (next >= 0 && !isVisible(next)) next--; return Math.max(0, next); };
+  useEffect(() => {
+    if (phase === "form" && !isVisible(currentStep)) setCurrentStep(getNextStepIndex(currentStep, referralLocked));
+  }, [phase, currentStep, referralLocked, content]);
+  const welcomeEmbed = content?.welcomeVideo ? getBunnyVideoEmbedUrl(content.welcomeVideo.url) : null;
   const totalSteps = STEPS.length + 1;
   const isReviewStep = phase === "form" && currentStep === STEPS.length;
-  const step = isReviewStep ? null : STEPS[currentStep];
+  const step = isReviewStep ? null : effectiveSteps[currentStep];
   const progress = phase === "contract"
     ? 8
     : phase === "form"
@@ -412,11 +422,15 @@ export default function AgentOnboarding({
     return null;
   }, [step, currentValue]);
 
+  const imoDetailsValid = (() => {
+    try { validateOtherImoDetails(data.hasOtherImo, data.otherImoName, data.otherImoCarriers); return true; }
+    catch { return false; }
+  })();
   const canAdvance =
     !step
       ? false
       : step.type === "yesno"
-      ? !!currentValue
+      ? !!currentValue && (step.key !== "hasOtherImo" || imoDetailsValid)
       : step.type === "select"
         ? !!currentValue
         : step.type === "file"
@@ -512,7 +526,13 @@ export default function AgentOnboarding({
   };
 
   const handleYesNo = (value: string) => {
-    setData((prev) => ({ ...prev, [step!.key]: value }));
+    setData((prev) => ({ ...prev, [step!.key]: value,
+      ...(step!.key === "hasOtherImo" && value === "No" ? { otherImoName: "", otherImoCarriers: "" } : {}),
+    }));
+    if (step!.key === "hasOtherImo") {
+      if (value === "No") finishStep();
+      return;
+    }
     setTimeout(finishStep, 200);
   };
 
@@ -703,15 +723,21 @@ export default function AgentOnboarding({
               Resume saved enrollment
             </button>
           )}
-          <button type="button" className="btn btn-accent btn-lg" onClick={() => setPhase("contract")}>
+          {content?.welcomeVideo && (welcomeEmbed ? <iframe className="onboarding-welcome-video" src={`${welcomeEmbed}?autoplay=false`} title={`${content.designation.toUpperCase()} welcome and training video`} allow="fullscreen" style={{ width: "100%", aspectRatio: "16 / 9", border: 0 }} /> : <video className="onboarding-welcome-video" controls playsInline preload="metadata" src={content.welcomeVideo.url} aria-label={`${content.designation.toUpperCase()} welcome and training video`} />)}
+          {contentLoading && <p role="status">Loading your onboarding content…</p>}
+          {contentError && <p role="alert" className="onboarding-error">{contentError} <button className="btn btn-ghost" onClick={retryContent}>Retry</button></p>}
+          <button type="button" className="btn btn-accent btn-lg" disabled={!content} onClick={() => setPhase("contract")}>
             Get Started <span className="arr">→</span>
           </button>
         </div>
       )}
 
-      {phase === "contract" && (
+      {phase === "contract" && !content && <div className="onboarding-step"><p role={contentError ? "alert" : "status"}>{contentError || "Loading your agreement…"}</p>{contentError && <button className="btn btn-ghost" onClick={retryContent}>Retry</button>}</div>}
+      {phase === "contract" && content && (
         <OnboardingContractStep
           preview={preview}
+          content={content}
+          referralInviteId={contentRefId}
           onSigned={({ contractSignatureId: signedId, legalName }) => {
             setContractSignatureId(signedId);
             setData((prev) => ({ ...prev, legalName }));
@@ -738,7 +764,7 @@ export default function AgentOnboarding({
               </div>
               <span className="onboarding-review-note">From signed contract</span>
             </li>
-            {STEPS.map((reviewStep, index) => (
+            {effectiveSteps.map((reviewStep, index) => (
               <li key={reviewStep.key} className="onboarding-review-row">
                 <div className="onboarding-review-content">
                   <span className="onboarding-review-label">{reviewStep.question}</span>
@@ -757,6 +783,12 @@ export default function AgentOnboarding({
                 )}
               </li>
             ))}
+            {data.hasOtherImo === "Yes" && <li className="onboarding-review-row">
+              <div className="onboarding-review-content">
+                <span className="onboarding-review-label">Other IMO name</span><span className="onboarding-review-value">{data.otherImoName}</span>
+                <span className="onboarding-review-label">Previously contracted carriers</span><span className="onboarding-review-value">{data.otherImoCarriers}</span>
+              </div>
+            </li>}
             <li className="onboarding-review-row">
               <div className="onboarding-review-content">
                 <span className="onboarding-review-label">County</span>
@@ -813,13 +845,21 @@ export default function AgentOnboarding({
                   type="button"
                   className={`onboarding-option ${currentValue === opt ? "selected" : ""}`}
                   onClick={() => handleYesNo(opt)}
-                  disabled={loading}
+                  disabled={loading || transitioning}
                 >
                   {opt}
                 </button>
               ))}
             </div>
           )}
+
+          {step.key === "hasOtherImo" && currentValue === "Yes" && <>
+            <OtherImoFields name={data.otherImoName} carriers={data.otherImoCarriers} disabled={loading}
+              onChange={(field, value) => setData((previous) => ({ ...previous, [field]: value }))} />
+            <button type="button" className="btn btn-accent" disabled={!canAdvance || loading} onClick={handleSubmit}>
+              {returnToReview ? "Save & return" : "Review application"} <span className="arr">→</span>
+            </button>
+          </>}
 
           {step.type === "select" && (
             <div className="onboarding-field">

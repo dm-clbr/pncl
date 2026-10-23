@@ -968,3 +968,17 @@ body:has(.onboarding-panel-signing) {
 .home2-page.onboarding-page .portal-login-divider span {
   flex-shrink: 0;
 }
+.onboarding-imo-details { display: grid; gap: 20px; margin: 24px 0; }
+.onboarding-imo-details .onboarding-field { width: 100%; }
+.onboarding-imo-details label { display: block; margin-bottom: 8px; }
+.onboarding-imo-details textarea { width: 100%; padding: 14px; font: inherit; color: inherit; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.25); border-radius: 8px; resize: vertical; }
+.uploaded-ica-document { width: 100%; max-width: 800px; margin: 24px auto 16px; overflow: hidden; background: #fff; border-radius: 6px; }
+.uploaded-ica-document canvas { display: block; width: 100%; height: auto; }
+.uploaded-ica-pager { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 13px; }
+.uploaded-ica-form { display: grid; gap: 20px; max-width: 640px; margin: 30px auto; }
+.uploaded-ica-form .onboarding-field { display: grid; gap: 8px; font-size: 14px; }
+.home2-page .uploaded-ica .onboarding-field input { width: 100%; padding: 12px 14px; border: 1px solid rgba(255,255,255,.25); border-radius: 8px; background: rgba(255,255,255,.04); color: inherit; font: inherit; text-align: left; }
+.uploaded-ica-form input:focus-visible, .onboarding-imo-details textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.uploaded-ica-ack { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; line-height: 1.6; }
+.uploaded-ica-ack input { margin-top: 5px; flex-shrink: 0; }
+.onboarding-welcome-video { width: 100%; margin: 20px 0; border-radius: 12px; }

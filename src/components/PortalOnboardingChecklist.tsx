@@ -21,6 +21,7 @@ import {
   PORTAL_TODO_PHASES,
   SUBMIT_NEW_PRODUCER_TODO_ID,
   isSureLcTutorialTodo,
+  isOnboardingVideoTodo,
   type TodoCompletionOptions,
   type PortalTodo,
 } from "@/lib/portal-todos";
@@ -235,7 +236,7 @@ function PortalTodoItem({
   const videoEmbedUrl = getVideoEmbedUrl(todo.href);
   const [videoOpen, setVideoOpen] = useState(false);
   const needsNewProducerConfirmation = todo.id === SUBMIT_NEW_PRODUCER_TODO_ID;
-  const requiresVideoPlayback = isSureLcTutorialTodo(todo.id);
+  const requiresVideoPlayback = isOnboardingVideoTodo(todo.id) || !!todo.contentType?.includes("video");
   const [confirmingNewProducer, setConfirmingNewProducer] = useState(false);
   const keepCompletedLink = isSureLcAccountTodo(todo.id) && Boolean(todo.href);
   const sureLcAccount = isSureLcAccountTodo(todo.id)
@@ -384,13 +385,14 @@ function PortalTodoItem({
           )}
         </div>
       )}
-      {requiresVideoPlayback && (
+      {isSureLcTutorialTodo(todo.id) && (
         <div className="pcl-step-body">
           <PortalSureLcReferenceLink className="pcl-step-link" />
         </div>
       )}
       {videoOpen && requiresVideoPlayback && (
         <PortalTutorialVideoModal title={todo.title} sourceUrl={todo.href}
+          sureLc={isSureLcTutorialTodo(todo.id)}
           progressKey={`pncl-tutorial:${agentEmail}:${todo.href}${todo.completed ? ":replay" : ""}`}
           completed={Boolean(todo.completed)} completing={completing}
           onComplete={() => onComplete(todo.id, { videoPlaybackVerified: true })}

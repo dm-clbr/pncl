@@ -55,6 +55,8 @@ export interface DebitCheckInitials {
 }
 
 export interface SubmitOnboardingContractInput {
+  referralInviteId?: string;
+  templateAssetId?: string | null;
   legalName: string;
   personalEmail: string;
   signatureName: string;

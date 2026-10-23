@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { requireCountyFromZip } from "./usZipCounty.ts";
 import { normalizeRequiredYesNo } from "./requiredYesNo.ts";
+import { validateOtherImoDetails } from "./onboardingContentRules.ts";
 
 export function getServiceClient(): SupabaseClient {
   const url = Deno.env.get("SUPABASE_URL");
@@ -51,6 +52,8 @@ export interface OnboardingRecord {
   npn: string | null;
   has_eo_insurance: string;
   has_other_imo: string | null;
+  other_imo_name: string | null;
+  other_imo_carriers: string[];
   workspace_email: string | null;
   status: OnboardingStatus;
   handoff_token_hash: string;
@@ -109,6 +112,8 @@ export interface SubmitOnboardingPayload {
   npn?: string;
   hasEoInsurance: string;
   hasOtherImo: string;
+  otherImoName: string | null;
+  otherImoCarriers: string[];
   referralInviteId?: string;
   contractSignatureId: string;
   driversLicenseImage: OnboardingImagePayload;
@@ -325,6 +330,7 @@ export function validateSubmitPayload(body: unknown): SubmitOnboardingPayload {
   const hasLicense = normalizeRequiredYesNo(data.hasLicense, "hasLicense");
   const hasEoInsurance = normalizeRequiredYesNo(data.hasEoInsurance, "hasEoInsurance");
   const hasOtherImo = normalizeRequiredYesNo(data.hasOtherImo, "hasOtherImo");
+  const otherImo = validateOtherImoDetails(hasOtherImo, data.otherImoName, data.otherImoCarriers);
   const npn = typeof data.npn === "string" ? data.npn.trim() : "";
   const referralInviteId = typeof data.referralInviteId === "string" && isValidReferrerUserId(data.referralInviteId)
     ? data.referralInviteId
@@ -363,6 +369,7 @@ export function validateSubmitPayload(body: unknown): SubmitOnboardingPayload {
     npn: npn || undefined,
     hasEoInsurance,
     hasOtherImo,
+    ...otherImo,
     referralInviteId,
     contractSignatureId,
     driversLicenseImage,

@@ -285,7 +285,7 @@ export default function AdminLayout() {
               {navItems.map(({ to, label, icon: Icon, end }) => (
                 <NavLink
                   key={to}
-                  to={to}
+                  to={import.meta.env.DEV && to === "/portal/admin/onboarding-steps" && new URLSearchParams(window.location.search).get("localPreview") === "1" ? `${to}?localPreview=1` : to}
                   end={end || (to === "/portal/admin/users" && pathname === "/portal/admin/users/new")}
                   className={({ isActive }) => `admin-nav-link${isActive ? " active" : ""}`}
                   title={collapsed && !isMobile ? label : undefined}

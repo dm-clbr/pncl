@@ -23,6 +23,7 @@ export interface PortalIcaStatus {
 }
 
 export interface SubmitPortalIcaInput {
+  templateAssetId?: string | null;
   legalName: string;
   personalEmail: string;
   signatureName: string;

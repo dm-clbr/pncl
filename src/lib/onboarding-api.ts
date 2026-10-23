@@ -27,6 +27,8 @@ export interface SubmitOnboardingInput {
   npn: string;
   hasEoInsurance: string;
   hasOtherImo: string;
+  otherImoName?: string;
+  otherImoCarriers?: string;
   referralInviteId?: string;
   contractSignatureId: string;
 }
@@ -63,6 +65,8 @@ export function buildSubmitOnboardingRequest(input: SubmitOnboardingInput) {
     npn: input.npn || undefined,
     hasEoInsurance: input.hasEoInsurance,
     hasOtherImo: input.hasOtherImo,
+    otherImoName: input.hasOtherImo === "Yes" ? input.otherImoName?.trim() : null,
+    otherImoCarriers: input.hasOtherImo === "Yes" ? input.otherImoCarriers : [],
     referralInviteId: input.referralInviteId,
     contractSignatureId: input.contractSignatureId,
     driversLicenseImageBase64: input.driversLicense || undefined,

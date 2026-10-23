@@ -16,6 +16,9 @@ import {
 } from "../_shared/portalIca.ts";
 import { notifyAdminsOfIcaSigned } from "../_shared/contractingNotifications.ts";
 import { syncPortalRecoveryEmailForUser } from "../_shared/portalRecoveryEmail.ts";
+import { loadOnboardingContent, downloadIcaAsset } from "../_shared/onboardingContent.ts";
+import { assertCurrentIcaTemplate } from "../_shared/onboardingContentRules.ts";
+import { loadAgentDesignations } from "../_shared/portalAgentDesignations.ts";
 
 function getCompletedTodos(metadata: Record<string, unknown> | undefined): Record<string, boolean> {
   const value = metadata?.completed_portal_todos;
@@ -43,7 +46,12 @@ serve(async (req) => {
 
   try {
     const { user, adminClient } = await requirePortalUser(req);
-    const payload = validateSubmitOnboardingContractPayload(await req.json());
+    const body = await req.json();
+    const designation = (await loadAgentDesignations(adminClient, [user.id])).get(user.id) ?? "loa";
+    const content = await loadOnboardingContent(adminClient, designation);
+    assertCurrentIcaTemplate(body?.templateAssetId, content.ica?.id ?? null);
+    const payload = validateSubmitOnboardingContractPayload(body, Boolean(content.ica));
+    const customTemplate = await downloadIcaAsset(adminClient, content.ica);
     const signedAt = new Date();
     const now = signedAt.toISOString();
     const pdfPath = getPortalIcaPdfPath(user.id);
@@ -53,7 +61,7 @@ serve(async (req) => {
     const pdfBytes = await generateSignedIcaPdf(payload, signedAt, {
       ipAddress: ipAddress ?? undefined,
       userAgent: userAgent ?? undefined,
-    }, import.meta.url);
+    }, import.meta.url, customTemplate);
 
     const { error: uploadError } = await adminClient.storage
       .from(PORTAL_ICA_PDF_BUCKET)
@@ -73,7 +81,9 @@ serve(async (req) => {
         legal_name: payload.legalName,
         personal_email: payload.personalEmail,
         signature_name: payload.signatureName,
-        ica_version: ICA_VERSION,
+        ica_version: customTemplate?.version ?? ICA_VERSION,
+        agent_designation: designation,
+        template_asset_id: content.ica?.id ?? null,
         debit_check_initials: payload.debitCheckInitials,
         agreement_accepted: payload.agreementAccepted,
         counsel_acknowledged: payload.counselAcknowledged,

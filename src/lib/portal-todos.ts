@@ -19,6 +19,8 @@ export type PortalTodoCompletionType = "auto" | "agent" | "admin";
 
 export interface PortalTodo {
   id: string;
+  contentType?: string;
+  prerequisites?: string[];
   title: string;
   description: string;
   href: string;
@@ -90,6 +92,7 @@ export function isTodoGateLocked(todos: PortalTodo[], todoId: string): boolean {
   if (index < 0) return false;
   const todo = todos[index];
   if (todo.completed) return false;
+  if (todo.prerequisites?.some(id => todos.some(entry => entry.id === id && !entry.completed))) return true;
   if (SURELC_VIDEO_DEPENDENT_TODO_IDS.includes(todoId)) {
     return todos.some((entry) => isSureLcTutorialTodo(entry.id) && !entry.completed);
   }
@@ -207,6 +210,8 @@ export const FALLBACK_PORTAL_TODOS: PortalTodo[] = [
 
 interface PortalTodoResponse {
   id: string;
+  contentType?: string;
+  prerequisites?: string[];
   title: string;
   description: string;
   href: string;
@@ -224,6 +229,8 @@ interface PortalTodoResponse {
 function mapPortalTodo(row: PortalTodoResponse): PortalTodo {
   return {
     id: row.id,
+    contentType: row.contentType,
+    prerequisites: row.prerequisites,
     title: row.title,
     description: row.description,
     href: row.href,
@@ -364,6 +371,9 @@ export const SURELC_QUICK_REFERENCE_URL = "/documents/PNCL-SureLC-Quick-Referenc
 export function isSureLcTutorialTodo(todoId: string): boolean {
   return todoId === SURELC_TUTORIAL_TODO_ID || todoId === SURELC_IBO_TUTORIAL_TODO_ID;
 }
+export function isOnboardingVideoTodo(todoId: string): boolean {
+  return isSureLcTutorialTodo(todoId) || todoId === "onboarding_welcome_loa" || todoId === "onboarding_welcome_ibo";
+}
 const SURELC_VIDEO_DEPENDENT_TODO_IDS = [
   "surelc_account_1", "surelc_account_2", "surelc_account_3", "carrier_applications",
 ];
@@ -400,8 +410,8 @@ async function notifyNewProducerSubmission(): Promise<void> {
 }
 
 export async function completePortalTodo(todoId: string, todos: PortalTodo[], options?: TodoCompletionOptions): Promise<void> {
-  if (isSureLcTutorialTodo(todoId) && !options?.videoPlaybackVerified) {
-    throw new Error("Watch the full SureLC tutorial before completing this step.");
+  if ((isOnboardingVideoTodo(todoId) || todos.find(todo => todo.id === todoId)?.contentType?.includes("video")) && !options?.videoPlaybackVerified) {
+    throw new Error(isSureLcTutorialTodo(todoId) ? "Watch the full SureLC tutorial before completing this step." : "Watch the full video before completing this step.");
   }
   if (isTodoGateLocked(todos, todoId)) {
     throw new Error("Complete the steps above before submitting this one.");

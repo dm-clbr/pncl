@@ -348,3 +348,11 @@ verify_jwt = true
 # Validates user JWTs and the dedicated server sync key inside the handler.
 [functions.profile-sync]
 verify_jwt = false
+[functions.admin-onboarding-content]
+verify_jwt = false
+
+[functions.get-onboarding-content]
+verify_jwt = false
+
+[functions.admin-onboarding-editor]
+verify_jwt = false

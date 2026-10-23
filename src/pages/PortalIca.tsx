@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileCheck2 } from "lucide-react";
 import IcaSigningStep from "@/components/IcaSigningStep";
+import UploadedIcaSigningStep from "@/components/UploadedIcaSigningStep";
+import { useOnboardingContent } from "@/hooks/useOnboardingContent";
 import PortalBackground from "@/components/portal/PortalBackground";
 import PortalHeader from "@/components/portal/PortalHeader";
 import PortalSubpageHeader from "@/components/portal/PortalSubpageHeader";
@@ -27,6 +29,7 @@ import "@/styles/portal-forms.css";
 export default function PortalIca() {
   const navigate = useNavigate();
   const { user, session } = useAuth();
+  const { content, error: contentError, retry: retryContent } = useOnboardingContent({ accessToken: session?.access_token, portal: true });
   const { ica, submitted, loading, setIca } = usePortalIca();
   const [prefill, setPrefill] = useState({ legalName: "", email: "" });
   const [prefillReady, setPrefillReady] = useState(false);
@@ -113,7 +116,8 @@ export default function PortalIca() {
       throw new Error("You must be signed in to sign the agreement.");
     }
 
-    const saved = await submitPortalIca(token, payload);
+    if (!content) throw new Error("Wait for your agreement to load before signing.");
+    const saved = await submitPortalIca(token, { ...payload, templateAssetId: content.ica?.id ?? null });
     setIca(saved);
     await refreshPortalUser();
     toast.success("Agreement signed. A PDF copy was saved to your profile.");
@@ -177,7 +181,9 @@ export default function PortalIca() {
             </Pane>
           )}
 
-          {!loading && !submitted && prefillReady && (
+          {!loading && !submitted && !content && <Pane><p role={contentError ? "alert" : "status"}>{contentError || "Loading your agreement…"}</p>{contentError && <button className="btn btn-ghost" onClick={retryContent}>Retry agreement</button>}</Pane>}
+          {!loading && !submitted && prefillReady && content?.ica && <UploadedIcaSigningStep key={content.ica.id} asset={content.ica} prefillLegalName={prefill.legalName} prefillEmail={prefill.email} onSubmit={handleSubmit} finishLabel="Sign and save to profile" />}
+          {!loading && !submitted && prefillReady && content && !content.ica && (
             <IcaSigningStep
               className="portal-ica-signing"
               eyebrow="Portal"

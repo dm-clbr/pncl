@@ -2,9 +2,13 @@ import { submitOnboardingContract, isSupabaseConfigured } from "@/lib/onboarding
 import { persistContractSession } from "@/lib/onboarding-contract";
 import { toast } from "sonner";
 import IcaSigningStep, { type IcaSigningSubmitPayload } from "@/components/IcaSigningStep";
+import UploadedIcaSigningStep from "@/components/UploadedIcaSigningStep";
+import type { OnboardingFlowContent } from "@/lib/onboarding-content";
 
 interface OnboardingContractStepProps {
   preview?: boolean;
+  content: OnboardingFlowContent;
+  referralInviteId?: string | null;
   onSigned: (input: {
     contractSignatureId: string;
     legalName: string;
@@ -15,6 +19,8 @@ interface OnboardingContractStepProps {
 
 export default function OnboardingContractStep({
   preview = false,
+  content,
+  referralInviteId,
   onSigned,
   onBack,
 }: OnboardingContractStepProps) {
@@ -41,7 +47,7 @@ export default function OnboardingContractStep({
       throw new Error("Onboarding is not configured");
     }
 
-    const result = await submitOnboardingContract(payload);
+    const result = await submitOnboardingContract({ ...payload, referralInviteId: referralInviteId ?? undefined, templateAssetId: content.ica?.id ?? null });
 
     persistContractSession(
       result.contractSignatureId,
@@ -56,6 +62,7 @@ export default function OnboardingContractStep({
     });
   };
 
+  if (content.ica) return <UploadedIcaSigningStep key={content.ica.id} asset={content.ica} onSubmit={handleSubmit} onBack={onBack} />;
   return (
     <IcaSigningStep
       eyebrow="Step 1"

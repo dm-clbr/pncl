@@ -139,6 +139,8 @@ export interface AgentOnboardingDetails {
   npn: string | null;
   hasEoInsurance: string;
   hasOtherImo: string | null;
+  otherImoName?: string | null;
+  otherImoCarriers?: string[];
   workspaceEmail: string | null;
 }
 
@@ -233,6 +235,8 @@ interface OnboardingRow {
   npn: string | null;
   has_eo_insurance: string;
   has_other_imo: string | null;
+  other_imo_name: string | null;
+  other_imo_carriers: string[];
   status: string;
   workspace_email: string | null;
   personal_email: string | null;
@@ -305,6 +309,8 @@ async function loadOnboardingMaps(
       npn,
       has_eo_insurance,
       has_other_imo,
+      other_imo_name,
+      other_imo_carriers,
       status,
       workspace_email,
       personal_email,
@@ -397,6 +403,8 @@ async function buildOnboardingDetails(
     npn: onboarding.npn,
     hasEoInsurance: onboarding.has_eo_insurance,
     hasOtherImo: onboarding.has_other_imo,
+    otherImoName: onboarding.other_imo_name,
+    otherImoCarriers: onboarding.other_imo_carriers ?? [],
     workspaceEmail: onboarding.workspace_email,
   };
 }

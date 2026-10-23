@@ -38,3 +38,6 @@ src/.DS_Store
 
 # TypeScript incremental build info
 *.tsbuildinfo
+
+# Pinned FFmpeg core copied from node_modules for on-demand compression
+/public/ffmpeg/

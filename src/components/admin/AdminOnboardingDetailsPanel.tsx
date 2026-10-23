@@ -27,6 +27,10 @@ export default function AdminOnboardingDetailsPanel({
     { label: "NPN", value: formatOnboardingValue(onboarding.npn, "Not provided") },
     { label: "E&O insurance", value: formatOnboardingValue(onboarding.hasEoInsurance) },
     { label: "Contracted with another IMO", value: formatOnboardingValue(onboarding.hasOtherImo, "Not recorded") },
+    ...(onboarding.hasOtherImo === "Yes" ? [
+      { label: "Other IMO name", value: formatOnboardingValue(onboarding.otherImoName, "Not recorded") },
+      { label: "Previously contracted carriers", value: onboarding.otherImoCarriers?.join(", ") || "Not recorded" },
+    ] : []),
   ];
 
   return (

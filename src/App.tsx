@@ -58,6 +58,7 @@ import AdminOnboardingHolds from "./pages/admin/AdminOnboardingHolds.tsx";
 import AdminProfileCompleteness from "./pages/admin/AdminProfileCompleteness.tsx";
 import AdminClients from "./pages/admin/AdminClients.tsx";
 import AdminDashboardTabs from "./pages/admin/AdminDashboardTabs.tsx";
+import AdminOnboardingLogic from "./pages/admin/AdminOnboardingLogic";
 import AdminOnboardingSteps from "./pages/admin/AdminOnboardingSteps.tsx";
 import AdminTodos from "./pages/admin/AdminTodos.tsx";
 import AdminOnboardingPreview from "./pages/admin/AdminOnboardingPreview.tsx";
@@ -230,6 +231,7 @@ const App = () => (
             <Route path="state-availability" element={<AdminFullRoute><AdminStateAvailability /></AdminFullRoute>} />
             <Route path="clients" element={<AdminFullRoute><AdminClients /></AdminFullRoute>} />
             <Route path="dashboard-tabs" element={<AdminFullRoute><AdminDashboardTabs /></AdminFullRoute>} />
+            <Route path="onboarding-logic" element={<AdminFullRoute><AdminOnboardingLogic /></AdminFullRoute>} />
             <Route path="onboarding-steps" element={<AdminFullRoute><AdminOnboardingSteps /></AdminFullRoute>} />
             <Route path="todos" element={<AdminFullRoute><AdminTodos /></AdminFullRoute>} />
             <Route path="genesis" element={<AdminRoute><AdminGenesis /></AdminRoute>} />

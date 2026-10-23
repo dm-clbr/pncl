@@ -158,6 +158,8 @@ serve(async (req) => {
           handoff_token_hash: await hashHandoffToken(resumedToken),
           handoff_token_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
           has_other_imo: payload.hasOtherImo,
+          other_imo_name: payload.otherImoName,
+          other_imo_carriers: payload.otherImoCarriers,
         })
         .eq("id", existing.id);
       if (tokenError) throw new Error(tokenError.message);
@@ -245,6 +247,9 @@ serve(async (req) => {
         return errorResponse("This referral link is invalid or expired.", 400, "invalid_referral");
       }
 
+      if (contract.agent_designation && contract.agent_designation !== resolveAgentDesignation(resolvedInvite.invite.agent_designation)) {
+        return errorResponse("Your signed agreement belongs to a different onboarding flow. Please sign the agreement for this invite.", 400, "contract_designation_mismatch");
+      }
       const claimedInvite = await claimReferralInvite(supabase, resolvedInvite.invite.id);
       claimedInviteId = claimedInvite.id;
       referralInviteId = claimedInvite.id;
@@ -255,6 +260,9 @@ serve(async (req) => {
       uplineNetwork = resolvedInvite.referrerName;
     }
 
+    if (!payload.referralInviteId && contract.agent_designation && contract.agent_designation !== "loa") {
+      return errorResponse("Use your original IBO invite to continue with this signed agreement.", 400, "contract_designation_mismatch");
+    }
     const handoffToken = generateHandoffToken();
     const handoffTokenHash = await hashHandoffToken(handoffToken);
     const handoffTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
@@ -289,6 +297,8 @@ serve(async (req) => {
         npn: payload.npn ?? null,
         has_eo_insurance: payload.hasEoInsurance,
         has_other_imo: payload.hasOtherImo,
+        other_imo_name: payload.otherImoName,
+        other_imo_carriers: payload.otherImoCarriers,
         personal_email: contract.personal_email,
         contract_signature_id: payload.contractSignatureId,
         referrer_user_id: referrerUserId,

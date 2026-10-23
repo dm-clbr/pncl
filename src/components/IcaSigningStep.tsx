@@ -21,9 +21,10 @@ export interface IcaSigningSubmitPayload {
   debitCheckInitials: DebitCheckInitials;
   agreementAccepted: boolean;
   counselAcknowledged: boolean;
+  templateAssetId?: string | null;
 }
 
-interface IcaSigningStepProps {
+export interface IcaSigningStepProps {
   prefillLegalName?: string;
   prefillEmail?: string;
   eyebrow?: string;

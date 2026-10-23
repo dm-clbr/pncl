@@ -28,6 +28,8 @@ export interface SubmitOnboardingContractPayload {
 }
 
 export interface OnboardingContractRecord {
+  agent_designation?: "loa" | "ibo" | null;
+  template_asset_id?: string | null;
   id: string;
   onboarding_id: string | null;
   legal_name: string;
@@ -124,7 +126,7 @@ function normalizeInitial(value: unknown, field: string): string {
   return assertValidDebitCheckInitial(value, field);
 }
 
-export function validateSubmitOnboardingContractPayload(body: unknown): SubmitOnboardingContractPayload {
+export function validateSubmitOnboardingContractPayload(body: unknown, customTemplate = false): SubmitOnboardingContractPayload {
   if (!body || typeof body !== "object") {
     throw new Error("Invalid request body");
   }
@@ -136,6 +138,7 @@ export function validateSubmitOnboardingContractPayload(body: unknown): SubmitOn
   );
   const signatureName = normalizeRequiredString(data.signatureName, "signatureName");
   const signatureImageBase64 = normalizeSignatureImageBase64(data.signatureImageBase64);
+  if (legalName.length > 200 || signatureName.length > 200 || personalEmail.length > 254 || signatureImageBase64.length > 500_000) throw new Error("Agreement fields exceed the allowed length.");
 
   if (!EMAIL_PATTERN.test(personalEmail)) {
     throw new Error("A valid email address is required");
@@ -146,12 +149,12 @@ export function validateSubmitOnboardingContractPayload(body: unknown): SubmitOn
   }
 
   const initialsRaw = data.debitCheckInitials;
-  if (!initialsRaw || typeof initialsRaw !== "object" || Array.isArray(initialsRaw)) {
+  if (!customTemplate && (!initialsRaw || typeof initialsRaw !== "object" || Array.isArray(initialsRaw))) {
     throw new Error("Debit-Check initials are required");
   }
 
   const initialsObj = initialsRaw as Record<string, unknown>;
-  const debitCheckInitials: DebitCheckInitials = {
+  const debitCheckInitials: DebitCheckInitials = customTemplate ? { a: "", b: "", c: "", d: "", e: "" } : {
     a: normalizeInitial(initialsObj.a, "Debit-Check initial A"),
     b: normalizeInitial(initialsObj.b, "Debit-Check initial B"),
     c: normalizeInitial(initialsObj.c, "Debit-Check initial C"),
@@ -208,8 +211,19 @@ function drawLabelValue(
   y: number,
 ): number {
   page.drawText(label, { x, y, size: 9, font: boldFont, color: rgb(0.2, 0.2, 0.2) });
-  page.drawText(value, { x, y: y - 14, size: 11, font, color: rgb(0, 0, 0) });
-  return y - 34;
+  // Wrap even long email addresses and hashes, which may have no whitespace.
+  const lines: string[] = [];
+  let line = "";
+  for (const character of value.replace(/[\r\n]/g, " ")) {
+    if (font.widthOfTextAtSize(line + character, 11) > 468) {
+      lines.push(line);
+      line = "";
+    }
+    line += character;
+  }
+  lines.push(line);
+  page.drawText(lines.join("\n"), { x, y: y - 14, size: 11, lineHeight: 14, font, color: rgb(0, 0, 0) });
+  return y - 34 - (lines.length - 1) * 14;
 }
 
 function setFormText(form: PDFForm, fieldName: string, value: string): void {
@@ -298,16 +312,17 @@ export async function generateSignedIcaPdf(
   signedAt: Date,
   metadata?: { ipAddress?: string; userAgent?: string },
   callerModuleUrl?: string,
+  customTemplate?: { bytes: Uint8Array; version: string; sha256: string },
 ): Promise<Uint8Array> {
-  const templateBytes = await loadIcaTemplateBytes(callerModuleUrl ?? import.meta.url);
+  const templateBytes = customTemplate?.bytes ?? await loadIcaTemplateBytes(callerModuleUrl ?? import.meta.url);
   const pdfDoc = await PDFDocument.load(templateBytes);
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  fillIcaFormFields(pdfDoc.getForm(), payload, signedAt);
-  await drawSignatureImage(pdfDoc, payload.signatureImageBase64);
-
-  const companySigner = getIcaCompanySigner();
+  if (!customTemplate) {
+    fillIcaFormFields(pdfDoc.getForm(), payload, signedAt);
+    await drawSignatureImage(pdfDoc, payload.signatureImageBase64);
+  }
 
   const certPage = pdfDoc.addPage([612, 792]);
   let y = 740;
@@ -328,30 +343,35 @@ export async function generateSignedIcaPdf(
   });
   y -= 36;
 
-  y = drawLabelValue(certPage, font, boldFont, "Agreement version", ICA_VERSION, 72, y);
+  y = drawLabelValue(certPage, font, boldFont, "Agreement version", customTemplate?.version ?? ICA_VERSION, 72, y);
   y = drawLabelValue(certPage, font, boldFont, "Contractor legal name", payload.legalName, 72, y);
   y = drawLabelValue(certPage, font, boldFont, "Contractor email", payload.personalEmail, 72, y);
   y = drawLabelValue(certPage, font, boldFont, "Signature", "Drawn electronic signature", 72, y);
   y = drawLabelValue(certPage, font, boldFont, "Signed at (UTC)", signedAt.toISOString(), 72, y);
-  y = drawLabelValue(
-    certPage,
-    font,
-    boldFont,
-    "Debit-Check initials",
-    `A:${payload.debitCheckInitials.a} B:${payload.debitCheckInitials.b} C:${payload.debitCheckInitials.c} D:${payload.debitCheckInitials.d} E:${payload.debitCheckInitials.e}`,
-    72,
-    y,
-  );
+  if (!customTemplate) {
+    const companySigner = getIcaCompanySigner();
+    y = drawLabelValue(
+      certPage,
+      font,
+      boldFont,
+      "Debit-Check initials",
+      `A:${payload.debitCheckInitials.a} B:${payload.debitCheckInitials.b} C:${payload.debitCheckInitials.c} D:${payload.debitCheckInitials.d} E:${payload.debitCheckInitials.e}`,
+      72,
+      y,
+    );
 
-  y = drawLabelValue(
-    certPage,
-    font,
-    boldFont,
-    "Company counter-signature",
-    `${companySigner.name}, ${companySigner.title} (pre-authorized)`,
-    72,
-    y,
-  );
+    y = drawLabelValue(
+      certPage,
+      font,
+      boldFont,
+      "Company counter-signature",
+      `${companySigner.name}, ${companySigner.title} (pre-authorized)`,
+      72,
+      y,
+    );
+  } else {
+    y = drawLabelValue(certPage, font, boldFont, "Source document SHA-256", customTemplate.sha256, 72, y);
+  }
 
   if (metadata?.ipAddress) {
     y = drawLabelValue(certPage, font, boldFont, "IP address", metadata.ipAddress, 72, y);
@@ -365,7 +385,9 @@ export async function generateSignedIcaPdf(
   }
 
   certPage.drawText(
-    "The contractor confirmed they read the agreement, had the opportunity to consult independent legal counsel, and agreed to the ICA and Debit-Check Authorization.",
+    customTemplate
+      ? "The contractor confirmed they read the preceding agreement, had the opportunity to consult independent legal counsel, agreed to the Independent Contractor Agreement, and consented to sign electronically. This signature record applies to the source document identified above."
+      : "The contractor confirmed they read the agreement, had the opportunity to consult independent legal counsel, and agreed to the ICA and Debit-Check Authorization.",
     {
       x: 72,
       y: y - 10,
@@ -376,6 +398,12 @@ export async function generateSignedIcaPdf(
       lineHeight: 12,
     },
   );
+
+  if (customTemplate) {
+    const signature = await pdfDoc.embedPng(decodeBase64ToBytes(payload.signatureImageBase64));
+    certPage.drawText("Contractor electronic signature", { x: 72, y: y - 78, size: 10, font: boldFont });
+    certPage.drawImage(signature, { x: 72, y: y - 173, width: 250, height: 85 });
+  }
 
   return await pdfDoc.save();
 }

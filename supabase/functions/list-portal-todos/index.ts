@@ -1,3 +1,5 @@
+import { canonicalStepSlug } from "../_shared/onboardingEditorRules.ts";
+import { loadFlowRules } from "../_shared/onboardingFlowRules.ts";
 import { filterAgentTodos } from "../_shared/agentDesignation.ts";
 import { loadAgentDesignations } from "../_shared/portalAgentDesignations.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
@@ -39,6 +41,8 @@ serve(async (req) => {
     }
 
     const designations = await loadAgentDesignations(adminClient, [user.id]);
+    const designation = designations.get(user.id) ?? "loa";
+    const { rules } = await loadFlowRules(adminClient, designation);
     const rows = filterAgentTodos((data ?? []) as PortalTodoRecord[], designations.get(user.id));
     const hasCompAttachment = rows.some((row) => row.slug === COMP_AGREEMENT_TODO_SLUG)
       ? await userHasCompAttachment(adminClient, user.id)
@@ -57,13 +61,16 @@ serve(async (req) => {
       user.user_metadata as Record<string, unknown> | undefined,
     );
 
-    const todos = visibleRows.map((row) =>
-      mapPortalTodoForUser(
-        row,
+    const visibleSlugs = new Set(visibleRows.map(row => row.slug));
+    const todos = visibleRows.map((row) => ({
+      ...mapPortalTodoForUser(
+        { ...row, href: row.flow_content?.[designation]?.url || row.href, external: row.flow_content?.[designation]?.url ? true : row.external },
         isTodoCompleteForUser(row, user.id, completedMetadata, autoSets),
-      )
-    );
-
+      ),
+      prerequisites: (rules.prerequisites[canonicalStepSlug(row.slug)] ?? []).map(id => visibleRows.find(row => canonicalStepSlug(row.slug) === id)?.slug ?? id).filter(id => visibleSlugs.has(id)),
+    }));
+    const rank = (id: string) => { const index = rules.portalOrder.indexOf(canonicalStepSlug(id)); return index < 0 ? 10000 : index; };
+    todos.sort((a,b) => rank(a.id) - rank(b.id));
     return jsonResponse({ todos });
   } catch (error) {
     if (error instanceof AdminAuthError) {

@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
 import { getServiceClient } from "../_shared/onboarding.ts";
+import { loadOnboardingContent, resolveOnboardingDesignation, downloadIcaAsset } from "../_shared/onboardingContent.ts";
+import { assertCurrentIcaTemplate } from "../_shared/onboardingContentRules.ts";
 import {
   generateSignedIcaPdf,
   getOnboardingContractPdfPath,
@@ -29,7 +31,13 @@ serve(async (req) => {
   }
 
   try {
-    const payload = validateSubmitOnboardingContractPayload(await req.json());
+    const body = await req.json();
+    const supabase = getServiceClient();
+    const designation = await resolveOnboardingDesignation(supabase, body?.referralInviteId);
+    const content = await loadOnboardingContent(supabase, designation);
+    assertCurrentIcaTemplate(body?.templateAssetId, content.ica?.id ?? null);
+    const payload = validateSubmitOnboardingContractPayload(body, Boolean(content.ica));
+    const customTemplate = await downloadIcaAsset(supabase, content.ica);
     const signedAt = new Date();
     const signatureId = crypto.randomUUID();
     const pdfPath = getOnboardingContractPdfPath(signatureId);
@@ -39,9 +47,7 @@ serve(async (req) => {
     const pdfBytes = await generateSignedIcaPdf(payload, signedAt, {
       ipAddress: ipAddress ?? undefined,
       userAgent: userAgent ?? undefined,
-    }, import.meta.url);
-
-    const supabase = getServiceClient();
+    }, import.meta.url, customTemplate);
 
     const { error: uploadError } = await supabase.storage
       .from(ONBOARDING_CONTRACT_BUCKET)
@@ -61,7 +67,9 @@ serve(async (req) => {
         legal_name: payload.legalName,
         personal_email: payload.personalEmail,
         signature_name: payload.signatureName,
-        ica_version: ICA_VERSION,
+        ica_version: customTemplate?.version ?? ICA_VERSION,
+        agent_designation: designation,
+        template_asset_id: content.ica?.id ?? null,
         debit_check_initials: payload.debitCheckInitials,
         agreement_accepted: payload.agreementAccepted,
         counsel_acknowledged: payload.counselAcknowledged,

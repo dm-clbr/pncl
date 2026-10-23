@@ -21,6 +21,8 @@ const INPUT: SubmitOnboardingInput = {
   npn: "12345678",
   hasEoInsurance: "No",
   hasOtherImo: "Yes",
+  otherImoName: "Example IMO",
+  otherImoCarriers: "Foresters, Mutual of Omaha",
   contractSignatureId: "00000000-0000-4000-8000-000000000000",
 };
 
@@ -37,10 +39,12 @@ describe("other-IMO onboarding question", () => {
     expect(() => normalizeRequiredYesNo("", "hasOtherImo")).toThrow("hasOtherImo must be Yes or No");
   });
 
-  it("sends the answer without collecting carrier or writing-number details", () => {
+  it("sends the IMO name and carriers without collecting writing numbers", () => {
     const request = buildSubmitOnboardingRequest(INPUT);
 
     expect(request.hasOtherImo).toBe("Yes");
+    expect(request.otherImoName).toBe("Example IMO");
+    expect(request.otherImoCarriers).toBe("Foresters, Mutual of Omaha");
     expect(request).not.toHaveProperty("otherImoCarrier");
     expect(request).not.toHaveProperty("otherImoWritingNumber");
   });
@@ -62,6 +66,8 @@ describe("other-IMO onboarding question", () => {
           npn: INPUT.npn,
           hasEoInsurance: INPUT.hasEoInsurance,
           hasOtherImo: INPUT.hasOtherImo,
+          otherImoName: INPUT.otherImoName,
+          otherImoCarriers: ["Foresters", "Mutual of Omaha"],
           workspaceEmail: "sample.agent@thepncl.com",
         }}
       />,
@@ -70,5 +76,11 @@ describe("other-IMO onboarding question", () => {
     expect(screen.getByText("Contracted with another IMO").closest("div")).toHaveTextContent(
       "Contracted with another IMOYes",
     );
+    expect(screen.getByText("Example IMO")).toBeInTheDocument();
+    expect(screen.getByText("Foresters, Mutual of Omaha")).toBeInTheDocument();
+  });
+
+  it("clears stale transfer details when the agent answers No", () => {
+    expect(buildSubmitOnboardingRequest({ ...INPUT, hasOtherImo: "No" })).toMatchObject({ otherImoName: null, otherImoCarriers: [] });
   });
 });
