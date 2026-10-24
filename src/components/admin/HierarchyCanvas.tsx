@@ -1,7 +1,8 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronRight, Minus, Plus, RotateCcw } from "lucide-react";
 import type { AssistHierarchyNode, HierarchyNode } from "@/lib/admin-api";
 import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
+import { nodeMatchesUserId } from "@/lib/hierarchy-utils";
 
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 2;
@@ -236,11 +237,12 @@ function HierarchyTile({
 interface HierarchyCanvasProps {
   tree: HierarchyNode[] | AssistHierarchyNode[];
   selectedNodeId: string | null;
+  focusRequest?: { userId: string; requestId: number } | null;
   assistView?: boolean;
   onSelectNode: (nodeId: string) => void;
 }
 
-export function HierarchyCanvas({ tree, selectedNodeId, assistView = false, onSelectNode }: HierarchyCanvasProps) {
+export function HierarchyCanvas({ tree, selectedNodeId, focusRequest = null, assistView = false, onSelectNode }: HierarchyCanvasProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const tileHeight = assistView ? ASSIST_TILE_HEIGHT : TILE_HEIGHT;
   const layout = useMemo(() => layoutHierarchyTree(tree, tileHeight), [tree, tileHeight]);
@@ -248,6 +250,7 @@ export function HierarchyCanvas({ tree, selectedNodeId, assistView = false, onSe
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
+  const handledFocusRequest = useRef<number | null>(null);
 
   const positionedById = useMemo(
     () => new Map(layout.positioned.map((entry) => [entry.node.id, entry])),
@@ -258,6 +261,24 @@ export function HierarchyCanvas({ tree, selectedNodeId, assistView = false, onSe
     () => collectConnections(tree, positionedById, tileHeight),
     [tree, positionedById, tileHeight],
   );
+
+  useEffect(() => {
+    if (!focusRequest) {
+      handledFocusRequest.current = null;
+      return;
+    }
+    if (handledFocusRequest.current === focusRequest.requestId) return;
+    const viewport = viewportRef.current;
+    const target = layout.positioned.find(({ node }) => nodeMatchesUserId(node, focusRequest.userId));
+    if (!viewport || !target) return;
+
+    handledFocusRequest.current = focusRequest.requestId;
+    setScale(1);
+    setPan({
+      x: viewport.clientWidth / 2 - target.x,
+      y: viewport.clientHeight / 2 - (target.y + tileHeight / 2),
+    });
+  }, [focusRequest, layout.positioned, tileHeight]);
 
   const fitToView = useCallback(() => {
     const viewport = viewportRef.current;
@@ -299,11 +320,12 @@ export function HierarchyCanvas({ tree, selectedNodeId, assistView = false, onSe
   }, [scale]);
 
   const handlePointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return;
+    if (event.button > 0) return;
     const target = event.target as HTMLElement;
     if (target.closest(".admin-hierarchy-tile")) return;
 
-    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
     setIsPanning(true);
     panStartRef.current = {
       x: event.clientX,
@@ -322,12 +344,14 @@ export function HierarchyCanvas({ tree, selectedNodeId, assistView = false, onSe
     });
   }, [isPanning]);
 
-  const handlePointerUp = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
-    if (!isPanning) return;
-    event.currentTarget.releasePointerCapture(event.pointerId);
+  const finishPanning = useCallback((event?: React.PointerEvent<HTMLDivElement>) => {
+    if (!panStartRef.current) return;
+    if (event?.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
     setIsPanning(false);
     panStartRef.current = null;
-  }, [isPanning]);
+  }, []);
 
   const zoomLabel = `${Math.round(scale * 100)}%`;
 
@@ -379,8 +403,10 @@ export function HierarchyCanvas({ tree, selectedNodeId, assistView = false, onSe
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+        onPointerUp={finishPanning}
+        onPointerCancel={finishPanning}
+        onLostPointerCapture={finishPanning}
+        onDragStart={(event) => event.preventDefault()}
       >
         <div
           className="admin-hierarchy-transform"
