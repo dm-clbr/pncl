@@ -12,7 +12,8 @@ const {createProfileSyncHandler}=await import(testRoot+'/server.mjs');
 const users=JSON.parse(readFileSync(testRoot+'/identities.json','utf8'));
 const key='test-only-profile-sync-key-not-a-production-secret';
 const roots={pncl:'https://dpnajpojbxgsckwrmvnm.supabase.co',leadspply:'https://lhxvbtiepsuohunfmnkm.supabase.co'};
-let dispatches=0,songSearchCalls=0,songLookupCalls=0;
+let dispatches=0,songSearchCalls=0,songLookupCalls=0,peerCalls=0,failLinks=false;
+const rpcActions=[];
 const testSong={provider:"apple",id:"123456789",title:"Synthetic Song",artist:"Synthetic Artist",url:"https://music.apple.com/us/song/123456789"};
 const storage={pncl:new Map(),leadspply:new Map()},handlers={},pending=[];
 const literal=v=>"'"+JSON.stringify(v).replaceAll("'","''")+"'::jsonb";
@@ -20,7 +21,7 @@ const sql=(system,query)=>execFileSync(process.env.PSQL??'psql',['-h','127.0.0.1
 for(const system of Object.keys(users)){
  sql(system,`update profile_sync_private.settings set enabled=true,secret='${key}'; grant select on public.pncl_account_links to service_role;`.replace(' grant select on public.pncl_account_links to service_role;',system==='leadspply'?' grant select on public.pncl_account_links to service_role;':''));
  const db={
-  rpc:async(name,{p_action,p_user,p_body})=>{try{const result=sql(system,`set role service_role; select public.profile_sync('${p_action}',${p_user?`'${p_user}'::uuid`:'null'},${literal(p_body)});`).replace(/^SET(?:\n|$)/,'');if(p_action==='dispatch'){dispatches++;pending.push(Promise.resolve().then(()=>handlers[system](new Request(roots[system]+'/functions/v1/profile-sync',{method:'POST',headers:{'Content-Type':'application/json','X-Profile-Sync-Key':key},body:JSON.stringify({action:'sync',userId:p_user})}))));}return {data:result?JSON.parse(result):null,error:null};}catch(error){console.error('RPC failed',system,p_action,error.stderr.toString());return {data:null,error:{message:error.stderr.toString().split('\n')[0].replace('ERROR:  ','')}};}},
+  rpc:async(name,{p_action,p_user,p_body})=>{rpcActions.push([system,p_action]);try{const result=sql(system,`set role service_role; select public.profile_sync('${p_action}',${p_user?`'${p_user}'::uuid`:'null'},${literal(p_body)});`).replace(/^SET(?:\n|$)/,'');if(p_action==='dispatch'){dispatches++;pending.push(Promise.resolve().then(()=>handlers[system](new Request(roots[system]+'/functions/v1/profile-sync',{method:'POST',headers:{'Content-Type':'application/json','X-Profile-Sync-Key':key},body:JSON.stringify({action:'sync',userId:p_user})}))));}return {data:result?JSON.parse(result):null,error:null};}catch(error){console.error('RPC failed',system,p_action,error.stderr.toString());return {data:null,error:{message:error.stderr.toString().split('\n')[0].replace('ERROR:  ','')}};}},
   auth:{getUser:async token=>token===system?{data:{user:{id:users[system]}},error:null}:{data:{user:null},error:{message:'invalid'}}},
   functions:{invoke:async()=>({data:{ok:true},error:null})},
   storage:{from:bucket=>({
@@ -29,7 +30,7 @@ for(const system of Object.keys(users)){
     createSignedUrl:async(path,seconds)=>({data:{signedUrl:roots[system]+'/private/'+bucket+'/'+path+'?expires='+seconds},error:null})
   })}
  };
- handlers[system]=createProfileSyncHandler({system,db,county:zip=>zip==='84101'?'Salt Lake':null,defer:promise=>pending.push(promise),fetch:async(url,options)=>{if(String(url).startsWith('https://itunes.apple.com/lookup?')){songLookupCalls++;assert.deepEqual(options.headers,{Accept:'application/json'});const id=new URL(url).searchParams.get('id');return Response.json({results:[{kind:'song',trackId:Number(id),previewUrl:id==='987654321'?'https://evil.example/audio.mp3':'https://audio-ssl.itunes.apple.com/test.m4a'}]});}if(String(url).startsWith('https://itunes.apple.com/search?')){songSearchCalls++;return Response.json({results:[{kind:'song',trackId:123456789,trackName:testSong.title,artistName:testSong.artist,trackViewUrl:testSong.url,previewUrl:'https://example.com/never-download.mp3',artworkUrl100:'https://example.com/never-download.jpg'}]});}const target=url.startsWith(roots.pncl)?'pncl':'leadspply';return handlers[target](new Request(url,options));}});
+ handlers[system]=createProfileSyncHandler({system,db,county:zip=>zip==='84101'?'Salt Lake':null,defer:promise=>pending.push(promise),fetch:async(url,options)=>{if(String(url).startsWith('https://itunes.apple.com/lookup?')){songLookupCalls++;assert.deepEqual(options.headers,{Accept:'application/json'});const id=new URL(url).searchParams.get('id');return Response.json({results:[{kind:'song',trackId:Number(id),previewUrl:id==='987654321'?'https://evil.example/audio.mp3':'https://audio-ssl.itunes.apple.com/test.m4a'}]});}if(String(url).startsWith('https://itunes.apple.com/search?')){songSearchCalls++;return Response.json({results:[{kind:'song',trackId:123456789,trackName:testSong.title,artistName:testSong.artist,trackViewUrl:testSong.url,previewUrl:'https://example.com/never-download.mp3',artworkUrl100:'https://example.com/never-download.jpg'}]});}peerCalls++;if(failLinks&&JSON.parse(options.body).action==='link')return Response.json(null);const target=url.startsWith(roots.pncl)?'pncl':'leadspply';return handlers[target](new Request(url,options));}});
 }
 async function call(system,body,headers={}){const response=await handlers[system](new Request(roots[system]+'/functions/v1/profile-sync',{method:'POST',headers:{Authorization:'Bearer '+system,Origin:system==='pncl'?'https://www.thepncl.com':'https://leadspply.com','Content-Type':'application/json',...headers},body:JSON.stringify(body)}));return {status:response.status,body:await response.json()};}
 async function drain(){let count=0;while(pending.length){assert.ok(count++<40,'background sync must terminate');await Promise.all(pending.splice(0));}}
@@ -38,7 +39,11 @@ assert.equal((await call('pncl',{action:'read'},{Authorization:'Bearer invalid'}
 assert.equal((await call('pncl',{action:'read'},{Origin:'https://evil.example'})).status,403);ok('foreign origins rejected');
 assert.equal((await call('pncl',{action:'read',userId:users.leadspply})).status,400);ok('browser cannot choose another identity');
 assert.equal((await call('pncl',{action:'tick'},{'X-Profile-Sync-Key':key})).status,401);ok('server credential rejected from browser origin');
-let current=(await call('pncl',{action:'read'})).body;await drain();assert.equal(current.version,3);ok('authenticated read and background sync');
+let current=(await call('pncl',{action:'read'})).body;await drain();assert.equal(current.version,3);ok('authenticated read');
+const beforeReads=peerCalls;rpcActions.length=0;
+for(let i=0;i<60;i++)assert.equal((await call('pncl',{action:'read'})).status,200);
+await drain();assert.equal(peerCalls,beforeReads);assert.equal(rpcActions.filter(([,a])=>a==='claim'||a==='bind'||a==='touch').length,0);
+ok('60 profile refreshes cause zero worker, peer, or bind calls');
 const request={id:crypto.randomUUID(),changes:{home_address_zip:'84101',home_address_line1:'123 Synthetic Test Street'},expected:{home_address_zip:current.clocks.home_address_zip,home_address_line1:current.clocks.home_address_line1}};
 let saved=await call('pncl',{action:'save',request});assert.equal(saved.status,200,JSON.stringify(saved));await drain();
 let remote=(await call('leadspply',{action:'read'})).body;await drain();assert.equal(remote.values.home_address_line1,'123 Synthetic Test Street');assert.equal(remote.values.home_county,'Salt Lake');ok('two-way native/counterpart propagation and derived county');
@@ -101,3 +106,22 @@ remote=(await call('pncl',{action:'read'})).body;await drain();assert.equal(remo
 assert.equal((await call('pncl',{action:'save',request:{...songSave,id:crypto.randomUUID(),changes:{close_out_song:{...testSong,url:'javascript:alert(1)'}}}})).status,400);
 ok('song choice and removal sync both ways; untrusted links rejected');
 console.log(`${checks} TOTAL HTTP/FILE/SONG CHECKS PASSED`);
+
+// Real handlers + real database: duplicate wake-ups cannot duplicate delivery.
+sql('pncl',`update portal_profiles set first_name='One delivery' where user_id='${users.pncl}'`);
+rpcActions.length=0;
+await Promise.all(Array.from({length:20},()=>signedWakeup({...wakeup,issuedAt:Math.floor(Date.now()/1000)})));await drain();
+assert.equal(rpcActions.filter(([s,a])=>s==='pncl'&&a==='finish').length,1);
+assert.equal((await call('leadspply',{action:'read'})).body.values.first_name,'One delivery');
+ok('20 overlapping wake-ups admit one worker and one delivery batch');
+// Link failure occurs before any field delivery and must still back off durably.
+sql('pncl',`update portal_profiles set first_name='After relinking' where user_id='${users.pncl}'`);failLinks=true;
+await signedWakeup({...wakeup,issuedAt:Math.floor(Date.now()/1000)});await drain();
+assert.equal(sql('pncl',`select last_error||':'||sync_failures||':'||(sync_after>now()) from profile_sync_private.accounts where user_id='${users.pncl}'`),'not_linked:1:true');
+const beforeRetries=peerCalls;
+for(let i=0;i<20;i++)await signedWakeup({...wakeup,issuedAt:Math.floor(Date.now()/1000)});
+await drain();assert.equal(peerCalls,beforeRetries);failLinks=false;
+assert.equal((await call('pncl',{action:'retry'})).status,200);await drain();
+assert.equal((await call('leadspply',{action:'read'})).body.values.first_name,'After relinking');
+ok('pre-delivery failure backs off; repeated kicks stay local; manual retry recovers');
+console.log(`${checks} TOTAL HTTP/FILE/SONG/LOAD CHECKS PASSED`);

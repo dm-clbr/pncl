@@ -95,21 +95,31 @@ export function createProfileSyncHandler(d:SyncDependencies){
     if(system==='leadspply'&&receipts.some((r:ObjectValue)=>r.outcome==='applied')&&['first_name','last_name','phone','business_legal_name','business_address_line1','business_address_city','business_address_state','business_address_postal','business_website','timezone'].includes(event.field))defer(db.functions.invoke('sync-business-profile',{body:{target_user_id:pair[system]}}));
     return receipts;
   }
-  async function syncUserBody(key:string,user:string,reverse=true){
-    const pair=await link(key,user);
-    await peer(key,{action:'bind',pair});
-    const pendingEvents=await rpc('outbox',user);
-    const events=pendingEvents.slice(0,4);
-    // Bound fan-out and keep a failed field independent of the rest of the profile.
-    for(let i=0;i<events.length;i+=4)await Promise.all(events.slice(i,i+4).map(async(raw:ObjectValue)=>{
-      try{const event=await enrich(user,raw);const receipts=await peer(key,{action:'deliver',pair,event});await rpc('ack',user,{receipts});}
-      catch(error){await rpc('fail',user,{id:raw.id,error:safeCode(error)});}
-    }));
-    if(pendingEvents.length>events.length)await rpc('dispatch',user);
-    if(reverse)await peer(key,{action:'flush',pair});
-    return {processed:events.length};
+  async function syncUser(key:string,user:string){
+    const token=await rpc('claim',user);
+    if(!token)return {processed:0};
+    let failure:string|null=null,processed=0;
+    try{
+      // Claim before any peer call. Idle reads and duplicate wake-ups do no work.
+      const events=(await rpc('outbox',user)).slice(0,4);
+      if(events.length){
+        const pair=await link(key,user);
+        await peer(key,{action:'bind',pair});
+        await Promise.all(events.map(async(raw:ObjectValue)=>{
+          try{const event=await enrich(user,raw);const receipts=await peer(key,{action:'deliver',pair,event});await rpc('ack',user,{receipts});}
+          catch(error){await rpc('fail',user,{id:raw.id,error:safeCode(error)});}
+        }));
+        processed=events.length;
+      }
+      return {processed};
+    }catch(error){failure=safeCode(error);throw error;}
+    finally{
+      // Release only our token; a crashed isolate is recovered by the lease expiry.
+      const more=await rpc('finish',user,{token,error:failure});
+      console.info('profile_sync_worker',JSON.stringify({system,processed,error:failure}));
+      if(more)await rpc('dispatch',user);
+    }
   }
-  async function syncUser(key:string,user:string,reverse=true){try{await rpc('touch',user);return await syncUserBody(key,user,reverse);}catch(error){await rpc('touch',user,{error:safeCode(error)});throw error;}}
   function defer(task:Promise<unknown>){d.defer(task.catch(()=>undefined));}
   async function getView(user:string){
     const data=await rpc('read',user),values:ObjectValue={},clocks:ObjectValue={},conflicts:ObjectValue={},urls:ObjectValue={};
@@ -243,7 +253,7 @@ export function createProfileSyncHandler(d:SyncDependencies){
         if(body.action==='sync'){const user=uuid(body.userId);defer(syncUser(key,user));return json({accepted:true},202);}
         if(body.action==='bind'){await checkPair(key,body.pair);return json({ok:true});}
         if(body.action==='deliver')return json(await receive(key,body.pair,body.event));
-        if(body.action==='flush'){const pair=await checkPair(key,body.pair);defer(syncUser(key,pair[system],false));return json({accepted:true},202);}
+        if(body.action==='flush'){const pair=await checkPair(key,body.pair);defer(syncUser(key,pair[system]));return json({accepted:true},202);}
         throw new MirrorError('invalid_action');
       }
       const authorization=req.headers.get('Authorization')??'';if(!authorization.startsWith('Bearer '))throw new MirrorError('unauthorized',401);
@@ -252,7 +262,7 @@ export function createProfileSyncHandler(d:SyncDependencies){
       if(Object.keys(body).some(k=>!['action','request','field','id','clock','name','mime','base64','label','query'].includes(k)))throw new MirrorError('invalid_request');
       if(body.action==='search_songs')return json(await searchSongs(user,body.query));
       if(body.action==='song_preview')return json(await songPreview(user,body.id));
-      if(body.action==='read'){defer(syncUser(config.secret,user));return json(await getView(user));}
+      if(body.action==='read')return json(await getView(user));
       if(body.action==='save'){const result=await userSave(user,body.request);defer(syncUser(config.secret,user));return json(result,result.outcome==='conflict'?409:200);}
       if(body.action==='upload'){const result=await upload(user,body);defer(syncUser(config.secret,user));return json(result,result.outcome==='conflict'?409:200);}
       if(body.action==='retry'){await rpc('retry',user);defer(syncUser(config.secret,user));return json(await getView(user));}
