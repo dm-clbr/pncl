@@ -15,6 +15,7 @@ import {
   issuePayLink,
   PARTNER_ID,
   PAY_ENDPOINT,
+  payAccessEnabled,
   signPartnerJwt,
   validatePayLink,
 } from "../../supabase/functions/_shared/pnclPay";
@@ -150,7 +151,7 @@ function proxy(opts: Record<string, unknown> = {}) {
     })
   );
   const pay = vi.fn(async () => ({
-    url: "https://www.pnclplay.com/redeem?token=fixture",
+    url: "https://www.pnclpay.com/redeem?token=fixture",
     expiresAt: new Date(Date.now() + 120000).toISOString(),
   }));
   const code = ts.transpileModule(
@@ -174,6 +175,7 @@ function proxy(opts: Record<string, unknown> = {}) {
     "sanitizeSetupStatus",
     "setupMessages",
     "issuePayLink",
+    "payAccessEnabled",
     "PAY_REDEEM_PATH",
     "retryAfterSeconds",
     "fetch",
@@ -183,7 +185,15 @@ function proxy(opts: Record<string, unknown> = {}) {
       serve: (h: typeof route) => route = h,
       env: {
         get: (name: string) =>
-          name === "PNCL_HUB_SETUP_ENABLED" && opts.disabled
+          name === "PNCL_PAY_TEST_USER_ID"
+            ? opts.testId as string | undefined
+            : name === "PNCL_PAY_TEST_EXPIRES_AT"
+            ? opts.testExpires as string | undefined
+            : name === "PNCL_PAY_ENDPOINT_CONFIRMED" && opts.endpointDisabled
+            ? "false"
+            : name === "PNCL_PAY_PRIVATE_KEY_PEM" && opts.keyMissing
+            ? undefined
+            : name === "PNCL_HUB_SETUP_ENABLED" && opts.disabled
             ? "false"
             : name === "PNCL_PAY_SSO_ENABLED" && opts.payDisabled
             ? "false"
@@ -201,6 +211,7 @@ function proxy(opts: Record<string, unknown> = {}) {
     sanitizeSetupStatus,
     setupMessages,
     pay,
+    payAccessEnabled,
     "/api/auth/partner/redeem",
     (value: string | null) => value ? Number(value) : 60,
     fetcher,
@@ -219,6 +230,51 @@ function proxy(opts: Record<string, unknown> = {}) {
   };
 }
 describe("Hub request authentication and Pay gate", () => {
+  it("limits test issuance and UI availability to the authenticated allowlisted ID before upstream access", async () => {
+    const future = new Date(Date.now() + 3600000).toISOString();
+    for (
+      const opts of [
+        { testId: ls, testExpires: future },
+        { testId: hub, testExpires: "invalid" },
+        { testId: hub, testExpires: new Date(Date.now() - 1).toISOString() },
+        { testId: hub },
+        { testId: "*", testExpires: future },
+        { testId: hub, testExpires: future, endpointDisabled: true },
+        { testId: hub, testExpires: future, keyMissing: true },
+      ]
+    ) {
+      const h = proxy({ payDisabled: true, ...opts });
+      expect((await h.request({ action: "pay" })).status).toBe(503);
+      expect(h.fetcher).not.toHaveBeenCalled();
+      expect(h.pay).not.toHaveBeenCalled();
+      expect((await (await h.request()).json()).payEnabled).toBe(false);
+    }
+    const h = proxy({ payDisabled: true, testId: hub, testExpires: future });
+    expect((await (await h.request()).json()).payEnabled).toBe(true);
+    expect((await h.request({ action: "pay" })).status).toBe(200);
+    expect(h.pay).toHaveBeenCalledWith(
+      source.email,
+      hub,
+      "server-fixture",
+      "/api/auth/partner/redeem",
+    );
+    const injected = proxy({
+      payDisabled: true,
+      testId: ls,
+      testExpires: future,
+    });
+    expect((await injected.request({ action: "pay", pnclUserId: ls })).status)
+      .toBe(400);
+    expect(injected.pay).not.toHaveBeenCalled();
+    const unready = proxy({
+      payDisabled: true,
+      testId: hub,
+      testExpires: future,
+      payload: { ...ready, ownershipVerified: false },
+    });
+    expect((await unready.request({ action: "pay" })).status).toBe(409);
+    expect(unready.pay).not.toHaveBeenCalled();
+  });
   it("derives both identity and email from live Hub authorization", async () => {
     const h = proxy();
     const r = await h.request();
@@ -311,7 +367,10 @@ describe("Pay JWT and one-time-link boundary", () => {
     expect(JSON.parse(Buffer.from(header, "base64url").toString()).alg).toBe(
       "RS256",
     );
-    expect(claims).toMatchObject({ iss: PARTNER_ID, aud: PAY_ENDPOINT });
+    expect(claims).toMatchObject({
+      iss: PARTNER_ID,
+      aud: "https://www.pnclpay.com/api/partner/login-links",
+    });
     expect(claims.exp - claims.iat).toBe(120);
     expect(claims.jti).not.toBe(
       JSON.parse(Buffer.from(b.split(".")[1], "base64url").toString()).jti,
@@ -329,7 +388,7 @@ describe("Pay JWT and one-time-link boundary", () => {
     const fetcher = vi.fn(async () =>
       new Response(
         JSON.stringify({
-          url: "https://www.pnclplay.com/redeem?token=one-time",
+          url: "https://www.pnclpay.com/redeem?token=one-time",
           expiresAt: new Date(Date.now() + 120000).toISOString(),
         }),
         { status: 201 },
@@ -347,11 +406,12 @@ describe("Pay JWT and one-time-link boundary", () => {
   it("rejects malicious or expired redemption links and malformed provider errors", async () => {
     for (
       const url of [
-        "http://www.pnclplay.com/redeem",
+        "http://www.pnclpay.com/redeem",
         "https://evil.test/redeem",
-        "https://www.pnclplay.com/other",
-        "https://user@www.pnclplay.com/redeem",
-        "https://www.pnclplay.com/redeem#token",
+        "https://www.pnclplay.com/redeem?token=wrong-host",
+        "https://www.pnclpay.com/other",
+        "https://user@www.pnclpay.com/redeem",
+        "https://www.pnclpay.com/redeem#token",
       ]
     ) {
       expect(() =>
@@ -363,7 +423,7 @@ describe("Pay JWT and one-time-link boundary", () => {
     }
     expect(() =>
       validatePayLink({
-        url: "https://www.pnclplay.com/redeem",
+        url: "https://www.pnclpay.com/redeem",
         expiresAt: "2020-01-01",
       }, "/redeem")
     ).toThrow();

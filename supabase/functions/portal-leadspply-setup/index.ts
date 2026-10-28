@@ -8,6 +8,7 @@ import {
 } from "../_shared/pnclSetupProxy.ts";
 import {
   issuePayLink,
+  payAccessEnabled,
   PAY_REDEEM_PATH,
   retryAfterSeconds,
 } from "../_shared/pnclPay.ts";
@@ -59,11 +60,7 @@ Deno.serve(async (req) => {
     }
     const key = Deno.env.get("PNCL_INTEGRATION_KEY");
     if (!key) throw new SetupError("integration_unavailable", 503);
-    const payEnabled = Deno.env.get("PNCL_PAY_SSO_ENABLED") === "true" &&
-      Deno.env.get("PNCL_PAY_ENDPOINT_CONFIRMED") === "true" &&
-      Boolean(
-        Deno.env.get("PNCL_PAY_PRIVATE_KEY_PEM"),
-      );
+    const payEnabled = payAccessEnabled(user.id, (name) => Deno.env.get(name));
     if (body.action === "pay" && !payEnabled) {
       throw new SetupError("pay_unavailable", 503);
     }

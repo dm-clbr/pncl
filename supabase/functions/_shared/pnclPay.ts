@@ -1,7 +1,27 @@
 import { SetupError } from "./pnclSetupContract.ts";
-export const PAY_ENDPOINT = "https://www.pnclplay.com/api/partner/login-links";
+export const PAY_ENDPOINT = "https://www.pnclpay.com/api/partner/login-links";
 export const PAY_REDEEM_PATH = "/api/auth/partner/redeem";
 export const PARTNER_ID = "pnclhub-h7fyl";
+
+// Only server configuration can opt a single immutable Hub ID into a timed test.
+// This does not bypass identity, ownership, matching-email or approval checks.
+export function payAccessEnabled(
+  userId: string,
+  env: (name: string) => string | undefined,
+  now = Date.now(),
+): boolean {
+  if (
+    env("PNCL_PAY_ENDPOINT_CONFIRMED") !== "true" ||
+    !env("PNCL_PAY_PRIVATE_KEY_PEM")
+  ) return false;
+  if (env("PNCL_PAY_SSO_ENABLED") === "true") return true;
+  const testId = env("PNCL_PAY_TEST_USER_ID");
+  const expires = Date.parse(env("PNCL_PAY_TEST_EXPIRES_AT") ?? "");
+  return Boolean(
+    testId && /^[0-9a-f-]{36}$/i.test(testId) &&
+      userId === testId && Number.isFinite(expires) && expires > now,
+  );
+}
 const b64 = (v: Uint8Array) =>
   btoa(String.fromCharCode(...v)).replace(/=/g, "").replace(/\+/g, "-").replace(
     /\//g,

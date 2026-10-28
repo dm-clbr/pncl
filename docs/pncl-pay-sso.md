@@ -1,6 +1,6 @@
 # PNCL Hub to PNCL Pay SSO implementation brief
 
-Updated October 28, 2026 · Partner ID: `pnclhub-h7fyl` · Status: public key and confirmations sent to James; account setup deployed and live-tested; Pay SSO disabled.
+Updated October 28, 2026 · Partner ID: `pnclhub-h7fyl` · Status: James reports ready; corrected Pay endpoint and signing key deployed; general SSO disabled, expiring test access for Vel only.
 
 PNCL Hub initiates SSO into PNCL Pay using partner login links. This proceeds independently of LeadSpply consolidation. Keep the Hub and LeadSpply Supabase projects, identities, and credentials separate for now; database consolidation and LeadSpply session handoff are outside this integration.
 
@@ -12,9 +12,9 @@ James confirmed Hub can initiate the same flow and will configure the partner af
 
 A dedicated 3072-bit RSA keypair was generated and validated on October 26, including a successful SHA-256 sign/verify check. The public PEM is `docs/keys/pnclhub-h7fyl-public.pem`. Its SHA-256 fingerprint over SPKI DER is `61bf5ae24afd3e85a8ab6512440bfcff709f85d87ccd56038efe1e44b7eb9c92`.
 
-The private key is retained at `.secrets/pncl-pay-sso/partner-private.pem`, inside a Git-ignored directory with mode `0700`; the key file has mode `0600`. Do not print, read into chat/LLM context, attach, or commit it. Provisioning into server-only deployment secret storage is still pending. Reuse this keypair for the public key supplied to James; do not silently generate a replacement.
+The private key is retained at `.secrets/pncl-pay-sso/partner-private.pem`, inside a Git-ignored directory with mode `0700`; the key file has mode `0600`. Do not print, read into chat/LLM context, attach, or commit it. The same key was securely provisioned into Hub Edge Function secret storage on October 28; its stored digest and matching public-key fingerprint were verified without displaying private material. Reuse this keypair for the public key supplied to James; do not silently generate a replacement.
 
-The reply was sent October 28 from `vf@thepncl.com` to James (`shames0@gmail.com`), copying Bill (`bh@thepncl.com`) and DM (`dm@thepncl.com`). Gmail confirmed `SENT`, message `1a18405e373c6969`, thread `1a15f3fc818df797`. It attaches only the public PEM, confirms the required domain and deployed Hub email restriction, explains that Hub setup is rolling out, and asks James to register the partner and confirm the exact endpoint hostname. Pay stays disabled pending his configuration and the joint test. Receipt and partner registration are not yet confirmed.
+The reply was sent October 28 from `vf@thepncl.com` to James (`shames0@gmail.com`), copying Bill (`bh@thepncl.com`) and DM (`dm@thepncl.com`). Gmail confirmed `SENT`, message `1a18405e373c6969`, thread `1a15f3fc818df797`. It attaches only the public PEM, confirms the required domain and deployed Hub email restriction, explains that Hub setup is rolling out, and asks James to register the partner and confirm the exact endpoint hostname. James replied at 3:06 p.m. America/Denver that his side is ready and we may test without him (message `1a184568117e9853`). Vel then authorized correcting the hostname, provisioning the key and testing only his account before any wider enablement.
 
 ## Login flow
 
@@ -25,7 +25,7 @@ The reply was sent October 28 from `vf@thepncl.com` to James (`shames0@gmail.com
    | --- | --- |
    | `alg` | `RS256` |
    | `iss` | `pnclhub-h7fyl` |
-   | `aud` | `https://www.pnclplay.com/api/partner/login-links` exactly |
+   | `aud` | `https://www.pnclpay.com/api/partner/login-links` exactly |
    | `iat` | Current Unix time in seconds |
    | `exp` | After `iat`, at most 300 seconds later; use 120 seconds initially |
    | `jti` | New cryptographically random UUID; each token is accepted once |
@@ -52,7 +52,7 @@ The reply was sent October 28 from `vf@thepncl.com` to James (`shames0@gmail.com
 
 **Hub-native account setup deployed October 28:** The standalone verification and signup links have been replaced. Users verify an existing LeadSpply account with its current credentials and required TOTP inside Hub, then explicitly update its login to the server-derived Hub email. New users complete registration, phone verification and agreements inside Hub; existing invitation/approval requirements remain. Registration fixes the email to Hub and reserves a stable LeadSpply UUID for safe retries. Account collisions require review. Both Supabase projects remain separate.
 
-The Pay backend and Hub entry point are deployed; the Pay flags remain disabled. Each launch checks current Hub Auth/onboarding, proven LeadSpply ownership, actual matching Auth emails and approval, then uses the Hub UUID as `externalId`. RS256 tokens are fresh, 120 seconds long and use the exact documented audience; redemption is pinned to `/api/auth/partner/redeem`. Private signing material remains outside the implementation and tests. Full LeadSpply feature migration is a separate scope.
+The Pay backend and Hub entry point are deployed; general Pay enablement remains disabled; only the server-configured test user may proceed during the test window. Each launch checks current Hub Auth/onboarding, proven LeadSpply ownership, actual matching Auth emails and approval, then uses the Hub UUID as `externalId`. RS256 tokens are fresh, 120 seconds long and use the corrected Pay audience; redemption is pinned to `/api/auth/partner/redeem`. Private signing material is held in server secret storage and never enters source, test fixtures or chat. Full LeadSpply feature migration is a separate scope.
 
 See [Hub setup implementation, tests and rollout](hub-native-account-setup.md) for API/database restrictions, native registration, throttling/error handling and remaining roster/joint-test work. The isolated LeadSpply checkout is `output/leadspply-email-migration` on `codex/pncl-email-migration`. Existing users were unchanged. Disposable hosted accounts were removed after testing, and one explicitly authorized SMS was delivered and verified. No signup notifications or test email were sent.
 
@@ -92,13 +92,14 @@ For unexpected 401/404 responses, retain the timestamp and safe correlation deta
 - [ ] **LeadSpply / Vel:** Reconcile unlinked/legacy users and complete full real signup/approval/provider-login checks before SSO rollout. Targeted hosted migration tests and guard/endpoint deployment are complete.
 - [x] **Hub / Vel:** Generate and verify the dedicated RSA keypair and prepare the public PEM. Private key retained locally with restricted permissions, outside version control.
 - [x] **Vel:** Send the public PEM and confirmations to James, copying Bill and DM (October 28).
-- [ ] **James / Vel:** Confirm public-key receipt and partner registration.
-- [ ] **Hub / Vel:** Provision the existing private key into server-only deployment secret storage without exposing it in logs, chat, or tool output; record key ownership and rotation procedure.
-- [ ] **James:** Register `pnclhub-h7fyl` after receiving the public key; confirm activation, allowed users, production hostname, destinations, and configured limits. Use the guide's exact `www.pnclplay.com` API/audience; his reply also mentions `pnclpay.com`, so reconcile before launch.
+- [x] **James / Vel:** James replied “Ready to go” after the public-key handoff and invited independent testing (October 28).
+- [x] **Hub / Vel:** Provision and verify the existing private key in server-only secret storage without exposing it. Vel/PNCL owns the key; coordinate any rotation with James before replacing it, and revoke the partner key immediately on suspected compromise.
+- [x] **Hub / Vel:** Resolve the guide’s hostname typo. Use `https://www.pnclpay.com/api/partner/login-links` for the endpoint and JWT audience. The www endpoint responds with the documented authentication error; the bare host currently returns Cloudflare 525.
+- [ ] **James / Vel:** Verify partner authentication end to end and confirm configured limits/destinations during live testing.
 - [x] **Hub:** Implement and locally test session/authorization checks, trusted identity lookup, JWT signing, link requests, safe navigation, shared throttling, redacted Pay audit events and user-facing errors. Live partner testing remains pending.
 - [x] **Hub:** Add the gated PNCL Pay entry point with loading, duplicate-click prevention, server-directed cooldown and recovery states. Production enablement remains off.
 - [ ] **Hub + James:** Test correct-account login, unauthorized/cross-user attempts, changed/reassigned email, rejection of non-`thepncl.com` domains, migrated LeadSpply accounts, bad/expired/replayed JWTs, unsafe destinations, one-time link reuse/expiry, limits, and upstream failures. Confirm Pay permissions, existing-session/account switching, and logout/revocation expectations.
-- [ ] **Vel + James:** Once partner setup and Hub tests pass, arrange the first joint video test with Vel, James Jacobson, Bill Hennen, and DM from the email thread. Scheduling follows James confirming readiness; the setup email was sent October 28.
+- [ ] **Vel + James:** Report live-test results, then coordinate any remaining joint checks with Bill and DM. James explicitly said an initial independent test is fine; no calendar invitation is scheduled.
 - [ ] **Hub + James:** Record joint-test results, resolve launch blockers, and document rollback by disabling Hub SSO entry/issuance plus partner revocation when needed.
 
 ## Sources
@@ -106,3 +107,12 @@ For unexpected 401/404 responses, retain the timestamp and safe correlation deta
 - [James Jacobson's October 23 response, 12:43 p.m. America/Denver](https://mail.google.com/mail/u/?authuser=vf%40thepncl.com#all/1a16a13aadfbd909).
 - [James's October 21 email with `partner-sso-quickstart.md`](https://mail.google.com/mail/u/?authuser=vf%40thepncl.com#all/1a160d57214e6b73): endpoint contract, lifetime, rate limit, and error codes.
 - October 23 project direction: Hub initiates SSO; Hub and LeadSpply Supabase projects remain separate. On October 26, Vel specified that Hub onboarding/work email is the starting point: find and link the existing LeadSpply account from Hub, then update its email if needed. Vel confirmed that every intended SSO user must use `@thepncl.com` and that PNCL users in LeadSpply must update their account email to their PNCL work email. Deployment claims above are limited to the October 27 Hub email-lock verification; SSO and LeadSpply migration tasks remain open.
+
+## October 28 restricted SSO test
+
+- Deployed corrected endpoint and `payAccessEnabled` server gate in `portal-leadspply-setup`. General `PNCL_PAY_SSO_ENABLED=false`; endpoint confirmation is true and the existing matching key is provisioned.
+- `PNCL_PAY_TEST_USER_ID=4946e9e3-e560-4062-9f27-117be7f3b9d7` selects only Vel’s verified `vf@thepncl.com` account. `PNCL_PAY_TEST_EXPIRES_AT=2026-10-28T23:24:53.215065+00:00` ends the window at 5:24 p.m. America/Denver. An absent, malformed or expired window denies test access. No email/role/user-metadata selection is used.
+- The test exception only controls availability. It preserves current Hub identity checks, proven LeadSpply ownership, matching current emails, approval and rate limits. All other users receive Pay unavailable before the upstream call.
+- Ten focused security/signing tests pass, including incorrect user IDs, expiry/missing key/endpoint, request injection, unready accounts, the exact corrected JWT audience, signature verification and unsafe links. A disposable real hosted Hub session confirmed non-allowlisted API denial (503), identity/config injection denial (400) and anonymous denial (401); sessions, user and onboarding fixture were removed and zero residue confirmed.
+- Full Hub → Pay login remains pending Vel’s existing-account ownership verification in the Hub interface. Do not bypass it or claim successful Pay redemption from key provisioning or the unauthenticated endpoint probe. No new email was sent.
+- Test rollback: clear `PNCL_PAY_TEST_USER_ID` or set the test expiry to the past; leave general SSO false. Full emergency stop: set `PNCL_PAY_ENDPOINT_CONFIRMED=false`. General rollout is a separate server-flag change after the live test passes.
