@@ -356,3 +356,6 @@ verify_jwt = false
 
 [functions.admin-onboarding-editor]
 verify_jwt = false
+
+[functions.portal-leadspply-setup]
+verify_jwt = true

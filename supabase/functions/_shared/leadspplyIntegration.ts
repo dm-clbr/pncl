@@ -68,13 +68,20 @@ function linkIdentity(value: unknown) {
 export type PortalIntegrationRequest =
   | { action: 'preview' | 'status' }
   | { action: 'sync'; token: string; links: ReturnType<typeof linkIdentity>[] }
-  | { action: 'redeem'; code: string };
+  | { action: 'redeem'; code: string }
+  | { action: 'update_email'; expectedEmail: string };
 
 export function parsePortalIntegrationRequest(value: unknown): PortalIntegrationRequest {
   const body = record(value);
   if (body.action === 'preview' || body.action === 'status') {
     onlyKeys(body, ['action']);
     return { action: body.action };
+  }
+  if (body.action === 'update_email') {
+    onlyKeys(body, ['action', 'expectedEmail']);
+    const expectedEmail = text(body.expectedEmail, 254).trim().toLowerCase();
+    if (!/^[^\s@]+@thepncl\.com$/.test(expectedEmail)) throw new Error('Invalid request');
+    return { action: 'update_email', expectedEmail };
   }
   if (body.action === 'sync') {
     onlyKeys(body, ['action', 'token', 'links']);
@@ -172,6 +179,11 @@ export function sanitizePortalIntegrationSync(value: unknown) {
 }
 
 const errorMessages: Record<string, string> = {
+  ownership_required: 'Verify your LeadSpply account with a fresh connection code before updating its email.',
+  email_conflict: 'That email change needs support review. Your existing account has been preserved.',
+  email_update_failed: 'The email update could not be confirmed. Refresh status before trying again.',
+  email_update_cooldown: 'Please wait one minute, then refresh status before trying again.',
+  work_email_review_required: 'Your PNCL work email changed or needs review. Refresh status or contact support.',
   preview_stale: 'PNCL or LeadSpply changed since this preview. Refresh and review the changes again.',
   identity_review_required: 'Your account match needs admin review. Ask PNCL support to verify your email or NPN and connect the accounts.',
   account_already_linked: 'One of these accounts is already connected. Ask PNCL support to review the connection.',

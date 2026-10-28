@@ -16,10 +16,11 @@ const preview = { matches: [{ source, status: 'suggested', reason: 'Email + NPN'
   events: [{ id: target, created_at: stamp, kind: 'agent_connected', pncl_user_id: actor, leadspply_user_id: target, pncl_actor_id: actor }],
   autoLink: { enabled: false, cadenceMinutes: 15, lastRun: { created_at: stamp, status: 'failed', scanned_count: 4, linked_count: 1, review_count: 2, error_code: 'target_unavailable' } } };
 class AuthError extends Error { constructor(message: string, public status: number, public code: string) { super(message); } }
-function handler(opts: { adminError?: AuthError; userError?: AuthError; configured?: boolean; payload?: unknown; upstreamStatus?: number; fetchError?: boolean } = {}) {
+function handler(opts: { adminError?: AuthError; userError?: AuthError; configured?: boolean; enabled?: boolean; workEmailError?: AuthError; payload?: unknown; upstreamStatus?: number; fetchError?: boolean } = {}) {
   let route: (req: Request) => Promise<Response>;
   const requireAdmin = vi.fn(async () => { if (opts.adminError) throw opts.adminError; return { user: { id: actor } }; });
   const requirePortalUser = vi.fn(async () => { if (opts.userError) throw opts.userError; return { user: { id: actor } }; });
+  const requireHubWorkEmail = vi.fn(async () => { if (opts.workEmailError) throw opts.workEmailError; return 'agent@thepncl.com'; });
   const fetcher = vi.fn(async (_url: string, init: RequestInit) => {
     if (opts.fetchError) throw new Error('fixture secret and code must never escape');
     const action = JSON.parse(String(init.body)).action;
@@ -28,8 +29,8 @@ function handler(opts: { adminError?: AuthError; userError?: AuthError; configur
   });
   const file = readFileSync('supabase/functions/manage-leadspply-integration/index.ts', 'utf8').replace(/^import .*;\n/gm, '');
   const compiled = ts.transpileModule(file, { compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 } }).outputText;
-  new Function('Deno', 'AdminAuthError', 'requireAdmin', 'requirePortalUser', 'corsHeaders', 'parsePortalIntegrationRequest', 'sanitizePortalIntegrationPreview', 'sanitizePortalIntegrationStatus', 'sanitizePortalIntegrationSync', 'sanitizePortalIntegrationError', 'fetch', 'AbortSignal', 'console', compiled)(
-    { serve: (h: typeof route) => { route = h; }, env: { get: () => opts.configured === false ? undefined : 'server-only-fixture-key' } }, AuthError, requireAdmin, requirePortalUser, { 'Access-Control-Allow-Origin': '*' }, parsePortalIntegrationRequest, sanitizePortalIntegrationPreview, sanitizePortalIntegrationStatus, sanitizePortalIntegrationSync, sanitizePortalIntegrationError, fetcher, { timeout: () => new AbortController().signal }, { error: vi.fn() });
+  new Function('Deno', 'AdminAuthError', 'requireAdmin', 'requirePortalUser', 'requireHubWorkEmail', 'corsHeaders', 'parsePortalIntegrationRequest', 'sanitizePortalIntegrationPreview', 'sanitizePortalIntegrationStatus', 'sanitizePortalIntegrationSync', 'sanitizePortalIntegrationError', 'fetch', 'AbortSignal', 'console', compiled)(
+    { serve: (h: typeof route) => { route = h; }, env: { get: (name: string) => name === 'PNCL_EMAIL_MIGRATION_ENABLED' ? String(opts.enabled ?? true) : opts.configured === false ? undefined : 'server-only-fixture-key' } }, AuthError, requireAdmin, requirePortalUser, requireHubWorkEmail, { 'Access-Control-Allow-Origin': '*' }, parsePortalIntegrationRequest, sanitizePortalIntegrationPreview, sanitizePortalIntegrationStatus, sanitizePortalIntegrationSync, sanitizePortalIntegrationError, fetcher, { timeout: () => new AbortController().signal }, { error: vi.fn() });
   return { requireAdmin, requirePortalUser, fetcher, request: (body: unknown = { action: 'status' }, method = 'POST', query = '') => route(new Request('https://source/functions/v1/manage-leadspply-integration' + query, { method, ...(method === 'POST' ? { body: JSON.stringify(body) } : {}) })) };
 }
 describe('PNCL integration request boundaries', () => {
@@ -117,4 +118,31 @@ it('validates the own-account LeadSpply ID while supporting older upstream respo
   expect(sanitizePortalIntegrationStatus({...status, account: {...status.account, leadspply_user_id: target}}).account).toMatchObject({leadspply_user_id: target});
   expect(sanitizePortalIntegrationStatus(status)).toEqual(status);
   expect(() => sanitizePortalIntegrationStatus({...status, account: {...status.account, leadspply_user_id: 'bad'}})).toThrow();
+});
+
+describe('Hub initiated work email migration', () => {
+  const request = { action: 'update_email', expectedEmail: 'agent@thepncl.com' };
+  it('forwards only the canonical onboarding email and authenticated Hub ID', async () => {
+    const h = handler();
+    expect((await h.request(request)).status).toBe(200);
+    expect(JSON.parse(String(h.fetcher.mock.calls[0][1].body))).toEqual({ action: 'update_email', pnclUserId: actor, pnclEmail: 'agent@thepncl.com' });
+  });
+  it('rejects actor overrides, arbitrary destinations, disabled rollout and stale consent', async () => {
+    for (const input of [{ ...request, pnclUserId: target }, { ...request, pnclEmail: 'other@thepncl.com' }, { ...request, expectedEmail: 'agent@thepncl.com.evil.test' }]) {
+      const h = handler(); expect((await h.request(input)).status).toBe(400); expect(h.fetcher).not.toHaveBeenCalled();
+    }
+    const disabled = handler({ enabled: false });
+    expect((await disabled.request(request)).status).toBe(503); expect(disabled.fetcher).not.toHaveBeenCalled();
+    const stale = handler();
+    expect((await stale.request({ ...request, expectedEmail: 'other@thepncl.com' })).status).toBe(409); expect(stale.fetcher).not.toHaveBeenCalled();
+    const denied = handler({ workEmailError: new AuthError('Review required', 409, 'work_email_review_required') });
+    expect((await denied.request(request)).status).toBe(409); expect(denied.fetcher).not.toHaveBeenCalled();
+  });
+  it('returns safe ownership and cooldown errors', async () => {
+    for (const [error, upstreamStatus] of [['ownership_required', 409], ['email_update_cooldown', 429]] as const) {
+      const h = handler({ upstreamStatus, payload: { error, message: 'sensitive upstream details' } });
+      const res = await h.request(request); expect(res.status).toBe(upstreamStatus);
+      expect(await res.text()).not.toContain('sensitive');
+    }
+  });
 });

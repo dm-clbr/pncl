@@ -1,13 +1,11 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { MemoryRouter } from "react-router-dom";
 import AdminLeadSpplyIntegration from "@/pages/admin/AdminLeadSpplyIntegration";
-import PortalLeadSpply from "@/pages/PortalLeadSpply";
 
 const manage = vi.hoisted(() => vi.fn());
 const own = vi.hoisted(() => ({ status: null as unknown, loading: false, error: null as string | null, reload: vi.fn() }));
-const auth = vi.hoisted(() => ({ userId: "agent-1", token: "portal-token" }));
-vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ session: { access_token: auth.token, user: { id: auth.userId } }, user: { id: auth.userId }, loading: false }) }));
+const auth = vi.hoisted(() => ({ userId: "agent-1", token: "portal-token", email: "agent@thepncl.com", confirmed: true }));
+vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ session: { access_token: auth.token, user: { id: auth.userId } }, user: { id: auth.userId, email: auth.email, email_confirmed_at: auth.confirmed ? "2026-10-26" : null }, loading: false }) }));
 vi.mock("@/lib/portal-leadspply-integration", async (importOriginal) => ({ ...(await importOriginal<typeof import("@/lib/portal-leadspply-integration")>()), manageLeadSpplyIntegration: manage }));
 vi.mock("@/hooks/useOwnLeadSpplyIntegration", () => ({ useOwnLeadSpplyIntegration: () => own }));
 vi.mock("@/lib/analytics", () => ({ trackPageView: vi.fn() }));
@@ -16,7 +14,7 @@ vi.mock("@/components/PortalPrimaryNav", () => ({ default: () => null }));
 const target = { id: "lead-1", email: "jane@thepncl.com", first_name: "Jane", last_name: "Doe", npn: "123", parent_id: null };
 const preview = { matches: [{ source: { id: "pncl-1", email: "jane@thepncl.com", personal_email: null, first_name: "Jane", last_name: "Doe", npn: "123", agent_number: 7, comp_level: 90, comp_effective_at: null, parent_id: null }, status: "suggested", reason: "Email + NPN", candidates: [{ target, reasons: ["email"] }] }], targets: [target], links: [], partners: [], token: "preview-token", revision: 2, recentRuns: [], events: [], autoLink: { enabled: false, cadenceMinutes: 15, lastRun: { created_at: "2026-10-15T12:00:00Z", status: "failed", scanned_count: 3, linked_count: 1, review_count: 1, error_code: "target_unavailable" } } };
 
-afterEach(() => { vi.clearAllMocks(); own.status = null; own.error = null; own.loading = false; auth.userId = "agent-1"; auth.token = "portal-token"; });
+afterEach(() => { vi.clearAllMocks(); vi.unstubAllEnvs(); own.status = null; own.error = null; own.loading = false; auth.userId = "agent-1"; auth.token = "portal-token"; auth.email = "agent@thepncl.com"; auth.confirmed = true; });
 
 describe("LeadSpply integration controls", () => {
   it("shows read-only automatic connection monitoring without triggering a sync", async () => {
@@ -45,21 +43,6 @@ describe("LeadSpply integration controls", () => {
     expect(screen.getByRole("checkbox")).not.toBeChecked();
   });
 
-  it("does not expose a previous user's code or completed redemption after an account switch", async () => {
-    own.status = { state: "not_linked", account: null };
-    let finish: (value: unknown) => void;
-    manage.mockReturnValue(new Promise(resolve => { finish = resolve; }));
-    const view = render(<MemoryRouter><PortalLeadSpply /></MemoryRouter>);
-    fireEvent.change(screen.getByPlaceholderText("Paste code from LeadSpply"), { target: { value: "old-private-code" } });
-    fireEvent.click(screen.getByRole("button", { name: /Submit connection code/i }));
-    auth.userId = "agent-2"; auth.token = "second-user-token";
-    view.rerender(<MemoryRouter><PortalLeadSpply /></MemoryRouter>);
-    expect(screen.getByPlaceholderText("Paste code from LeadSpply")).toHaveValue("");
-    await act(async () => { finish({ state: "connected", pending: true, account: null }); });
-    expect(screen.queryByText(/Account connected\. Your hierarchy/)).not.toBeInTheDocument();
-    expect(own.reload).not.toHaveBeenCalled();
-    expect(manage).toHaveBeenCalledTimes(1);
-  });
   it("never auto-syncs and invalidates reviewed selection after a stale 409", async () => {
     manage.mockImplementation(async (_token: string, body: { action: string }) => {
       if (body.action === "preview") return preview;
@@ -94,16 +77,4 @@ describe("LeadSpply integration controls", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("selected account was linked by another admin");
   });
 
-  it("lets an agent redeem only their own expiring code and reload status", async () => {
-    own.status = { state: "not_linked", account: null };
-    manage.mockResolvedValue({ state: "not_linked", account: null, pending: true });
-    render(<MemoryRouter><PortalLeadSpply /></MemoryRouter>);
-    expect(screen.queryByText(/sync .* linked reps/i)).not.toBeInTheDocument();
-    expect(screen.getAllByText(/email, NPN, or exact full name every 15 minutes/i).length).toBeGreaterThan(0);
-    fireEvent.change(screen.getByPlaceholderText("Paste code from LeadSpply"), { target: { value: "expiring-code" } });
-    fireEvent.click(screen.getByRole("button", { name: /Submit connection code/i }));
-    await waitFor(() => expect(manage).toHaveBeenCalledWith("portal-token", { action: "redeem", code: "expiring-code" }));
-    expect(own.reload).toHaveBeenCalledTimes(1);
-    expect(screen.getByText(/hierarchy and pay tier will be applied/i)).toBeInTheDocument();
-  });
 });

@@ -1,3 +1,4 @@
+import { requireHubWorkEmail } from '../_shared/hubWorkEmail.ts';
 import { AdminAuthError, requireAdmin, requirePortalUser } from '../_shared/adminAuth.ts';
 import { corsHeaders } from '../_shared/cors.ts';
 import { parsePortalIntegrationRequest, sanitizePortalIntegrationPreview, sanitizePortalIntegrationStatus, sanitizePortalIntegrationSync, sanitizePortalIntegrationError } from '../_shared/leadspplyIntegration.ts';
@@ -22,10 +23,17 @@ Deno.serve(async req => {
   }
   try {
     const adminAction = body.action === 'preview' || body.action === 'sync';
-    const { user } = await (adminAction ? requireAdmin(req) : requirePortalUser(req));
+    const { user, adminClient } = await (adminAction ? requireAdmin(req) : requirePortalUser(req));
     const key = Deno.env.get('PNCL_INTEGRATION_KEY');
     if (!key) return json(503, { error: 'integration_unavailable', message: 'LeadSpply integration is unavailable right now.' });
-    const upstreamBody = adminAction ? { ...body, sourceActorId: user.id } : { ...body, pnclUserId: user.id };
+    let pnclEmail: string | undefined;
+    if (body.action === 'update_email') {
+      if (Deno.env.get('PNCL_EMAIL_MIGRATION_ENABLED') !== 'true') return json(503, { error: 'integration_unavailable', message: 'Email updates are not available yet.' });
+      pnclEmail = await requireHubWorkEmail(user, adminClient);
+      if (body.expectedEmail !== pnclEmail) return json(409, { error: 'work_email_review_required', message: 'Your PNCL email changed. Refresh and review it again.' });
+    }
+    const upstreamBody = body.action === 'update_email' ? { action: 'update_email', pnclUserId: user.id, pnclEmail }
+      : adminAction ? { ...body, sourceActorId: user.id } : { ...body, pnclUserId: user.id };
     const response = await fetch(TARGET_URL, {
       method: 'POST', redirect: 'error', signal: AbortSignal.timeout(30000),
       headers: { 'Content-Type': 'application/json', 'X-PNCL-Integration-Key': key },

@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npm run build",
+  "buildCommand": "VITE_PNCL_HUB_SETUP_ENABLED=true npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
   "rewrites": [
