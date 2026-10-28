@@ -25,6 +25,13 @@ describe('canonical Hub onboarding identity', () => {
       expect(client.from).not.toHaveBeenCalled();
     }
   });
+  it('accepts a matching administrator-provisioned legacy record without bypassing v3 enrollment', async () => {
+    const row = { workspace_email: user.email, status: 'manual', enrollment_status: 'application_saved', released_at: null };
+    expect(await requireWorkEmail({ ...user, app_metadata: { source: 'admin_manual' } }, db(row))).toBe(user.email);
+    await expect(requireWorkEmail(user, db(row))).rejects.toMatchObject({ status: 409 });
+    await expect(requireWorkEmail({ ...user, app_metadata: {} }, db({ ...row, released_at: 'today' }))).rejects.toMatchObject({ status: 409 });
+    await expect(requireWorkEmail({ ...user, app_metadata: {} }, db({ ...row, workspace_email: 'other@thepncl.com' }))).rejects.toMatchObject({ status: 409 });
+  });
   it('fails closed for missing, changed, released, failed or ambiguous onboarding records', async () => {
     for (const row of [null, { workspace_email: 'other@thepncl.com' }, { workspace_email: user.email, released_at: 'today' }, { workspace_email: user.email, status: 'failed' }]) {
       await expect(requireWorkEmail(user, db(row))).rejects.toMatchObject({ status: 409 });

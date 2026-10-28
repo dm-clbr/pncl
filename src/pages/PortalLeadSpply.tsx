@@ -168,7 +168,7 @@ function Setup({ email, token }: { email: string; token: string }) {
       <Pane title="1. Your PNCL Hub email">
         <strong>{email}</strong>
         <p>
-          This address comes from your completed Hub onboarding. Contact support
+          Your PNCL work email is managed by Hub. Contact support
           for a work email rename.
         </p>
       </Pane>
