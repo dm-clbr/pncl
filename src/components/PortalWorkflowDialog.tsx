@@ -20,7 +20,6 @@ export default function PortalWorkflowDialog({ title, children, onClose, warning
     const previousFocus = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    panel.current?.querySelector<HTMLElement>("button")?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -28,7 +27,7 @@ export default function PortalWorkflowDialog({ title, children, onClose, warning
         close.current();
       }
       if (event.key !== "Tab") return;
-      const controls = panel.current?.querySelectorAll<HTMLElement>("button:not(:disabled), a[href], input:not(:disabled)");
+      const controls = panel.current?.querySelectorAll<HTMLElement>("button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled)");
       if (!controls?.length) return;
       const first = controls[0];
       const last = controls[controls.length - 1];
@@ -45,6 +44,11 @@ export default function PortalWorkflowDialog({ title, children, onClose, warning
       previousFocus?.focus();
     };
   }, []);
+
+  useEffect(() => {
+    // A step change can remove the focused submit button. Keep focus in the dialog.
+    panel.current?.querySelector<HTMLElement>("button")?.focus();
+  }, [title]);
 
   return createPortal(
     <div className="portal-workflow-overlay" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>

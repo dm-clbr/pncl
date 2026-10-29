@@ -232,6 +232,15 @@
 }
 
 .hub-setup-form,.hub-setup-fields { display:flex;flex-direction:column;gap:16px; }
+.hub-setup-dashboard { display: grid; gap: 12px; }
+.home2-page .hub-setup-dashboard p { margin: 0; line-height: 1.55; color: var(--portal-text); }
+.home2-page .hub-setup-banner { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 18px; border: 1px solid var(--portal-border); border-radius: var(--portal-radius-inner); background: rgba(255,255,255,.035); }
+.home2-page .hub-setup-banner > div:first-child { flex: 1 1 280px; }
+.home2-page .hub-setup-banner strong { display: block; color: var(--portal-text-strong); margin-bottom: 4px; }
+.home2-page .hub-setup-verified { font-size: var(--portal-t-body); }
+.hub-setup-email-change { display: grid; gap: 12px; padding: 16px; border: 1px solid var(--portal-border); border-radius: var(--portal-radius-inner); }
+.hub-setup-email-change dt { font-size: 12px; color: var(--portal-text); }
+.hub-setup-email-change dd { margin: 4px 0 0; font-weight: 600; overflow-wrap: anywhere; }
 .hub-setup-fields { border:0;padding:0;margin:0;min-width:0; }
 .hub-setup-fields legend { font-weight:600;margin-bottom:12px; }
 .hub-setup-grid { display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;align-items:end; }

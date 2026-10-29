@@ -73,3 +73,13 @@ Rollback: disable the native frontend/server setup flags to stop new setup mutat
 - Initial rollout record above predates the restricted SSO test preparation. James subsequently reported ready, the hostname was corrected and the key provisioned. General SSO remains disabled; live Pay redemption remains pending.
 
 Post-deployment security advisors report the expected five private RLS tables without browser policies; their grants are revoked. No new warning/error finding identifies these setup functions. Unrelated agency RPC warnings appeared concurrently and were not changed by this rollout. LeadSpply’s dashboard also displays an existing over-quota warning with potential restrictions from November 1; billing was not changed.
+
+## October 29 dashboard and setup-page update
+
+The dashboard’s **Your sales snapshot** now uses the same `HubAccountSetup` controller and modal as the account setup page. Unlinked users can verify and link in one action, or create an account inside Hub. Existing links without the newer ownership proof show a banner explaining that their connection and sales data remain intact; **Verify link once** opens the ownership check. Proof is recorded by the existing backend, never inferred from an old link.
+
+After successful verification, a matching email finishes the flow. Any mismatch, including a different `@thepncl.com` address, advances the same modal to **Use your PNCL Hub email**. It displays both addresses and requires **Update to my Hub email** before changing anything. **Finish later** preserves the verified link; an expired proof requires a new check before the sensitive email update. The completed verification banner disappears, and account changes refresh the sales snapshot.
+
+The authenticator input appears only if the server requires it. Passwords and codes clear after submission or dismissal. The modal keeps focus during step changes and does not reopen after a dismissed in-flight request. The native account creation form retains phone verification and all required agreements.
+
+Validation: 30 focused UI/snapshot tests and 10 signing/security tests passed; TypeScript and production build passed with the existing bundle-size warning. Local browser review uses synthetic accounts only. Preview scenarios cover existing links, mismatched emails, unlinked accounts and completed verification. Vel approved deploying both shared surfaces on October 29; hosted verification follows the release. This UI release changes no backend keys, account records or Pay flags. General Pay remains off; the October 28 test exception has expired. Vel reports no existing Pay account, so a signed partner connection probe can validate authentication/account lookup but cannot establish successful login.

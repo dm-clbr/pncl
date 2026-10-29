@@ -84,7 +84,9 @@ afterEach(() => {
 });
 it("loads under StrictMode and offers native setup without external signup or automatic mutations", async () => {
   view();
-  await screen.findByLabelText(/Current\ LeadSpply\ email\s*\*?$/);
+  await screen.findByRole("button", { name: "I have a LeadSpply account" });
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.queryByLabelText(/LeadSpply password/)).toBeNull();
   expect(api.mock.calls.every((c) => c[1].action === "status")).toBe(true);
   expect(document.querySelector('a[href="https://leadspply.com/register"]'))
     .toBeNull();
@@ -102,6 +104,7 @@ it("verifies first, requires explicit email consent, and clears credentials", as
     }
   );
   view();
+  fireEvent.click(await screen.findByRole("button", { name: "I have a LeadSpply account" }));
   fireEvent.change(
     await screen.findByLabelText(/Current\ LeadSpply\ email\s*\*?$/),
     { target: { value: "old@example.com" } },
@@ -149,10 +152,11 @@ it("disables migration for expired proof and exposes verification again", async 
     proofExpiresAt: new Date(Date.now() - 1000).toISOString(),
   });
   view();
-  expect(await screen.findByRole("button", { name: "Update to my Hub email" }))
+  expect(await screen.findByRole("button", { name: "Review email update" }))
     .toBeDisabled();
-  expect(screen.getByLabelText(/Current\ LeadSpply\ email\s*\*?$/))
-    .toBeInTheDocument();
+  expect(screen.queryByRole("dialog")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Verify to update email" }));
+  expect(screen.getByLabelText(/Current\ LeadSpply\ email\s*\*?$/)).toBeInTheDocument();
 });
 it("remounts and discards old credentials and late responses after a Hub identity switch", async () => {
   let finish: (v: unknown) => void = () => {};
@@ -164,6 +168,7 @@ it("remounts and discards old credentials and late responses after a Hub identit
       : empty
   );
   const v = view();
+  fireEvent.click(await screen.findByRole("button", { name: "I have a LeadSpply account" }));
   fireEvent.change(
     await screen.findByLabelText(/Current\ LeadSpply\ email\s*\*?$/),
     { target: { value: "old@example.com" } },
@@ -183,6 +188,7 @@ it("remounts and discards old credentials and late responses after a Hub identit
       </MemoryRouter>
     </StrictMode>,
   );
+  fireEvent.click(await screen.findByRole("button", { name: "I have a LeadSpply account" }));
   await screen.findByLabelText(/Current\ LeadSpply\ email\s*\*?$/);
   await act(async () => finish(linked));
   expect(screen.getByLabelText(/LeadSpply\ password\s*\*?$/)).toHaveValue("");
@@ -256,6 +262,48 @@ it("requires phone verification, matching passwords and agreements for native re
 it('honors server cooldowns before allowing another attempt',async()=>{
  const error=Object.assign(new Error('Too many attempts.'),{retryAfter:120});
  api.mockImplementation(async(_t,b)=>{if(b.action==='verify')throw error;return empty;});
- view();fireEvent.change(await screen.findByLabelText(/Current LeadSpply email/),{target:{value:'old@example.com'}});fireEvent.change(screen.getByLabelText(/LeadSpply password/),{target:{value:'Secret123!'}});
+ view();fireEvent.click(await screen.findByRole('button',{name:'I have a LeadSpply account'}));fireEvent.change(await screen.findByLabelText(/Current LeadSpply email/),{target:{value:'old@example.com'}});fireEvent.change(screen.getByLabelText(/LeadSpply password/),{target:{value:'Secret123!'}});
  fireEvent.click(screen.getByRole('button',{name:'Verify and link account'}));await screen.findByText('Try again in 120 seconds.');expect(screen.getByRole('button',{name:'Verify and link account'})).toBeDisabled();expect(screen.getByRole('button',{name:'Refresh status'})).toBeDisabled();
+});
+
+it("presents a one-time action for a legacy linked account and clears secrets on close", async () => {
+  api.mockResolvedValue({ ...linked, ownershipVerified: false, emailMatches: true, account: { id: "ls-1", email: auth.email } });
+  view();
+  const trigger = await screen.findByRole("button", { name: "Verify account one time" });
+  expect(screen.queryByRole("dialog")).toBeNull();
+  fireEvent.click(trigger);
+  expect(screen.getByRole("dialog", { name: "Verify your LeadSpply account" })).toBeInTheDocument();
+  expect(screen.getByLabelText(/Current LeadSpply email/)).toHaveValue(auth.email);
+  expect(screen.queryByLabelText(/Authenticator code/)).toBeNull();
+  fireEvent.change(screen.getByLabelText(/LeadSpply password/), { target: { value: "Secret123!" } });
+  fireEvent.keyDown(window, { key: "Escape" });
+  expect(screen.queryByRole("dialog")).toBeNull();
+  fireEvent.click(trigger);
+  expect(screen.getByLabelText(/LeadSpply password/)).toHaveValue("");
+});
+it("closes after one-time verification and does not request it again for matching accounts", async () => {
+  const verified = { ...linked, emailMatches: true, approved: true, ready: true, account: { id: "ls-1", email: auth.email } };
+  api.mockImplementation(async (_t,b) => b.action === "status" ? { ...verified, ownershipVerified: false, ready: false } : verified);
+  view();
+  fireEvent.click(await screen.findByRole("button", { name: "Verify account one time" }));
+  fireEvent.change(screen.getByLabelText(/LeadSpply password/), { target: { value: "Secret123!" } });
+  fireEvent.click(screen.getByRole("button", { name: "Verify account", exact: true }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(screen.getByText("Account ownership verified.")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Verify account one time" })).toBeNull();
+  expect(screen.queryByDisplayValue("Secret123!")).toBeNull();
+});
+it("shows authenticator input only after the server requires it, with errors inside the dialog", async () => {
+  api.mockImplementation(async (_t,b) => { if (b.action === "verify") throw Object.assign(new Error("Enter your authenticator code."), { code: "mfa_required" }); return empty; });
+  view();
+  fireEvent.click(await screen.findByRole("button", { name: "I have a LeadSpply account" }));
+  expect(screen.queryByLabelText(/Authenticator code/)).toBeNull();
+  fireEvent.change(screen.getByLabelText(/LeadSpply password/), { target: { value: "Secret123!" } });
+  fireEvent.click(screen.getByRole("button", { name: "Verify and link account" }));
+  expect(await screen.findByLabelText(/Authenticator code/)).toBeRequired();
+  expect(screen.getByRole("dialog")).toContainElement(screen.getByRole("alert"));
+  expect(screen.getByLabelText(/LeadSpply password/)).toHaveValue("");
+  fireEvent.click(screen.getByRole("button", { name: "Close", exact: true }));
+  fireEvent.click(screen.getByRole("button", { name: "I have a LeadSpply account" }));
+  expect(screen.queryByLabelText(/Authenticator code/)).toBeNull();
 });

@@ -5,6 +5,8 @@ import { ExternalLink, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePortalLeadSpplySnapshot } from "@/hooks/usePortalLeadSpplySnapshot";
 import type { LeadSpplySnapshot } from "@/lib/portal-leadspply-snapshot";
+import { useAuth } from "@/contexts/AuthContext";
+import HubAccountSetup from "@/components/leadspply/HubAccountSetup";
 
 const LEADSPPLY_DASHBOARD_URL = "https://leadspply.com/dashboard";
 
@@ -83,7 +85,12 @@ function ConnectedSnapshot({ snapshot }: { snapshot: LeadSpplySnapshot }) {
 }
 
 export default function PortalLeadSpplySnapshot({ userId }: { userId: string | undefined }) {
+  const { user, session } = useAuth();
   const { snapshot, loading, error, reload } = usePortalLeadSpplySnapshot(userId);
+  const email = user?.email?.trim().toLowerCase() ?? "";
+  const setupEnabled = import.meta.env.VITE_PNCL_HUB_SETUP_ENABLED === "true" &&
+    Boolean(userId && user?.id === userId && session?.user.id === userId &&
+      user.email_confirmed_at && /^[^\s@]+@thepncl\.com$/.test(email));
   const disconnected = snapshot?.state === "not_linked" || snapshot?.state === "account_unavailable";
   const unavailableMessage = snapshot?.state === "account_unavailable"
     ? "Your LeadSpply account is unavailable. Contact PNCL support to review the connection."
@@ -100,13 +107,15 @@ export default function PortalLeadSpplySnapshot({ userId }: { userId: string | u
           <a href={LEADSPPLY_DASHBOARD_URL} target="_blank" rel="noopener noreferrer" className="portal-leadspply-open">
             Open LeadSpply <ExternalLink size={15} aria-hidden="true" />
           </a>
-          <Link to="/portal/leadspply" className="portal-leadspply-refresh">Connect / manage</Link>
+          <Link to="/portal/leadspply" className="portal-leadspply-refresh">{setupEnabled ? "Account setup" : "Connect / manage"}</Link>
         </div>
       }>
       <p className="portal-leadspply-eyebrow">LeadSpply · Read-only</p>
+      {setupEnabled && <HubAccountSetup key={userId + ":" + email} email={email}
+        token={session!.access_token} compact onChanged={() => void reload()} />}
       {loading && !snapshot ? <p className="portal-leadspply-state" role="status">Loading your LeadSpply snapshot…</p> : null}
       {error ? <div className="portal-leadspply-state portal-leadspply-error" role="alert"><p>{error}</p><button type="button" onClick={() => void reload()}>Try again</button></div> : null}
-      {!loading && !error && disconnected ? <p className="portal-leadspply-state">{unavailableMessage}</p> : null}
+      {!setupEnabled && !loading && !error && disconnected ? <p className="portal-leadspply-state">{unavailableMessage}</p> : null}
       {!error && snapshot?.state === "connected" ? <ConnectedSnapshot snapshot={snapshot} /> : null}
       </Pane>
     </div>
