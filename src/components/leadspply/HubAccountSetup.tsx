@@ -6,11 +6,12 @@ import PortalWorkflowDialog from "@/components/PortalWorkflowDialog";
 import HubRegistration from "@/components/leadspply/HubRegistration";
 import { hubAccountSetup, type SetupStatus } from "@/lib/hub-account-setup";
 export default function HubAccountSetup(
-  { email, token, compact = false, onChanged }: {
+  { email, token, compact = false, onChanged, onStatusChange }: {
     email: string;
     token: string;
     compact?: boolean;
     onChanged?: () => void;
+    onStatusChange?: (status: SetupStatus | null) => void;
   },
 ) {
   const [status, setStatus] = useState<SetupStatus | null>(null);
@@ -25,6 +26,9 @@ export default function HubAccountSetup(
     return () => clearInterval(timer);
   }, [cooldownUntil]);
   const [error, setError] = useState("");
+  useEffect(() => {
+    onStatusChange?.(error ? null : status);
+  }, [status, error, onStatusChange]);
   const [message, setMessage] = useState("");
   const [mode, setMode] = useState<"existing" | "new">("existing");
   const [loginEmail, setLoginEmail] = useState("");

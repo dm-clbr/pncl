@@ -94,6 +94,12 @@
   font-size: var(--portal-t-mid);
   color: var(--portal-text-strong);
 }
+.home2-page .portal-leadspply-card .portal-leadspply-account-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
 .home2-page .portal-leadspply-card .portal-leadspply-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

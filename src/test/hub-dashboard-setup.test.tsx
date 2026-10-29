@@ -34,7 +34,19 @@ vi.mock(
   "@/hooks/usePortalLeadSpplySnapshot",
   () => ({
     usePortalLeadSpplySnapshot: () => ({
-      snapshot: null,
+      snapshot: {
+        version: 1, state: "connected", asOf: "2026-10-29T19:00:00.000Z",
+        account: { name: "Sample Agent", syncStatus: "synced", lastSyncedAt: null },
+        period: { timezone: "America/Denver", monthStart: "2026-10-01", weekStart: "2026-10-26", today: "2026-10-29" },
+        leads: { toWork: 0, new: 0, inProgress: 0, callbacksToday: 0 },
+        appointments: { upcoming: 0, nextAt: null },
+        production: { paidPoliciesMtd: 0, annualPremiumCentsMtd: 0 },
+        activity: {
+          today: { calls: 0, appointments: 0, presentations: 0, policies: 0, points: 0 },
+          week: { calls: 0, appointments: 0, presentations: 0, policies: 0, points: 0 },
+        },
+        contact: { ratePct: null, speedMinutes: null },
+      },
       loading: false,
       error: null,
       reload,
@@ -89,6 +101,8 @@ afterEach(() => {
   vi.resetAllMocks();
   vi.unstubAllEnvs();
   auth.confirmed = true;
+  auth.id = "hub-1";
+  auth.email = "agent@thepncl.com";
 });
 
 it("explains that an existing link is intact, then removes the banner after one-time verification", async () => {
@@ -99,6 +113,8 @@ it("explains that an existing link is intact, then removes the banner after one-
   expect(await screen.findByText(/Your LeadSpply account is already connected/))
     .toBeInTheDocument();
   expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.getByText("Linked", { exact: true })).toBeInTheDocument();
+  expect(screen.queryByText("Verified", { exact: true })).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "Verify link once" }));
   expect(screen.getByLabelText(/Current LeadSpply email/)).toHaveValue(
     auth.email,
@@ -108,8 +124,20 @@ it("explains that an existing link is intact, then removes the banner after one-
   expect(screen.queryByRole("button", { name: "Verify link once" })).toBeNull();
   expect(screen.getByText(/Link verified · Your LeadSpply login matches Hub/))
     .toBeInTheDocument();
+  expect(screen.getByText("Verified", { exact: true })).toBeInTheDocument();
+  expect(screen.getByText("Linked", { exact: true })).toBeInTheDocument();
   expect(reload).toHaveBeenCalledTimes(1);
   expect(api.mock.calls.map((c) => c[1].action)).toEqual(["status", "verify"]);
+});
+it("shows persisted ownership verification with Pay disabled and clears it when the Hub user changes", async () => {
+  api.mockResolvedValue({ ...verified, proofExpiresAt: null, payEnabled: false });
+  const { rerender } = view();
+  expect(await screen.findByText("Verified", { exact: true })).toBeInTheDocument();
+  api.mockImplementation(() => new Promise(() => {}));
+  auth.id = "hub-2";
+  auth.email = "second@thepncl.com";
+  rerender(<MemoryRouter><PortalLeadSpplySnapshot userId="hub-2" /></MemoryRouter>);
+  expect(screen.queryByText("Verified", { exact: true })).toBeNull();
 });
 it.each(["old@example.com", "other@thepncl.com"])(
   "links and verifies together, then requires consent to replace mismatched email %s",
