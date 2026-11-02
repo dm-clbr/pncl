@@ -66,8 +66,8 @@ const offerCards = [
 
 const carriers = [
   "Aetna", "Transamerica", "Mutual of Omaha", "Americo",
-  "Foresters", "Great Western", "Liberty Bankers", "Baltimore Life",
-  "GTL", "Kansas City Life", "Royal Neighbors", "CFG",
+  "Foresters", "Great Western", "Baltimore Life",
+  "GTL", "Kansas City Life", "CFG",
 ];
 
 const thriveItems = [

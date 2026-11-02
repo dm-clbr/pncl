@@ -5,6 +5,11 @@ import PortalOnboardingChecklist from "@/components/PortalOnboardingChecklist";
 import PortalSureLcLinks from "@/components/PortalSureLcLinks";
 import { canCompleteTodo, derivePortalPhase, filterPortalTodosForAgent, isTodoCompleted, type PortalTodo } from "@/lib/portal-todos";
 import snapshot from "./fixtures/ibo-onboarding-steps.json";
+import carriers from "./fixtures/published-carriers.json";
+
+vi.mock("@/hooks/usePortalCarriers", () => ({
+  usePortalCarriers: () => ({ carriers, loading: false, error: null, reload: vi.fn() }),
+}));
 
 // Published production step inventory, with the new migration applied locally.
 const inventory: PortalTodo[] = snapshot.map((r) => ({ id: r.slug, title: r.title, description: r.description,
@@ -48,7 +53,7 @@ describe("Full published onboarding journey", () => {
           if (todo.id === "surelc_account_1") expect(warning).not.toHaveTextContent("Mutual of Omaha");
           if (todo.id === "surelc_account_3") {
             expect(warning).toHaveTextContent("Mutual of Omaha");
-            expect(warning).toHaveTextContent("Transamerica");
+            expect(warning).toHaveTextContent("TransAmerica");
           }
           fireEvent.click(within(warning).getByRole("button", { name: "Cancel" }));
           fireEvent.click(screen.getByRole("button", { name: new RegExp(todo.title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) }));

@@ -3,8 +3,10 @@ import {
   DEFAULT_SURELC_ACCOUNT_LINKS,
   isSureLcAccountTodo,
   resolveSureLcAccountLinks,
+  sureLcCarrierNames,
 } from "@/lib/surelc-accounts";
 import type { PortalTodo } from "@/lib/portal-todos";
+import carriers from "@/test/fixtures/published-carriers.json";
 
 function sureLcTodo(overrides: Partial<PortalTodo> = {}): PortalTodo {
   return {
@@ -23,6 +25,23 @@ function sureLcTodo(overrides: Partial<PortalTodo> = {}): PortalTodo {
 }
 
 describe("SureLC account links", () => {
+  it("uses current sheet assignments and never restores removed default carriers", () => {
+    expect(sureLcCarrierNames("surelc_account_1", carriers)).toEqual(["American General Life (AIG/Corebridge)", "American Home Life"]);
+    const reassigned = carriers.map(c => c.carrier === "American Home Life" ? { ...c, section: "SureLC #3" } : c);
+    expect(sureLcCarrierNames("surelc_account_1", reassigned)).toEqual(["American General Life (AIG/Corebridge)"]);
+    expect(sureLcCarrierNames("surelc_account_3", reassigned)).toContain("American Home Life");
+    expect(sureLcCarrierNames("surelc_account_1", [])).toEqual([]);
+  });
+
+  it("matches exact account numbers and excludes automatic carriers even if misassigned", () => {
+    const sample = carriers[0];
+    expect(sureLcCarrierNames("surelc_account_1", [
+      { ...sample, carrier: "Wrong account", section: "SureLC #10" },
+      { ...sample, carrier: "CICA", section: "SureLC #1" },
+      { ...sample, carrier: "Current carrier", section: " SureLC #1 — Branch " },
+      { ...sample, carrier: "Current carrier", section: "SureLC #1" },
+    ])).toEqual(["Current carrier"]);
+  });
   it("defines all three account links in account order", () => {
     expect(DEFAULT_SURELC_ACCOUNT_LINKS.map((link) => link.todoId)).toEqual([
       "surelc_account_1",

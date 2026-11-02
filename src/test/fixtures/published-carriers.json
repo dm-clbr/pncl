@@ -1,0 +1,90 @@
+[
+  {
+    "id": "carrier-0",
+    "carrier": "American General Life (AIG/Corebridge)",
+    "companyNumber": "",
+    "eAppLabel": "American General Life (AIG/Corebridge)",
+    "eAppUrl": null,
+    "section": "SureLC #1 — \"Basso Montemurro\""
+  },
+  {
+    "id": "carrier-1",
+    "carrier": "American Home Life",
+    "companyNumber": "",
+    "eAppLabel": "American Home Life",
+    "eAppUrl": null,
+    "section": "SureLC #1 — \"Basso Montemurro\""
+  },
+  {
+    "id": "carrier-2",
+    "carrier": "Banner - Beyond Term",
+    "companyNumber": "",
+    "eAppLabel": "Banner - Beyond Term",
+    "eAppUrl": null,
+    "section": "SureLC #2 — \"The Pinnacle Life Group\""
+  },
+  {
+    "id": "carrier-3",
+    "carrier": "Fidelity & Guaranty",
+    "companyNumber": "",
+    "eAppLabel": "Fidelity & Guaranty",
+    "eAppUrl": null,
+    "section": "SureLC #2 — \"The Pinnacle Life Group\""
+  },
+  {
+    "id": "carrier-4",
+    "carrier": "Mutual of Omaha",
+    "companyNumber": "",
+    "eAppLabel": "Mutual of Omaha",
+    "eAppUrl": null,
+    "section": "SureLC #3 — \"Pinnacle Life Group\""
+  },
+  {
+    "id": "carrier-5",
+    "carrier": "TransAmerica",
+    "companyNumber": "",
+    "eAppLabel": "TransAmerica",
+    "eAppUrl": null,
+    "section": "SureLC #3 — \"Pinnacle Life Group\""
+  },
+  {
+    "id": "carrier-6",
+    "carrier": "Foresters",
+    "companyNumber": "",
+    "eAppLabel": "Foresters",
+    "eAppUrl": null,
+    "section": "SureLC #3 — \"Pinnacle Life Group\""
+  },
+  {
+    "id": "carrier-7",
+    "carrier": "Kansas City Life",
+    "companyNumber": "",
+    "eAppLabel": "Kansas City Life",
+    "eAppUrl": null,
+    "section": "SureLC #3 — \"Pinnacle Life Group\""
+  },
+  {
+    "id": "carrier-8",
+    "carrier": "United Home Life",
+    "companyNumber": "",
+    "eAppLabel": "United Home Life",
+    "eAppUrl": null,
+    "section": "Automatic"
+  },
+  {
+    "id": "carrier-9",
+    "carrier": "Ethos",
+    "companyNumber": "",
+    "eAppLabel": "Ethos",
+    "eAppUrl": null,
+    "section": "Automatic"
+  },
+  {
+    "id": "carrier-10",
+    "carrier": "CICA",
+    "companyNumber": "",
+    "eAppLabel": "CICA",
+    "eAppUrl": null,
+    "section": "Automatic"
+  }
+]

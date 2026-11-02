@@ -74,12 +74,14 @@ describe("buildCarrierApplicationsDescription", () => {
     expect(buildCarrierApplicationsDescription([])).toBeNull();
   });
 
-  it("does not send agents to SureLC for unassigned carriers or Ethos", () => {
+  it("does not send agents to SureLC for unassigned or automatic carriers", () => {
     const description = buildCarrierApplicationsDescription([
       carrier("ethos", "Ethos", ""), carrier("gtl", "Guarantee Trust Life", ""),
       carrier("transamerica", "Transamerica", "SureLC #3"),
+      carrier("cica", "CICA", "SureLC #1"),
     ]);
-    expect(description).toContain("Ethos: links are sent to your PNCL email automatically");
+    expect(description).toContain("Ethos and CICA: links are sent to your PNCL email automatically");
+    expect(description).not.toContain("SureLC #1");
     expect(description).toContain("SureLC #3: Transamerica");
     expect(description).not.toContain("Guarantee Trust Life");
   });
