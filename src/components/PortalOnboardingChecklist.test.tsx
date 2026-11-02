@@ -3,6 +3,11 @@ import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import PortalOnboardingChecklist from "@/components/PortalOnboardingChecklist";
 import type { PortalTodo } from "@/lib/portal-todos";
+import carriers from "@/test/fixtures/published-carriers.json";
+
+vi.mock("@/hooks/usePortalCarriers", () => ({
+  usePortalCarriers: () => ({ carriers, loading: false, error: null, reload: vi.fn() }),
+}));
 
 function todo(overrides: Partial<PortalTodo>): PortalTodo {
   return {

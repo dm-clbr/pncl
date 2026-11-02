@@ -2,6 +2,10 @@ import type { PortalCarrier } from "@/lib/portal-carriers";
 
 export const CARRIER_APPLICATIONS_TODO_ID = "carrier_applications";
 
+export function isAutomaticCarrier(name: string): boolean {
+  return /^(cica|ethos|united home life)$/i.test(name.trim());
+}
+
 type CarrierSection = {
   title: string;
   carrierNames: string[];
@@ -15,7 +19,7 @@ function groupCarriersBySection(carriers: PortalCarrier[]): CarrierSection[] {
     const carrierName = carrier.carrier.trim();
     if (!carrierName) continue;
 
-    const automatic = /^(ethos|united home life)$/i.test(carrierName);
+    const automatic = isAutomaticCarrier(carrierName);
     const title = automatic ? "Automatic" : carrier.section.trim();
     // The carrier directory also contains carriers outside these three accounts.
     // Never present an unassigned carrier as a SureLC application requirement.
