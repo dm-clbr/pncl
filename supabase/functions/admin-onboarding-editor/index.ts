@@ -66,7 +66,7 @@ serve(async (req) => {
       if (
         !(file instanceof File) ||
         !["loa", "ibo"].includes(String(designation)) ||
-        !["ica", "w9", "direct_deposit", "comp_agreement", "welcome_video", "surelc_video", "video", "document"].includes(
+        !["ica", "w9", "direct_deposit", "comp_agreement", "signing_document", "welcome_video", "surelc_video", "video", "document"].includes(
           String(kind),
         )
       )
@@ -98,7 +98,7 @@ serve(async (req) => {
           isSigningDocumentKind(String(kind)) &&
           (pdf.getPageCount() < 1 || pdf.getPageCount() > 100)
         )
-          throw new Error("ICA documents must contain 1–100 pages.");
+          throw new Error("Signing documents must contain 1–100 pages.");
       }
       if (
         extension === "mp4" &&
@@ -119,7 +119,7 @@ serve(async (req) => {
         )
       )
         throw new Error("Invalid Word file.");
-      const signingMode = isSigningDocumentKind(String(kind)) ? await inspectSigningPdf(bytes, kind as "ica" | "w9" | "direct_deposit" | "comp_agreement") : null;
+      const signingMode = isSigningDocumentKind(String(kind)) ? await inspectSigningPdf(bytes, kind as "ica" | "w9" | "direct_deposit" | "comp_agreement" | "signing_document") : null;
       const id = crypto.randomUUID();
       const path = `${designation}/${kind}/${id}.${extension}`;
       const sha256 = Array.from(
@@ -285,7 +285,7 @@ serve(async (req) => {
     }
     if (body.action !== "saveStep") throw new Error("Unknown editor action.");
     const row = body.row;
-    const todo = validateUpsertPortalTodoPayload(row);
+    const todo = validateUpsertPortalTodoPayload(row, { signatureCompletion: row?.contentType === "signing_document" });
     const previous = todo.id ? all.find((item) => item.id === todo.id) : null;
     if (todo.id && !previous)
       throw new Error("Step no longer exists. Reload the page.");
@@ -342,7 +342,7 @@ serve(async (req) => {
     }
     if (
       todo.published &&
-      ["ica", "w9", "direct_deposit", "comp_agreement", "video", "welcome_video", "surelc_video", "document"].includes(
+      ["ica", "w9", "direct_deposit", "comp_agreement", "signing_document", "video", "welcome_video", "surelc_video", "document"].includes(
         row.contentType,
       )
     ) {

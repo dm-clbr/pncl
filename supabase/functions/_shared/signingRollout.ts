@@ -26,9 +26,9 @@ export async function signingRowsForUser<T extends { slug: string }>(client: Sup
   if (enabled) return { rows, enabled };
   return { rows: legacySigningRows(rows, rollout), enabled };
 }
-export function legacySigningRows<T extends { slug: string }>(rows: T[], rollout: SigningRollout): T[] {
+export function legacySigningRows<T extends { slug: string; content_type?: string }>(rows: T[], rollout: SigningRollout): T[] {
   const saved = new Map(rollout.legacy_steps.map(row => [row.slug, row as unknown as T]));
-  const result = rows.map(row => saved.get(row.slug) ?? row);
+  const result = rows.filter(row => row.content_type !== "signing_document").map(row => saved.get(row.slug) ?? row);
   for (const [slug, row] of saved) if (!result.some(item => item.slug === slug)) result.push(row);
   return result.map(row => ({ ...row, uploaded_signing: false }));
 }

@@ -29,6 +29,12 @@ describe("Onboarding audience settings", () => {
     expect(payload.showLoa).toBeUndefined();expect(payload.showIbo).toBeUndefined();
     expect(() => validateUpsertPortalTodoPayload({ ...payload, showIbo: "false" })).toThrow("boolean");
   });
+  it("allows signature completion only when the signing editor explicitly enables it", () => {
+    const row = { title: "Agreement", description: "Sign the PDF", completionType: "auto", autoKey: null, contentType: "signing_document" };
+    expect(() => validateUpsertPortalTodoPayload(row)).toThrow("auto-completion rule");
+    expect(validateUpsertPortalTodoPayload(row, { signatureCompletion: true })).toMatchObject({ completionType: "auto", autoKey: null });
+    expect(validateUpsertPortalTodoPayload({ ...row, completionType: "agent", autoKey: "account_created" }, { signatureCompletion: true })).toMatchObject({ completionType: "auto", autoKey: null });
+  });
   it.each([null, {}, { steps: [] }, { steps: [{ id, showLoa: true }] }, { steps: [{ id: "bad", showLoa: true, showIbo: true }] }, { steps: [{ id, showLoa: true, showIbo: true }, { id, showLoa: false, showIbo: false }] }])("rejects malformed bulk settings %j", (input) => {
     expect(() => validatePortalTodoAudiences(input)).toThrow();
   });
@@ -49,7 +55,7 @@ describe("Onboarding audience settings", () => {
       const query = { single: async () => ({ data: { enabled: true, legacy_ica_sources: {}, legacy_steps: [] }, error: null }), select: () => query, eq: () => query, order: () => query, in: () => query, then: (resolve: (v: unknown) => void) => resolve({ data, error: null }) };
       return query;
     };
-    const progress = await computePortalTodoProgressByUserId({ from } as never, [
+    const progress = await computePortalTodoProgressByUserId({ from, rpc: async () => ({ data: [], error: null }) } as never, [
       { id: "ibo-agent", user_metadata: { completed_portal_todos: { done: true } } },
       { id: "loa-agent", user_metadata: { completed_portal_todos: { done: true } } },
     ]);

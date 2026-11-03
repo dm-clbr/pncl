@@ -40,7 +40,7 @@ serve(async (req) => {
 
     const { data: todoRow, error: todoError } = await adminClient
       .from("portal_todos")
-      .select("slug, title")
+      .select("slug, title, content_type")
       .eq("slug", payload.slug)
       .maybeSingle();
 
@@ -51,6 +51,7 @@ serve(async (req) => {
     if (!todoRow) {
       return errorResponse("To-do not found", 404, "not_found");
     }
+    if (todoRow.content_type === "signing_document") return errorResponse("This step is completed by signing its document.", 400);
 
     const { data: userData, error: userError } = await adminClient.auth.admin.getUserById(
       payload.userId,

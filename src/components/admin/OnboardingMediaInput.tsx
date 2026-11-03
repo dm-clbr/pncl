@@ -18,6 +18,7 @@ export default function OnboardingMediaInput({
   limit,
   onChange,
   onBusy,
+  openFields = false,
 }: {
   designation: "loa" | "ibo";
   kind: StepContentType;
@@ -26,6 +27,7 @@ export default function OnboardingMediaInput({
   limit: number;
   onChange: (media?: FlowMedia) => void;
   onBusy: (busy: boolean) => void;
+  openFields?: boolean;
 }) {
   const isVideo = kind.includes("video");
   const [mode, setMode] = useState<"file" | "link">(media?.mode ?? "file");
@@ -38,6 +40,12 @@ export default function OnboardingMediaInput({
   const [drag, setDrag] = useState(false);
   const [preview, setPreview] = useState(false);
   const [editingFields, setEditingFields] = useState(false);
+  useEffect(() => {
+    if (!openFields) return;
+    // The containing step dialog must enter the browser's top layer first.
+    const frame = requestAnimationFrame(() => setEditingFields(true));
+    return () => cancelAnimationFrame(frame);
+  }, [openFields]);
   const input = useRef<HTMLInputElement>(null);
   const controller = useRef<AbortController | null>(null);
   const onBusyRef = useRef(onBusy);

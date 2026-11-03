@@ -55,3 +55,7 @@
 .document-login-action.secondary { background: transparent; color: inherit; border-color: #ffffff40; }
 .document-login-action:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
 .document-login-notice .portal-sheet-title:focus { outline: none; }
+
+.document-library-table td:first-child { min-width: 220px; }
+.document-library-table .document-actions { max-width: 460px; gap: 8px; }
+.document-library-table .document-actions > * { min-height: 38px; font-size: 13px; }

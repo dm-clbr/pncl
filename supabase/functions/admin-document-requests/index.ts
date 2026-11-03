@@ -3,9 +3,9 @@ import { AdminAuthError, requireAdmin } from "../_shared/adminAuth.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { documentAudience, documentFilters, documentId, documentDelivery, documentRolloutOrder } from "../_shared/documentRequestRules.ts";
 import { DOCUMENT_BUCKET, documentUrl } from "../_shared/documentRequests.ts";
-import { decodeSigningPdf, sha256 } from "../_shared/documentSigningPdf.ts";
 import { getEmailDomain } from "../_shared/onboarding.ts";
 import { sendDocumentNotifications } from "../_shared/documentNotifications.ts";
+import { onboardingDocumentSource } from "../_shared/onboardingDocumentLibrary.ts";
 
 serve(async req => {
   const cors = handleCors(req); if (cors) return cors;
@@ -13,6 +13,21 @@ serve(async req => {
   try {
     const { user, adminClient: client } = await requireAdmin(req);
     const body = await req.json();
+    if (body.action === "source") return jsonResponse(await onboardingDocumentSource(client, body));
+    if (body.action === "publish_linked") {
+      const source = await onboardingDocumentSource(client, body);
+      const filters = documentFilters(body.filters);
+      if (filters.designation !== source.flow) throw new Error("Recipients must match the document flow.");
+      if (!Array.isArray(body.recipientIds) || body.recipientIds.length > 20000) throw new Error("Review the recipient list before sending.");
+      const { data, error } = await client.rpc("publish_onboarding_document_rollout", {
+        p_request: documentId(body.id), p_admin: user.id, p_step: source.stepId, p_flow: source.flow,
+        p_asset: source.assetId, p_expected_asset: body.expectedAssetId === null ? null : documentId(body.expectedAssetId),
+        p_filters: filters, p_recipients: [...new Set(body.recipientIds.map(documentId))],
+        p_delivery: documentDelivery(body.deliveryMode), p_order: documentRolloutOrder(body.rolloutOrder), p_domain: getEmailDomain(),
+      });
+      if (error) throw error;
+      return jsonResponse({ id: data });
+    }
     if (body.action === "list" || body.action === "report") {
       const { data, error } = await client.rpc("document_request_report", { p_campaign: body.action === "report" ? documentId(body.id) : null });
       if (error) throw error;
@@ -25,41 +40,7 @@ serve(async req => {
       return jsonResponse({ recipients: data });
     }
     if (body.action === "publish") {
-      const id = documentId(body.id);
-      const { data: existing, error: existingError } = await client.from("portal_document_campaigns").select("id, created_by").eq("id", id).maybeSingle();
-      if (existingError) throw existingError;
-      if (existing) {
-        if (existing.created_by !== user.id) throw new Error("Document ID already in use.");
-        return jsonResponse({ id: existing.id });
-      }
-      const title = typeof body.title === "string" ? body.title.trim() : "";
-      const description = typeof body.description === "string" ? body.description.trim() : "";
-      if (!title || title.length > 160 || description.length > 2000) throw new Error("Enter a title up to 160 characters and instructions up to 2,000 characters.");
-      const filters = documentFilters(body.filters);
-      const audience = documentAudience(body.onboardingAudience);
-      if (typeof body.onboardingEnabled !== "boolean") throw new Error("Choose an onboarding setting.");
-      const delivery = documentDelivery(body.deliveryMode);
-      const order = documentRolloutOrder(body.rolloutOrder);
-      if (!Array.isArray(body.recipientIds) || body.recipientIds.length > 20000) throw new Error("Review the recipient list before sending (maximum 20,000 per rollout).");
-      const recipients = [...new Set(body.recipientIds.map(documentId))];
-      if (!recipients.length && !body.onboardingEnabled) throw new Error("Select at least one agent or enable future onboarding.");
-      const bytes = await decodeSigningPdf(body.pdfBase64);
-      const hash = await sha256(bytes);
-      // A unique upload per attempt prevents concurrent retries overwriting the source PDF.
-      const path = `editions/${id}/${crypto.randomUUID()}.pdf`;
-      const { error: uploadError } = await client.storage.from(DOCUMENT_BUCKET).upload(path, bytes, { contentType: "application/pdf", upsert: false });
-      if (uploadError) throw uploadError;
-      const { data, error } = await client.rpc("publish_document_request", {
-        p_id: id, p_admin: user.id, p_title: title, p_description: description, p_path: path, p_hash: hash,
-        p_filters: filters, p_recipients: recipients, p_onboarding: body.onboardingEnabled,
-        p_audience: audience, p_delivery: delivery, p_order: order, p_domain: getEmailDomain(),
-      });
-      // A network error can mean the transaction committed. Only remove a redundant
-      // upload after positively verifying which immutable path the database retained.
-      const { data: saved } = await client.from("portal_document_campaigns").select("pdf_path").eq("id", id).maybeSingle();
-      if (saved && saved.pdf_path !== path) await client.storage.from(DOCUMENT_BUCKET).remove([path]);
-      if (error) throw error;
-      return jsonResponse({ id: data });
+      return errorResponse("Add the signing PDF to an onboarding step, then request signatures from that document.", 400);
     }
     if (body.action === "release_current") {
       const { error } = await client.rpc("release_document_current_agents", { p_id: documentId(body.id), p_admin: user.id });
@@ -76,16 +57,20 @@ serve(async req => {
     }
     if (body.action === "url") {
       let path: string;
+      let bucket = DOCUMENT_BUCKET;
       if (body.requestId) {
-        const { data, error } = await client.from("portal_document_requests").select("signed_pdf_path, campaign:portal_document_campaigns(pdf_path)").eq("id", documentId(body.requestId)).single();
+        const { data, error } = await client.from("portal_document_requests").select("signed_pdf_path, campaign:portal_document_campaigns(pdf_path,source_bucket)").eq("id", documentId(body.requestId)).eq("campaign_id", documentId(body.id)).single();
         if (error) throw error;
-        path = data.signed_pdf_path ?? (data.campaign as unknown as { pdf_path: string }).pdf_path;
+        const campaign = data.campaign as unknown as { pdf_path: string; source_bucket: string };
+        path = data.signed_pdf_path ?? campaign.pdf_path;
+        if (!data.signed_pdf_path) bucket = campaign.source_bucket;
       } else {
-        const { data, error } = await client.from("portal_document_campaigns").select("pdf_path").eq("id", documentId(body.id)).single();
+        const { data, error } = await client.from("portal_document_campaigns").select("pdf_path,source_bucket").eq("id", documentId(body.id)).single();
         if (error) throw error;
         path = data.pdf_path;
+        bucket = data.source_bucket;
       }
-      return jsonResponse({ url: await documentUrl(client, path) });
+      return jsonResponse({ url: await documentUrl(client, path, bucket) });
     }
     if (body.action === "notify") {
       const id = documentId(body.id);

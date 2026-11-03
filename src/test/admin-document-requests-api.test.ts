@@ -1,10 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { webcrypto } from "node:crypto";
-import { PDFDocument } from "pdf-lib";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EMPTY_DOCUMENT_FILTERS } from "../../supabase/functions/_shared/documentRequestRules";
-const state = vi.hoisted(() => ({ handler: null as unknown as (req: Request) => Promise<Response>, auth: vi.fn(), upload: vi.fn(), rpc: vi.fn(), single: vi.fn(), remove: vi.fn() }));
+const state = vi.hoisted(() => ({ handler: null as unknown as (req: Request) => Promise<Response>, auth: vi.fn(), rpc: vi.fn(), single: vi.fn(), storage: vi.fn(), from: vi.fn() }));
 vi.mock("https://deno.land/std@0.177.0/http/server.ts", () => ({ serve: (handler: typeof state.handler) => { state.handler = handler; } }));
-vi.mock("https://esm.sh/pdf-lib@1.17.1", async () => import("pdf-lib"));
 vi.mock("../../supabase/functions/_shared/adminAuth.ts", () => ({ requireAdmin: state.auth, AdminAuthError: class extends Error { status = 403; code = "forbidden"; } }));
 vi.mock("../../supabase/functions/_shared/onboarding.ts", () => ({ getEmailDomain: () => "thepncl.com" }));
 vi.mock("../../supabase/functions/_shared/resend.ts", () => ({ getFromAddress: () => "PNCL <qa@example.invalid>", getResendApiKey: () => "test-key" }));
@@ -12,61 +9,51 @@ import "../../supabase/functions/admin-document-requests/index";
 import { AdminAuthError } from "../../supabase/functions/_shared/adminAuth";
 const id = "b0000000-0000-0000-0000-000000000001";
 const admin = "a0000000-0000-0000-0000-000000000001";
-const query = { select: () => query, eq: () => query, maybeSingle: state.single };
-const client = { from: () => query, rpc: state.rpc, storage: { from: () => ({ upload: state.upload, remove: state.remove }) } };
+const query = { select: () => query, eq: () => query, single: state.single };
+const client = { from: state.from, rpc: state.rpc, storage: { from: state.storage } };
 const request = (body: unknown) => new Request("https://example.invalid", { method: "POST", body: JSON.stringify(body) });
+const input = { action: "publish_linked", id, stepId: id, flow: "loa", assetId: id, expectedAssetId: null, filters: { ...EMPTY_DOCUMENT_FILTERS, designation: "loa" }, recipientIds: [admin], deliveryMode: "both", rolloutOrder: "current_first" };
 beforeEach(() => {
-  vi.clearAllMocks(); vi.stubGlobal("crypto", webcrypto);
+  vi.resetAllMocks();
   state.auth.mockResolvedValue({ user: { id: admin }, adminClient: client });
-  state.single.mockResolvedValue({ data: null, error: null });
+  state.from.mockReturnValue(query);
+  state.single.mockResolvedValueOnce({ data: { id, slug: "ica_setup", title: "ICA", description: "Sign", content_type: "ica", flow_content: {}, published: true, show_loa: true }, error: null })
+    .mockResolvedValue({ data: { id, designation: "loa", kind: "ica", path: "ica.pdf", filename: "ica.pdf" }, error: null });
+  state.storage.mockReturnValue({ getPublicUrl: () => ({ data: { publicUrl: "https://example.invalid/ica.pdf" } }) });
   state.rpc.mockResolvedValue({ data: id, error: null });
-  state.upload.mockResolvedValue({ error: null });
 });
-afterEach(() => vi.unstubAllGlobals());
-async function payload() {
-  const pdf = await PDFDocument.create(); pdf.addPage();
-  return { action: "publish", id, title: "Test addendum", description: "Test instructions", filters: EMPTY_DOCUMENT_FILTERS,
-    recipientIds: ["a0000000-0000-0000-0000-000000000002"], onboardingEnabled: true, onboardingAudience: "ibo", deliveryMode: "both", rolloutOrder: "current_first",
-    pdfBase64: Buffer.from(await pdf.save()).toString("base64") };
-}
-describe("admin document endpoint", () => {
-  it("rejects unauthorized calls before accessing recipients or files", async () => {
+describe("linked document admin endpoint", () => {
+  it("rejects unauthorized calls before reading documents or recipients", async () => {
     state.auth.mockRejectedValue(new AdminAuthError("Full admin access required"));
-    expect((await state.handler(request({ action: "preview", filters: EMPTY_DOCUMENT_FILTERS }))).status).toBe(403);
-    expect(state.rpc).not.toHaveBeenCalled(); expect(state.upload).not.toHaveBeenCalled();
+    expect((await state.handler(request(input))).status).toBe(403);
+    expect(state.from).not.toHaveBeenCalled(); expect(state.rpc).not.toHaveBeenCalled();
   });
-  it("persists only the reviewed recipient IDs and a hash of the immutable PDF", async () => {
-    const input = await payload();
+  it("publishes a source reference and exact reviewed recipients without reuploading", async () => {
     expect((await state.handler(request(input))).status).toBe(200);
-    expect(state.upload).toHaveBeenCalledWith(expect.stringMatching(/^editions\//), expect.any(Uint8Array), { contentType: "application/pdf", upsert: false });
-    expect(state.rpc).toHaveBeenCalledWith("publish_document_request", expect.objectContaining({ p_recipients: input.recipientIds, p_onboarding: true, p_delivery: "both", p_order: "current_first", p_audience: "ibo", p_hash: expect.stringMatching(/^[a-f0-9]{64}$/) }));
+    expect(state.rpc).toHaveBeenCalledWith("publish_onboarding_document_rollout", expect.objectContaining({ p_step: id, p_asset: id, p_expected_asset: null, p_flow: "loa", p_recipients: [admin], p_order: "current_first", p_delivery: "both" }));
+    expect(state.storage).toHaveBeenCalledWith("onboarding-content");
   });
-  it("returns an existing publication on retry without reuploading or sending", async () => {
-    state.single.mockResolvedValue({ data: { id, created_by: admin }, error: null });
-    expect((await state.handler(request({ action: "publish", id }))).status).toBe(200);
-    expect(state.upload).not.toHaveBeenCalled(); expect(state.rpc).not.toHaveBeenCalled();
-  });
-  it("does not publish bad PDFs or when storage fails", async () => {
-    const input = await payload();
-    expect((await state.handler(request({ ...input, pdfBase64: btoa("not a pdf") }))).status).toBe(400);
-    state.upload.mockResolvedValueOnce({ error: new Error("Storage unavailable") });
+  it("rejects files from another flow before publication", async () => {
+    state.single.mockReset().mockResolvedValueOnce({ data: { id, content_type: "ica", flow_content: {} }, error: null }).mockResolvedValue({ data: { id, designation: "ibo", kind: "ica" }, error: null });
     expect((await state.handler(request(input))).status).toBe(400);
     expect(state.rpc).not.toHaveBeenCalled();
   });
-  it("does not delete a potentially committed source on an ambiguous database failure", async () => {
-    state.rpc.mockResolvedValue({ error: new Error("Network interrupted") });
-    expect((await state.handler(request(await payload()))).status).toBe(400);
-    expect(state.remove).not.toHaveBeenCalled();
+  it("cannot broaden the PDF audience to another flow", async () => {
+    expect((await state.handler(request({ ...input, filters: EMPTY_DOCUMENT_FILTERS }))).status).toBe(400);
+    expect(state.rpc).not.toHaveBeenCalled();
   });
-  it("rejects invalid delivery or rollout settings before uploading", async () => {
-    const input = await payload();
-    expect((await state.handler(request({ ...input, deliveryMode: "typo" }))).status).toBe(400);
-    expect((await state.handler(request({ ...input, rolloutOrder: "typo" }))).status).toBe(400);
-    expect(state.upload).not.toHaveBeenCalled();
+  it("rejects detached uploads so every new rollout starts at an onboarding step", async () => {
+    const response = await state.handler(request({ action: "publish", id, pdfBase64: "unrelated" }));
+    expect(response.status).toBe(400); expect(await response.json()).toMatchObject({ message: expect.stringContaining("onboarding step") });
+    expect(state.rpc).not.toHaveBeenCalled(); expect(state.storage).not.toHaveBeenCalled();
   });
-  it("releases a stage through the admin-only transaction", async () => {
+  it("surfaces stale-source errors without deleting the shared source", async () => {
+    state.rpc.mockResolvedValue({ error: new Error("The step PDF changed. Reload and review the rollout again.") });
+    const response = await state.handler(request(input));
+    expect(response.status).toBe(400); expect(await response.json()).toMatchObject({ message: expect.stringContaining("step PDF changed") });
+  });
+  it("releases a held stage through the admin transaction", async () => {
     expect((await state.handler(request({ action: "release_current", id }))).status).toBe(200);
     expect(state.rpc).toHaveBeenCalledWith("release_document_current_agents", { p_id: id, p_admin: admin });
   });
-
 });

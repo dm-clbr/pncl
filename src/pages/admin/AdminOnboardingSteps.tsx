@@ -2,8 +2,8 @@ import SigningActivationPanel from "@/components/admin/SigningActivationPanel";
 import { isSigningDocumentKind } from "../../../supabase/functions/_shared/onboardingSigningRules";
 import OnboardingStepPreview from "@/components/admin/OnboardingStepPreview";
 import { supportingFilesForFlow } from "../../../supabase/functions/_shared/onboardingAttachments";
-import { Fragment, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Fragment, useEffect, useState, useRef } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { Portal as TooltipPortal } from "@radix-ui/react-tooltip";
 import {
   Tooltip,
@@ -85,6 +85,14 @@ export default function AdminOnboardingSteps() {
   const [search, setSearch] = useState("");
   const [stage, setStage] = useState("all");
   const [flow, setFlow] = useState("all");
+  const [params] = useSearchParams();
+  const openedStep = useRef("");
+  const requestedStep = params.get("step");
+  useEffect(() => {
+    if (!requestedStep || openedStep.current === requestedStep || !data) return;
+    const selected = data.rows.find(row => row.id === requestedStep);
+    if (selected) { setEditing(selected); openedStep.current = requestedStep; }
+  }, [requestedStep, data]);
   useEffect(() => {
     document.title = "Onboarding steps — PNCL Admin";
   }, []);

@@ -45,6 +45,7 @@ export const CONTENT_LABELS: Record<StepContentType, string> = {
   w9: "W-9 signing PDF",
   direct_deposit: "Direct deposit signing PDF",
   comp_agreement: "Compensation signing PDF",
+  signing_document: "Signing PDF",
   welcome_video: "Welcome video",
   surelc_video: "SureLC video",
   document: "Document",
@@ -196,6 +197,13 @@ async function localPut(key: string, value: unknown) {
   });
 }
 const previewUrls = new Map<string, string>();
+export async function localEditorMedia(assetId: string): Promise<FlowMedia | undefined> {
+  if (!isLocalEditor()) return undefined;
+  const blob = await localGet<File>(assetId);
+  if (!blob) return undefined;
+  if (!previewUrls.has(assetId)) previewUrls.set(assetId, URL.createObjectURL(blob));
+  return { mode: "file", assetId, url: previewUrls.get(assetId)!, filename: blob.name ?? "document.pdf", size: blob.size };
+}
 export async function fetchEditor(token: string): Promise<EditorData> {
   if (!isLocalEditor()) return request(token);
   let data = await localGet<EditorData>("editor");

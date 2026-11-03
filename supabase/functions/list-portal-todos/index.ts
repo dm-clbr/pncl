@@ -18,6 +18,7 @@ import {
 import { logOnboarding } from "../_shared/logger.ts";
 import { signingRowsForUser } from "../_shared/signingRollout.ts";
 import { userHasCompAttachment } from "../_shared/portalCompAttachments.ts";
+import { mergeDocumentChecklist } from "../_shared/documentChecklist.ts";
 
 
 serve(async (req) => {
@@ -48,7 +49,7 @@ serve(async (req) => {
     const signing = await signingRowsForUser(adminClient, (data ?? []) as PortalTodoRecord[], user.id);
     const rows = filterAgentTodos(signing.rows.filter(row => row.published), designations.get(user.id));
     const hasComp = signing.enabled || !rows.some(row => row.slug === "comp_agreement") || await userHasCompAttachment(adminClient, user.id);
-    const visibleRows = hasComp ? rows : rows.filter(row => row.slug !== "comp_agreement");
+    const visibleRows = (hasComp ? rows : rows.filter(row => row.slug !== "comp_agreement")).filter(row => row.content_type !== "signing_document");
     const autoKeys = new Set(
       visibleRows
         .filter((row) => row.completion_type === "auto" && row.auto_key)
@@ -72,7 +73,8 @@ serve(async (req) => {
     }));
     const rank = (id: string) => { const index = rules.portalOrder.indexOf(canonicalStepSlug(id)); return index < 0 ? 10000 : index; };
     todos.sort((a,b) => rank(a.id) - rank(b.id));
-    return jsonResponse({ todos: [...todos, ...await documentRequestTodos(adminClient, user.id)] });
+    const documentOrder = { ...rules, portalOrder: [...rules.portalOrder, ...rows.map(row => canonicalStepSlug(row.slug)).filter(slug => !rules.portalOrder.includes(slug))] };
+    return jsonResponse({ todos: mergeDocumentChecklist(todos, await documentRequestTodos(adminClient, user.id), documentOrder) });
   } catch (error) {
     if (error instanceof AdminAuthError) {
       return errorResponse(error.message, error.status, error.code);

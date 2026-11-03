@@ -24,12 +24,12 @@ serve(async req => {
     if (error) throw error;
     if (!data) return errorResponse("Document request not found", 404);
     const row = data as unknown as DocumentRequest;
-    if (body.action === "url") return jsonResponse({ url: await documentUrl(client, row.signed_pdf_path ?? row.campaign.pdf_path) });
+    if (body.action === "url") return jsonResponse({ url: await documentUrl(client, row.signed_pdf_path ?? row.campaign.pdf_path, row.signed_pdf_path ? DOCUMENT_BUCKET : row.campaign.source_bucket ?? DOCUMENT_BUCKET) });
     if (body.action !== "sign") return errorResponse("Unknown document action", 400);
     if (row.signed_at) return jsonResponse({ ok: true });
     const name = validateDocumentSignature(body.signatureName, body.accepted);
     if (body.documentHash !== row.campaign.pdf_sha256) throw new Error("Reload and review the current document before signing.");
-    const { data: file, error: downloadError } = await client.storage.from(DOCUMENT_BUCKET).download(row.campaign.pdf_path);
+    const { data: file, error: downloadError } = await client.storage.from(row.campaign.source_bucket ?? DOCUMENT_BUCKET).download(row.campaign.pdf_path);
     if (downloadError || !file) throw new Error("Unable to load the document. Please retry.");
     const bytes = new Uint8Array(await file.arrayBuffer());
     if (await sha256(bytes) !== row.campaign.pdf_sha256) throw new Error("The document has changed. Contact PNCL support.");

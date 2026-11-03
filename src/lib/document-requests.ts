@@ -1,4 +1,5 @@
 import { getSupabaseConfig } from "@/lib/supabase";
+import { fetchEditor, isLocalEditor, localEditorMedia } from "./onboarding-editor";
 export { EMPTY_DOCUMENT_FILTERS, DOCUMENT_CONSENT, MAX_DOCUMENT_BYTES, validateDocumentSignature } from "../../supabase/functions/_shared/documentRequestRules";
 export type { DocumentAudience, DocumentFilters, DocumentDelivery, DocumentRolloutOrder } from "../../supabase/functions/_shared/documentRequestRules";
 import type { DocumentAudience, DocumentFilters, DocumentDelivery, DocumentRolloutOrder } from "../../supabase/functions/_shared/documentRequestRules";
@@ -10,6 +11,13 @@ export interface DocumentCampaign {
   onboarding_enabled: boolean; onboarding_audience: DocumentAudience; onboarding_pending: boolean;
   delivery_mode: DocumentDelivery; rollout_order: DocumentRolloutOrder; held_count: number; current_count: number;
   recipient_count: number; signed_count: number; email_pending_count: number;
+  onboarding_step_id?: string | null; onboarding_asset_id?: string | null; onboarding_flow?: "loa" | "ibo" | null;
+  rollout_request_id?: string | null;
+}
+export interface OnboardingDocumentSource {
+  stepId: string; stepSlug: string; title: string; description: string; flow: "loa" | "ibo";
+  assetId: string; currentAssetId: string | null; filename: string; kind: string; url: string;
+  published: boolean; visible: boolean;
 }
 export interface DocumentRecipientStatus {
   id: string; user_id: string; name: string; email: string; designation: "loa" | "ibo";
@@ -33,7 +41,33 @@ async function call<T>(token: string, endpoint: string, input: unknown): Promise
 export async function listDocumentCampaigns(token: string) {
   return (await call<{ rows: DocumentCampaign[] }>(token, "admin-document-requests", { action: "list" })).rows;
 }
+export async function getOnboardingDocumentSource(token: string, stepId: string, flow: string, assetId?: string) {
+  if (isLocalEditor()) {
+    const data = await fetchEditor(token);
+    const row = data.rows.find(row => row.id === stepId);
+    if (!row || (flow !== "loa" && flow !== "ibo")) throw new Error("Choose an onboarding document.");
+    const currentAssetId = row.flowContent[flow]?.assetId ?? null;
+    const media = await localEditorMedia(assetId ?? currentAssetId ?? "");
+    if (!media?.assetId) throw new Error("Upload and save the PDF in the local step editor first.");
+    return { stepId, stepSlug: row.slug, title: row.title, description: row.description, flow, assetId: media.assetId,
+      currentAssetId, filename: media.filename ?? "document.pdf", kind: row.contentType, url: media.url,
+      published: row.published, visible: flow === "loa" ? row.showLoa : row.showIbo } satisfies OnboardingDocumentSource;
+  }
+  return call<OnboardingDocumentSource>(token, "admin-document-requests", { action: "source", stepId, flow, assetId });
+}
+export async function publishLinkedDocumentRollout(token: string, input: {
+  id: string; stepId: string; flow: "loa" | "ibo"; assetId: string; expectedAssetId: string | null;
+  filters: DocumentFilters; recipientIds: string[]; deliveryMode: DocumentDelivery; rolloutOrder: DocumentRolloutOrder;
+}) {
+  if (isLocalEditor()) throw new Error("Local review cannot send signing requests.");
+  return call<{ id: string }>(token, "admin-document-requests", { action: "publish_linked", ...input });
+}
 export async function previewDocumentRecipients(token: string, filters: DocumentFilters) {
+  if (isLocalEditor()) return [
+    { id: "preview-alex", name: "Alex Morgan", email: "alex@example.invalid", designation: filters.designation === "ibo" ? "ibo" as const : "loa" as const, state: "UT", joined_at: "2026-01-10", ica_signed: true },
+    { id: "preview-bailey", name: "Bailey Taylor", email: "bailey@example.invalid", designation: filters.designation === "ibo" ? "ibo" as const : "loa" as const, state: "ID", joined_at: "2026-02-20", ica_signed: false },
+  ].filter(row => (!filters.search || `${row.name} ${row.email}`.toLowerCase().includes(filters.search.toLowerCase())) && (!filters.state || row.state === filters.state)
+    && (filters.ica === "all" || row.ica_signed === (filters.ica === "signed")) && (!filters.joinedAfter || row.joined_at >= filters.joinedAfter) && (!filters.joinedBefore || row.joined_at <= filters.joinedBefore));
   return (await call<{ recipients: DocumentRecipient[] }>(token, "admin-document-requests", { action: "preview", filters })).recipients;
 }
 export async function publishDocumentRequest(token: string, input: {

@@ -23,7 +23,7 @@ export async function submitNewProducer(adminClient: SupabaseClient, user: User)
   const designations = await loadAgentDesignations(adminClient, [user.id]);
   const designation = designations.get(user.id) ?? "loa";
   const signing = await signingRowsForUser(adminClient, (data ?? []) as PortalTodoRecord[], user.id);
-  let rows = filterAgentTodos(signing.rows.filter(row => row.published), designation);
+  let rows = filterAgentTodos(signing.rows.filter(row => row.published && row.content_type !== "signing_document"), designation);
   if (!signing.enabled && rows.some(row => row.slug === "comp_agreement") && !await userHasCompAttachment(adminClient, user.id)) rows = rows.filter(row => row.slug !== "comp_agreement");
   const submission = rows.find((row) => row.slug === "submit_new_producer");
   if (!submission) throw new Error("New Producer submission is unavailable. Contact PNCL support.");

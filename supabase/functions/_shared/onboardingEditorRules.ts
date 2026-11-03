@@ -39,6 +39,7 @@ export const CONTENT_TYPES = [
   "w9",
   "direct_deposit",
   "comp_agreement",
+  "signing_document",
   "welcome_video",
   "surelc_video",
   "document",

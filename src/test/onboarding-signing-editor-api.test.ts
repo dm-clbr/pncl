@@ -7,7 +7,8 @@ vi.mock("https://deno.land/std@0.177.0/http/server.ts", () => ({ serve: (handler
 vi.mock("https://esm.sh/pdf-lib@1.17.1", async () => import("pdf-lib"));
 vi.mock("../../supabase/functions/_shared/adminAuth.ts", () => ({ requireAdmin: async () => ({ user: { id: "admin" }, adminClient: client }), AdminAuthError: class extends Error {} }));
 vi.mock("../../supabase/functions/_shared/onboardingContent.ts", () => ({ loadOnboardingContent: vi.fn() }));
-vi.mock("../../supabase/functions/_shared/portalTodos.ts", () => ({ mapPortalTodoRecord: vi.fn(), validateUpsertPortalTodoPayload: (row: unknown) => row }));
+vi.mock("../../supabase/functions/_shared/usZipCounty.ts", () => ({ lookupCountyFromZip: vi.fn() }));
+vi.mock("../../supabase/functions/_shared/portalIca.ts", () => ({ listIcaSignedUserIds: vi.fn() }));
 import "../../supabase/functions/admin-onboarding-editor/index";
 const client = {
   storage: { getBucket: async () => ({ data: { file_size_limit: 50 * 1024 * 1024 }, error: null }), from: () => ({ upload: state.upload, getPublicUrl: (path: string) => ({ data: { publicUrl: `https://example.invalid/${path}` } }) }) },
@@ -21,7 +22,13 @@ const upload = (bytes: Uint8Array, kind: string) => {
   return state.handler({ method: "POST", headers: new Headers({ "content-type": "multipart/form-data" }), formData: async () => ({ get: (key: string) => fields.get(key) }) } as Request);
 };
 describe("Onboarding Steps signing uploads", () => {
-  it.each(["ica", "direct_deposit", "comp_agreement"])("registers an immutable %s source without publishing it before Save", async kind => {
+  it("can save an existing signing step again without a legacy auto-completion rule", async () => {
+    state.rows = [{ id: "custom-step", slug: "additional_agreement", content_type: "signing_document", completion_type: "auto", auto_key: null }];
+    const response = await state.handler(new Request("https://example.invalid", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "saveStep", row: { id: "custom-step", contentType: "signing_document", title: "Additional agreement", description: "Review and sign", completionType: "auto", autoKey: null, published: false, showLoa: true, showIbo: false, flowContent: {} } }) }));
+    expect(response.status).toBe(200);
+    expect(state.rpc).toHaveBeenCalledWith("save_onboarding_editor_step", { payload: expect.objectContaining({ contentType: "signing_document", completionType: "auto", autoKey: null }) });
+  });
+  it.each(["ica", "direct_deposit", "comp_agreement", "signing_document"])("registers an immutable %s source without publishing it before Save", async kind => {
     const pdf = await PDFDocument.create(); pdf.addPage();
     const response = await upload(await pdf.save(), kind);
     expect(response.status).toBe(200);

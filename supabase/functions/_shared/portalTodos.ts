@@ -89,7 +89,10 @@ function slugify(value: string): string {
     .slice(0, 64) || "todo";
 }
 
-export function validateUpsertPortalTodoPayload(body: unknown): UpsertPortalTodoPayload {
+export function validateUpsertPortalTodoPayload(
+  body: unknown,
+  options: { signatureCompletion?: boolean } = {},
+): UpsertPortalTodoPayload {
   if (!body || typeof body !== "object") {
     throw new Error("Invalid request body");
   }
@@ -127,15 +130,15 @@ export function validateUpsertPortalTodoPayload(body: unknown): UpsertPortalTodo
     : "on_board";
 
   const completionTypeInput = typeof data.completionType === "string" ? data.completionType.trim() : "";
-  const completionType = (PORTAL_TODO_COMPLETION_TYPES as readonly string[]).includes(completionTypeInput)
+  const completionType = options.signatureCompletion ? "auto" : (PORTAL_TODO_COMPLETION_TYPES as readonly string[]).includes(completionTypeInput)
     ? completionTypeInput as PortalTodoCompletionType
     : "agent";
 
   const autoKeyInput = typeof data.autoKey === "string" ? data.autoKey.trim() : "";
-  if (completionType === "auto" && !(PORTAL_TODO_AUTO_KEYS as readonly string[]).includes(autoKeyInput)) {
+  if (completionType === "auto" && !options.signatureCompletion && !(PORTAL_TODO_AUTO_KEYS as readonly string[]).includes(autoKeyInput)) {
     throw new Error("A valid auto-completion rule is required for auto-completed to-dos");
   }
-  const autoKey = completionType === "auto" ? autoKeyInput : null;
+  const autoKey = completionType === "auto" && !options.signatureCompletion ? autoKeyInput : null;
   const gated = typeof data.gated === "boolean" ? data.gated : false;
   for (const field of ["showLoa", "showIbo"]) {
     if (data[field] !== undefined && typeof data[field] !== "boolean") {
@@ -501,10 +504,6 @@ export async function computePortalTodoProgressByUserId(
   }
 
   const todos = (data ?? []) as PortalTodoRecord[];
-  if (todos.length === 0) {
-    return progressByUserId;
-  }
-
   const userIds = users.map((user) => user.id);
   const designations = await loadAgentDesignations(adminClient, userIds);
   const rollout = await loadSigningRollout(adminClient);
@@ -521,10 +520,13 @@ export async function computePortalTodoProgressByUserId(
       .map((row) => row.auto_key as string),
   );
   const autoSets = await computeAutoCompletionSets(adminClient, autoKeys, userIds);
+  const { data: documentRows, error: documentError } = await adminClient.rpc("onboarding_document_progress", { p_users: userIds });
+  if (documentError) throw new Error(documentError.message);
+  const documents = (documentRows ?? []) as Array<{ user_id: string; phase: PortalTodoPhase; signed_at: string | null }>;
 
   for (const user of users) {
     const enabled = rollout.enabled || previewUsers.has(user.id);
-    const applicableTodos = filterAgentTodos(enabled ? todos : oldTodos, designations.get(user.id));
+    const applicableTodos = filterAgentTodos((enabled ? todos : oldTodos).filter(row => row.content_type !== "signing_document"), designations.get(user.id));
     const visibleTodos = enabled || compUsers.has(user.id) ? applicableTodos : applicableTodos.filter(row => row.slug !== "comp_agreement");
     const completedMetadata = getCompletedTodosFromMetadata(user.user_metadata ?? undefined);
 
@@ -537,12 +539,14 @@ export async function computePortalTodoProgressByUserId(
           completedCount += 1;
         }
       }
+      const phaseDocuments = documents.filter(document => document.user_id === user.id && document.phase === phaseId);
+      completedCount += phaseDocuments.filter(document => !!document.signed_at).length;
 
       return {
         id: phaseId,
         label: PORTAL_TODO_PHASE_LABELS[phaseId],
         completedCount,
-        totalCount: phaseTodos.length,
+        totalCount: phaseTodos.length + phaseDocuments.length,
       };
     }).filter((phase) => phase.totalCount > 0);
 

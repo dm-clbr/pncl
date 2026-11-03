@@ -87,7 +87,7 @@ export async function downloadIcaAsset(client: SupabaseClient, asset: Onboarding
   return { bytes, assetId: asset.id, signingMode: asset.signing_mode, version: `custom-${asset.designation}-${asset.id}`, sha256 };
 }
 
-export async function loadPortalSigningSource(client: SupabaseClient, userId: string, kind: SigningDocumentKind, expectedId?: unknown) {
+export async function loadPortalSigningSource(client: SupabaseClient, userId: string, kind: Exclude<SigningDocumentKind, "signing_document">, expectedId?: unknown) {
   const designation = (await loadAgentDesignations(client, [userId])).get(userId) ?? "loa";
   const content = await loadOnboardingContent(client, designation);
   const key = { ica: "ica", w9: "w9", direct_deposit: "directDeposit", comp_agreement: "compAgreement" } as const;
