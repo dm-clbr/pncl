@@ -912,6 +912,10 @@ export default function PortalProfile() {
             hidden={activeTab !== "documents"}
           >
             <div className="portal-profile-docs">
+              <Pane title="Document requests">
+                <p className="portal-profile-lede">Review documents PNCL has asked you to sign and download your signed copies.</p>
+                <Link className="ptools-cta" to="/portal/documents">View document requests</Link>
+              </Pane>
               <Pane title="Saved documents">
                 <p className="portal-profile-lede">
                   The portal keeps a copy of each form you sign.

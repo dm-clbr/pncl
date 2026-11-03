@@ -1,5 +1,5 @@
 import IcaSignaturePad from "@/components/IcaSignaturePad";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface IcaSignatureModalProps {
   open: boolean;
@@ -8,34 +8,37 @@ interface IcaSignatureModalProps {
   onSave: (dataUrl: string) => void;
 }
 
-export default function IcaSignatureModal({
-  open,
+function SignatureEditor({
   initialImage = null,
   onClose,
   onSave,
 }: IcaSignatureModalProps) {
   const [draft, setDraft] = useState<string | null>(initialImage);
-
-  if (!open) return null;
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => { dialog.current?.showModal(); }, []);
 
   return (
-    <div className="ica-signature-modal-backdrop" role="presentation" onClick={onClose}>
-      <div
+      <dialog
+        ref={dialog}
         className="ica-signature-modal"
-        role="dialog"
-        aria-modal="true"
+        onCancel={onClose}
+        onClose={onClose}
         aria-labelledby="ica-signature-modal-title"
-        onClick={(event) => event.stopPropagation()}
+        onClick={event => {
+          if (event.target !== event.currentTarget) return;
+          const bounds = event.currentTarget.getBoundingClientRect();
+          if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) onClose();
+        }}
       >
         <h3 id="ica-signature-modal-title" className="ica-signature-modal-title">
-          Draw your signature
+          Sign your full first and last name
         </h3>
         <p className="ica-signature-modal-copy">
-          Use your cursor or finger to sign in the box below. This will appear on your agreement.
+          Use your cursor or finger to write your full first and last name. Initials or a line alone will be rejected. This signature will appear on your agreement.
         </p>
         <IcaSignaturePad
-          key={initialImage ?? "empty"}
-          onChange={(dataUrl) => setDraft(dataUrl)}
+          initialImage={initialImage}
+          onChange={setDraft}
         />
         <div className="ica-signature-modal-actions">
           <button type="button" className="ica-signature-modal-btn" onClick={onClose}>
@@ -52,7 +55,11 @@ export default function IcaSignatureModal({
             Save signature
           </button>
         </div>
-      </div>
-    </div>
+      </dialog>
   );
+}
+
+export default function IcaSignatureModal(props: IcaSignatureModalProps) {
+  // A fresh editor on each opening discards cancelled changes and shows the saved signature.
+  return props.open ? <SignatureEditor key={props.initialImage ?? "empty"} {...props} /> : null;
 }

@@ -1,6 +1,8 @@
+import { fillPdfInputFields } from "./pdfFieldValues.ts";
+import { normalizeIcaLegalName, validateIcaLegalName, icaInitialsError } from "./icaSigningRules.ts";
 import { PDFDocument, StandardFonts, rgb, type PDFForm } from "https://esm.sh/pdf-lib@1.17.1";
 import { ICA_FORM_FIELDS, assertValidDebitCheckInitial } from "./icaFormFields.ts";
-import { loadIcaTemplateBytes } from "./icaTemplate.ts";
+import { hasMappedIcaFields, signatureFieldRects, flattenSigningForm } from "./onboardingSigningPdf.ts";
 import { requirePersonalRecoveryEmail } from "./recoveryEmail.ts";
 
 // r2: template pre-fills the company counter-signature; contractor signature
@@ -18,6 +20,7 @@ export interface DebitCheckInitials {
 }
 
 export interface SubmitOnboardingContractPayload {
+  fieldValues?: Record<string, string | boolean>;
   legalName: string;
   personalEmail: string;
   signatureName: string;
@@ -119,10 +122,12 @@ function normalizeRequiredString(value: unknown, field: string): string {
   return value.trim();
 }
 
-function normalizeInitial(value: unknown, field: string): string {
+function normalizeInitial(value: unknown, field: string, legalName: string): string {
   if (typeof value !== "string") {
     throw new Error(`${field} is required`);
   }
+  const error = icaInitialsError(value, legalName, field);
+  if (error) throw new Error(error);
   return assertValidDebitCheckInitial(value, field);
 }
 
@@ -132,11 +137,13 @@ export function validateSubmitOnboardingContractPayload(body: unknown, customTem
   }
 
   const data = body as Record<string, unknown>;
-  const legalName = normalizeRequiredString(data.legalName, "legalName");
+  const legalName = normalizeIcaLegalName(normalizeRequiredString(data.legalName, "legalName"));
+  const nameError = validateIcaLegalName(legalName);
+  if (nameError) throw new Error(nameError);
   const personalEmail = requirePersonalRecoveryEmail(
     normalizeRequiredString(data.personalEmail, "personalEmail"),
   );
-  const signatureName = normalizeRequiredString(data.signatureName, "signatureName");
+  const signatureName = normalizeIcaLegalName(normalizeRequiredString(data.signatureName, "signatureName"));
   const signatureImageBase64 = normalizeSignatureImageBase64(data.signatureImageBase64);
   if (legalName.length > 200 || signatureName.length > 200 || personalEmail.length > 254 || signatureImageBase64.length > 500_000) throw new Error("Agreement fields exceed the allowed length.");
 
@@ -155,11 +162,11 @@ export function validateSubmitOnboardingContractPayload(body: unknown, customTem
 
   const initialsObj = initialsRaw as Record<string, unknown>;
   const debitCheckInitials: DebitCheckInitials = customTemplate ? { a: "", b: "", c: "", d: "", e: "" } : {
-    a: normalizeInitial(initialsObj.a, "Debit-Check initial A"),
-    b: normalizeInitial(initialsObj.b, "Debit-Check initial B"),
-    c: normalizeInitial(initialsObj.c, "Debit-Check initial C"),
-    d: normalizeInitial(initialsObj.d, "Debit-Check initial D"),
-    e: normalizeInitial(initialsObj.e, "Debit-Check initial E"),
+    a: normalizeInitial(initialsObj.a, "Debit-Check initial A", legalName),
+    b: normalizeInitial(initialsObj.b, "Debit-Check initial B", legalName),
+    c: normalizeInitial(initialsObj.c, "Debit-Check initial C", legalName),
+    d: normalizeInitial(initialsObj.d, "Debit-Check initial D", legalName),
+    e: normalizeInitial(initialsObj.e, "Debit-Check initial E", legalName),
   };
 
   if (data.agreementAccepted !== true) {
@@ -254,10 +261,11 @@ function formatIcaEffectiveDate(signedAt: Date): {
 }
 
 function fillIcaFormFields(
-  form: PDFForm,
+  pdfDoc: PDFDocument,
   payload: SubmitOnboardingContractPayload,
   signedAt: Date,
 ): void {
+  const form = pdfDoc.getForm();
   const dateParts = formatIcaEffectiveDate(signedAt);
 
   setFormText(form, ICA_FORM_FIELDS.day, dateParts.day);
@@ -281,18 +289,19 @@ function fillIcaFormFields(
   setFormText(form, ICA_FORM_FIELDS.initialE, payload.debitCheckInitials.e);
 
   form.updateFieldAppearances();
-  form.flatten();
+  flattenSigningForm(pdfDoc);
 }
 
 async function drawSignatureImage(
   pdfDoc: PDFDocument,
   signatureImageBase64: string,
+  rects: { pageIndex: number; x: number; y: number; width: number; height: number }[],
 ): Promise<void> {
   const pngBytes = decodeBase64ToBytes(signatureImageBase64);
   const image = await pdfDoc.embedPng(pngBytes);
   const pages = pdfDoc.getPages();
 
-  for (const rect of ICA_SIGNATURE_IMAGE_RECTS) {
+  for (const rect of rects) {
     const page = pages[rect.pageIndex];
     if (!page) {
       throw new Error("Unable to place signature on agreement PDF");
@@ -311,17 +320,22 @@ export async function generateSignedIcaPdf(
   payload: SubmitOnboardingContractPayload,
   signedAt: Date,
   metadata?: { ipAddress?: string; userAgent?: string },
-  callerModuleUrl?: string,
+  _callerModuleUrl?: string,
   customTemplate?: { bytes: Uint8Array; version: string; sha256: string },
 ): Promise<Uint8Array> {
-  const templateBytes = customTemplate?.bytes ?? await loadIcaTemplateBytes(callerModuleUrl ?? import.meta.url);
+  if (!customTemplate) throw new Error("Upload and publish an ICA in Onboarding Steps before signing.");
+  const templateBytes = customTemplate.bytes;
   const pdfDoc = await PDFDocument.load(templateBytes);
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  if (!customTemplate) {
-    fillIcaFormFields(pdfDoc.getForm(), payload, signedAt);
-    await drawSignatureImage(pdfDoc, payload.signatureImageBase64);
+  const mapped = hasMappedIcaFields(pdfDoc);
+  await fillPdfInputFields(pdfDoc, payload.fieldValues, payload.signatureName, signedAt, mapped);
+  if (!mapped && pdfDoc.getForm().getFields().length) flattenSigningForm(pdfDoc);
+  if (mapped) {
+    const rects = signatureFieldRects(pdfDoc, [ICA_FORM_FIELDS.executionSignature, ICA_FORM_FIELDS.signature]);
+    fillIcaFormFields(pdfDoc, payload, signedAt);
+    await drawSignatureImage(pdfDoc, payload.signatureImageBase64, rects);
   }
 
   const certPage = pdfDoc.addPage([612, 792]);
@@ -348,8 +362,8 @@ export async function generateSignedIcaPdf(
   y = drawLabelValue(certPage, font, boldFont, "Contractor email", payload.personalEmail, 72, y);
   y = drawLabelValue(certPage, font, boldFont, "Signature", "Drawn electronic signature", 72, y);
   y = drawLabelValue(certPage, font, boldFont, "Signed at (UTC)", signedAt.toISOString(), 72, y);
-  if (!customTemplate) {
-    const companySigner = getIcaCompanySigner();
+  y = drawLabelValue(certPage, font, boldFont, "Source document SHA-256", customTemplate.sha256, 72, y);
+  if (mapped) {
     y = drawLabelValue(
       certPage,
       font,
@@ -360,17 +374,6 @@ export async function generateSignedIcaPdf(
       y,
     );
 
-    y = drawLabelValue(
-      certPage,
-      font,
-      boldFont,
-      "Company counter-signature",
-      `${companySigner.name}, ${companySigner.title} (pre-authorized)`,
-      72,
-      y,
-    );
-  } else {
-    y = drawLabelValue(certPage, font, boldFont, "Source document SHA-256", customTemplate.sha256, 72, y);
   }
 
   if (metadata?.ipAddress) {
@@ -399,7 +402,7 @@ export async function generateSignedIcaPdf(
     },
   );
 
-  if (customTemplate) {
+  if (!mapped) {
     const signature = await pdfDoc.embedPng(decodeBase64ToBytes(payload.signatureImageBase64));
     certPage.drawText("Contractor electronic signature", { x: 72, y: y - 78, size: 10, font: boldFont });
     certPage.drawImage(signature, { x: 72, y: y - 173, width: 250, height: 85 });

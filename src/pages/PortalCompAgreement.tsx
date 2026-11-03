@@ -1,3 +1,5 @@
+import SigningDocumentReview from "@/components/SigningDocumentReview";
+import { validateIcaLegalName } from "../../supabase/functions/_shared/icaSigningRules";
 import { useEffect, useState, type FormEvent } from "react";
 import { ArrowUpRight, FileSignature } from "lucide-react";
 import PortalToolLayout from "@/components/portal/PortalToolLayout";
@@ -37,15 +39,18 @@ function PendingAttachmentCard({
 }) {
   const [signatureName, setSignatureName] = useState(defaultName);
   const [agreed, setAgreed] = useState(false);
+  const [fieldValues, setFieldValues] = useState<Record<string, string | boolean>>({});
+  const [reviewed, setReviewed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!signatureName.trim()) {
-      toast.error("Type your legal name to sign.");
+    const nameError = validateIcaLegalName(signatureName);
+    if (nameError) {
+      toast.error(nameError);
       return;
     }
-    if (!agreed) {
+    if (!agreed || !reviewed) {
       toast.error("Please confirm you agree to the compensation attachment.");
       return;
     }
@@ -54,8 +59,10 @@ function PendingAttachmentCard({
     try {
       const { attachment: updated, message } = await signPortalCompAttachment(accessToken, {
         attachmentId: attachment.id,
+        templateAssetId: attachment.templateAssetId,
         signatureName: signatureName.trim(),
         agreementAccepted: true,
+        fieldValues,
       });
       toast.success(message);
       onSigned(updated);
@@ -75,11 +82,7 @@ function PendingAttachmentCard({
       <div className="portal-comp-signing-layout">
         <div className="portal-comp-signing-doc">
           {attachment.documentUrl ? (
-            <iframe
-              title={`${attachment.title} preview`}
-              src={attachment.documentUrl}
-              className="portal-comp-signing-pdf"
-            />
+            <SigningDocumentReview key={attachment.templateAssetId} url={attachment.documentUrl} title={attachment.title} onReviewed={setReviewed} values={fieldValues} onValuesChange={setFieldValues} signingName={signatureName} />
           ) : (
             <p className="ptools-error" role="alert">The document could not be loaded. Contact PNCL support.</p>
           )}
@@ -125,7 +128,7 @@ function PendingAttachmentCard({
             )}
 
             <div className="pcomp-actions">
-              <button type="submit" className="ptools-cta" disabled={submitting}>
+              <button type="submit" className="ptools-cta" disabled={submitting || !reviewed || !agreed}>
                 <FileSignature size={16} aria-hidden="true" />
                 {submitting ? "Signing…" : "Sign comp attachment"}
               </button>
@@ -203,7 +206,7 @@ export default function PortalCompAgreement() {
           <Pane><p className="ptools-error" role="alert">{error}</p></Pane>
         ) : attachments.length === 0 ? (
           <Pane>
-            <EmptyState title="No comp attachment yet" body="PNCL assigns your compensation attachment after your Independent Contractor Agreement is signed. You'll get an email when it's ready — check back here to sign it." />
+            <EmptyState title="No comp attachment yet" body="PNCL needs to upload the compensation agreement for your onboarding flow. Contact PNCL support." />
           </Pane>
         ) : (
           <>

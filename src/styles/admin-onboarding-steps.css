@@ -1187,3 +1187,13 @@
 .onboarding-preview-resources { border-top: 1px solid var(--portal-border); margin-top: 22px; padding-top: 18px; }
 .onboarding-preview-resources h4 { font-size: 14px; margin: 0 0 12px; }
 @media (max-width: 600px) { .onboarding-preview-content { padding: 14px; } .onboarding-preview-content h3 { font-size: 19px; } }
+
+.signing-activation-panel { margin:20px 0; padding:20px; border:1px solid #c4a67c66; border-radius:14px; background:#a87b3310; display:grid; gap:12px; }
+.signing-activation-panel h2 { font-size:18px; margin:0 0 6px; }
+.signing-activation-panel p { margin:0; line-height:1.5; }
+.signing-activation-actions { display:flex; align-items:center; flex-wrap:wrap; gap:12px; }
+.signing-activation-panel button { border:1px solid #ac946b88; border-radius:8px; padding:9px 14px; background:#ab85351c; color:inherit; cursor:pointer; justify-self:start; font:inherit; }
+.signing-activation-panel button:disabled { opacity:.45; cursor:default; }
+.signing-activation-actions a { color:inherit; text-decoration:underline; }
+.signing-activation-confirm { display:flex; gap:10px; align-items:flex-start; font-size:13px; }
+.signing-activation-confirm input { width:17px; height:17px; flex-shrink:0; accent-color:#b99056; }

@@ -1,3 +1,7 @@
+import legacyHandler from "./legacy.ts";
+import { uploadedSigningEnabled } from "../_shared/signingRollout.ts";
+import { requireSigningAsset } from "../_shared/onboardingSigningRules.ts";
+import { inspectSigningPdf } from "../_shared/onboardingSigningPdf.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
@@ -31,13 +35,17 @@ serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
+    const body = await req.clone().json();
     const supabase = getServiceClient();
+    if (!await uploadedSigningEnabled(supabase)) return legacyHandler(req);
     const designation = await resolveOnboardingDesignation(supabase, body?.referralInviteId);
     const content = await loadOnboardingContent(supabase, designation);
+    requireSigningAsset(content.ica, "ICA");
     assertCurrentIcaTemplate(body?.templateAssetId, content.ica?.id ?? null);
-    const payload = validateSubmitOnboardingContractPayload(body, Boolean(content.ica));
     const customTemplate = await downloadIcaAsset(supabase, content.ica);
+    const signingMode = await inspectSigningPdf(customTemplate.bytes, "ica");
+    const payload = validateSubmitOnboardingContractPayload(body, signingMode !== "ica_fields");
+    payload.fieldValues = body.fieldValues;
     const signedAt = new Date();
     const signatureId = crypto.randomUUID();
     const pdfPath = getOnboardingContractPdfPath(signatureId);
@@ -52,7 +60,7 @@ serve(async (req) => {
     const { error: uploadError } = await supabase.storage
       .from(ONBOARDING_CONTRACT_BUCKET)
       .upload(pdfPath, pdfBytes, {
-        upsert: true,
+        upsert: false,
         contentType: "application/pdf",
       });
 
@@ -69,7 +77,8 @@ serve(async (req) => {
         signature_name: payload.signatureName,
         ica_version: customTemplate?.version ?? ICA_VERSION,
         agent_designation: designation,
-        template_asset_id: content.ica?.id ?? null,
+        template_asset_id: content.ica!.id,
+        template_sha256: customTemplate.sha256,
         debit_check_initials: payload.debitCheckInitials,
         agreement_accepted: payload.agreementAccepted,
         counsel_acknowledged: payload.counselAcknowledged,

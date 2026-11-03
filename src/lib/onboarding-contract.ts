@@ -1,4 +1,3 @@
-export const ICA_PDF_URL = "/documents/pncl-ica-standard.pdf";
 export const ICA_TOTAL_PAGES = 14;
 
 /** 1-based page numbers in the PNCL ICA PDF. */
@@ -57,6 +56,7 @@ export interface DebitCheckInitials {
 export interface SubmitOnboardingContractInput {
   referralInviteId?: string;
   templateAssetId?: string | null;
+  fieldValues?: Record<string, string | boolean>;
   legalName: string;
   personalEmail: string;
   signatureName: string;

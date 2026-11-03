@@ -1,4 +1,6 @@
-import { ICA_PDF_URL, ICA_PDF_PAGES, ICA_TOTAL_PAGES } from "@/lib/onboarding-contract";
+import { icaInitialsError, normalizeIcaInitials, suggestedIcaInitials } from "../../supabase/functions/_shared/icaSigningRules";
+import "@/styles/ica-signing-guidance.css";
+import { ICA_PDF_PAGES, ICA_TOTAL_PAGES } from "@/lib/onboarding-contract";
 import { prefillIcaServerFields, syncIcaMirroredNameFields } from "@/lib/ica-prefill";
 import { ICA_FORM_FIELDS, ICA_DEBIT_CHECK_INITIAL_FIELD_NAMES, ICA_DEBIT_CHECK_INITIAL_MAX_LENGTH } from "@/lib/ica-form-fields";
 import { getPdfFieldObjects } from "@/lib/pdf-field-objects";
@@ -34,6 +36,7 @@ export interface IcaFillablePdfViewerHandle {
 }
 
 interface IcaFillablePdfViewerProps {
+  pdfUrl: string;
   className?: string;
   prefillLegalName?: string;
   prefillEmail?: string;
@@ -84,8 +87,8 @@ const SIGNATURE_FIELD_BY_PAGE: Record<number, string> = {
   [ICA_PDF_PAGES.debitCheck]: ICA_FORM_FIELDS.signature,
 };
 
-async function fetchIcaPdfBytes(): Promise<Uint8Array> {
-  const response = await fetch(ICA_PDF_URL);
+async function fetchIcaPdfBytes(pdfUrl: string): Promise<Uint8Array> {
+  const response = await fetch(pdfUrl);
   if (!response.ok) {
     throw new Error(`Unable to load agreement (${response.status})`);
   }
@@ -116,8 +119,8 @@ function loadWithTimeout(
   });
 }
 
-async function loadIcaPdfDocument(): Promise<PDFDocumentProxy> {
-  const bytes = await fetchIcaPdfBytes();
+async function loadIcaPdfDocument(pdfUrl: string): Promise<PDFDocumentProxy> {
+  const bytes = await fetchIcaPdfBytes(pdfUrl);
 
   try {
     return await loadWithTimeout(bytes);
@@ -159,9 +162,12 @@ function waitForFieldDom(
 
 const IcaFillablePdfViewer = forwardRef<IcaFillablePdfViewerHandle, IcaFillablePdfViewerProps>(
   function IcaFillablePdfViewer(
-    { className, prefillLegalName = "", prefillEmail = "", actions, onPageChange },
+    { pdfUrl, className, prefillLegalName = "", prefillEmail = "", actions, onPageChange },
     ref,
   ) {
+    const [signerName, setSignerName] = useState(prefillLegalName);
+    const [initialsError, setInitialsError] = useState<string | null>(null);
+    useEffect(() => { setSignerName(prefillLegalName); }, [prefillLegalName]);
     const hostRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const viewerRef = useRef<HTMLDivElement>(null);
@@ -358,7 +364,7 @@ const IcaFillablePdfViewer = forwardRef<IcaFillablePdfViewerHandle, IcaFillableP
 
         watchForRenderedPages();
 
-        void loadIcaPdfDocument()
+        void loadIcaPdfDocument(pdfUrl)
           .then(async (doc) => {
             if (!isCurrent()) {
               void doc.destroy();
@@ -399,7 +405,7 @@ const IcaFillablePdfViewer = forwardRef<IcaFillablePdfViewerHandle, IcaFillableP
         setPdfDocument(null);
         setViewerReady(false);
       };
-    }, [goToPage, syncHostHeightForPage, syncVisiblePageLayout]);
+    }, [pdfUrl, goToPage, syncHostHeightForPage, syncVisiblePageLayout]);
 
     useEffect(() => {
       const container = containerRef.current;
@@ -460,17 +466,24 @@ const IcaFillablePdfViewer = forwardRef<IcaFillablePdfViewerHandle, IcaFillableP
 
             input.maxLength = ICA_DEBIT_CHECK_INITIAL_MAX_LENGTH;
             input.classList.add("ica-initial-field-input");
+            input.setAttribute("aria-label", `Your initials for statement ${fieldName[0].toUpperCase()}`);
+            input.setAttribute("aria-describedby", "ica-initials-guidance");
+            input.placeholder = suggestedIcaInitials(signerName) || "Your initials";
 
             const normalizeInput = () => {
-              const lettersOnly = input.value.replace(/[^a-zA-Z]/g, "").toUpperCase();
+              const lettersOnly = normalizeIcaInitials(input.value).replace(/[^\p{L}]/gu, "");
               const next = lettersOnly.slice(0, ICA_DEBIT_CHECK_INITIAL_MAX_LENGTH);
               if (input.value !== next) {
                 input.value = next;
               }
+              const error = icaInitialsError(next, signerName, `Statement ${fieldName[0].toUpperCase()}`);
+              input.setAttribute("aria-invalid", String(Boolean(error)));
+              setInitialsError(error);
             };
 
             input.addEventListener("input", normalizeInput);
-            boundInputs.set(input, () => input.removeEventListener("input", normalizeInput));
+            input.addEventListener("blur", normalizeInput);
+            boundInputs.set(input, () => { input.removeEventListener("input", normalizeInput); input.removeEventListener("blur", normalizeInput); });
           }
         });
       };
@@ -485,7 +498,7 @@ const IcaFillablePdfViewer = forwardRef<IcaFillablePdfViewerHandle, IcaFillableP
         for (const cleanup of boundInputs.values()) cleanup();
         boundInputs.clear();
       };
-    }, [currentPage, viewerReady, pdfDocument]);
+    }, [currentPage, viewerReady, pdfDocument, signerName]);
 
     useEffect(() => {
       const container = containerRef.current;
@@ -499,6 +512,7 @@ const IcaFillablePdfViewer = forwardRef<IcaFillablePdfViewerHandle, IcaFillableP
         const fullNameId = fullNameFieldIdRef.current;
         if (!fullNameId || target.id !== `pdfjs_internal_id_${fullNameId}`) return;
 
+        setSignerName(target.value.trim()); setInitialsError(null);
         void syncIcaMirroredNameFields(pdfDocumentLocal, container, target.value.trim());
       };
 
@@ -508,43 +522,44 @@ const IcaFillablePdfViewer = forwardRef<IcaFillablePdfViewerHandle, IcaFillableP
 
     useEffect(() => {
       const container = containerRef.current;
-      if (!viewerReady || !container) return;
-
+      const document = pdfDocRef.current;
+      if (!viewerReady || !container || !document) return;
+      let active = true;
+      const boundInputs = new Map<HTMLInputElement, () => void>();
       const openModal = () => setSignatureModalOpen(true);
-      const boundInputs: HTMLInputElement[] = [];
-
-      for (const fieldId of signatureFieldIdsRef.current.values()) {
-        const input = container.querySelector(`#pdfjs_internal_id_${fieldId}`) as HTMLInputElement | null;
-        if (!input) continue;
-
-        input.readOnly = true;
-        input.tabIndex = -1;
-        input.placeholder = "Draw signature";
-        input.classList.add("ica-signature-field-input");
-
-        input.addEventListener("click", openModal);
-        boundInputs.push(input);
-      }
-
-      return () => {
-        for (const input of boundInputs) input.removeEventListener("click", openModal);
+      const bindInputs = () => {
+        for (const fieldId of signatureFieldIdsRef.current.values()) {
+          const input = container.querySelector(`#pdfjs_internal_id_${fieldId}`) as HTMLInputElement | null;
+          if (!input || boundInputs.has(input)) continue;
+          input.readOnly = true;
+          input.tabIndex = 0;
+          input.placeholder = "Full first & last name";
+          input.setAttribute("role", "button");
+          input.setAttribute("aria-label", "Draw your full first and last name");
+          input.setAttribute("aria-haspopup", "dialog");
+          input.classList.add("ica-signature-field-input");
+          const onKey = (event: KeyboardEvent) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openModal(); } };
+          input.addEventListener("click", openModal);
+          input.addEventListener("keydown", onKey);
+          boundInputs.set(input, () => { input.removeEventListener("click", openModal); input.removeEventListener("keydown", onKey); });
+        }
       };
-    }, [currentPage, viewerReady]);
-
-    useEffect(() => {
-      const container = containerRef.current;
-      const pdfDocumentLocal = pdfDocRef.current;
-      if (!viewerReady || !container || !pdfDocumentLocal) return;
-
-      void getPdfFieldObjects(pdfDocumentLocal).then((fieldObjects) => {
+      void getPdfFieldObjects(document).then(fields => {
+        if (!active) return;
         const map = new Map<string, string>();
-        for (const fieldName of Object.values(SIGNATURE_FIELD_BY_PAGE)) {
-          const entry = fieldObjects?.[fieldName]?.[0];
-          if (entry?.id) map.set(fieldName, entry.id);
+        for (const name of Object.values(SIGNATURE_FIELD_BY_PAGE)) {
+          const entry = fields?.[name]?.[0];
+          if (entry?.id) map.set(name, entry.id);
         }
         signatureFieldIdsRef.current = map;
+        bindInputs();
       });
-    }, [viewerReady, pdfDocument]);
+      // PDF.js mounts annotations after the page change. Bind the signature
+      // controls when those inputs actually arrive, including revisited pages.
+      const observer = new MutationObserver(bindInputs);
+      observer.observe(container, { childList: true, subtree: true });
+      return () => { active = false; observer.disconnect(); for (const cleanup of boundInputs.values()) cleanup(); };
+    }, [currentPage, viewerReady, pdfDocument]);
 
     const layoutSignatureOverlay = useCallback(() => {
       const container = containerRef.current;
@@ -582,7 +597,10 @@ const IcaFillablePdfViewer = forwardRef<IcaFillablePdfViewerHandle, IcaFillableP
       window.addEventListener("resize", layoutSignatureOverlay);
       const container = containerRef.current;
       container?.addEventListener("scroll", layoutSignatureOverlay, { passive: true });
+      const observer = new MutationObserver(layoutSignatureOverlay);
+      if (container) observer.observe(container, { childList: true, subtree: true });
       return () => {
+        observer.disconnect();
         window.removeEventListener("resize", layoutSignatureOverlay);
         container?.removeEventListener("scroll", layoutSignatureOverlay);
       };
@@ -615,6 +633,11 @@ const IcaFillablePdfViewer = forwardRef<IcaFillablePdfViewerHandle, IcaFillableP
           </div>
         )}
 
+        {chromeReady && currentPage === ICA_PDF_PAGES.signature && <div className="ica-page-guidance"><p><strong>Signature:</strong> Write your full first and last name. Initials or a line alone will be rejected.</p></div>}
+        {chromeReady && currentPage === ICA_PDF_PAGES.debitCheck && <div className="ica-page-guidance" id="ica-initials-guidance">
+          <p><strong>Your initials in every box:</strong> {suggestedIcaInitials(signerName) ? `Use ${suggestedIcaInitials(signerName)} for ${signerName}; you may include middle initials.` : "Enter your full legal name on the Signature page first."} A–E are statement labels. Do not enter “YES” or placeholder letters.</p>
+          {initialsError && <p role="alert">{initialsError}</p>}
+        </div>}
         <div
           ref={hostRef}
           id={ICA_HOST_ID}
@@ -630,7 +653,7 @@ const IcaFillablePdfViewer = forwardRef<IcaFillablePdfViewerHandle, IcaFillableP
           {error && (
             <div className="ica-fillable-pdf-error">
               <p>{error}</p>
-              <a href={ICA_PDF_URL} target="_blank" rel="noopener noreferrer">
+              <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
                 Open PDF in new tab
               </a>
             </div>
@@ -715,7 +738,7 @@ const IcaFillablePdfViewer = forwardRef<IcaFillablePdfViewerHandle, IcaFillableP
           }}
         />
         <a
-          href={ICA_PDF_URL}
+          href={pdfUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="ica-fillable-pdf-link"

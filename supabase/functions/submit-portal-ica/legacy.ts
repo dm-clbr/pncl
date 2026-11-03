@@ -1,0 +1,156 @@
+// Existing signing behavior retained until uploaded signing is activated.
+import { AdminAuthError, requirePortalUser } from "../_shared/adminAuth.ts";
+import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
+import { logOnboarding } from "../_shared/logger.ts";
+import {
+  generateSignedIcaPdf,
+  ICA_VERSION,
+  validateSubmitOnboardingContractPayload,
+} from "../_shared/legacySigning/onboardingContract.ts";
+import {
+  getPortalIcaPdfPath,
+  ICA_TODO_SLUG,
+  mapPortalIcaSummary,
+  PORTAL_ICA_PDF_BUCKET,
+  type PortalIcaRecord,
+} from "../_shared/portalIca.ts";
+import { notifyAdminsOfIcaSigned } from "../_shared/contractingNotifications.ts";
+import { syncPortalRecoveryEmailForUser } from "../_shared/portalRecoveryEmail.ts";
+import { loadOnboardingContent, downloadIcaAsset } from "../_shared/legacySigning/onboardingContent.ts";
+import { assertCurrentIcaTemplate } from "../_shared/onboardingContentRules.ts";
+import { loadAgentDesignations } from "../_shared/portalAgentDesignations.ts";
+
+function getCompletedTodos(metadata: Record<string, unknown> | undefined): Record<string, boolean> {
+  const value = metadata?.completed_portal_todos;
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  return value as Record<string, boolean>;
+}
+
+function getClientIp(req: Request): string | null {
+  const forwarded = req.headers.get("x-forwarded-for");
+  if (forwarded) {
+    return forwarded.split(",")[0]?.trim() ?? null;
+  }
+  return req.headers.get("x-real-ip");
+}
+
+export default async function legacyHandler(req: Request) {
+  const cors = handleCors(req);
+  if (cors) return cors;
+
+  if (req.method !== "POST") {
+    return errorResponse("Method not allowed", 405);
+  }
+
+  try {
+    const { user, adminClient } = await requirePortalUser(req);
+    const body = await req.json();
+    const designation = (await loadAgentDesignations(adminClient, [user.id])).get(user.id) ?? "loa";
+    const content = await loadOnboardingContent(adminClient, designation);
+    assertCurrentIcaTemplate(body?.templateAssetId, content.ica?.id ?? null);
+    const payload = validateSubmitOnboardingContractPayload(body, Boolean(content.ica));
+    const customTemplate = await downloadIcaAsset(adminClient, content.ica);
+    const signedAt = new Date();
+    const now = signedAt.toISOString();
+    const pdfPath = getPortalIcaPdfPath(user.id);
+    const ipAddress = getClientIp(req);
+    const userAgent = req.headers.get("user-agent");
+
+    const pdfBytes = await generateSignedIcaPdf(payload, signedAt, {
+      ipAddress: ipAddress ?? undefined,
+      userAgent: userAgent ?? undefined,
+    }, import.meta.url, customTemplate);
+
+    const { error: uploadError } = await adminClient.storage
+      .from(PORTAL_ICA_PDF_BUCKET)
+      .upload(pdfPath, pdfBytes, {
+        upsert: true,
+        contentType: "application/pdf",
+      });
+
+    if (uploadError) {
+      throw new Error(uploadError.message);
+    }
+
+    const { data, error } = await adminClient
+      .from("portal_ica_signatures")
+      .upsert({
+        user_id: user.id,
+        legal_name: payload.legalName,
+        personal_email: payload.personalEmail,
+        signature_name: payload.signatureName,
+        ica_version: customTemplate?.version ?? ICA_VERSION,
+        agent_designation: designation,
+        template_asset_id: content.ica?.id ?? null,
+        debit_check_initials: payload.debitCheckInitials,
+        agreement_accepted: payload.agreementAccepted,
+        counsel_acknowledged: payload.counselAcknowledged,
+        signed_at: now,
+        pdf_path: pdfPath,
+        ip_address: ipAddress,
+        user_agent: userAgent,
+        updated_at: now,
+      }, { onConflict: "user_id" })
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new Error(error?.message ?? "Unable to save ICA signature");
+    }
+
+    const completedTodos = {
+      ...getCompletedTodos(user.user_metadata),
+      [ICA_TODO_SLUG]: true,
+    };
+
+    const { error: metadataError } = await adminClient.auth.admin.updateUserById(user.id, {
+      user_metadata: {
+        ...user.user_metadata,
+        completed_portal_todos: completedTodos,
+        // Clear the re-sign notice shown after an ICA template reset.
+        ica_resign_required: false,
+      },
+    });
+
+    if (metadataError) {
+      throw new Error(metadataError.message);
+    }
+
+    const recoverySync = await syncPortalRecoveryEmailForUser(
+      adminClient,
+      user,
+      payload.personalEmail,
+    );
+
+    logOnboarding("portal_ica_submitted", { userId: user.id, recoverySyncStatus: recoverySync.syncStatus });
+
+    try {
+      await notifyAdminsOfIcaSigned(adminClient, {
+        userId: user.id,
+        agentName: payload.legalName,
+        agentEmail: user.email ?? "",
+        signedAt: now,
+      });
+    } catch (notifyError) {
+      const message = notifyError instanceof Error
+        ? notifyError.message
+        : "ICA admin notification failed";
+      logOnboarding("portal_ica_notification_failed", { userId: user.id, error: message }, "error");
+    }
+
+    return jsonResponse({
+      ica: mapPortalIcaSummary(data as PortalIcaRecord),
+      recoverySync,
+      message: "Independent Contractor Agreement signed successfully.",
+    });
+  } catch (error) {
+    if (error instanceof AdminAuthError) {
+      return errorResponse(error.message, error.status, error.code);
+    }
+    const message = error instanceof Error ? error.message : "Unable to sign agreement";
+    logOnboarding("portal_ica_submit_failed", { error: message }, "error");
+    return errorResponse(message, 400, "submit_failed");
+  }
+}

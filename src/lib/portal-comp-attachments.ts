@@ -3,6 +3,7 @@ import { getSupabaseConfig, isSupabaseAuthConfigured } from "@/lib/supabase";
 export type CompAttachmentStatus = "pending" | "signed";
 
 export interface PortalCompAttachment {
+  templateAssetId?: string;
   id: string;
   userId: string;
   title: string;
@@ -49,7 +50,7 @@ export async function fetchPortalCompAttachments(
 
 export async function signPortalCompAttachment(
   accessToken: string,
-  input: { attachmentId: string; signatureName: string; agreementAccepted: boolean },
+  input: { fieldValues?: Record<string, string | boolean>; templateAssetId?: string; attachmentId: string; signatureName: string; agreementAccepted: boolean },
 ): Promise<{ attachment: PortalCompAttachment; message: string }> {
   if (!isSupabaseAuthConfigured()) {
     throw new Error("Portal authentication is not configured.");

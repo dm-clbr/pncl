@@ -39,7 +39,7 @@ describe("IcaFillablePdfViewer chrome states", () => {
     vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})));
 
     await act(async () => {
-      render(<IcaFillablePdfViewer actions={<button type="button">Back</button>} />);
+      render(<IcaFillablePdfViewer pdfUrl="/uploaded-ica.pdf" actions={<button type="button">Back</button>} />);
     });
 
     expect(screen.getByText(/Loading/)).toBeInTheDocument();
@@ -52,7 +52,7 @@ describe("IcaFillablePdfViewer chrome states", () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 404 })));
 
     await act(async () => {
-      render(<IcaFillablePdfViewer actions={<button type="button">Back</button>} />);
+      render(<IcaFillablePdfViewer pdfUrl="/uploaded-ica.pdf" actions={<button type="button">Back</button>} />);
     });
 
     await waitFor(() => {

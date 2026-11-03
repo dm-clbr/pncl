@@ -1,3 +1,4 @@
+import { fillPdfInputFields } from "./pdfFieldValues.ts";
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFForm } from "https://esm.sh/pdf-lib@1.17.1";
 import {
   getPdfLibFieldName,
@@ -7,7 +8,7 @@ import {
 } from "./w9FormFields.ts";
 import type { SubmitPortalW9Payload, PortalW9Record } from "./portalW9.ts";
 import { storedLabelToTaxClass } from "./portalW9.ts";
-import { loadW9TemplateBytes } from "./w9Template.ts";
+import { inspectSigningPdf, signatureFieldRects, flattenSigningForm } from "./onboardingSigningPdf.ts";
 
 export const W9_FORM_VERSION = "2024-03-irs";
 
@@ -16,15 +17,6 @@ const W9_REQUESTER_TEXT = [
   "8927 E Wethersfield Rd",
   "Scottsdale, AZ 85260-5003",
 ].join("\n");
-
-/** Signature image placement on page 1 (PDF user space, bottom-left origin). */
-export const W9_SIGNATURE_IMAGE_RECT = {
-  pageIndex: 0,
-  x: 58.6,
-  y: 310,
-  width: 320,
-  height: 24,
-} as const;
 
 function decodeBase64ToBytes(base64: string): Uint8Array {
   const normalized = base64.includes(",") ? base64.split(",").pop() ?? "" : base64;
@@ -71,8 +63,8 @@ function setCheckbox(form: PDFForm, key: W9FormFieldKey, checked: boolean): void
 
 function formatSignatureDate(signedAt: Date): string {
   return signedAt.toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
+    month: "2-digit",
+    day: "2-digit",
     year: "numeric",
   });
 }
@@ -96,11 +88,12 @@ function taxClassToCheckboxKey(taxClass: string | undefined): (typeof W9_TAX_CLA
 }
 
 function fillW9FormFields(
-  form: PDFForm,
+  pdfDoc: PDFDocument,
   payload: SubmitPortalW9Payload,
   signedAt: Date,
   font: PDFFont,
 ): void {
+  const form = pdfDoc.getForm();
   setRequiredText(form, "legalName", payload.legalName);
   setOptionalText(form, "businessName", payload.businessName);
   setRequiredText(form, "addressLine1", payload.addressLine1);
@@ -109,6 +102,7 @@ function fillW9FormFields(
   setOptionalText(form, "accountNumbers", payload.accountNumbers);
   setOptionalText(form, "exemptPayeeCode", payload.exemptPayeeCode);
   setOptionalText(form, "fatcaExemptionCode", payload.fatcaExemptionCode);
+  form.getTextField(requireFieldName(form, "signatureDate")).setFontSize(10);
   setRequiredText(form, "signatureDate", formatSignatureDate(signedAt));
   setRequiredText(form, "signature", "");
 
@@ -140,22 +134,22 @@ function fillW9FormFields(
   }
 
   form.updateFieldAppearances(font);
-  form.flatten();
+  flattenSigningForm(pdfDoc);
 }
 
-async function drawSignatureImage(pdfDoc: PDFDocument, signatureImageBase64: string): Promise<void> {
+async function drawSignatureImage(pdfDoc: PDFDocument, signatureImageBase64: string, rect: { pageIndex: number; x: number; y: number; width: number; height: number }): Promise<void> {
   const pngBytes = decodeBase64ToBytes(signatureImageBase64);
   const image = await pdfDoc.embedPng(pngBytes);
-  const page = pdfDoc.getPages()[W9_SIGNATURE_IMAGE_RECT.pageIndex];
+  const page = pdfDoc.getPages()[rect.pageIndex];
   if (!page) {
     throw new Error("Unable to place signature on W-9 PDF");
   }
 
   page.drawImage(image, {
-    x: W9_SIGNATURE_IMAGE_RECT.x,
-    y: W9_SIGNATURE_IMAGE_RECT.y,
-    width: W9_SIGNATURE_IMAGE_RECT.width,
-    height: W9_SIGNATURE_IMAGE_RECT.height,
+    x: rect.x,
+    y: rect.y,
+    width: rect.width,
+    height: rect.height,
   });
 }
 
@@ -177,22 +171,28 @@ export async function generateSignedW9Pdf(
   payload: SubmitPortalW9Payload,
   signedAt: Date,
   metadata?: { ipAddress?: string; userAgent?: string },
-  callerModuleUrl?: string,
+  _callerModuleUrl?: string,
+  template?: { bytes: Uint8Array; sha256: string; assetId: string },
 ): Promise<Uint8Array> {
-  const templateBytes = await loadW9TemplateBytes(callerModuleUrl ?? import.meta.url);
+  if (!template) throw new Error("Upload and publish a W-9 in Onboarding Steps before signing.");
+  await inspectSigningPdf(template.bytes, "w9");
+  const templateBytes = template.bytes;
   const pdfDoc = await PDFDocument.load(templateBytes);
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-  fillW9FormFields(pdfDoc.getForm(), payload, signedAt, font);
+  const signatureField = getPdfLibFieldName(pdfDoc.getForm(), "signature")!;
+  const rect = signatureFieldRects(pdfDoc, [signatureField])[0];
+  await fillPdfInputFields(pdfDoc, payload.fieldValues, payload.signatureName, signedAt, true);
+  fillW9FormFields(pdfDoc, payload, signedAt, font);
 
   if (payload.signatureImageBase64) {
-    await drawSignatureImage(pdfDoc, payload.signatureImageBase64);
+    await drawSignatureImage(pdfDoc, payload.signatureImageBase64, rect);
   } else if (payload.signatureName.trim()) {
-    const page = pdfDoc.getPages()[W9_SIGNATURE_IMAGE_RECT.pageIndex];
+    const page = pdfDoc.getPages()[rect.pageIndex];
     page.drawText(payload.signatureName.trim(), {
-      x: W9_SIGNATURE_IMAGE_RECT.x + 2,
-      y: W9_SIGNATURE_IMAGE_RECT.y + 6,
+      x: rect.x + 2,
+      y: rect.y + 6,
       size: 12,
       font,
       color: rgb(0, 0, 0),
@@ -218,12 +218,13 @@ export async function generateSignedW9Pdf(
   });
   y -= 36;
 
-  y = drawLabelValue(certPage, font, boldFont, "Form version", W9_FORM_VERSION, 72, y);
+  y = drawLabelValue(certPage, font, boldFont, "Uploaded template", template.assetId, 72, y);
   y = drawLabelValue(certPage, font, boldFont, "Legal name", payload.legalName, 72, y);
   y = drawLabelValue(certPage, font, boldFont, "Tax classification", payload.taxClassification, 72, y);
   y = drawLabelValue(certPage, font, boldFont, "Certified by", payload.signatureName.trim(), 72, y);
   y = drawLabelValue(certPage, font, boldFont, "Signed at (UTC)", signedAt.toISOString(), 72, y);
 
+  y = drawLabelValue(certPage, font, boldFont, "Source SHA-256", template.sha256, 72, y);
   if (metadata?.ipAddress) {
     y = drawLabelValue(certPage, font, boldFont, "IP address", metadata.ipAddress, 72, y);
   }
@@ -263,6 +264,7 @@ export async function generatePortalW9PdfFromRecord(
   record: PortalW9Record,
   tin: string,
   callerModuleUrl?: string,
+  template?: { bytes: Uint8Array; sha256: string; assetId: string },
 ): Promise<Uint8Array> {
   const { taxClass, llcClassification } = storedLabelToTaxClass(record.tax_classification);
 
@@ -288,5 +290,5 @@ export async function generatePortalW9PdfFromRecord(
     accountNumbers: record.account_numbers,
   };
 
-  return generateSignedW9Pdf(payload, new Date(record.signed_at), undefined, callerModuleUrl);
+  return generateSignedW9Pdf(payload, new Date(record.signed_at), undefined, callerModuleUrl, template);
 }

@@ -1,5 +1,6 @@
+import { validateIcaLegalName, icaInitialsError } from "../../supabase/functions/_shared/icaSigningRules";
 import type { PDFDocumentProxy } from "pdfjs-dist";
-import { ICA_FORM_FIELDS, isValidDebitCheckInitial, normalizeDebitCheckInitial } from "@/lib/ica-form-fields";
+import { ICA_FORM_FIELDS, normalizeDebitCheckInitial } from "@/lib/ica-form-fields";
 import { getPdfFieldObjects, type PdfFieldObjects } from "@/lib/pdf-field-objects";
 import type { DebitCheckInitials } from "@/lib/onboarding-contract";
 import { validateRecoveryEmail } from "@/lib/recovery-email";
@@ -120,9 +121,8 @@ export function validateExtractedIcaFormValues(
   values: ExtractedIcaFormValues,
   signatureImage?: string | null,
 ): string | null {
-  if (!values.legalName.trim()) {
-    return "Enter your full legal name on the signature page.";
-  }
+  const nameError = validateIcaLegalName(values.legalName);
+  if (nameError) return nameError;
   if (!values.personalEmail.trim()) {
     return "Enter your email address on the signature page.";
   }
@@ -143,10 +143,9 @@ export function validateExtractedIcaFormValues(
     return "Your signature must match your legal name exactly.";
   }
 
-  for (const [key, initial] of Object.entries(values.debitCheckInitials) as [keyof DebitCheckInitials, string][]) {
-    if (!isValidDebitCheckInitial(initial)) {
-      return `Enter initials for statement ${key.toUpperCase()} on the Debit-Check page (letters only, up to 20 characters).`;
-    }
+  for (const key of ["a", "b", "c", "d", "e"] as const) {
+    const error = icaInitialsError(values.debitCheckInitials[key] ?? "", values.legalName, `Debit-Check statement ${key.toUpperCase()}`);
+    if (error) return error;
   }
 
   return null;

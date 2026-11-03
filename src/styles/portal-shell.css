@@ -79,10 +79,8 @@
    is z-index: 0 and precedes <main> in tree order, so the two paint in the
    same step and tree order puts <main> on top. Adding a z-index would make
    <main> a stacking context and trap every fixed overlay rendered inside it.
-   The ICA signature modal is one: .ica-signature-modal-backdrop is z-index:
-   1100 (onboarding.css) but sits inside <main> on PortalIca, so a stacking
-   context here drops it under the z-index: 50 tab bar at 620px and leaves the
-   bar tappable over a legal signature. The selector is 0-2-1 and clears
+   Keep positioned overlays above the tab bar; native dialogs such as the
+   ICA signature editor use the top layer. The selector is 0-2-1 and clears
    .home2-page .portal-dash at 0-2-0. Only <main> is raised: .grain and
    .portal-bottom-nav are already fixed with their own z-index, and position:
    relative would break both. */

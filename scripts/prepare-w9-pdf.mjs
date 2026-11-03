@@ -14,11 +14,6 @@ const root = path.resolve(__dirname, "..");
 
 const SOURCE = path.join(root, "public/documents/fw9.pdf");
 const OUTPUT = path.join(root, "public/documents/pncl-w9-standard.pdf");
-const ASSET_DIRS = [
-  path.join(root, "supabase/functions/submit-portal-w9/assets"),
-  path.join(root, "supabase/functions/_shared/assets"),
-];
-
 const W9_REQUESTER_TEXT = [
   "PNCL LLC",
   "8927 E Wethersfield Rd",
@@ -27,30 +22,22 @@ const W9_REQUESTER_TEXT = [
 
 const SIGNATURE_FIELD = {
   name: "signature",
-  x: 58.6,
-  y: 310,
-  width: 320,
-  height: 24,
+  x: 124,
+  y: 194,
+  width: 250,
+  height: 19,
 };
 
 const DATE_FIELD = {
   name: "date",
-  x: 504,
-  y: 310,
-  width: 72,
-  height: 24,
+  x: 407,
+  y: 194,
+  width: 160,
+  height: 19,
 };
 
 function findFieldBySuffix(form, suffix) {
   return form.getFields().find((field) => field.getName().endsWith(suffix));
-}
-
-function formatToday() {
-  return new Date().toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
 }
 
 async function main() {
@@ -89,20 +76,16 @@ async function main() {
     height: DATE_FIELD.height,
     borderWidth: 0,
   });
-  dateField.setText(formatToday());
+  dateField.setFontSize(10);
+  dateField.setText("");
 
   const outputBytes = await doc.save();
   fs.writeFileSync(OUTPUT, outputBytes);
 
-  for (const dir of ASSET_DIRS) {
-    fs.mkdirSync(dir, { recursive: true });
-    fs.copyFileSync(OUTPUT, path.join(dir, "pncl-w9-standard.pdf"));
-  }
-
   const verifyDoc = await PDFDocument.load(outputBytes);
   const verifyForm = verifyDoc.getForm();
   console.log(`Wrote ${OUTPUT} (${outputBytes.length} bytes)`);
-  console.log(`Copied to ${ASSET_DIRS.length} edge function asset directories`);
+  console.log("Upload this PDF explicitly in Onboarding Steps for each applicable flow. It is not a runtime fallback.");
   console.log(`Fields (${verifyForm.getFields().length}):`);
   for (const field of verifyForm.getFields()) {
     const name = field.getName();

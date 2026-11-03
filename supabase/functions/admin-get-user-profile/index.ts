@@ -1,3 +1,5 @@
+import { signingRowsForUser } from "../_shared/signingRollout.ts";
+import { userHasCompAttachment } from "../_shared/portalCompAttachments.ts";
 import { filterAgentTodos, resolveAgentDesignation } from "../_shared/agentDesignation.ts";
 import { loadAgentDesignations } from "../_shared/portalAgentDesignations.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
@@ -193,7 +195,9 @@ serve(async (req) => {
 
     const designations = await loadAgentDesignations(adminClient, [userId]);
     const agentDesignation = resolveAgentDesignation(designations.get(userId));
-    const todoRecords = filterAgentTodos((todoRows ?? []) as PortalTodoRecord[], agentDesignation);
+    const signing = await signingRowsForUser(adminClient, (todoRows ?? []) as PortalTodoRecord[], userId);
+    let todoRecords = filterAgentTodos(signing.rows.filter(row => row.published), agentDesignation);
+    if (!signing.enabled && !await userHasCompAttachment(adminClient, userId)) todoRecords = todoRecords.filter(row => row.slug !== "comp_agreement");
     const autoKeys = new Set(
       todoRecords
         .filter((row) => row.completion_type === "auto" && row.auto_key)
@@ -257,7 +261,7 @@ serve(async (req) => {
         const message = googleError instanceof Error
           ? googleError.message
           : "Unable to load Google Workspace user";
-        agent.googleWorkspaceStatus = "unknown";
+        agent.googleWorkspaceStatus = null;
         agent.googleSuspensionReason = null;
         googleWorkspace = {
           status: "unknown",

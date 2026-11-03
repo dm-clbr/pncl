@@ -1,9 +1,10 @@
 import { submitOnboardingContract, isSupabaseConfigured } from "@/lib/onboarding-api";
 import { persistContractSession } from "@/lib/onboarding-contract";
 import { toast } from "sonner";
-import IcaSigningStep, { type IcaSigningSubmitPayload } from "@/components/IcaSigningStep";
+import { type IcaSigningSubmitPayload } from "@/components/IcaSigningStep";
 import UploadedIcaSigningStep from "@/components/UploadedIcaSigningStep";
 import type { OnboardingFlowContent } from "@/lib/onboarding-content";
+import LegacyOnboardingContractStep from "./OnboardingContractStep.legacy";
 
 interface OnboardingContractStepProps {
   preview?: boolean;
@@ -24,7 +25,9 @@ export default function OnboardingContractStep({
   onSigned,
   onBack,
 }: OnboardingContractStepProps) {
+  if (content.signingEnabled === false) return <LegacyOnboardingContractStep preview={preview} content={content} referralInviteId={referralInviteId} onSigned={onSigned} onBack={onBack} />;
   const handleSubmit = async (payload: IcaSigningSubmitPayload) => {
+    if (!content.ica) throw new Error("Your agreement has not been configured.");
     if (preview) {
       const contractSignatureId = crypto.randomUUID();
       persistContractSession(
@@ -63,11 +66,5 @@ export default function OnboardingContractStep({
   };
 
   if (content.ica) return <UploadedIcaSigningStep key={content.ica.id} asset={content.ica} onSubmit={handleSubmit} onBack={onBack} />;
-  return (
-    <IcaSigningStep
-      eyebrow="Step 1"
-      onSubmit={handleSubmit}
-      onBack={onBack}
-    />
-  );
+  return <div role="alert" className="onboarding-step"><h2>Agreement not ready</h2><p>PNCL needs to upload the ICA for your onboarding flow. Please contact PNCL support before continuing.</p>{onBack && <button type="button" className="btn btn-ghost" onClick={onBack}>Back</button>}</div>;
 }

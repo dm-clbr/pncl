@@ -1,0 +1,10 @@
+.signing-document-review { display: grid; gap: 14px; margin-block: 20px; min-width: 0; }
+.signing-document-review > a { color: var(--gold, #b5945a); text-decoration: underline; }
+.signing-document-canvas { position: relative; width: 100%; overflow: hidden; background: #fff; border-radius: 8px; }
+.signing-document-canvas .signing-pdf-input { position:absolute; border:1px solid #3a8bb8; border-radius:2px; background:#d9edf9d9; color:#111; padding:1px 3px; font:clamp(8px,1.2vw,12px) sans-serif; min-width:0; min-height:0; margin:0; box-sizing:border-box; }
+.signing-document-canvas .signing-pdf-input:read-only { background:#e7e1f4d9; }
+.signing-document-canvas .signing-pdf-input[type=checkbox] { appearance:auto; accent-color:#235d82; padding:0; }
+.signing-document-canvas canvas { display: block; width: 100%; height: auto; }
+.signing-document-pager { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.signing-document-pager button { font: inherit; padding: 9px 14px; border: 1px solid #a3a3a355; border-radius: 8px; background: transparent; color: inherit; cursor: pointer; }
+.signing-document-pager button:disabled { opacity: .4; cursor: default; }

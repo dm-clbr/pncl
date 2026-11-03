@@ -7,6 +7,7 @@ export const COMP_AGREEMENT_TODO_SLUG = "comp_agreement";
 export type CompAttachmentStatus = "pending" | "signed";
 
 export interface CompAttachmentRecord {
+  template_asset_id?: string | null;
   id: string;
   user_id: string;
   title: string;

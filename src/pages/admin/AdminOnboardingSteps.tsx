@@ -1,3 +1,5 @@
+import SigningActivationPanel from "@/components/admin/SigningActivationPanel";
+import { isSigningDocumentKind } from "../../../supabase/functions/_shared/onboardingSigningRules";
 import OnboardingStepPreview from "@/components/admin/OnboardingStepPreview";
 import { supportingFilesForFlow } from "../../../supabase/functions/_shared/onboardingAttachments";
 import { Fragment, useEffect, useState } from "react";
@@ -34,6 +36,8 @@ import {
 import OnboardingStepModal from "@/components/admin/OnboardingStepModal";
 import { toast } from "sonner";
 import "@/styles/admin-onboarding-steps.css";
+import "@/styles/document-requests.css";
+import OnboardingAdminNav from "@/components/admin/OnboardingAdminNav";
 
 function StepDescription({
   title,
@@ -92,6 +96,7 @@ export default function AdminOnboardingSteps() {
         .toLowerCase()
         .includes(search.toLowerCase()),
   );
+  const missingSigningDocs = (data?.rows ?? []).flatMap(row => isSigningDocumentKind(row.contentType) ? (["loa", "ibo"] as const).filter(flow => (flow === "loa" ? row.showLoa : row.showIbo) && !row.flowContent[flow]?.assetId).map(flow => `${row.title} (${flow.toUpperCase()})`) : []);
   return (
     <section className="admin-panel admin-onboarding-steps">
       <div className="onboarding-page-heading">
@@ -120,6 +125,9 @@ export default function AdminOnboardingSteps() {
           </button>
         </div>
       </div>
+      <OnboardingAdminNav />
+      {data?.signingRollout && token && <SigningActivationPanel rollout={data.signingRollout} token={token} reload={reload} />}
+      {!!missingSigningDocs.length && <div className="onboarding-preview-banner" role="status"><Info size={18} /><div><strong>Signing documents need setup</strong><p>Upload PDFs for: {missingSigningDocs.join(", ")}. Configure these PDFs before activating uploaded signing.</p></div></div>}
       {isLocalEditor() && (
         <p className="onboarding-preview-banner">
           <Info size={16} />

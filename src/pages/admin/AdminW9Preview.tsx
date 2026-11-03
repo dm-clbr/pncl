@@ -1,3 +1,5 @@
+import { useAuth } from "@/contexts/AuthContext";
+import { useOnboardingContent } from "@/hooks/useOnboardingContent";
 import { useEffect, useState } from "react";
 import PortalBackground from "@/components/portal/PortalBackground";
 import { Link, useNavigate } from "react-router-dom";
@@ -14,6 +16,9 @@ type PreviewPhase = "form" | "complete";
 
 export default function AdminW9Preview() {
   const navigate = useNavigate();
+  const { session } = useAuth();
+  const [designation, setDesignation] = useState<"loa" | "ibo">("loa");
+  const { content, error, retry } = useOnboardingContent({ accessToken: session?.access_token, previewDesignation: designation });
   const [instanceKey, setInstanceKey] = useState(0);
   const [phase, setPhase] = useState<PreviewPhase>("form");
   const [previewSummary, setPreviewSummary] = useState<SubmitPortalW9Payload | null>(null);
@@ -63,8 +68,9 @@ export default function AdminW9Preview() {
           <div className="grain" aria-hidden="true" />
           <main className="onboarding-main">
             <div className="onboarding-panel onboarding-panel-signing">
-              <W9SigningStep
-                key={instanceKey}
+              <label>Preview flow <select value={designation} onChange={event => setDesignation(event.target.value as "loa" | "ibo")}><option value="loa">LOA</option><option value="ibo">IBO</option></select></label>
+              {!content?.w9 ? <p role="alert">{error || (content ? "Upload and publish a W-9 for this flow in Onboarding Steps before previewing." : "Loading configured W-9…")}{error && <button onClick={retry}>Retry</button>}</p> : <W9SigningStep pdfUrl={content.w9.url}
+                key={`${designation}-${content.w9.id}-${instanceKey}`}
                 className="portal-w9-signing"
                 eyebrow="Preview"
                 title="Test the W-9 form"
@@ -72,7 +78,7 @@ export default function AdminW9Preview() {
                 finishLabel="Test submit (preview)"
                 prefillLegalName="Preview Agent"
                 onSubmit={handleSubmit}
-              />
+              />}
             </div>
           </main>
         </div>

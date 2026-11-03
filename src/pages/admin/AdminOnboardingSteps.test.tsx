@@ -185,9 +185,10 @@ describe("Row preview and supporting documents", () => {
     expect(screen.getAllByRole("button", { name: /^Preview / })).toHaveLength(rows.length);
     fireEvent.click(screen.getByRole("button", { name: "Preview Sign ICA" }));
     const modal = screen.getByRole("dialog");
-    expect(within(modal).getByTitle("LOA document preview")).toHaveAttribute("src", "/documents/pncl-ica-standard.pdf");
+    expect(within(modal).queryByTitle("LOA document preview")).not.toBeInTheDocument();
+    expect(within(modal).getByText("No LOA content has been added yet.")).toBeInTheDocument();
     fireEvent.click(within(modal).getByRole("button", { name: "IBO", exact: true }));
-    expect(within(modal).getByTitle("IBO document preview")).toBeInTheDocument();
+    expect(within(modal).queryByTitle("IBO document preview")).not.toBeInTheDocument();
     expect(within(modal).queryByRole("button", { name: /Sign agreement/ })).not.toBeInTheDocument();
     fireEvent.click(within(modal).getByRole("button", { name: "Done" }));
     expect(saveEditorStep).not.toHaveBeenCalled();
@@ -195,7 +196,7 @@ describe("Row preview and supporting documents", () => {
   });
 
   function sureLcRow() {
-    const state = vi.mocked(useOnboardingEditor).mock.results[0]?.value ?? useOnboardingEditor();
+    const state = vi.mocked(useOnboardingEditor).mock.results[0]?.value ?? vi.mocked(useOnboardingEditor).getMockImplementation()!();
     const row = { ...blankEditorRow(), id: "surelc", slug: "surelc_tutorial", title: "SureLC walkthrough", description: "Watch and read your guide", contentType: "surelc_video" as const,
       published: true, flowContent: { loa: { mode: "link" as const, url: "https://example.com/loa.mp4" }, ibo: { mode: "link" as const, url: "https://example.com/ibo.mp4" } } };
     vi.mocked(useOnboardingEditor).mockReturnValue({ ...state, data: { ...state.data!, rows: [row] } });

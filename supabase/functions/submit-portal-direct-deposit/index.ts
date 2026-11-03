@@ -1,3 +1,6 @@
+import legacyHandler from "./legacy.ts";
+import { uploadedSigningEnabled } from "../_shared/signingRollout.ts";
+import { loadPortalSigningSource } from "../_shared/onboardingContent.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requirePortalUser } from "../_shared/adminAuth.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
@@ -6,7 +9,6 @@ import {
   DIRECT_DEPOSIT_PDF_BUCKET,
   DIRECT_DEPOSIT_TODO_SLUG,
   generateDirectDepositPdf,
-  getDirectDepositPdfPath,
   mapDirectDepositSummary,
   type DirectDepositRecord,
   validateSubmitDirectDepositPayload,
@@ -31,19 +33,23 @@ serve(async (req) => {
 
   try {
     const { user, adminClient } = await requirePortalUser(req);
-    const payload = validateSubmitDirectDepositPayload(await req.json());
+    if (!await uploadedSigningEnabled(adminClient, user.id)) return legacyHandler(req);
+    const body = await req.json();
+    const source = await loadPortalSigningSource(adminClient, user.id, "direct_deposit", body.templateAssetId ?? null);
+    const payload = validateSubmitDirectDepositPayload(body);
+    payload.fieldValues = body.fieldValues;
     const signedAt = new Date();
     const now = signedAt.toISOString();
-    const pdfPath = getDirectDepositPdfPath(user.id);
+    const pdfPath = `${user.id}/direct-deposit/${crypto.randomUUID()}.pdf`;
 
     const accountNumberEncrypted = await encryptTemporaryPassword(payload.accountNumber);
     const routingNumberEncrypted = await encryptTemporaryPassword(payload.routingNumber);
-    const pdfBytes = await generateDirectDepositPdf(payload, signedAt);
+    const pdfBytes = await generateDirectDepositPdf(payload, signedAt, source);
 
     const { error: uploadError } = await adminClient.storage
       .from(DIRECT_DEPOSIT_PDF_BUCKET)
       .upload(pdfPath, pdfBytes, {
-        upsert: true,
+        upsert: false,
         contentType: "application/pdf",
       });
 
@@ -55,6 +61,9 @@ serve(async (req) => {
       .from("portal_direct_deposit_forms")
       .upsert({
         user_id: user.id,
+        template_asset_id: source.asset.id,
+        agent_designation: source.designation,
+        template_sha256: source.sha256,
         legal_name: payload.legalName,
         address_line1: payload.addressLine1,
         city: payload.city,

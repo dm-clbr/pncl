@@ -1,3 +1,5 @@
+import SigningDocumentReview from "@/components/SigningDocumentReview";
+import { useOnboardingContent } from "@/hooks/useOnboardingContent";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileCheck2 } from "lucide-react";
@@ -11,7 +13,6 @@ import ListRow from "@/components/portal/ListRow";
 import Skeleton from "@/components/portal/Skeleton";
 import { useAuth } from "@/contexts/AuthContext";
 import { fetchPortalProfile } from "@/lib/portal-profile";
-import { DIRECT_DEPOSIT_AUTHORIZATION } from "@/lib/direct-deposit-content";
 import {
   BANK_NAME_MAX_LENGTH,
   EMPTY_DIRECT_DEPOSIT_FORM,
@@ -52,6 +53,9 @@ const ERROR_FIELDS: ReadonlyArray<[string, string]> = [
 export default function PortalDirectDeposit() {
   const navigate = useNavigate();
   const { user, session } = useAuth();
+  const { content, error: contentError, retry } = useOnboardingContent({ accessToken: session?.access_token, portal: true });
+  const [fieldValues, setFieldValues] = useState<Record<string, string | boolean>>({});
+  const [documentReviewed, setDocumentReviewed] = useState(false);
   const { directDeposit, submitted, loading, setDirectDeposit } = usePortalDirectDeposit();
   const [form, setForm] = useState<PortalDirectDepositFormValues>(EMPTY_DIRECT_DEPOSIT_FORM);
   const [submitting, setSubmitting] = useState(false);
@@ -152,7 +156,8 @@ export default function PortalDirectDeposit() {
 
     setSubmitting(true);
     try {
-      const saved = await submitPortalDirectDeposit(token, form);
+      if (!content?.directDeposit || !documentReviewed) throw new Error("Review the uploaded direct deposit document before signing.");
+      const saved = await submitPortalDirectDeposit(token, { ...form, templateAssetId: content.directDeposit.id, fieldValues });
       setDirectDeposit(saved);
       await refreshPortalUser();
       toast.success("Direct deposit form submitted. A PDF copy was saved to your profile.");
@@ -219,7 +224,8 @@ export default function PortalDirectDeposit() {
               </Pane>
             )}
 
-            {!loading && !submitted && (
+            {!loading && !submitted && !content?.directDeposit && <Pane><p role="alert">{contentError || (content ? "PNCL needs to upload the direct deposit document for your onboarding flow. Contact PNCL support." : "Loading your direct deposit document…")}</p>{contentError && <button onClick={retry}>Retry</button>}</Pane>}
+            {!loading && !submitted && content?.directDeposit && (
               <form className="pforms-dd" onSubmit={(event) => void handleSubmit(event)}>
                 <Pane title="Direct deposit request">
                   <p className="pforms-dd-lead">
@@ -227,6 +233,7 @@ export default function PortalDirectDeposit() {
                     to your account. A signed PDF is saved to your profile automatically.
                   </p>
 
+                  <SigningDocumentReview key={content.directDeposit.id} url={content.directDeposit.url} title="Direct deposit authorization" onReviewed={setDocumentReviewed} values={fieldValues} onValuesChange={setFieldValues} signingName={form.signatureName} />
                   <div className="pforms-dd-stack">
                     <Field
                       label="Name"
@@ -366,7 +373,7 @@ export default function PortalDirectDeposit() {
 
                     <fieldset className="pforms-dd-group">
                       <legend>Authorization</legend>
-                      <p className="pforms-dd-note">{DIRECT_DEPOSIT_AUTHORIZATION}</p>
+                      <p className="pforms-dd-note">Your authorization is defined in the uploaded document above. Your entered details and signature will be attached to that document.</p>
 
                       <Field
                         label="Signature"
@@ -400,7 +407,7 @@ export default function PortalDirectDeposit() {
                             }
                             required
                           />
-                          <span>I authorize direct deposit as described above.</span>
+                          <span>I have reviewed the uploaded document and authorize direct deposit under its terms.</span>
                         </label>
                       </div>
                       {invalid?.id === "dd-authorization" && (
@@ -420,7 +427,7 @@ export default function PortalDirectDeposit() {
                 {/* Sticky so the action stays in the thumb zone on a form this
                     long; outside the Pane so the pane's padding never clips it. */}
                 <div className="pforms-submit-bar">
-                  <button type="submit" className="pforms-submit" disabled={submitting}>
+                  <button type="submit" className="pforms-submit" disabled={submitting || !documentReviewed}>
                     {submitting ? "Submitting..." : "Submit direct deposit form"}
                   </button>
                 </div>

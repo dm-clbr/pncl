@@ -579,19 +579,17 @@ body:has(.onboarding-panel-signing) {
   overflow-x: visible;
 }
 
-.ica-signature-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 1100;
-  display: grid;
-  place-items: center;
-  padding: 1rem;
+.ica-signature-modal::backdrop {
   background: rgba(0, 0, 0, 0.72);
   backdrop-filter: blur(4px);
 }
 
 .ica-signature-modal {
-  width: min(100%, 520px);
+  width: min(calc(100% - 32px), 520px);
+  max-height: calc(100dvh - 32px);
+  margin: auto;
+  overflow: auto;
+  color: var(--bone);
   padding: 1.15rem 1.2rem 1.2rem;
   border: 1px solid rgba(245, 176, 65, 0.45);
   border-radius: var(--radius);
@@ -724,6 +722,8 @@ body:has(.onboarding-panel-signing) {
 /* PDF.js PDFViewer requires an absolutely positioned container. */
 .ica-fillable-pdf-container {
   position: absolute;
+  isolation: isolate;
+  z-index: 0;
   inset: 0;
   overflow: auto;
 }

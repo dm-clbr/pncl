@@ -1,3 +1,4 @@
+import { normalizeIcaInitials } from "./icaSigningRules.ts";
 /** AcroForm field names in pncl-ica-standard.pdf (prepared in Acrobat). */
 export const ICA_FORM_FIELDS = {
   /** Page 1 — effective date parts */
@@ -29,7 +30,7 @@ export type IcaFormFieldName = (typeof ICA_FORM_FIELDS)[keyof typeof ICA_FORM_FI
 export const ICA_DEBIT_CHECK_INITIAL_MAX_LENGTH = 20;
 
 export function normalizeDebitCheckInitial(value: string): string {
-  return value.trim().toUpperCase();
+  return normalizeIcaInitials(value);
 }
 
 export function assertValidDebitCheckInitial(value: string, field: string): string {
@@ -37,7 +38,7 @@ export function assertValidDebitCheckInitial(value: string, field: string): stri
   if (
     !text ||
     text.length > ICA_DEBIT_CHECK_INITIAL_MAX_LENGTH ||
-    !/^[A-Z]+$/.test(text)
+    !/^\p{L}+$/u.test(text)
   ) {
     throw new Error(
       `${field} must contain 1–${ICA_DEBIT_CHECK_INITIAL_MAX_LENGTH} letters`,

@@ -39,7 +39,10 @@ serve(async (req) => {
         let unsignedUrl: string | null = null;
         let signedUrl: string | null = null;
         try {
-          unsignedUrl = await createCompAttachmentSignedUrl(adminClient, record.unsigned_pdf_path);
+          if (record.template_asset_id) {
+            const { data: asset } = await adminClient.from("onboarding_content_assets").select("path").eq("id", record.template_asset_id).single();
+            if (asset) unsignedUrl = adminClient.storage.from("onboarding-content").getPublicUrl(asset.path).data.publicUrl;
+          } else unsignedUrl = await createCompAttachmentSignedUrl(adminClient, record.unsigned_pdf_path);
         } catch {
           unsignedUrl = null;
         }

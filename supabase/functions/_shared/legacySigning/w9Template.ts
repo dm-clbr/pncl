@@ -1,10 +1,11 @@
+// Temporary compatibility path while uploaded signing is inactive.
 const W9_TEMPLATE_FILENAME = "pncl-w9-standard.pdf";
 
 /** Load the W-9 PDF template bundled with the calling edge function. */
 export async function loadW9TemplateBytes(callerModuleUrl: string): Promise<Uint8Array> {
   const candidates = [
     new URL(`./assets/${W9_TEMPLATE_FILENAME}`, callerModuleUrl),
-    new URL(`./assets/${W9_TEMPLATE_FILENAME}`, import.meta.url),
+    new URL(`../assets/${W9_TEMPLATE_FILENAME}`, import.meta.url),
   ];
 
   let lastError: unknown;

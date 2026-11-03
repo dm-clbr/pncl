@@ -1,3 +1,4 @@
+import { readCustomPdfInputValues } from "@/lib/pdf-input-values";
 import { ICA_TOTAL_PAGES, type DebitCheckInitials } from "@/lib/onboarding-contract";
 import {
   extractIcaFormValues,
@@ -8,12 +9,14 @@ import { useCallback, useRef, useState } from "react";
 import IcaFillablePdfViewer, {
   type IcaFillablePdfViewerHandle,
 } from "@/components/IcaFillablePdfViewer";
+import IcaSigningGuidance from "@/components/IcaSigningGuidance";
 import Sheet from "@/components/portal/Sheet";
 // The .pforms-* chrome is owned by this step, so it travels with it: the public
 // onboarding flow and the admin preview render it outside the portal pages.
 import "@/styles/portal-forms.css";
 
 export interface IcaSigningSubmitPayload {
+  fieldValues?: Record<string, string | boolean>;
   legalName: string;
   personalEmail: string;
   signatureName: string;
@@ -25,6 +28,7 @@ export interface IcaSigningSubmitPayload {
 }
 
 export interface IcaSigningStepProps {
+  pdfUrl: string;
   prefillLegalName?: string;
   prefillEmail?: string;
   eyebrow?: string;
@@ -37,6 +41,7 @@ export interface IcaSigningStepProps {
 }
 
 export default function IcaSigningStep({
+  pdfUrl,
   prefillLegalName = "",
   prefillEmail = "",
   eyebrow = "Agreement",
@@ -101,6 +106,7 @@ export default function IcaSigningStep({
     setSubmitting(true);
     try {
       await onSubmit({
+        fieldValues: await readCustomPdfInputValues(pdfDocument, container),
         legalName: extracted.legalName.trim(),
         personalEmail: extracted.personalEmail.trim(),
         signatureName: extracted.signatureName.trim(),
@@ -124,11 +130,8 @@ export default function IcaSigningStep({
         <p className="lead">{lead}</p>
       </div>
 
-      {/* Guidance, not a signing control: the email AcroForm field sits on page
-          12 and the signing sheet only unlocks on page 14, so this warning has
-          to be readable while the field is being filled. The field's own callout
-          carries no hint and src/lib is read-only, which leaves this paragraph
-          as the only place it can be said. */}
+      <IcaSigningGuidance legalName={prefillLegalName} />
+
       <p className="pforms-note">
         <strong>Email is required.</strong> The address you enter on the signature page becomes
         your account recovery email and is where PNCL delivers your electronic 1099. Use a
@@ -136,6 +139,7 @@ export default function IcaSigningStep({
       </p>
 
       <IcaFillablePdfViewer
+        pdfUrl={pdfUrl}
         ref={viewerRef}
         prefillLegalName={prefillLegalName}
         prefillEmail={prefillEmail}
@@ -162,6 +166,7 @@ export default function IcaSigningStep({
       />
 
       <Sheet open={signOpen} onClose={() => setSignOpen(false)} title="Sign your agreement">
+        <p className="ica-signature-rule">Before finishing, check that your drawn signature includes your full first and last name, and every Debit-Check box contains your actual initials.</p>
         <div className="pforms-acks">
           <label className="pforms-ack">
             <input

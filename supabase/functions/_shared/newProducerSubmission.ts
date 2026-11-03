@@ -1,6 +1,8 @@
 import type { SupabaseClient, User } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { listUserDocumentRequests } from "./documentRequests.ts";
 import { filterAgentTodos } from "./agentDesignation.ts";
 import { loadAgentDesignations } from "./portalAgentDesignations.ts";
+import { signingRowsForUser } from "./signingRollout.ts";
 import { userHasCompAttachment } from "./portalCompAttachments.ts";
 import { computeAutoCompletionSets, getCompletedTodosFromMetadata, isTodoCompleteForUser, type PortalTodoRecord } from "./portalTodos.ts";
 
@@ -11,15 +13,18 @@ export async function submitNewProducer(adminClient: SupabaseClient, user: User)
   // An already accepted request remains accepted if the checklist later changes.
   if (existing) return existing.id;
 
+  const documents = await listUserDocumentRequests(adminClient, user.id);
+  const pendingDocuments = documents.filter(row => !row.signed_at);
+  if (pendingDocuments.length) throw new Error(`Sign these documents before submitting: ${pendingDocuments.map(row => row.campaign.title).join(", ")}.`);
+
   const { data, error } = await adminClient.from("portal_todos").select("*")
     .eq("published", true).order("sort_order", { ascending: true }).order("created_at", { ascending: true });
   if (error) throw new Error(error.message);
   const designations = await loadAgentDesignations(adminClient, [user.id]);
   const designation = designations.get(user.id) ?? "loa";
-  let rows = filterAgentTodos((data ?? []) as PortalTodoRecord[], designation);
-  if (rows.some((row) => row.slug === "comp_agreement") && !await userHasCompAttachment(adminClient, user.id)) {
-    rows = rows.filter((row) => row.slug !== "comp_agreement");
-  }
+  const signing = await signingRowsForUser(adminClient, (data ?? []) as PortalTodoRecord[], user.id);
+  let rows = filterAgentTodos(signing.rows.filter(row => row.published), designation);
+  if (!signing.enabled && rows.some(row => row.slug === "comp_agreement") && !await userHasCompAttachment(adminClient, user.id)) rows = rows.filter(row => row.slug !== "comp_agreement");
   const submission = rows.find((row) => row.slug === "submit_new_producer");
   if (!submission) throw new Error("New Producer submission is unavailable. Contact PNCL support.");
   const prerequisites = rows.filter((row) => row.phase === "on_board" || row.phase === "pre_license"

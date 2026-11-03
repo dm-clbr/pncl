@@ -1,3 +1,4 @@
+import { readCustomPdfInputValues } from "@/lib/pdf-input-values";
 import {
   extractW9FormValues,
   extractedToSubmitPayload,
@@ -15,6 +16,7 @@ import "@/styles/portal-forms.css";
 import type { SubmitPortalW9Payload } from "@/lib/portal-w9";
 
 interface W9SigningStepProps {
+  pdfUrl: string;
   prefillLegalName?: string;
   eyebrow?: string;
   title?: string;
@@ -26,6 +28,7 @@ interface W9SigningStepProps {
 }
 
 export default function W9SigningStep({
+  pdfUrl,
   prefillLegalName = "",
   eyebrow = "Tax form",
   title = "Complete your W-9",
@@ -85,7 +88,7 @@ export default function W9SigningStep({
 
     setSubmitting(true);
     try {
-      await onSubmit(extractedToSubmitPayload(extracted, certificationAccepted));
+      await onSubmit({ ...extractedToSubmitPayload(extracted, certificationAccepted), fieldValues: await readCustomPdfInputValues(pdfDocument, container) });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to submit W-9.");
     } finally {
@@ -102,6 +105,7 @@ export default function W9SigningStep({
       </div>
 
       <W9FillablePdfViewer
+        pdfUrl={pdfUrl}
         ref={viewerRef}
         prefillLegalName={prefillLegalName}
         onPageChange={handlePageChange}

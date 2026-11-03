@@ -5,6 +5,8 @@ import { DIRECT_DEPOSIT_TODO_SLUG } from "@/lib/direct-deposit-content";
 export type DirectDepositAccountType = "checking" | "savings";
 
 export interface PortalDirectDepositFormValues {
+  templateAssetId?: string;
+  fieldValues?: Record<string, string | boolean>;
   legalName: string;
   addressLine1: string;
   city: string;
@@ -176,6 +178,8 @@ export async function submitPortalDirectDeposit(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
+      templateAssetId: values.templateAssetId,
+      fieldValues: values.fieldValues,
       legalName: values.legalName.trim(),
       addressLine1: values.addressLine1.trim(),
       city: values.city.trim(),

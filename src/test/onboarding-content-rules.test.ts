@@ -66,3 +66,5 @@ describe("welcome video completion", () => {
     expect(canCompleteTodo([...todos, { ...todos[0], id: "next", phase: "pre_license" }], "next")).toBe(false);
   });
 });
+
+vi.mock("https://esm.sh/pdf-lib@1.17.1", async () => import("pdf-lib"));

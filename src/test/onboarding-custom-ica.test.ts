@@ -34,7 +34,9 @@ describe("custom ICA signing", () => {
   it("still requires the standard ICA initials and produces the existing signed template", async () => {
     vi.stubGlobal("Deno", { env: { get: () => undefined }, readFile: async () => Uint8Array.from(await readFile("public/documents/pncl-ica-standard.pdf")) });
     expect(() => validateSubmitOnboardingContractPayload({ ...payload, debitCheckInitials: undefined })).toThrow("initials");
-    const signed = await generateSignedIcaPdf(validateSubmitOnboardingContractPayload(payload), new Date("2026-10-22T16:00:00Z"));
+    const bytes = Uint8Array.from(await readFile("public/documents/pncl-ica-standard.pdf"));
+    const signed = await generateSignedIcaPdf(validateSubmitOnboardingContractPayload(payload), new Date("2026-10-22T16:00:00Z"), undefined, undefined, { bytes, sha256: createHash("sha256").update(bytes).digest("hex"), version: "uploaded-ica" });
     expect((await PDFDocument.load(signed)).getPageCount()).toBe(15);
+    if (process.env.PNCL_SIGNING_QA_DIR) await writeFile(`${process.env.PNCL_SIGNING_QA_DIR}/ica-sample.pdf`, signed);
   });
 });

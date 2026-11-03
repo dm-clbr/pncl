@@ -46,7 +46,7 @@ describe("Onboarding audience settings", () => {
     const rows = [record("done", { phase: "on_board" }), record("hidden", { show_ibo: false }), record("ibo_only", { show_loa: false, phase: "licensing" })];
     const from = (table: string) => {
       const data = table === "portal_todos" ? rows : [{ user_id: "ibo-agent", designation: "ibo" }, { user_id: "loa-agent", designation: "loa" }];
-      const query = { select: () => query, eq: () => query, order: () => query, in: () => query, then: (resolve: (v: unknown) => void) => resolve({ data, error: null }) };
+      const query = { single: async () => ({ data: { enabled: true, legacy_ica_sources: {}, legacy_steps: [] }, error: null }), select: () => query, eq: () => query, order: () => query, in: () => query, then: (resolve: (v: unknown) => void) => resolve({ data, error: null }) };
       return query;
     };
     const progress = await computePortalTodoProgressByUserId({ from } as never, [

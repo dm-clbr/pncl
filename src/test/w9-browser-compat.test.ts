@@ -4,7 +4,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 import { NAVIGATION_FALLBACK_DENYLIST } from "@/lib/navigation-fallback";
-import { W9_PDF_URL } from "@/lib/w9-form";
+const W9_PDF_URL = "/documents/pncl-w9-standard.pdf"; // Local PDF fixture, never a signing fallback.
 
 const projectPath = (...segments: string[]) => path.resolve(process.cwd(), ...segments);
 

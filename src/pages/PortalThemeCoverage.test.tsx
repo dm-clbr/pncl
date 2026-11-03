@@ -21,7 +21,7 @@ vi.mock("@/lib/analytics", () => ({ trackPageView: vi.fn() }));
 
 const attachment: PortalCompAttachment = {
   id: "test-attachment", userId: "test-agent", title: "Test attachment", status: "pending",
-  assignedAt: "2026-10-14T12:00:00Z", signatureName: null, signedAt: null, documentUrl: null,
+  assignedAt: "2026-10-14T12:00:00Z", signatureName: null, signedAt: null, documentUrl: "/uploaded-comp.pdf", templateAssetId: "comp-source",
 };
 const mount = (ui: React.ReactNode) => render(<MemoryRouter>{ui}</MemoryRouter>);
 
@@ -61,10 +61,11 @@ describe("remaining portal theme coverage", () => {
     fireEvent.click(button);
     expect(signPortalCompAttachment).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Review uploaded document" }));
     vi.mocked(signPortalCompAttachment).mockResolvedValue({ attachment: { ...attachment, status: "signed", signatureName: "Test Agent" }, message: "Saved" });
     fireEvent.click(button);
     await waitFor(() => expect(signPortalCompAttachment).toHaveBeenCalledWith("fixture", {
-      attachmentId: "test-attachment", signatureName: "Test Agent", agreementAccepted: true,
+      attachmentId: "test-attachment", templateAssetId: "comp-source", fieldValues: {}, signatureName: "Test Agent", agreementAccepted: true,
     }));
     expect(await screen.findByRole("heading", { name: "Comp attachment on file" })).toBeInTheDocument();
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
@@ -82,3 +83,5 @@ describe("remaining portal theme coverage", () => {
     expect(screen.queryByText("Protected content")).not.toBeInTheDocument();
   });
 });
+
+vi.mock("@/components/SigningDocumentReview", () => ({ default: ({ onReviewed }: { onReviewed: (ready: boolean) => void }) => <button type="button" onClick={() => onReviewed(true)}>Review uploaded document</button> }));

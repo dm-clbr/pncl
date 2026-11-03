@@ -1,7 +1,6 @@
 import { SURELC_REFERENCE_FILE, type SupportingFile } from "../../supabase/functions/_shared/onboardingAttachments";
 import { isTodoApplicableToAgent } from "@/lib/agent-designation";
 import type { User } from "@supabase/supabase-js";
-import { fetchPortalCompAttachments } from "@/lib/portal-comp-attachments";
 import { getSupabaseClient, getSupabaseConfig, isSupabaseAuthConfigured } from "@/lib/supabase";
 
 export function filterPortalTodosForAgent(todos: PortalTodo[], designation: unknown): PortalTodo[] {
@@ -29,6 +28,8 @@ export interface PortalTodo {
   external: boolean;
   actionLabel: string;
   showEmailHint?: boolean;
+  notifyOnLogin?: boolean;
+  uploadedSigning?: boolean;
   showLoa?: boolean;
   showIbo?: boolean;
   phase: PortalTodoPhase;
@@ -221,6 +222,8 @@ interface PortalTodoResponse {
   external: boolean;
   actionLabel: string;
   showEmailHint: boolean;
+  notifyOnLogin?: boolean;
+  uploadedSigning?: boolean;
   showLoa?: boolean;
   showIbo?: boolean;
   phase?: PortalTodoPhase;
@@ -241,6 +244,8 @@ function mapPortalTodo(row: PortalTodoResponse): PortalTodo {
     external: row.external,
     actionLabel: row.actionLabel,
     showEmailHint: row.showEmailHint,
+    notifyOnLogin: row.notifyOnLogin === true,
+    uploadedSigning: row.uploadedSigning,
     showLoa: row.showLoa,
     showIbo: row.showIbo,
     phase: row.phase === "new_producer" ? "licensing" : row.phase ?? "on_board",
@@ -272,27 +277,7 @@ export async function fetchPortalTodos(accessToken: string): Promise<PortalTodo[
   const todos = (data.todos ?? []) as PortalTodoResponse[];
   // An empty configured checklist is intentional; do not resurrect fallback steps.
   const mapped = todos.map(mapPortalTodo);
-  return filterCompAgreementTodo(accessToken, mapped);
-}
-
-async function filterCompAgreementTodo(
-  accessToken: string,
-  todos: PortalTodo[],
-): Promise<PortalTodo[]> {
-  if (!todos.some((todo) => todo.id === COMP_AGREEMENT_TODO_ID)) {
-    return todos;
-  }
-
-  try {
-    const attachments = await fetchPortalCompAttachments(accessToken);
-    if (attachments.length > 0) {
-      return todos;
-    }
-  } catch {
-    // If comp attachments can't be loaded, hide the step so agents aren't blocked.
-  }
-
-  return todos.filter((todo) => todo.id !== COMP_AGREEMENT_TODO_ID);
+  return mapped;
 }
 
 type CompletedPortalTodos = Record<string, boolean>;
@@ -331,6 +316,13 @@ export function isTodoCompleted(
   todo: PortalTodo,
   options?: ResolveTodoOptions,
 ): boolean {
+  if (todo.uploadedSigning !== false) {
+  if (todo.id === "ica_setup") return todo.completed === true || options?.icaSubmitted === true;
+  if (todo.id === "w9_setup") return todo.completed === true || options?.w9Submitted === true;
+  if (todo.id === "direct_deposit_setup") return todo.completed === true || options?.directDepositSubmitted === true;
+  if (todo.id === "comp_agreement") return todo.completed === true;
+  }
+  if (todo.id.startsWith("document_request_")) return todo.completed === true;
   // Training completion is version-aware on the server. In particular, an
   // older `completed_portal_todos.disclosures` metadata flag cannot satisfy
   // the current published curriculum.
@@ -414,6 +406,8 @@ async function notifyNewProducerSubmission(): Promise<void> {
 }
 
 export async function completePortalTodo(todoId: string, todos: PortalTodo[], options?: TodoCompletionOptions): Promise<void> {
+  if (todos.find(todo => todo.id === todoId)?.uploadedSigning !== false && ["ica_setup", "w9_setup", "direct_deposit_setup", "comp_agreement"].includes(todoId)) throw new Error("Review and sign the configured document to complete this step.");
+  if (todoId.startsWith("document_request_")) throw new Error("Review and sign the document to complete this step.");
   if ((isOnboardingVideoTodo(todoId) || todos.find(todo => todo.id === todoId)?.contentType?.includes("video")) && !options?.videoPlaybackVerified) {
     throw new Error(isSureLcTutorialTodo(todoId) ? "Watch the full SureLC tutorial before completing this step." : "Watch the full video before completing this step.");
   }

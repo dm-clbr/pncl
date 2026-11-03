@@ -1,3 +1,7 @@
+import legacyHandler from "./legacy.ts";
+import { uploadedSigningEnabled } from "../_shared/signingRollout.ts";
+import { requireSigningAsset } from "../_shared/onboardingSigningRules.ts";
+import { inspectSigningPdf } from "../_shared/onboardingSigningPdf.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requirePortalUser } from "../_shared/adminAuth.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
@@ -8,7 +12,6 @@ import {
   validateSubmitOnboardingContractPayload,
 } from "../_shared/onboardingContract.ts";
 import {
-  getPortalIcaPdfPath,
   ICA_TODO_SLUG,
   mapPortalIcaSummary,
   PORTAL_ICA_PDF_BUCKET,
@@ -46,15 +49,19 @@ serve(async (req) => {
 
   try {
     const { user, adminClient } = await requirePortalUser(req);
+    if (!await uploadedSigningEnabled(adminClient, user.id)) return legacyHandler(req);
     const body = await req.json();
     const designation = (await loadAgentDesignations(adminClient, [user.id])).get(user.id) ?? "loa";
     const content = await loadOnboardingContent(adminClient, designation);
+    requireSigningAsset(content.ica, "ICA");
     assertCurrentIcaTemplate(body?.templateAssetId, content.ica?.id ?? null);
-    const payload = validateSubmitOnboardingContractPayload(body, Boolean(content.ica));
     const customTemplate = await downloadIcaAsset(adminClient, content.ica);
+    const signingMode = await inspectSigningPdf(customTemplate.bytes, "ica");
+    const payload = validateSubmitOnboardingContractPayload(body, signingMode !== "ica_fields");
+    payload.fieldValues = body.fieldValues;
     const signedAt = new Date();
     const now = signedAt.toISOString();
-    const pdfPath = getPortalIcaPdfPath(user.id);
+    const pdfPath = `${user.id}/ica/${crypto.randomUUID()}.pdf`;
     const ipAddress = getClientIp(req);
     const userAgent = req.headers.get("user-agent");
 
@@ -66,7 +73,7 @@ serve(async (req) => {
     const { error: uploadError } = await adminClient.storage
       .from(PORTAL_ICA_PDF_BUCKET)
       .upload(pdfPath, pdfBytes, {
-        upsert: true,
+        upsert: false,
         contentType: "application/pdf",
       });
 
@@ -83,7 +90,8 @@ serve(async (req) => {
         signature_name: payload.signatureName,
         ica_version: customTemplate?.version ?? ICA_VERSION,
         agent_designation: designation,
-        template_asset_id: content.ica?.id ?? null,
+        template_asset_id: content.ica!.id,
+        template_sha256: customTemplate.sha256,
         debit_check_initials: payload.debitCheckInitials,
         agreement_accepted: payload.agreementAccepted,
         counsel_acknowledged: payload.counselAcknowledged,

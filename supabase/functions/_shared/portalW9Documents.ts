@@ -1,8 +1,10 @@
+import { downloadIcaAsset } from "./onboardingContent.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { DIRECT_DEPOSIT_PDF_BUCKET } from "./portalDirectDeposit.ts";
 import type { PortalW9Record } from "./portalW9.ts";
 import { generatePortalW9PdfFromRecord, resolveW9PdfPath } from "./portalW9Pdf.ts";
 import { decryptTemporaryPassword } from "./security.ts";
+import { generatePortalW9PdfFromRecord as generateLegacyW9Pdf } from "./legacySigning/portalW9Pdf.ts";
 
 export const PORTAL_PROFILE_DOCUMENTS_BUCKET = DIRECT_DEPOSIT_PDF_BUCKET;
 
@@ -14,7 +16,14 @@ export async function ensureW9Pdf(
 ): Promise<string> {
   const path = resolveW9PdfPath(record);
   const tin = await decryptTemporaryPassword(record.tin_encrypted);
-  const pdfBytes = await generatePortalW9PdfFromRecord(record, tin, callerModuleUrl);
+  let pdfBytes: Uint8Array;
+  if (!record.template_asset_id) pdfBytes = await generateLegacyW9Pdf(record, tin, callerModuleUrl);
+  else {
+    const { data: asset, error } = await adminClient.from("onboarding_content_assets").select("*").eq("id", record.template_asset_id).eq("kind", "w9").single();
+    if (error || !asset) throw new Error("The original uploaded W-9 source is unavailable. The signed document cannot be regenerated from a different template.");
+    const template = await downloadIcaAsset(adminClient, asset);
+    pdfBytes = await generatePortalW9PdfFromRecord(record, tin, callerModuleUrl, template);
+  }
 
   const { error: uploadError } = await adminClient.storage
     .from(PORTAL_PROFILE_DOCUMENTS_BUCKET)

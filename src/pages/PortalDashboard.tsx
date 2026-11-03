@@ -447,6 +447,12 @@ export default function PortalDashboard() {
         <PortalPrimaryNav />
 
         <div className="portal-dashboard-sections">
+          {resolvedTodos.some(todo => todo.id.startsWith("document_request_") && todo.notifyOnLogin && !todo.completed) && (
+            <PortalNoticeBanner role="status" icon={<FileSignature size={20} />}
+              title="Documents need your signature"
+              body="PNCL has sent you documents to review and sign. Your signed copies will stay in your portal."
+              href="/portal/documents" cta="Review documents" />
+          )}
           {resignNotices.map((notice) => (
             <PortalNoticeBanner
               key={notice.href}

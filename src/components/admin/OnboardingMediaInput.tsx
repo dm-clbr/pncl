@@ -1,3 +1,4 @@
+import { isSigningDocumentKind } from "../../../supabase/functions/_shared/onboardingSigningRules";
 import { useEffect, useRef, useState } from "react";
 import { UploadCloud, FileText, Link2, Play, Eye, X } from "lucide-react";
 import {
@@ -8,6 +9,7 @@ import {
 } from "@/lib/onboarding-editor";
 import { formatFileSize, prepareVideo } from "@/lib/video-compression";
 import { getBunnyVideoEmbedUrl } from "@/lib/bunny-player";
+import PdfFieldEditor from "./PdfFieldEditor";
 export default function OnboardingMediaInput({
   designation,
   kind,
@@ -35,6 +37,7 @@ export default function OnboardingMediaInput({
   const [busy, setBusy] = useState(false);
   const [drag, setDrag] = useState(false);
   const [preview, setPreview] = useState(false);
+  const [editingFields, setEditingFields] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const controller = useRef<AbortController | null>(null);
   const onBusyRef = useRef(onBusy);
@@ -48,7 +51,7 @@ export default function OnboardingMediaInput({
   );
   const accept = isVideo
     ? "video/mp4,video/webm"
-    : kind === "ica"
+    : isSigningDocumentKind(kind)
       ? ".pdf,application/pdf"
       : ".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
   const choose = async (file?: File) => {
@@ -65,7 +68,7 @@ export default function OnboardingMediaInput({
     try {
       const allowed = isVideo
         ? ["video/mp4", "video/webm"]
-        : kind === "ica"
+        : isSigningDocumentKind(kind)
           ? ["application/pdf"]
           : [
               "application/pdf",
@@ -137,6 +140,11 @@ export default function OnboardingMediaInput({
   const embed = previewUrl ? getBunnyVideoEmbedUrl(previewUrl) : null;
   return (
     <div className="onboarding-media-input">
+      {editingFields && media?.url && <PdfFieldEditor url={media.url} filename={media.filename ?? "document.pdf"} kind={kind} onClose={() => setEditingFields(false)} onSave={async file => {
+        onBusy(true);
+        try { const next = await stageEditorFile(token, designation, kind, file, () => {}, new AbortController().signal); onChange(next); setStatus("Fields ready. Save this step to use the new PDF version."); }
+        finally { onBusy(false); }
+      }} />}
       {isVideo && (
         <div
           className="onboarding-segment"
@@ -236,7 +244,7 @@ export default function OnboardingMediaInput({
             <strong>
               {isVideo
                 ? "Drop a video here"
-                : kind === "ica"
+                : isSigningDocumentKind(kind)
                   ? "Drop your PDF here"
                   : "Drop a document here"}
             </strong>
@@ -252,7 +260,7 @@ export default function OnboardingMediaInput({
             <small>
               {isVideo
                 ? "MP4 or WebM"
-                : kind === "ica"
+                : isSigningDocumentKind(kind)
                   ? "PDF"
                   : "PDF, DOC or DOCX"}{" "}
               · up to {formatFileSize(limit)}
@@ -290,6 +298,7 @@ export default function OnboardingMediaInput({
                 </button>
               ) : (
                 <>
+                  {isSigningDocumentKind(kind) && <button type="button" className="onboarding-text-button" onClick={() => setEditingFields(true)}>Edit input fields</button>}
                   <a
                     className="onboarding-text-button"
                     href={media?.url}

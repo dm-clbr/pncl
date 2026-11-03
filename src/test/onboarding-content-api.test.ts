@@ -45,28 +45,18 @@ describe("admin content endpoint", () => {
     expect(state.upload).not.toHaveBeenCalled();
     expect(state.rpc).not.toHaveBeenCalled();
   });
-  it("validates PDF contents and publishes an immutable, flow-specific source", async () => {
+  it("rejects legacy publication so documents are managed through Onboarding Steps", async () => {
     const pdf = await PDFDocument.create(); pdf.addPage();
     const response = await state.handler(request(await pdf.save()));
-    expect(response.status).toBe(200);
-    expect(state.upload).toHaveBeenCalledWith(expect.stringMatching(/^ibo\/ica\/.+\.pdf$/), expect.any(Uint8Array), { contentType: "application/pdf", upsert: false });
-    expect(state.rpc).toHaveBeenCalledWith("publish_onboarding_content", {
-      asset: expect.objectContaining({ designation: "ibo", kind: "ica", sha256: expect.stringMatching(/^[a-f0-9]{64}$/), created_by: "admin-id" }), video_url: null,
-    });
-  });
-  it("rejects a non-PDF disguised as a PDF and invalid video bytes", async () => {
-    expect((await state.handler(request(new TextEncoder().encode("not a pdf")))).status).toBe(400);
-    expect((await state.handler(request(new Uint8Array([1, 2, 3]), "welcome_video", "video/mp4"))).status).toBe(400);
+    expect(response.status).toBe(409);
+    expect((await response.json()).message).toContain("Onboarding Steps");
     expect(state.upload).not.toHaveBeenCalled();
-  });
-  it("does not publish if storage fails, and reports an unconfirmed publication", async () => {
-    const video = new TextEncoder().encode("0000ftyp00000000");
-    state.upload.mockResolvedValueOnce({ error: { message: "Storage unavailable" } });
-    expect((await state.handler(request(video, "surelc_video", "video/mp4"))).status).toBe(400);
     expect(state.rpc).not.toHaveBeenCalled();
-    state.rpc.mockResolvedValueOnce({ error: { message: "Database unavailable" } });
-    const response = await state.handler(request(video, "surelc_video", "video/mp4"));
-    expect(response.status).toBe(400);
-    expect((await response.json()).message).toContain("publication could not be confirmed");
+  });
+  it("retains read access to configured flow content", async () => {
+    const response = await state.handler({ method: "GET" } as Request);
+    expect(response.status).toBe(200);
+    expect(state.load).toHaveBeenCalledWith(client, "loa");
+    expect(state.load).toHaveBeenCalledWith(client, "ibo");
   });
 });

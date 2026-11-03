@@ -1,0 +1,9 @@
+.ica-signing-guidance { margin: 20px 0; padding: 18px 20px; border: 1px solid rgba(245,176,65,.5); border-radius: 12px; background: rgba(245,176,65,.06); color: var(--bone, #f0ede4); }
+.ica-signing-guidance h3 { margin: 0 0 12px; font-size: 16px; font-weight: 600; }
+.ica-signing-guidance p { margin: 8px 0 0; font-size: 14px; line-height: 1.6; }
+.ica-signing-guidance .ica-signing-example { color: rgba(240,237,228,.8); }
+.ica-page-guidance { padding: 12px 16px; margin: 12px 12px 0; border-radius: 8px; background: rgba(0,0,0,.26); color: var(--bone, #f0ede4); font-size: 14px; line-height: 1.6; }
+.ica-page-guidance p { margin: 0; }
+.ica-page-guidance [role="alert"] { margin-top: 8px; color: #ffd194; }
+.ica-signature-rule { margin: 0 0 12px; font-size: 14px; line-height: 1.6; }
+@media (max-width: 620px) { .ica-signing-guidance { padding: 16px; } }

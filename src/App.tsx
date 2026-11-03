@@ -1,3 +1,8 @@
+import LegacyPortalCompAgreement from "./pages/PortalCompAgreement.legacy";
+import LegacyPortalDirectDeposit from "./pages/PortalDirectDeposit.legacy";
+import LegacyPortalW9 from "./pages/PortalW9.legacy";
+import LegacyPortalIca from "./pages/PortalIca.legacy";
+import SigningFlowGate from "./components/SigningFlowGate";
 import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -30,6 +35,8 @@ import PortalW9 from "./pages/PortalW9.tsx";
 import PortalIca from "./pages/PortalIca.tsx";
 import PortalDirectDeposit from "./pages/PortalDirectDeposit.tsx";
 import PortalCompAgreement from "./pages/PortalCompAgreement.tsx";
+import PortalDocuments from "./pages/PortalDocuments";
+import AdminDocumentRequests from "./pages/admin/AdminDocumentRequests";
 import PortalDisclosures from "./pages/PortalDisclosures.tsx";
 import PortalSupport from "./pages/PortalSupport.tsx";
 import PortalPayPolicy from "./pages/PortalPayPolicy.tsx";
@@ -139,7 +146,7 @@ const App = () => (
             path="/portal/w9"
             element={
               <ProtectedRoute>
-                <PortalW9 />
+                <SigningFlowGate legacy={<LegacyPortalW9 />}><PortalW9 /></SigningFlowGate>
               </ProtectedRoute>
             }
           />
@@ -147,7 +154,7 @@ const App = () => (
             path="/portal/ica"
             element={
               <ProtectedRoute>
-                <PortalIca />
+                <SigningFlowGate legacy={<LegacyPortalIca />}><PortalIca /></SigningFlowGate>
               </ProtectedRoute>
             }
           />
@@ -155,7 +162,7 @@ const App = () => (
             path="/portal/direct-deposit"
             element={
               <ProtectedRoute>
-                <PortalDirectDeposit />
+                <SigningFlowGate legacy={<LegacyPortalDirectDeposit />}><PortalDirectDeposit /></SigningFlowGate>
               </ProtectedRoute>
             }
           />
@@ -163,10 +170,11 @@ const App = () => (
             path="/portal/comp-agreement"
             element={
               <ProtectedRoute>
-                <PortalCompAgreement />
+                <SigningFlowGate legacy={<LegacyPortalCompAgreement />}><PortalCompAgreement /></SigningFlowGate>
               </ProtectedRoute>
             }
           />
+          <Route path="/portal/documents" element={<ProtectedRoute><PortalDocuments /></ProtectedRoute>} />
           <Route
             path="/portal/disclosures"
             element={
@@ -233,6 +241,7 @@ const App = () => (
             <Route path="dashboard-tabs" element={<AdminFullRoute><AdminDashboardTabs /></AdminFullRoute>} />
             <Route path="onboarding-logic" element={<AdminFullRoute><AdminOnboardingLogic /></AdminFullRoute>} />
             <Route path="onboarding-steps" element={<AdminFullRoute><AdminOnboardingSteps /></AdminFullRoute>} />
+            <Route path="onboarding-steps/documents" element={<AdminFullRoute><AdminDocumentRequests /></AdminFullRoute>} />
             <Route path="todos" element={<AdminFullRoute><AdminTodos /></AdminFullRoute>} />
             <Route path="genesis" element={<AdminRoute><AdminGenesis /></AdminRoute>} />
             <Route path="contracting" element={<AdminFullRoute><AdminContracting /></AdminFullRoute>} />

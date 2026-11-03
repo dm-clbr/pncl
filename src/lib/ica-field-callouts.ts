@@ -13,7 +13,7 @@ export interface IcaFieldCalloutMeta {
 export const ICA_FIELD_CALLOUTS: IcaFieldCalloutMeta[] = [
   {
     fieldName: ICA_FORM_FIELDS.fullName,
-    label: "Full legal name",
+    label: "Full first & last name",
     page: ICA_PDF_PAGES.signature,
   },
   {
@@ -24,43 +24,43 @@ export const ICA_FIELD_CALLOUTS: IcaFieldCalloutMeta[] = [
   {
     fieldName: ICA_FORM_FIELDS.executionSignature,
     label: "Signature",
-    hint: "Click to draw your signature",
+    hint: "Draw your full first and last name",
     page: ICA_PDF_PAGES.signature,
   },
   {
     fieldName: ICA_FORM_FIELDS.signature,
     label: "Signature",
-    hint: "Click to draw your signature",
+    hint: "Draw your full first and last name",
     page: ICA_PDF_PAGES.debitCheck,
   },
   {
     fieldName: ICA_FORM_FIELDS.initialA,
-    label: "Initial (A)",
-    hint: "Debit-Check statement A",
+    label: "Your initials (A)",
+    hint: "Your initials, not the letter A",
     page: ICA_PDF_PAGES.debitCheck,
   },
   {
     fieldName: ICA_FORM_FIELDS.initialB,
-    label: "Initial (B)",
-    hint: "Debit-Check statement B",
+    label: "Your initials (B)",
+    hint: "Your initials, not the letter B",
     page: ICA_PDF_PAGES.debitCheck,
   },
   {
     fieldName: ICA_FORM_FIELDS.initialC,
-    label: "Initial (C)",
-    hint: "Debit-Check statement C",
+    label: "Your initials (C)",
+    hint: "Your initials, not the letter C",
     page: ICA_PDF_PAGES.debitCheck,
   },
   {
     fieldName: ICA_FORM_FIELDS.initialD,
-    label: "Initial (D)",
-    hint: "Debit-Check statement D",
+    label: "Your initials (D)",
+    hint: "Your initials, not the letter D",
     page: ICA_PDF_PAGES.debitCheck,
   },
   {
     fieldName: ICA_FORM_FIELDS.initialE,
-    label: "Initial (E)",
-    hint: "Debit-Check statement E",
+    label: "Your initials (E)",
+    hint: "Your initials, not the letter E",
     page: ICA_PDF_PAGES.debitCheck,
   },
 ];

@@ -38,8 +38,10 @@ describe("uploaded ICA review", () => {
   it("does not allow signing an unavailable document", async () => {
     pdf.fail = true;
     await act(async () => { render(<UploadedIcaSigningStep asset={asset} onSubmit={vi.fn()} />); });
-    expect(screen.getByRole("alert")).toHaveTextContent("Unable to load the agreement");
+    expect(screen.getByRole("alert")).toHaveTextContent("Unable to load the signing document");
     expect(screen.getByRole("button", { name: "Sign agreement" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Retry agreement" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Retry document" })).toBeEnabled();
   });
 });
+
+vi.mock("./IcaSigningStep", () => ({ default: () => <div>Mapped uploaded agreement</div> }));

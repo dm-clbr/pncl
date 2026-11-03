@@ -27,6 +27,7 @@ function setup(role = 'admin', lookupError = false, linked = true) {
     getCompletedTodosFromMetadata: () => ({}), isTodoCompleteForUser: vi.fn(), PORTAL_PROFILE_DOCUMENTS_BUCKET: 'private',
     errorResponse: (message: string, status: number) => new Response(JSON.stringify({message}), {status}),
     handleCors: () => null, jsonResponse: (data: unknown) => new Response(JSON.stringify(data)), logOnboarding: vi.fn(),
+    signingRowsForUser: async (_client: unknown, rows: unknown[]) => ({ rows, enabled: true }), userHasCompAttachment: async () => true,
     filterAgentTodos: () => [], resolveAgentDesignation: () => 'loa', loadAgentDesignations: async () => new Map(),
     Deno: {env: {get: () => 'test-key'}},
   };

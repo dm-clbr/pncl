@@ -148,3 +148,6 @@ describe("PortalDirectDeposit", () => {
     expect(screen.getByLabelText(/routing number/)).toHaveFocus();
   });
 });
+
+vi.mock("@/hooks/useOnboardingContent", () => ({ useOnboardingContent: () => ({ content: { directDeposit: { id: "uploaded-source", url: "/uploaded.pdf" } }, error: null, retry: vi.fn() }) }));
+vi.mock("@/components/SigningDocumentReview", () => ({ default: ({ onReviewed }: { onReviewed: (ready: boolean) => void }) => <button type="button" onClick={() => onReviewed(true)}>Review uploaded document</button> }));

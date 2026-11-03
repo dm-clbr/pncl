@@ -1,3 +1,4 @@
+import { useOnboardingContent } from "@/hooks/useOnboardingContent";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileCheck2 } from "lucide-react";
@@ -28,6 +29,7 @@ import "@/styles/portal-forms.css";
 export default function PortalW9() {
   const navigate = useNavigate();
   const { user, session } = useAuth();
+  const { content, error: contentError, retry } = useOnboardingContent({ accessToken: session?.access_token, portal: true });
   const { w9, submitted, loading, setW9 } = usePortalW9();
   const [prefillLegalName, setPrefillLegalName] = useState("");
   const [prefillReady, setPrefillReady] = useState(false);
@@ -115,7 +117,8 @@ export default function PortalW9() {
       throw new Error("You must be signed in to submit your W-9.");
     }
 
-    const saved = await submitPortalW9(token, payload);
+    if (!content?.w9) throw new Error("Your W-9 document is not configured.");
+    const saved = await submitPortalW9(token, { ...payload, templateAssetId: content.w9.id });
     setW9(saved);
     await refreshPortalUser();
     toast.success("W-9 submitted. A PDF copy was saved to your profile.");
@@ -179,8 +182,9 @@ export default function PortalW9() {
             </Pane>
           )}
 
-          {!loading && !submitted && prefillReady && (
-            <W9SigningStep
+          {!loading && !submitted && !content?.w9 && <Pane><p role="alert">{contentError || (content ? "PNCL needs to upload the W-9 for your onboarding flow. Contact PNCL support." : "Loading your W-9 document…")}</p>{contentError && <button onClick={retry}>Retry</button>}</Pane>}
+          {!loading && !submitted && prefillReady && content?.w9 && (
+            <W9SigningStep key={content.w9.id} pdfUrl={content.w9.url}
               className="portal-w9-signing"
               eyebrow="Portal"
               title="Complete your W-9"

@@ -26,6 +26,7 @@ export interface EditorRow extends AdminPortalTodoSummary {
   flowAttachments?: FlowAttachments;
 }
 export interface EditorData {
+  signingRollout?: { enabled: boolean; revision: number; previewSelf: boolean; missing: string[]; pendingLegacy: number };
   features?: { supportingFiles: boolean };
   rows: EditorRow[];
   flows: Record<"loa" | "ibo", { rules: FlowRules; revision: number }>;
@@ -40,7 +41,10 @@ export const STAGES = [
 ] as const;
 export const CONTENT_LABELS: Record<StepContentType, string> = {
   system: "System step",
-  ica: "Agreement (PDF)",
+  ica: "ICA signing PDF",
+  w9: "W-9 signing PDF",
+  direct_deposit: "Direct deposit signing PDF",
+  comp_agreement: "Compensation signing PDF",
   welcome_video: "Welcome video",
   surelc_video: "SureLC video",
   document: "Document",
@@ -75,6 +79,12 @@ async function request(token: string, body?: unknown) {
     throw new Error(data.message || "Unable to load the onboarding editor.");
   return data;
 }
+export function setSigningPreview(token: string, enabled: boolean) {
+  return request(token, { action: "setSigningPreview", enabled });
+}
+export function setSigningActivation(token: string, enabled: boolean, revision: number) {
+  return request(token, { action: "setSigningActivation", enabled, revision, confirmed: true });
+}
 export function blankEditorRow(): EditorRow {
   return {
     id: "",
@@ -104,6 +114,7 @@ export function blankEditorRow(): EditorRow {
 }
 const sampleRows = (): EditorRow[] => {
   const extras = [
+    { id: "comp_agreement", title: "Sign your compensation agreement", description: "Review and sign the uploaded compensation agreement.", phase: "on_board", href: "/portal/comp-agreement", completionType: "auto" },
     {
       id: "onboarding_welcome_loa",
       title: "Welcome & training video",
@@ -146,7 +157,7 @@ const sampleRows = (): EditorRow[] => {
     phase: todo.phase as EditorRow["phase"],
     completionType: todo.completionType as EditorRow["completionType"],
     published: !todo.id.includes("welcome") && todo.id !== "surelc_tutorial",
-    showIbo: !["w9_setup", "direct_deposit_setup"].includes(todo.id),
+    showIbo: !["w9_setup", "direct_deposit_setup", "comp_agreement"].includes(todo.id),
     sortOrder: index,
     updatedAt: new Date().toISOString(),
   }));
@@ -201,6 +212,11 @@ export async function fetchEditor(token: string): Promise<EditorData> {
     await localPut("editor", data);
   }
   data.features = { supportingFiles: true };
+  for (const row of data.rows) {
+    const inferred = inferContentType(row.slug);
+    if (["ica", "w9", "direct_deposit", "comp_agreement"].includes(inferred)) row.contentType = inferred;
+  }
+  if (!data.rows.some(row => row.slug === "comp_agreement")) data.rows.push(sampleRows().find(row => row.slug === "comp_agreement")!);
   for (const row of data.rows)
     for (const media of [...Object.values(row.flowContent), ...supportingFilesForFlow(row.slug, row.flowAttachments, "loa"), ...supportingFilesForFlow(row.slug, row.flowAttachments, "ibo")])
       if (media?.assetId) {

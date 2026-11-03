@@ -1,3 +1,4 @@
+import { isSigningDocumentKind } from "../../../supabase/functions/_shared/onboardingSigningRules";
 import { supportingFilesForFlow } from "../../../supabase/functions/_shared/onboardingAttachments";
 import OnboardingSupportingFilesEditor from "./OnboardingSupportingFilesEditor";
 import { useEffect, useRef, useState } from "react";
@@ -45,6 +46,9 @@ export default function OnboardingStepModal({
   const preparing = Object.values(busy).some(Boolean);
   const fileType = [
     "ica",
+    "w9",
+    "direct_deposit",
+    "comp_agreement",
     "document",
     "video",
     "welcome_video",
@@ -52,7 +56,7 @@ export default function OnboardingStepModal({
   ].includes(draft.contentType);
   const video = draft.contentType.includes("video");
   const fixed =
-    ["ica", "welcome_video", "surelc_video"].includes(row.contentType) ||
+    ["ica", "w9", "direct_deposit", "comp_agreement", "welcome_video", "surelc_video"].includes(row.contentType) ||
     row.completionType === "auto";
   const change = <K extends keyof EditorRow>(key: K, value: EditorRow[K]) =>
     setDraft((previous) => ({ ...previous, [key]: value }));
@@ -81,7 +85,6 @@ export default function OnboardingStepModal({
           };
         if (
           fileType &&
-          draft.contentType !== "ica" &&
           draft.published &&
           (designation === "loa" ? draft.showLoa : draft.showIbo) &&
           !media
@@ -296,17 +299,9 @@ export default function OnboardingStepModal({
                       }
                     />
                   )}
-                  {draft.contentType === "ica" &&
-                    !draft.flowContent[designation] && (
-                      <a
-                        className="onboarding-hint"
-                        href="/documents/pncl-ica-standard.pdf"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Preview current standard ICA
-                      </a>
-                    )}
+                  {isSigningDocumentKind(draft.contentType) && !draft.flowContent[designation] && <p className="admin-error">Upload the {designation.toUpperCase()} signing PDF. Signing stays unavailable until a document is published.</p>}
+                  {draft.contentType === "w9" && <p className="onboarding-hint">Use a fillable W-9 with tax fields, signature, and date on page 1. The upload checks its fields before saving.</p>}
+                  {draft.contentType === "comp_agreement" && <p className="onboarding-hint">This template applies to this flow. Use Document requests to send private, agent-specific agreements.</p>}
                   {supportingFilesEnabled && <OnboardingSupportingFilesEditor
                     designation={designation} token={token} limit={limits.document}
                     files={supportingFilesForFlow(draft.slug, draft.flowAttachments, designation)}
@@ -318,8 +313,8 @@ export default function OnboardingStepModal({
             </div>
             {fileType && (
               <p className="onboarding-hint onboarding-preserve-note">
-                {draft.contentType === "ica"
-                  ? "Existing signed agreements stay on file. Only the main ICA PDF is signed; supporting files are separate reference documents."
+                {isSigningDocumentKind(draft.contentType)
+                  ? "Existing signed agreements stay on file. Only the main uploaded PDF is signed; supporting files are separate reference documents."
                   : "Uploaded files are applied when you save. Cancel keeps the current content."}
               </p>
             )}

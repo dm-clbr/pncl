@@ -1,3 +1,4 @@
+import { SIGNING_STEP_KINDS } from "./onboardingSigningRules.ts";
 export const APPLICATION_FIELDS = [
   ["phoneNumber", "Phone number"],
   ["dateOfBirth", "Date of birth"],
@@ -35,6 +36,9 @@ export const defaultFlowRules = (): FlowRules => ({
 export const CONTENT_TYPES = [
   "system",
   "ica",
+  "w9",
+  "direct_deposit",
+  "comp_agreement",
   "welcome_video",
   "surelc_video",
   "document",
@@ -61,7 +65,7 @@ export function canonicalStepSlug(slug: string) {
   );
 }
 export function inferContentType(slug: string): StepContentType {
-  if (slug === "ica_setup") return "ica";
+  if (slug in SIGNING_STEP_KINDS) return SIGNING_STEP_KINDS[slug as keyof typeof SIGNING_STEP_KINDS];
   if (slug.startsWith("onboarding_welcome_")) return "welcome_video";
   if (slug === "surelc_tutorial" || slug === "surelc_tutorial_ibo")
     return "surelc_video";

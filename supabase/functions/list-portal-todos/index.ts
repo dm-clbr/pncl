@@ -1,4 +1,6 @@
+import { isSigningDocumentKind } from "../_shared/onboardingSigningRules.ts";
 import { supportingFilesForFlow } from "../_shared/onboardingAttachments.ts";
+import { documentRequestTodos } from "../_shared/documentRequests.ts";
 import { canonicalStepSlug } from "../_shared/onboardingEditorRules.ts";
 import { loadFlowRules } from "../_shared/onboardingFlowRules.ts";
 import { filterAgentTodos } from "../_shared/agentDesignation.ts";
@@ -14,10 +16,9 @@ import {
   type PortalTodoRecord,
 } from "../_shared/portalTodos.ts";
 import { logOnboarding } from "../_shared/logger.ts";
-import {
-  COMP_AGREEMENT_TODO_SLUG,
-  userHasCompAttachment,
-} from "../_shared/portalCompAttachments.ts";
+import { signingRowsForUser } from "../_shared/signingRollout.ts";
+import { userHasCompAttachment } from "../_shared/portalCompAttachments.ts";
+
 
 serve(async (req) => {
   const cors = handleCors(req);
@@ -44,13 +45,10 @@ serve(async (req) => {
     const designations = await loadAgentDesignations(adminClient, [user.id]);
     const designation = designations.get(user.id) ?? "loa";
     const { rules } = await loadFlowRules(adminClient, designation);
-    const rows = filterAgentTodos((data ?? []) as PortalTodoRecord[], designations.get(user.id));
-    const hasCompAttachment = rows.some((row) => row.slug === COMP_AGREEMENT_TODO_SLUG)
-      ? await userHasCompAttachment(adminClient, user.id)
-      : false;
-    const visibleRows = hasCompAttachment
-      ? rows
-      : rows.filter((row) => row.slug !== COMP_AGREEMENT_TODO_SLUG);
+    const signing = await signingRowsForUser(adminClient, (data ?? []) as PortalTodoRecord[], user.id);
+    const rows = filterAgentTodos(signing.rows.filter(row => row.published), designations.get(user.id));
+    const hasComp = signing.enabled || !rows.some(row => row.slug === "comp_agreement") || await userHasCompAttachment(adminClient, user.id);
+    const visibleRows = hasComp ? rows : rows.filter(row => row.slug !== "comp_agreement");
     const autoKeys = new Set(
       visibleRows
         .filter((row) => row.completion_type === "auto" && row.auto_key)
@@ -64,8 +62,9 @@ serve(async (req) => {
 
     const visibleSlugs = new Set(visibleRows.map(row => row.slug));
     const todos = visibleRows.map((row) => ({
+      uploadedSigning: signing.enabled,
       ...mapPortalTodoForUser(
-        { ...row, href: row.flow_content?.[designation]?.url || row.href, external: row.flow_content?.[designation]?.url ? true : row.external },
+        { ...row, href: (!isSigningDocumentKind(row.content_type ?? "") && row.flow_content?.[designation]?.url) || row.href, external: !isSigningDocumentKind(row.content_type ?? "") && row.flow_content?.[designation]?.url ? true : row.external },
         isTodoCompleteForUser(row, user.id, completedMetadata, autoSets),
       ),
       supportingFiles: supportingFilesForFlow(row.slug, row.flow_content?.attachments, designation),
@@ -73,7 +72,7 @@ serve(async (req) => {
     }));
     const rank = (id: string) => { const index = rules.portalOrder.indexOf(canonicalStepSlug(id)); return index < 0 ? 10000 : index; };
     todos.sort((a,b) => rank(a.id) - rank(b.id));
-    return jsonResponse({ todos });
+    return jsonResponse({ todos: [...todos, ...await documentRequestTodos(adminClient, user.id)] });
   } catch (error) {
     if (error instanceof AdminAuthError) {
       return errorResponse(error.message, error.status, error.code);

@@ -1,8 +1,11 @@
+import { fillPdfInputFields } from "./pdfFieldValues.ts";
+import { flattenSigningForm } from "./onboardingSigningPdf.ts";
 import { PDFDocument, StandardFonts, rgb } from "https://esm.sh/pdf-lib@1.17.1";
 
 export type DirectDepositAccountType = "checking" | "savings";
 
 export interface SubmitDirectDepositPayload {
+  fieldValues?: Record<string, string | boolean>;
   legalName: string;
   addressLine1: string;
   city: string;
@@ -212,8 +215,11 @@ function drawLabelValue(
   return lineY - 28;
 }
 
-export async function generateDirectDepositPdf(payload: SubmitDirectDepositPayload, signedAt: Date): Promise<Uint8Array> {
-  const pdfDoc = await PDFDocument.create();
+export async function generateDirectDepositPdf(payload: SubmitDirectDepositPayload, signedAt: Date, source?: { bytes: Uint8Array; sha256: string; assetId: string }): Promise<Uint8Array> {
+  if (!source) throw new Error("Upload and publish a direct deposit PDF in Onboarding Steps before signing.");
+  const pdfDoc = await PDFDocument.load(source.bytes);
+  await fillPdfInputFields(pdfDoc, payload.fieldValues, payload.signatureName, signedAt);
+  if (pdfDoc.getForm().getFields().length) flattenSigningForm(pdfDoc);
   const page = pdfDoc.addPage([612, 792]);
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -229,7 +235,7 @@ export async function generateDirectDepositPdf(payload: SubmitDirectDepositPaylo
     color: rgb(0, 0, 0),
   });
 
-  page.drawText("DIRECT DEPOSIT REQUEST FORM", {
+  page.drawText("DIRECT DEPOSIT SUBMISSION RECORD", {
     x: margin,
     y,
     size: 16,
@@ -239,7 +245,7 @@ export async function generateDirectDepositPdf(payload: SubmitDirectDepositPaylo
 
   y -= 28;
   const intro =
-    "Complete this form to request direct deposit of your commission payments. Once submitted, a signed copy is saved to your PNCL profile.";
+    "This record accompanies the preceding uploaded direct deposit document. The agent reviewed that document and authorized the following details by electronic signature.";
   for (const line of wrapText(intro, 95)) {
     page.drawText(line, { x: margin, y, size: 10, font, color: rgb(0.2, 0.2, 0.2) });
     y -= 14;
@@ -291,7 +297,7 @@ export async function generateDirectDepositPdf(payload: SubmitDirectDepositPaylo
   y = drawLabelValue(page, font, boldFont, "Your bank's routing number", payload.routingNumber, margin, y, width);
 
   y -= 4;
-  for (const line of wrapText(DIRECT_DEPOSIT_AUTHORIZATION, 95)) {
+  for (const line of wrapText(`Source document: ${source.assetId}. By signing, the agent accepts the authorization in the preceding uploaded document.`, 95)) {
     page.drawText(line, { x: margin, y, size: 9.5, font, color: rgb(0, 0, 0) });
     y -= 13;
   }
@@ -351,6 +357,8 @@ export async function generateDirectDepositPdf(payload: SubmitDirectDepositPaylo
     color: rgb(0, 0, 0),
   });
 
+  page.drawText(`Source SHA-256: ${source.sha256}`, { x: margin, y: 60, size: 7, font });
+  await pdfDoc.attach(Uint8Array.from(new TextEncoder().encode(JSON.stringify({ templateAssetId: source.assetId, sha256: source.sha256, signedAt: signedAt.toISOString(), signatureName: payload.signatureName }))), "signature-source.json", { mimeType: "application/json" });
   return pdfDoc.save();
 }
 

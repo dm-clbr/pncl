@@ -125,3 +125,5 @@ describe("PortalW9", () => {
     );
   });
 });
+
+vi.mock("@/hooks/useOnboardingContent", () => ({ useOnboardingContent: () => ({ content: { w9: { id: "uploaded-source", url: "/uploaded.pdf" } }, error: null, retry: vi.fn() }) }));

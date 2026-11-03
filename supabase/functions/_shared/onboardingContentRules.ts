@@ -1,4 +1,4 @@
-export type OnboardingAssetKind = "ica" | "welcome_video" | "surelc_video";
+export type OnboardingAssetKind = "ica" | "w9" | "direct_deposit" | "comp_agreement" | "welcome_video" | "surelc_video";
 export const ONBOARDING_CONTENT_BUCKET = "onboarding-content";
 export const MAX_ICA_BYTES = 20 * 1024 * 1024;
 export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;

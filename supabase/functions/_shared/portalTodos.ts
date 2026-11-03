@@ -1,3 +1,4 @@
+import { loadSigningRollout, legacySigningRows } from "./signingRollout.ts";
 import type { FlowAttachments } from "./onboardingAttachments.ts";
 import { filterAgentTodos, isTodoApplicableToAgent } from "./agentDesignation.ts";
 import { loadAgentDesignations } from "./portalAgentDesignations.ts";
@@ -24,6 +25,7 @@ export const PORTAL_TODO_AUTO_KEYS = [
   "ica",
   "w9",
   "direct_deposit",
+  "comp_agreement",
   "profile",
   "drivers_license",
   "npn",
@@ -319,6 +321,12 @@ export async function computeAutoCompletionSets(
     );
   }
 
+  if (autoKeys.has("comp_agreement")) {
+    tasks.push(adminClient.from("portal_comp_attachments").select("user_id").in("user_id", userIds).eq("status", "signed").then(({ data, error }) => {
+      if (error) throw new Error(error.message);
+      sets.set("comp_agreement", collectUserIds(data));
+    }));
+  }
   if (autoKeys.has("direct_deposit")) {
     tasks.push(
       adminClient
@@ -476,7 +484,7 @@ export interface PortalTodoProgressSummary {
 export async function computePortalTodoProgressByUserId(
   adminClient: SupabaseClient,
   users: Array<{ id: string; user_metadata?: Record<string, unknown> | null }>,
-  compAgreementSlug = "comp_agreement",
+  _compAgreementSlug = "comp_agreement",
 ): Promise<Map<string, PortalTodoProgressSummary>> {
   const progressByUserId = new Map<string, PortalTodoProgressSummary>();
   if (users.length === 0) return progressByUserId;
@@ -499,36 +507,25 @@ export async function computePortalTodoProgressByUserId(
 
   const userIds = users.map((user) => user.id);
   const designations = await loadAgentDesignations(adminClient, userIds);
-  const hasCompTodo = todos.some((row) => row.slug === compAgreementSlug);
-  let usersWithCompAttachment = new Set<string>();
-
-  if (hasCompTodo && userIds.length > 0) {
-    const { data: compRows, error: compError } = await adminClient
-      .from("portal_comp_attachments")
-      .select("user_id")
-      .in("user_id", userIds);
-
-    if (compError) {
-      throw new Error(compError.message);
-    }
-
-    usersWithCompAttachment = new Set(
-      (compRows ?? []).map((row) => row.user_id as string),
-    );
-  }
-
+  const rollout = await loadSigningRollout(adminClient);
+  const { data: previewRows, error: previewError } = await adminClient.from("onboarding_signing_preview_users").select("user_id").in("user_id", userIds);
+  if (previewError) throw new Error(previewError.message);
+  const previewUsers = new Set((previewRows ?? []).map(row => row.user_id));
+  const { data: compRows, error: compError } = await adminClient.from("portal_comp_attachments").select("user_id").in("user_id", userIds);
+  if (compError) throw new Error(compError.message);
+  const compUsers = new Set((compRows ?? []).map(row => row.user_id));
+  const oldTodos = legacySigningRows(todos, rollout).filter(row => row.published);
   const autoKeys = new Set(
-    todos
+    [...todos, ...oldTodos]
       .filter((row) => row.completion_type === "auto" && row.auto_key)
       .map((row) => row.auto_key as string),
   );
   const autoSets = await computeAutoCompletionSets(adminClient, autoKeys, userIds);
 
   for (const user of users) {
-    const applicableTodos = filterAgentTodos(todos, designations.get(user.id));
-    const visibleTodos = hasCompTodo && !usersWithCompAttachment.has(user.id)
-      ? applicableTodos.filter((row) => row.slug !== compAgreementSlug)
-      : applicableTodos;
+    const enabled = rollout.enabled || previewUsers.has(user.id);
+    const applicableTodos = filterAgentTodos(enabled ? todos : oldTodos, designations.get(user.id));
+    const visibleTodos = enabled || compUsers.has(user.id) ? applicableTodos : applicableTodos.filter(row => row.slug !== "comp_agreement");
     const completedMetadata = getCompletedTodosFromMetadata(user.user_metadata ?? undefined);
 
     const phases = PORTAL_TODO_PHASES.map((phaseId) => {

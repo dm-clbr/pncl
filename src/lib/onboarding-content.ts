@@ -11,10 +11,15 @@ export interface OnboardingAsset {
   url: string;
   size_bytes: number;
   created_at: string;
+  signing_mode?: "ica_fields" | "w9_fields" | "signature_record" | null;
 }
 export interface OnboardingFlowContent {
+  signingEnabled?: boolean;
   designation: AgentDesignation;
   ica: OnboardingAsset | null;
+  w9?: OnboardingAsset | null;
+  directDeposit?: OnboardingAsset | null;
+  compAgreement?: OnboardingAsset | null;
   welcomeVideo: OnboardingAsset | null;
   surelcVideo: OnboardingAsset | null;
   rules?: FlowRules;

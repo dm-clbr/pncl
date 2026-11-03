@@ -1,3 +1,4 @@
+import { normalizeIcaInitials } from "../../supabase/functions/_shared/icaSigningRules";
 /** AcroForm field names in pncl-ica-standard.pdf (prepared in Acrobat). */
 export const ICA_FORM_FIELDS = {
   day: "day",
@@ -34,7 +35,7 @@ export const ICA_DEBIT_CHECK_INITIAL_FIELD_NAMES = [
 ] as const;
 
 export function normalizeDebitCheckInitial(value: string): string {
-  return value.trim().toUpperCase();
+  return normalizeIcaInitials(value);
 }
 
 export function isValidDebitCheckInitial(value: string): boolean {

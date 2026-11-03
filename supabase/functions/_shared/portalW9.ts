@@ -45,6 +45,7 @@ export interface PortalW9FormValues {
 }
 
 export interface SubmitPortalW9Payload {
+  fieldValues?: Record<string, string | boolean>;
   legalName: string;
   businessName?: string | null;
   taxClassification: string;
@@ -83,6 +84,7 @@ export interface PortalW9Summary {
 }
 
 export interface PortalW9Record {
+  template_asset_id?: string | null;
   user_id: string;
   legal_name: string;
   business_name: string | null;

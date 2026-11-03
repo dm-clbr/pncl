@@ -1,3 +1,4 @@
+import { isSigningDocumentKind } from "../../../supabase/functions/_shared/onboardingSigningRules";
 import { useEffect, useRef, useState } from "react";
 import { ExternalLink, X } from "lucide-react";
 import {
@@ -26,14 +27,10 @@ export default function OnboardingStepPreview({
   // Missing content for one flow must never use the other flow's uploaded file.
   const source =
     media?.url ||
-    (row.contentType === "ica"
-      ? "/documents/pncl-ica-standard.pdf"
-      : !video && row.contentType !== "document"
-        ? row.href
-        : "");
+    (!isSigningDocumentKind(row.contentType) && !video && row.contentType !== "document" ? row.href : "");
   const embed = video ? getBunnyVideoEmbedUrl(source) : null;
   const pdf =
-    row.contentType === "ica" ||
+    isSigningDocumentKind(row.contentType) ||
     /\.pdf(?:$|[?#])/i.test(media?.filename ?? source);
   const visible = flow === "loa" ? row.showLoa : row.showIbo;
   const attachments = supportingFilesForFlow(

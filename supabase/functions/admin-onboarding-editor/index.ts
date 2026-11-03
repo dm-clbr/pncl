@@ -1,3 +1,5 @@
+import { isSigningDocumentKind } from "../_shared/onboardingSigningRules.ts";
+import { inspectSigningPdf } from "../_shared/onboardingSigningPdf.ts";
 import { supportingFilesForFlow, validateSupportingFiles } from "../_shared/onboardingAttachments.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { PDFDocument } from "https://esm.sh/pdf-lib@1.17.1";
@@ -18,6 +20,7 @@ import {
 } from "../_shared/onboardingEditorRules.ts";
 import { loadFlowRules } from "../_shared/onboardingFlowRules.ts";
 import { loadOnboardingContent } from "../_shared/onboardingContent.ts";
+import { loadSigningRollout } from "../_shared/signingRollout.ts";
 import {
   ONBOARDING_CONTENT_BUCKET,
   MAX_ICA_BYTES,
@@ -63,7 +66,7 @@ serve(async (req) => {
       if (
         !(file instanceof File) ||
         !["loa", "ibo"].includes(String(designation)) ||
-        !["ica", "welcome_video", "surelc_video", "video", "document"].includes(
+        !["ica", "w9", "direct_deposit", "comp_agreement", "welcome_video", "surelc_video", "video", "document"].includes(
           String(kind),
         )
       )
@@ -71,7 +74,7 @@ serve(async (req) => {
       const video = String(kind).includes("video");
       const allowed: Record<string, string> = video
         ? { "video/mp4": "mp4", "video/webm": "webm" }
-        : kind === "ica"
+        : isSigningDocumentKind(String(kind))
           ? { "application/pdf": "pdf" }
           : {
               "application/pdf": "pdf",
@@ -92,7 +95,7 @@ serve(async (req) => {
         if (prefix !== "%PDF-") throw new Error("This file is not a PDF.");
         const pdf = await PDFDocument.load(bytes);
         if (
-          kind === "ica" &&
+          isSigningDocumentKind(String(kind)) &&
           (pdf.getPageCount() < 1 || pdf.getPageCount() > 100)
         )
           throw new Error("ICA documents must contain 1–100 pages.");
@@ -116,6 +119,7 @@ serve(async (req) => {
         )
       )
         throw new Error("Invalid Word file.");
+      const signingMode = isSigningDocumentKind(String(kind)) ? await inspectSigningPdf(bytes, kind as "ica" | "w9" | "direct_deposit" | "comp_agreement") : null;
       const id = crypto.randomUUID();
       const path = `${designation}/${kind}/${id}.${extension}`;
       const sha256 = Array.from(
@@ -137,6 +141,7 @@ serve(async (req) => {
           content_type: file.type,
           size_bytes: file.size,
           sha256,
+          signing_mode: signingMode,
           created_by: user.id,
         });
       if (error)
@@ -166,6 +171,13 @@ serve(async (req) => {
         loadOnboardingContent(client, "loa"),
         loadOnboardingContent(client, "ibo"),
       ]);
+      const fileIds = [...new Set(all.flatMap(row => [row.flow_content?.loa?.assetId, row.flow_content?.ibo?.assetId]).filter(Boolean))];
+      const sourceAssets = new Map();
+      if (fileIds.length) {
+        const { data: assets, error: assetsError } = await client.from("onboarding_content_assets").select("id,path,filename,size_bytes,designation,kind").in("id", fileIds);
+        if (assetsError) throw new Error(assetsError.message);
+        for (const asset of assets ?? []) sourceAssets.set(asset.id, asset);
+      }
       const rows = all
         .filter(
           (row) =>
@@ -183,6 +195,10 @@ serve(async (req) => {
               ? inferContentType(row.slug)
               : row.content_type;
           const flowContent = { loa: row.flow_content?.loa, ibo: row.flow_content?.ibo };
+          for (const flow of ["loa", "ibo"] as const) {
+            const asset = sourceAssets.get(flowContent[flow]?.assetId);
+            if (asset && asset.designation === flow && asset.kind === contentType) flowContent[flow] = { mode: "file", assetId: asset.id, filename: asset.filename, size: asset.size_bytes, url: client.storage.from(ONBOARDING_CONTENT_BUCKET).getPublicUrl(asset.path).data.publicUrl };
+          }
           const key =
             contentType === "ica"
               ? "ica"
@@ -224,9 +240,29 @@ serve(async (req) => {
             },
           };
         });
-      return jsonResponse({ rows, flows: { loa, ibo }, limits, features: { supportingFiles: true } });
+      const rollout = await loadSigningRollout(client);
+      const { data: previewUser, error: previewError } = await client.from("onboarding_signing_preview_users").select("user_id").eq("user_id", user.id).maybeSingle();
+      if (previewError) throw new Error(previewError.message);
+      const { count: pendingLegacy, error: legacyError } = await client.from("portal_comp_attachments").select("id", { count: "exact", head: true }).eq("status", "pending").is("template_asset_id", null);
+      if (legacyError) throw new Error(legacyError.message);
+      const missing = rows.flatMap(row => isSigningDocumentKind(row.contentType) && row.published ? (["loa", "ibo"] as const).filter(flow => (flow === "loa" ? row.showLoa : row.showIbo) && !row.flowContent[flow]?.assetId).map(flow => `${row.title} (${flow.toUpperCase()})`) : []);
+      return jsonResponse({ rows, flows: { loa, ibo }, limits, features: { supportingFiles: true }, signingRollout: { enabled: rollout.enabled, revision: rollout.revision, previewSelf: Boolean(previewUser), missing, pendingLegacy: pendingLegacy ?? 0 } });
     }
     const body = await req.json();
+    if (body.action === "setSigningPreview") {
+      if (typeof body.enabled !== "boolean") throw new Error("Choose whether to preview uploaded signing.");
+      const result = body.enabled
+        ? await client.from("onboarding_signing_preview_users").upsert({ user_id: user.id }, { onConflict: "user_id" })
+        : await client.from("onboarding_signing_preview_users").delete().eq("user_id", user.id);
+      if (result.error) throw new Error(result.error.message);
+      return jsonResponse({ enabled: body.enabled });
+    }
+    if (body.action === "setSigningActivation") {
+      if (typeof body.enabled !== "boolean" || !Number.isInteger(body.revision) || body.confirmed !== true) throw new Error("Review and confirm the signing activation change.");
+      const { data: revision, error: activationError } = await client.rpc("set_onboarding_signing_rollout", { p_enabled: body.enabled, p_revision: body.revision, p_actor: user.id });
+      if (activationError) throw new Error(activationError.message);
+      return jsonResponse({ enabled: body.enabled, revision });
+    }
     if (body.action === "saveFlow") {
       if (!["loa", "ibo"].includes(body.designation))
         throw new Error("Choose LOA or IBO.");
@@ -255,7 +291,7 @@ serve(async (req) => {
       throw new Error("Step no longer exists. Reload the page.");
     if (!CONTENT_TYPES.includes(row.contentType))
       throw new Error("Choose a content type.");
-    const reserved = ["ica", "welcome_video", "surelc_video"];
+    const reserved = ["ica", "w9", "direct_deposit", "comp_agreement", "welcome_video", "surelc_video"];
     if (
       reserved.includes(row.contentType) &&
       inferContentType(previous?.slug ?? "") !== row.contentType
@@ -265,9 +301,9 @@ serve(async (req) => {
       );
     if (
       previous &&
-      (reserved.includes(previous.content_type) ||
+      (reserved.includes(inferContentType(previous.slug)) || reserved.includes(previous.content_type) ||
         previous.completion_type === "auto") &&
-      row.contentType !== previous.content_type
+      row.contentType !== (previous.content_type === "system" ? inferContentType(previous.slug) : previous.content_type)
     )
       throw new Error("The content type of a system step cannot be changed.");
     const flowContent: Record<string, unknown> = {};
@@ -275,7 +311,7 @@ serve(async (req) => {
       const media = row.flowContent?.[designation];
       if (!media) continue;
       if (media.mode === "link") {
-        if (row.contentType === "ica" || row.contentType === "document")
+        if (isSigningDocumentKind(row.contentType) || row.contentType === "document")
           throw new Error("Upload a document file.");
         flowContent[designation] = {
           mode: "link",
@@ -306,7 +342,7 @@ serve(async (req) => {
     }
     if (
       todo.published &&
-      ["video", "welcome_video", "surelc_video", "document"].includes(
+      ["ica", "w9", "direct_deposit", "comp_agreement", "video", "welcome_video", "surelc_video", "document"].includes(
         row.contentType,
       )
     ) {

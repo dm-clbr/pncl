@@ -29,6 +29,8 @@ export interface PortalW9FormValues {
 }
 
 export interface SubmitPortalW9Payload {
+  templateAssetId?: string;
+  fieldValues?: Record<string, string | boolean>;
   legalName: string;
   businessName: string | null;
   taxClass: W9TaxClassOptionId;

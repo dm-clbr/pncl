@@ -12,8 +12,8 @@ export interface W9PrefillInput {
 
 function formatToday(): string {
   return new Date().toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
+    month: "2-digit",
+    day: "2-digit",
     year: "numeric",
   });
 }

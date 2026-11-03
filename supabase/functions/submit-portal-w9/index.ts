@@ -1,3 +1,6 @@
+import legacyHandler from "./legacy.ts";
+import { uploadedSigningEnabled } from "../_shared/signingRollout.ts";
+import { loadPortalSigningSource } from "../_shared/onboardingContent.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requirePortalUser } from "../_shared/adminAuth.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
@@ -7,7 +10,7 @@ import {
   type PortalW9Record,
   validateSubmitPortalW9Payload,
 } from "../_shared/portalW9.ts";
-import { generateSignedW9Pdf, getW9PdfPath } from "../_shared/portalW9Pdf.ts";
+import { generateSignedW9Pdf } from "../_shared/portalW9Pdf.ts";
 import { PORTAL_PROFILE_DOCUMENTS_BUCKET } from "../_shared/portalW9Documents.ts";
 import { encryptTemporaryPassword } from "../_shared/security.ts";
 
@@ -37,23 +40,27 @@ serve(async (req) => {
 
   try {
     const { user, adminClient } = await requirePortalUser(req);
-    const payload = validateSubmitPortalW9Payload(await req.json());
+    if (!await uploadedSigningEnabled(adminClient, user.id)) return legacyHandler(req);
+    const body = await req.json();
+    const source = await loadPortalSigningSource(adminClient, user.id, "w9", body.templateAssetId ?? null);
+    const payload = validateSubmitPortalW9Payload(body);
+    payload.fieldValues = body.fieldValues;
     const tinEncrypted = await encryptTemporaryPassword(payload.tin);
     const signedAt = new Date();
     const now = signedAt.toISOString();
-    const pdfPath = getW9PdfPath(user.id);
+    const pdfPath = `${user.id}/w9/${crypto.randomUUID()}.pdf`;
     const ipAddress = getClientIp(req);
     const userAgent = req.headers.get("user-agent");
 
     const pdfBytes = await generateSignedW9Pdf(payload, signedAt, {
       ipAddress: ipAddress ?? undefined,
       userAgent: userAgent ?? undefined,
-    }, import.meta.url);
+    }, import.meta.url, source);
 
     const { error: uploadError } = await adminClient.storage
       .from(PORTAL_PROFILE_DOCUMENTS_BUCKET)
       .upload(pdfPath, pdfBytes, {
-        upsert: true,
+        upsert: false,
         contentType: "application/pdf",
       });
 
@@ -65,6 +72,9 @@ serve(async (req) => {
       .from("portal_w9_forms")
       .upsert({
         user_id: user.id,
+        template_asset_id: source.asset.id,
+        agent_designation: source.designation,
+        template_sha256: source.sha256,
         legal_name: payload.legalName,
         business_name: payload.businessName,
         tax_classification: payload.taxClassification,

@@ -1,5 +1,5 @@
 import { syncW9FormFieldsFromDom } from "@/lib/w9-acroform";
-import { W9_PDF_URL, W9_PDF_PAGES, W9_TOTAL_PAGES } from "@/lib/w9-form";
+import { W9_PDF_PAGES } from "@/lib/w9-form";
 import { prefillW9Fields, refreshW9SignatureDate } from "@/lib/w9-prefill";
 import "@/lib/pdfjs-setup";
 import { getDocument, type PDFDocumentProxy } from "pdfjs-dist/legacy/build/pdf.mjs";
@@ -29,6 +29,7 @@ export interface W9FillablePdfViewerHandle {
 }
 
 interface W9FillablePdfViewerProps {
+  pdfUrl: string;
   className?: string;
   prefillLegalName?: string;
   /** Rendered at the end of the pager bar: the Sign button, a Back link. */
@@ -52,8 +53,8 @@ const W9_JUMP_ITEMS = W9_SECTION_JUMPS.map((section) => ({
   controls: W9_HOST_ID,
 }));
 
-async function fetchW9PdfBytes(): Promise<Uint8Array> {
-  const response = await fetch(W9_PDF_URL);
+async function fetchW9PdfBytes(pdfUrl: string): Promise<Uint8Array> {
+  const response = await fetch(pdfUrl);
   if (!response.ok) {
     throw new Error(`Unable to load W-9 (${response.status})`);
   }
@@ -84,8 +85,8 @@ function loadWithTimeout(
   });
 }
 
-async function loadW9PdfDocument(): Promise<PDFDocumentProxy> {
-  const bytes = await fetchW9PdfBytes();
+async function loadW9PdfDocument(pdfUrl: string): Promise<PDFDocumentProxy> {
+  const bytes = await fetchW9PdfBytes(pdfUrl);
   try {
     return await loadWithTimeout(bytes);
   } catch {
@@ -101,7 +102,7 @@ function hasRenderedPages(viewer: HTMLElement | null): boolean {
 
 const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfViewerProps>(
   function W9FillablePdfViewer(
-    { className, prefillLegalName = "", actions, onPageChange },
+    { pdfUrl, className, prefillLegalName = "", actions, onPageChange },
     ref,
   ) {
     const hostRef = useRef<HTMLDivElement>(null);
@@ -123,7 +124,7 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
       const host = hostRef.current;
       if (!viewer || !host) return;
 
-      const safePage = Math.min(Math.max(page, 1), W9_TOTAL_PAGES);
+      const safePage = Math.min(Math.max(page, 1), pdfDocRef.current?.numPages ?? 1);
       const pageEl = viewer.querySelector<HTMLElement>(`.page[data-page-number="${safePage}"]`);
       if (pageEl && pageEl.offsetHeight > 0) {
         host.style.height = `${pageEl.offsetHeight}px`;
@@ -134,7 +135,7 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
       const pdfViewer = pdfViewerRef.current;
       if (!pdfViewer) return;
 
-      const safePage = Math.min(Math.max(page, 1), W9_TOTAL_PAGES);
+      const safePage = Math.min(Math.max(page, 1), pdfDocRef.current?.numPages ?? 1);
       pdfViewer.currentScaleValue = "page-width";
 
       if (pdfViewer.currentPageNumber !== safePage) {
@@ -152,7 +153,7 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
 
     const goToPage = useCallback(
       (page: number) => {
-        const safePage = Math.min(Math.max(page, 1), W9_TOTAL_PAGES);
+        const safePage = Math.min(Math.max(page, 1), pdfDocRef.current?.numPages ?? 1);
         setCurrentPage(safePage);
         syncVisiblePageLayout(safePage);
       },
@@ -193,6 +194,9 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
         return;
       }
 
+      setLoading(true);
+      setError(null);
+      setCurrentPage(1);
       const generation = ++loadGenerationRef.current;
       let pdfViewer: PDFViewer | null = null;
       let pdfDocumentLocal: PDFDocumentProxy | null = null;
@@ -283,7 +287,7 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
 
         watchForRenderedPages();
 
-        void loadW9PdfDocument()
+        void loadW9PdfDocument(pdfUrl)
           .then(async (doc) => {
             if (!isCurrent()) {
               void doc.destroy();
@@ -321,7 +325,7 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
         setPdfDocument(null);
         setViewerReady(false);
       };
-    }, [goToPage, syncHostHeightForPage, syncVisiblePageLayout]);
+    }, [pdfUrl, goToPage, syncHostHeightForPage, syncVisiblePageLayout]);
 
     useEffect(() => {
       const container = containerRef.current;
@@ -360,12 +364,14 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
       onPageChange?.(currentPage);
     }, [currentPage, onPageChange]);
 
-    const progressPercent = Math.round((currentPage / W9_TOTAL_PAGES) * 100);
+    const totalPages = pdfDocument?.numPages ?? 1;
+    const jumpItems = W9_JUMP_ITEMS.filter(item => Number(item.value) <= totalPages);
+    const progressPercent = Math.round((currentPage / totalPages) * 100);
     const chromeReady = !loading && !error;
     // The host is the tabs' panel only on a page a jump owns; on every other
     // page no tab is selected, so it takes a plain page name instead.
     const hostAria = chromeReady
-      ? panelAria(W9_JUMP_ITEMS, String(currentPage), `Page ${currentPage} of ${W9_TOTAL_PAGES}`)
+      ? panelAria(jumpItems, String(currentPage), `Page ${currentPage} of ${totalPages}`)
       : {};
 
     return (
@@ -373,7 +379,7 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
         {chromeReady && (
           <div className="pforms-jumps">
             <Segmented
-              items={W9_JUMP_ITEMS}
+              items={jumpItems}
               value={String(currentPage)}
               onChange={(value) => goToPage(Number(value))}
               label="W-9 sections"
@@ -396,7 +402,7 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
           {error && (
             <div className="ica-fillable-pdf-error">
               <p>{error}</p>
-              <a href={W9_PDF_URL} target="_blank" rel="noopener noreferrer">
+              <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
                 Open PDF in new tab
               </a>
             </div>
@@ -441,20 +447,20 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
                   name="page"
                   inputMode="numeric"
                   min={1}
-                  max={W9_TOTAL_PAGES}
+                  max={totalPages}
                   value={currentPage}
                   onChange={(event) => {
                     const next = Number.parseInt(event.target.value, 10);
                     if (!Number.isNaN(next)) goToPage(next);
                   }}
                 />
-                <span>of {W9_TOTAL_PAGES}</span>
+                <span>of {totalPages}</span>
               </label>
               <button
                 type="button"
                 className="pforms-pager-btn"
                 onClick={() => goToPage(currentPage + 1)}
-                disabled={currentPage >= W9_TOTAL_PAGES}
+                disabled={currentPage >= totalPages}
               >
                 Next
                 <ChevronRight size={18} strokeWidth={2} aria-hidden="true" />
@@ -464,7 +470,7 @@ const W9FillablePdfViewer = forwardRef<W9FillablePdfViewerHandle, W9FillablePdfV
           </div>
         )}
 
-        <a href={W9_PDF_URL} target="_blank" rel="noopener noreferrer" className="ica-fillable-pdf-link">
+        <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="ica-fillable-pdf-link">
           Open full W-9 in a new tab
         </a>
       </div>

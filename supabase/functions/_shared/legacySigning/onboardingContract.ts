@@ -1,0 +1,426 @@
+// Temporary compatibility path while uploaded signing is inactive.
+import { PDFDocument, StandardFonts, rgb, type PDFForm } from "https://esm.sh/pdf-lib@1.17.1";
+import { ICA_FORM_FIELDS, assertValidDebitCheckInitial } from "./icaFormFields.ts";
+import { loadIcaTemplateBytes } from "./icaTemplate.ts";
+import { requirePersonalRecoveryEmail } from "../recoveryEmail.ts";
+
+// r2: template pre-fills the company counter-signature; contractor signature
+// is stamped on the execution "BY" line (previously held the signing date).
+export const ICA_VERSION = "2026-standard-r2";
+export const ONBOARDING_CONTRACT_BUCKET = "onboarding-documents";
+export const CONTRACT_SIGNATURE_TTL_MS = 48 * 60 * 60 * 1000;
+
+export interface DebitCheckInitials {
+  a: string;
+  b: string;
+  c: string;
+  d: string;
+  e: string;
+}
+
+export interface SubmitOnboardingContractPayload {
+  legalName: string;
+  personalEmail: string;
+  signatureName: string;
+  signatureImageBase64: string;
+  debitCheckInitials: DebitCheckInitials;
+  agreementAccepted: boolean;
+  counselAcknowledged: boolean;
+}
+
+export interface OnboardingContractRecord {
+  agent_designation?: "loa" | "ibo" | null;
+  template_asset_id?: string | null;
+  id: string;
+  onboarding_id: string | null;
+  legal_name: string;
+  personal_email: string;
+  signature_name: string;
+  ica_version: string;
+  debit_check_initials: DebitCheckInitials;
+  agreement_accepted: boolean;
+  counsel_acknowledged: boolean;
+  signed_at: string;
+  pdf_path: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string;
+}
+
+export interface OnboardingContractSummary {
+  id: string;
+  legalName: string;
+  personalEmail: string;
+  signatureName: string;
+  icaVersion: string;
+  signedAt: string;
+  pdfPath: string;
+}
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Contractor signature placements in PDF user space (bottom-left origin):
+ * the execution-page CONTRACTOR "BY" line (page 12, over the flattened
+ * "todays-date" field) and the Debit-Check signature line (page 14).
+ */
+const ICA_SIGNATURE_IMAGE_RECTS = [
+  { pageIndex: 11, x: 320.16, y: 500.87, width: 213.7, height: 38.6 },
+  { pageIndex: 13, x: 61.4836, y: 464.866, width: 213.7, height: 38.6 },
+] as const;
+
+export interface IcaCompanySigner {
+  name: string;
+  title: string;
+}
+
+/**
+ * The company counter-signature (signature, print name, and title on the
+ * execution page, plus the Debit-Check "FOR COMPANY USE ONLY" block) is baked
+ * into the template PDF, so nothing is drawn on those pages at signing time.
+ * This identity is only recorded on the Electronic Signature Record page.
+ * Defaults match the template; env overrides:
+ * PNCL_COMPANY_SIGNER_NAME / PNCL_COMPANY_SIGNER_TITLE.
+ */
+export function getIcaCompanySigner(): IcaCompanySigner {
+  return {
+    name: Deno.env.get("PNCL_COMPANY_SIGNER_NAME")?.trim() || "Kam Gray",
+    title: Deno.env.get("PNCL_COMPANY_SIGNER_TITLE")?.trim() || "President of Sales",
+  };
+}
+
+function normalizeSignatureImageBase64(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error("A drawn signature is required");
+  }
+
+  const trimmed = value.trim();
+  const base64 = trimmed.includes(",") ? trimmed.split(",").pop() ?? "" : trimmed;
+  if (!base64 || !/^[A-Za-z0-9+/]+=*$/.test(base64)) {
+    throw new Error("A valid drawn signature is required");
+  }
+
+  return trimmed;
+}
+
+function decodeBase64ToBytes(base64: string): Uint8Array {
+  const normalized = base64.includes(",") ? base64.split(",").pop() ?? "" : base64;
+  const binary = atob(normalized);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function normalizeRequiredString(value: unknown, field: string): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`${field} is required`);
+  }
+  return value.trim();
+}
+
+function normalizeInitial(value: unknown, field: string): string {
+  if (typeof value !== "string") {
+    throw new Error(`${field} is required`);
+  }
+  return assertValidDebitCheckInitial(value, field);
+}
+
+export function validateSubmitOnboardingContractPayload(body: unknown, customTemplate = false): SubmitOnboardingContractPayload {
+  if (!body || typeof body !== "object") {
+    throw new Error("Invalid request body");
+  }
+
+  const data = body as Record<string, unknown>;
+  const legalName = normalizeRequiredString(data.legalName, "legalName");
+  const personalEmail = requirePersonalRecoveryEmail(
+    normalizeRequiredString(data.personalEmail, "personalEmail"),
+  );
+  const signatureName = normalizeRequiredString(data.signatureName, "signatureName");
+  const signatureImageBase64 = normalizeSignatureImageBase64(data.signatureImageBase64);
+  if (legalName.length > 200 || signatureName.length > 200 || personalEmail.length > 254 || signatureImageBase64.length > 500_000) throw new Error("Agreement fields exceed the allowed length.");
+
+  if (!EMAIL_PATTERN.test(personalEmail)) {
+    throw new Error("A valid email address is required");
+  }
+
+  if (legalName.localeCompare(signatureName, undefined, { sensitivity: "accent" }) !== 0) {
+    throw new Error("Signature must match your legal name exactly");
+  }
+
+  const initialsRaw = data.debitCheckInitials;
+  if (!customTemplate && (!initialsRaw || typeof initialsRaw !== "object" || Array.isArray(initialsRaw))) {
+    throw new Error("Debit-Check initials are required");
+  }
+
+  const initialsObj = initialsRaw as Record<string, unknown>;
+  const debitCheckInitials: DebitCheckInitials = customTemplate ? { a: "", b: "", c: "", d: "", e: "" } : {
+    a: normalizeInitial(initialsObj.a, "Debit-Check initial A"),
+    b: normalizeInitial(initialsObj.b, "Debit-Check initial B"),
+    c: normalizeInitial(initialsObj.c, "Debit-Check initial C"),
+    d: normalizeInitial(initialsObj.d, "Debit-Check initial D"),
+    e: normalizeInitial(initialsObj.e, "Debit-Check initial E"),
+  };
+
+  if (data.agreementAccepted !== true) {
+    throw new Error("You must accept the Independent Contractor Agreement");
+  }
+
+  if (data.counselAcknowledged !== true) {
+    throw new Error("You must confirm that you have read the agreement");
+  }
+
+  return {
+    legalName,
+    personalEmail,
+    signatureName,
+    signatureImageBase64,
+    debitCheckInitials,
+    agreementAccepted: true,
+    counselAcknowledged: true,
+  };
+}
+
+export function getOnboardingContractPdfPath(signatureId: string): string {
+  return `contracts/${signatureId}/ica-signed.pdf`;
+}
+
+export function mapOnboardingContractSummary(record: OnboardingContractRecord): OnboardingContractSummary {
+  return {
+    id: record.id,
+    legalName: record.legal_name,
+    personalEmail: record.personal_email,
+    signatureName: record.signature_name,
+    icaVersion: record.ica_version,
+    signedAt: record.signed_at,
+    pdfPath: record.pdf_path,
+  };
+}
+
+export function isContractSignatureExpired(signedAt: string): boolean {
+  return Date.now() - new Date(signedAt).getTime() > CONTRACT_SIGNATURE_TTL_MS;
+}
+
+function drawLabelValue(
+  page: ReturnType<PDFDocument["getPages"]>[number],
+  font: Awaited<ReturnType<PDFDocument["embedFont"]>>,
+  boldFont: Awaited<ReturnType<PDFDocument["embedFont"]>>,
+  label: string,
+  value: string,
+  x: number,
+  y: number,
+): number {
+  page.drawText(label, { x, y, size: 9, font: boldFont, color: rgb(0.2, 0.2, 0.2) });
+  // Wrap even long email addresses and hashes, which may have no whitespace.
+  const lines: string[] = [];
+  let line = "";
+  for (const character of value.replace(/[\r\n]/g, " ")) {
+    if (font.widthOfTextAtSize(line + character, 11) > 468) {
+      lines.push(line);
+      line = "";
+    }
+    line += character;
+  }
+  lines.push(line);
+  page.drawText(lines.join("\n"), { x, y: y - 14, size: 11, lineHeight: 14, font, color: rgb(0, 0, 0) });
+  return y - 34 - (lines.length - 1) * 14;
+}
+
+function setFormText(form: PDFForm, fieldName: string, value: string): void {
+  try {
+    form.getTextField(fieldName).setText(value);
+  } catch {
+    throw new Error(`Missing or invalid PDF form field: ${fieldName}`);
+  }
+}
+
+function formatIcaEffectiveDate(signedAt: Date): {
+  full: string;
+  day: string;
+  month: string;
+  yearLast2: string;
+} {
+  const full = signedAt.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+  return {
+    full,
+    day: String(signedAt.getDate()),
+    month: signedAt.toLocaleDateString("en-US", { month: "long" }),
+    yearLast2: String(signedAt.getFullYear()).slice(-2),
+  };
+}
+
+function fillIcaFormFields(
+  form: PDFForm,
+  payload: SubmitOnboardingContractPayload,
+  signedAt: Date,
+): void {
+  const dateParts = formatIcaEffectiveDate(signedAt);
+
+  setFormText(form, ICA_FORM_FIELDS.day, dateParts.day);
+  setFormText(form, ICA_FORM_FIELDS.month, dateParts.month);
+  setFormText(form, ICA_FORM_FIELDS.yearLast2, dateParts.yearLast2);
+  setFormText(form, ICA_FORM_FIELDS.introName, payload.legalName);
+  // Execution "BY" line: cleared here, then the drawn signature image is
+  // stamped over it after the form is flattened.
+  setFormText(form, ICA_FORM_FIELDS.executionSignature, "");
+
+  setFormText(form, ICA_FORM_FIELDS.fullName, payload.legalName);
+  setFormText(form, ICA_FORM_FIELDS.email, payload.personalEmail);
+  setFormText(form, ICA_FORM_FIELDS.signatureDate, dateParts.full);
+  setFormText(form, ICA_FORM_FIELDS.signature, "");
+
+  setFormText(form, ICA_FORM_FIELDS.agentName, payload.legalName);
+  setFormText(form, ICA_FORM_FIELDS.initialA, payload.debitCheckInitials.a);
+  setFormText(form, ICA_FORM_FIELDS.initialB, payload.debitCheckInitials.b);
+  setFormText(form, ICA_FORM_FIELDS.initialC, payload.debitCheckInitials.c);
+  setFormText(form, ICA_FORM_FIELDS.initialD, payload.debitCheckInitials.d);
+  setFormText(form, ICA_FORM_FIELDS.initialE, payload.debitCheckInitials.e);
+
+  form.updateFieldAppearances();
+  form.flatten();
+}
+
+async function drawSignatureImage(
+  pdfDoc: PDFDocument,
+  signatureImageBase64: string,
+): Promise<void> {
+  const pngBytes = decodeBase64ToBytes(signatureImageBase64);
+  const image = await pdfDoc.embedPng(pngBytes);
+  const pages = pdfDoc.getPages();
+
+  for (const rect of ICA_SIGNATURE_IMAGE_RECTS) {
+    const page = pages[rect.pageIndex];
+    if (!page) {
+      throw new Error("Unable to place signature on agreement PDF");
+    }
+
+    page.drawImage(image, {
+      x: rect.x,
+      y: rect.y,
+      width: rect.width,
+      height: rect.height,
+    });
+  }
+}
+
+export async function generateSignedIcaPdf(
+  payload: SubmitOnboardingContractPayload,
+  signedAt: Date,
+  metadata?: { ipAddress?: string; userAgent?: string },
+  callerModuleUrl?: string,
+  customTemplate?: { bytes: Uint8Array; version: string; sha256: string },
+): Promise<Uint8Array> {
+  const templateBytes = customTemplate?.bytes ?? await loadIcaTemplateBytes(callerModuleUrl ?? import.meta.url);
+  const pdfDoc = await PDFDocument.load(templateBytes);
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+  if (!customTemplate) {
+    fillIcaFormFields(pdfDoc.getForm(), payload, signedAt);
+    await drawSignatureImage(pdfDoc, payload.signatureImageBase64);
+  }
+
+  const certPage = pdfDoc.addPage([612, 792]);
+  let y = 740;
+  certPage.drawText("Electronic Signature Record", {
+    x: 72,
+    y,
+    size: 16,
+    font: boldFont,
+    color: rgb(0, 0, 0),
+  });
+  y -= 28;
+  certPage.drawText("PNCL Independent Contractor Agreement", {
+    x: 72,
+    y,
+    size: 12,
+    font,
+    color: rgb(0.2, 0.2, 0.2),
+  });
+  y -= 36;
+
+  y = drawLabelValue(certPage, font, boldFont, "Agreement version", customTemplate?.version ?? ICA_VERSION, 72, y);
+  y = drawLabelValue(certPage, font, boldFont, "Contractor legal name", payload.legalName, 72, y);
+  y = drawLabelValue(certPage, font, boldFont, "Contractor email", payload.personalEmail, 72, y);
+  y = drawLabelValue(certPage, font, boldFont, "Signature", "Drawn electronic signature", 72, y);
+  y = drawLabelValue(certPage, font, boldFont, "Signed at (UTC)", signedAt.toISOString(), 72, y);
+  if (!customTemplate) {
+    const companySigner = getIcaCompanySigner();
+    y = drawLabelValue(
+      certPage,
+      font,
+      boldFont,
+      "Debit-Check initials",
+      `A:${payload.debitCheckInitials.a} B:${payload.debitCheckInitials.b} C:${payload.debitCheckInitials.c} D:${payload.debitCheckInitials.d} E:${payload.debitCheckInitials.e}`,
+      72,
+      y,
+    );
+
+    y = drawLabelValue(
+      certPage,
+      font,
+      boldFont,
+      "Company counter-signature",
+      `${companySigner.name}, ${companySigner.title} (pre-authorized)`,
+      72,
+      y,
+    );
+  } else {
+    y = drawLabelValue(certPage, font, boldFont, "Source document SHA-256", customTemplate.sha256, 72, y);
+  }
+
+  if (metadata?.ipAddress) {
+    y = drawLabelValue(certPage, font, boldFont, "IP address", metadata.ipAddress, 72, y);
+  }
+
+  if (metadata?.userAgent) {
+    const truncated = metadata.userAgent.length > 120
+      ? `${metadata.userAgent.slice(0, 117)}...`
+      : metadata.userAgent;
+    y = drawLabelValue(certPage, font, boldFont, "User agent", truncated, 72, y);
+  }
+
+  certPage.drawText(
+    customTemplate
+      ? "The contractor confirmed they read the preceding agreement, had the opportunity to consult independent legal counsel, agreed to the Independent Contractor Agreement, and consented to sign electronically. This signature record applies to the source document identified above."
+      : "The contractor confirmed they read the agreement, had the opportunity to consult independent legal counsel, and agreed to the ICA and Debit-Check Authorization.",
+    {
+      x: 72,
+      y: y - 10,
+      size: 9,
+      font,
+      color: rgb(0.25, 0.25, 0.25),
+      maxWidth: 468,
+      lineHeight: 12,
+    },
+  );
+
+  if (customTemplate) {
+    const signature = await pdfDoc.embedPng(decodeBase64ToBytes(payload.signatureImageBase64));
+    certPage.drawText("Contractor electronic signature", { x: 72, y: y - 78, size: 10, font: boldFont });
+    certPage.drawImage(signature, { x: 72, y: y - 173, width: 250, height: 85 });
+  }
+
+  return await pdfDoc.save();
+}
+
+export async function createOnboardingContractSignedUrl(
+  adminClient: import("https://esm.sh/@supabase/supabase-js@2.49.1").SupabaseClient,
+  pdfPath: string,
+  expiresInSeconds = 3600,
+): Promise<string> {
+  const { data, error } = await adminClient.storage
+    .from(ONBOARDING_CONTRACT_BUCKET)
+    .createSignedUrl(pdfPath, expiresInSeconds);
+
+  if (error || !data?.signedUrl) {
+    throw new Error(error?.message ?? "Unable to create contract download link");
+  }
+
+  return data.signedUrl;
+}

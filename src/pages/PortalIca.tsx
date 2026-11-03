@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileCheck2 } from "lucide-react";
-import IcaSigningStep from "@/components/IcaSigningStep";
 import UploadedIcaSigningStep from "@/components/UploadedIcaSigningStep";
 import { useOnboardingContent } from "@/hooks/useOnboardingContent";
 import PortalBackground from "@/components/portal/PortalBackground";
@@ -184,16 +183,7 @@ export default function PortalIca() {
           {!loading && !submitted && !content && <Pane><p role={contentError ? "alert" : "status"}>{contentError || "Loading your agreement…"}</p>{contentError && <button className="btn btn-ghost" onClick={retryContent}>Retry agreement</button>}</Pane>}
           {!loading && !submitted && prefillReady && content?.ica && <UploadedIcaSigningStep key={content.ica.id} asset={content.ica} prefillLegalName={prefill.legalName} prefillEmail={prefill.email} onSubmit={handleSubmit} finishLabel="Sign and save to profile" />}
           {!loading && !submitted && prefillReady && content && !content.ica && (
-            <IcaSigningStep
-              className="portal-ica-signing"
-              eyebrow="Portal"
-              title="Review and sign your agreement"
-              lead="Complete the highlighted fields, draw your signature, and confirm the acknowledgments. A signed PDF will be saved to your profile."
-              finishLabel="Sign and save to profile"
-              prefillLegalName={prefill.legalName}
-              prefillEmail={prefill.email}
-              onSubmit={handleSubmit}
-            />
+            <Pane><p role="alert">PNCL needs to upload the ICA for your onboarding flow. Please contact PNCL support before signing.</p></Pane>
           )}
         </div>
       </main>

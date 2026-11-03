@@ -1,4 +1,4 @@
-import { filterAgentTodos, resolveAgentDesignation } from "./agentDesignation.ts";
+import { resolveAgentDesignation } from "./agentDesignation.ts";
 import { loadAgentDesignations } from "./portalAgentDesignations.ts";
 import type { SupabaseClient, User } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { getEmailDomain } from "./onboarding.ts";
@@ -10,13 +10,7 @@ import {
   resolveGoogleWorkspaceStatus,
   type GoogleWorkspaceStatus,
 } from "./googleWorkspace.ts";
-import {
-  computeAutoCompletionSets,
-  getCompletedTodosFromMetadata,
-  isTodoCompleteForUser,
-  PORTAL_TODO_PHASES,
-  type PortalTodoRecord,
-} from "./portalTodos.ts";
+import { computePortalTodoProgressByUserId } from "./portalTodos.ts";
 import { logOnboarding } from "./logger.ts";
 import {
   EMPTY_AGENT_FLAGS,
@@ -67,63 +61,8 @@ export async function computeAgentPhases(
   adminClient: SupabaseClient,
   users: User[],
 ): Promise<Map<string, AgentPhase>> {
-  const phases = new Map<string, AgentPhase>();
-  if (users.length === 0) return phases;
-
-  const { data: todoRows, error } = await adminClient
-    .from("portal_todos")
-    .select("*")
-    .eq("published", true);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const todos = (todoRows ?? []) as PortalTodoRecord[];
-  if (todos.length === 0) {
-    return phases;
-  }
-
-  const todosByPhase = new Map<string, PortalTodoRecord[]>();
-  for (const todo of todos) {
-    const phase = todo.phase ?? "on_board";
-    const group = todosByPhase.get(phase) ?? [];
-    group.push(todo);
-    todosByPhase.set(phase, group);
-  }
-
-  const autoKeys = new Set(
-    todos
-      .filter((row) => row.completion_type === "auto" && row.auto_key)
-      .map((row) => row.auto_key as string),
-  );
-  const autoSets = await computeAutoCompletionSets(
-    adminClient,
-    autoKeys,
-    users.map((user) => user.id),
-  );
-
-  const designations = await loadAgentDesignations(adminClient, users.map((user) => user.id));
-  for (const user of users) {
-    const completedMetadata = getCompletedTodosFromMetadata(
-      user.user_metadata as Record<string, unknown> | undefined,
-    );
-
-    let phase: AgentPhase = "complete";
-    for (const candidate of PORTAL_TODO_PHASES) {
-      const items = filterAgentTodos(todosByPhase.get(candidate) ?? [], designations.get(user.id));
-      const hasIncomplete = items.some(
-        (todo) => !isTodoCompleteForUser(todo, user.id, completedMetadata, autoSets),
-      );
-      if (hasIncomplete) {
-        phase = candidate;
-        break;
-      }
-    }
-    phases.set(user.id, phase);
-  }
-
-  return phases;
+  const progress = await computePortalTodoProgressByUserId(adminClient, users);
+  return new Map(users.map(user => [user.id, progress.get(user.id)?.phases.find(phase => phase.completedCount < phase.totalCount)?.id ?? "complete"]));
 }
 
 export interface AgentOnboardingDetails {

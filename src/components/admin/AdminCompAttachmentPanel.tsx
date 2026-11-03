@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ExternalLink, FileSignature, FileUp, Trash2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { ExternalLink, Trash2 } from "lucide-react";
 import {
-  assignCompAttachment,
   deleteCompAttachment,
   listCompAttachments,
   type AdminCompAttachment,
@@ -17,15 +17,6 @@ function formatDate(value: string | null): string {
   });
 }
 
-function readFileAsBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(new Error("Unable to read the selected file."));
-    reader.readAsDataURL(file);
-  });
-}
-
 export default function AdminCompAttachmentPanel({
   userId,
   userName,
@@ -37,15 +28,10 @@ export default function AdminCompAttachmentPanel({
   accessToken: string;
   onChanged?: () => void;
 }) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [attachments, setAttachments] = useState<AdminCompAttachment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [title, setTitle] = useState("Compensation Attachment");
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
-  const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const hasAttachment = attachments.length > 0;
 
   const loadAttachments = useCallback(async () => {
     setLoading(true);
@@ -62,31 +48,6 @@ export default function AdminCompAttachmentPanel({
   useEffect(() => {
     void loadAttachments();
   }, [loadAttachments]);
-
-  const handleAssign = async () => {
-    if (!pendingFile) {
-      toast.error("Choose a PDF to assign.");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const pdfBase64 = await readFileAsBase64(pendingFile);
-      const result = await assignCompAttachment(accessToken, {
-        userId,
-        title: title.trim() || "Compensation Attachment",
-        pdfBase64,
-      });
-      toast.success(result.message);
-      setPendingFile(null);
-      await loadAttachments();
-      onChanged?.();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Unable to assign comp attachment");
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const handleDelete = async (attachment: AdminCompAttachment) => {
     if (!window.confirm(`Remove the pending "${attachment.title}" for ${userName}?`)) {
@@ -108,64 +69,8 @@ export default function AdminCompAttachmentPanel({
 
   return (
     <div className="admin-comp-attachment-panel">
-      {!hasAttachment && (
-        <div className="admin-form">
-          <label className="admin-field">
-            <span>Document title</span>
-            <input
-              type="text"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Compensation Attachment"
-            />
-          </label>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/pdf"
-            style={{ display: "none" }}
-            onChange={(event) => {
-              const file = event.target.files?.[0] ?? null;
-              event.target.value = "";
-              if (file && file.type !== "application/pdf") {
-                toast.error("Please choose a PDF file.");
-                return;
-              }
-              setPendingFile(file);
-            }}
-          />
-
-          <div className="admin-row-actions">
-            <button
-              type="button"
-              className="admin-icon-btn"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={submitting}
-            >
-              <FileUp size={16} aria-hidden="true" />
-              {pendingFile ? pendingFile.name : "Choose Kam-signed PDF"}
-            </button>
-            <button
-              type="button"
-              className="admin-primary-btn"
-              onClick={() => void handleAssign()}
-              disabled={submitting || !pendingFile}
-            >
-              <FileSignature size={16} aria-hidden="true" />
-              {submitting ? "Assigning…" : "Assign to agent"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {hasAttachment && (
-        <p className="admin-inline-note">
-          This agent already has a comp attachment on file. Remove the pending assignment to upload
-          a different PDF.
-        </p>
-      )}
-
+      <p className="admin-inline-note">Onboarding signing documents are managed in Onboarding Steps. Previously signed copies stay on file.</p>
+      <div className="admin-row-actions"><Link className="admin-secondary-link" to="/portal/admin/onboarding-steps">Manage onboarding templates</Link><Link className="admin-secondary-link" to="/portal/admin/onboarding-steps/documents">Send a private agreement</Link></div>
       <div className="admin-genesis-details-documents">
         <h4>Assigned documents</h4>
         {loading ? (
@@ -192,7 +97,7 @@ export default function AdminCompAttachmentPanel({
                       rel="noreferrer"
                       className="admin-secondary-link"
                     >
-                      Kam-signed PDF
+                      Original PDF
                       <ExternalLink size={13} aria-hidden="true" />
                     </a>
                   )}

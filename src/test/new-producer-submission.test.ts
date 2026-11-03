@@ -5,20 +5,27 @@ import { isTodoCompleteForUser } from "../../supabase/functions/_shared/todoComp
 import { listIcaSignedUserIds } from "../../supabase/functions/_shared/portalIca";
 import { validateSubmitTicketPayload } from "../../supabase/functions/_shared/portalTickets";
 import inventory from "./fixtures/ibo-onboarding-steps.json";
+import { listUserDocumentRequests } from "../../supabase/functions/_shared/documentRequests";
 
 vi.mock("../../supabase/functions/_shared/usZipCounty.ts", () => ({ lookupCountyFromZip: () => "Test County" }));
 vi.mock("../../supabase/functions/_shared/portalIca.ts", () => ({ listIcaSignedUserIds: vi.fn() }));
 vi.mock("../../supabase/functions/_shared/portalCompAttachments.ts", () => ({ userHasCompAttachment: async () => true }));
-beforeEach(() => vi.mocked(listIcaSignedUserIds).mockResolvedValue(new Set(["agent"])));
+vi.mock("../../supabase/functions/_shared/documentRequests.ts", () => ({ listUserDocumentRequests: vi.fn() }));
+beforeEach(() => {
+  vi.mocked(listIcaSignedUserIds).mockResolvedValue(new Set(["agent"]));
+  vi.mocked(listUserDocumentRequests).mockResolvedValue([]);
+});
 
 function scenario(designation = "ibo") {
   const user = { id: "agent", email: "qa@example.invalid", user_metadata: { completed_portal_todos: Object.fromEntries(inventory.filter((r) => r.completion_type === "agent" && r.slug !== "submit_new_producer").map((r) => [r.slug, true])) } };
   const tables: Record<string, Record<string, unknown>[]> = {
-    portal_todos: inventory.map((r) => ({ ...r, published: true })),
+    onboarding_signing_rollout: [{ id: true, enabled: true, revision: 0, legacy_ica_sources: {}, legacy_steps: [] }],
+    onboarding_signing_preview_users: [],
+    portal_todos: inventory.map((r) => ({ ...r, ...(r.slug === "comp_agreement" ? { completion_type: "auto", auto_key: "comp_agreement" } : {}), published: true })),
     portal_tickets: [],
     portal_new_producer_legacy_completions: [],
     portal_agent_designations: [{ user_id: user.id, designation }],
-    portal_comp_attachments: [{ user_id: user.id }],
+    portal_comp_attachments: [{ user_id: user.id, status: "signed" }],
     portal_profiles: [{ user_id: user.id, first_name: "Test", last_name: "Agent", npn: "123", eo_policy_number: "TEST-EO", address_line1: "123 Test St", address_city: "Test", address_state: "UT", address_zip: "84001", drivers_license_path: "test/license.png" }],
     portal_w9_forms: [{ user_id: user.id }],
     portal_direct_deposit_forms: [{ user_id: user.id }],
@@ -31,6 +38,7 @@ function scenario(designation = "ibo") {
       select: () => q, order: () => q,
       eq: (key: string, value: unknown) => { rows = rows.filter((r) => r[key] === value); return q; },
       in: (key: string, values: unknown[]) => { rows = rows.filter((r) => values.includes(r[key])); return q; },
+      single: async () => ({ data: rows[0] ?? null, error: null }),
       maybeSingle: async () => ({ data: rows[0] ?? null, error: null }),
       then: (resolve: (value: unknown) => void) => resolve({ data: rows, error: null }),
     };
@@ -41,6 +49,12 @@ function scenario(designation = "ibo") {
 }
 
 describe("New Producer server submission", () => {
+  it("requires assigned document signatures before accepting a new submission", async () => {
+    const s = scenario();
+    vi.mocked(listUserDocumentRequests).mockResolvedValue([{ signed_at: null, campaign: { title: "Own your book addendum" } }] as never);
+    await expect(submitNewProducer(s.client as never, s.user as never)).rejects.toThrow("Sign these documents");
+    expect(s.rpc).not.toHaveBeenCalled();
+  });
   it.each(["ibo", "loa"])("accepts the complete %s journey and includes its designation in the ticket", async (designation) => {
     const s = scenario(designation);
     if (designation === "ibo") { s.tables.portal_w9_forms = []; s.tables.portal_direct_deposit_forms = []; }
