@@ -292,7 +292,7 @@ export default function AdminOnboardingSteps() {
                                 }
                               />
                             </td>
-                            <td>
+                            <td data-label="Actions">
                               <div className="onboarding-row-actions">
                                 <button
                                   type="button"
@@ -302,6 +302,9 @@ export default function AdminOnboardingSteps() {
                                   onClick={() => setPreviewing(row)}
                                 >
                                   <Eye size={18} aria-hidden="true" />
+                                  <span className="onboarding-action-label" aria-hidden="true">
+                                    Preview
+                                  </span>
                                 </button>
                                 <button
                                   type="button"
@@ -311,6 +314,9 @@ export default function AdminOnboardingSteps() {
                                   onClick={() => setEditing(row)}
                                 >
                                   <Pencil size={18} aria-hidden="true" />
+                                  <span className="onboarding-action-label" aria-hidden="true">
+                                    Edit
+                                  </span>
                                 </button>
                               </div>
                             </td>

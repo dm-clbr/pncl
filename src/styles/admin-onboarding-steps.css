@@ -1079,26 +1079,22 @@
   .onboarding-flow-canvas {
     min-height: 0;
   }
-  .admin-dash .onboarding-content-table {
-    min-width: 710px;
-  }
-  .admin-dash .onboarding-content-table :is(thead, tbody) {
-    display: table-row-group;
-  }
-  .admin-dash .onboarding-content-table tr {
-    display: table-row;
-  }
-  .admin-dash .onboarding-content-table :is(th, td) {
-    display: table-cell;
-  }
-  .admin-dash .onboarding-content-table td:before {
-    display: none;
-  }
   .admin-dash .onboarding-filters {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .onboarding-search {
     grid-column: 1/-1;
+  }
+}
+@media (max-width: 360px) {
+  .admin-dash .admin-onboarding-steps .onboarding-filters {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+}
+@media (min-width: 621px) and (max-width: 800px) {
+  .admin-dash .onboarding-content-table {
+    min-width: 710px;
   }
 }
 @media (max-width: 600px) {
@@ -1146,7 +1142,8 @@
     flex-wrap: wrap;
   }
   .onboarding-heading-actions > * {
-    flex: 1;
+    flex: 1 1 auto;
+    white-space: nowrap;
   }
   .onboarding-page-heading {
     gap: 18px;
@@ -1164,6 +1161,78 @@
 
 .onboarding-row-actions { display: flex; align-items: center; gap: 8px; }
 .admin-dash .admin-onboarding-steps .onboarding-row-actions .admin-secondary-link { width: 40px; height: 40px; min-height: 40px; flex-shrink: 0; padding: 0; }
+.onboarding-action-label { display: none; }
+
+/* Match the shared admin table's phone breakpoint. Desktop column widths and
+   label gutters must not carry into the full-width step heading. */
+@media (max-width: 620px) {
+  .admin-dash .admin-onboarding-steps .onboarding-content-table {
+    min-width: 0;
+    width: 100%;
+  }
+  .admin-dash .admin-onboarding-steps .onboarding-content-table tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .admin-dash .admin-onboarding-steps .onboarding-content-table tbody :is(th, td) {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-width: 0;
+    padding: 12px 0;
+  }
+  .admin-dash .admin-onboarding-steps .onboarding-content-table th[scope="row"] strong {
+    flex: 1;
+    min-width: 0;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .admin-onboarding-steps .onboarding-step-title {
+    align-items: flex-start;
+  }
+  .admin-dash .admin-onboarding-steps .onboarding-content-table tbody td[data-label] {
+    display: grid;
+    grid-template-columns: 70px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+  }
+  .admin-dash .admin-onboarding-steps .onboarding-content-table tbody td[data-label]::before {
+    position: static;
+    width: auto;
+  }
+  .admin-dash .admin-onboarding-steps .onboarding-content-table tbody td:is([data-label="LOA"], [data-label="IBO"]) {
+    grid-column: auto;
+    grid-template-columns: auto 1fr;
+    gap: 12px;
+    min-height: 48px;
+  }
+  .admin-dash .admin-onboarding-steps .onboarding-content-table tbody td[data-label="Actions"] {
+    display: block;
+  }
+  .admin-dash .admin-onboarding-steps .onboarding-row-actions .admin-secondary-link {
+    flex: 1;
+    width: auto;
+    height: 44px;
+    min-height: 44px;
+  }
+  .admin-onboarding-steps .onboarding-action-label {
+    display: inline;
+  }
+  .admin-dash .admin-onboarding-steps .onboarding-content-table tbody tr.onboarding-stage-row {
+    margin: 16px 0 8px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+  .admin-dash .admin-onboarding-steps .onboarding-content-table .onboarding-stage-row th {
+    min-height: 0;
+    padding: 8px 0;
+    border: 0;
+    background: none;
+    font-size: 11px;
+  }
+}
 .onboarding-supporting-editor { border-top: 1px solid var(--portal-border); margin-top: 22px; padding-top: 16px; }
 .onboarding-supporting-editor h5 { margin: 0 0 8px; font-size: 14px; }
 .onboarding-supporting-list { list-style: none; padding: 0; margin: 12px 0; display: grid; gap: 10px; }
