@@ -25,12 +25,12 @@ for system,root in roots.items():
   column=pn if system=='pncl' else ld
   if column:columns.append(column+' '+('jsonb' if kind=='licenses' else 'boolean' if kind=='boolean' else 'text'))
  columns+=['state_licenses text[]'] if system=='pncl' else ['licensed_states text[]','deactivated_at timestamptz','suspended_at timestamptz',"license_status text default 'active'"]
- stub="""create schema auth;create schema storage;create schema net;
+ stub="""create schema auth;create schema storage;create schema net;create schema extensions;create extension pgcrypto with schema extensions;create table net.requests(id bigint generated always as identity primary key,body jsonb,headers jsonb);
  create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz default now(),banned_until timestamptz,deleted_at timestamptz);
  create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
  create table storage.objects(bucket_id text,name text,updated_at timestamptz default now());
  create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
- create function net.http_post(url text,headers jsonb,body jsonb,timeout_milliseconds int) returns bigint language sql as $$select 1::bigint$$;
+ create function net.http_post(url text,headers jsonb,body jsonb,timeout_milliseconds int) returns bigint language plpgsql as $$declare result bigint;begin insert into net.requests(body,headers) values($3,$2) returning id into result;return result;end $$;
  create table public."""+native+'('+','.join(columns)+');'
  if system=='pncl':stub+="alter table portal_profiles add constraint portal_profiles_phone_number_valid check(phone_number is null or (phone_number ~ '^[0-9]{3}-[0-9]{3}-[0-9]{4}$' and phone_number<>'000-000-0000'));"+'create table public.portal_profile_documents(id uuid primary key default gen_random_uuid(),user_id uuid references public.portal_profiles(user_id),label text,file_path text,mime_type text,size_bytes bigint,created_at timestamptz default now());'
  else:
@@ -43,6 +43,7 @@ for system,root in roots.items():
   for fix in root.glob('supabase/migrations/*_profile_sync_native_phone_format.sql'):sql(db,fix.read_text())
  for fix in root.glob('supabase/migrations/*_profile_sync_bounded_workers.sql'):sql(db,fix.read_text())
  for fix in root.glob('supabase/migrations/*_profile_sync_latest_save.sql'):sql(db,fix.read_text())
+ for fix in root.glob('supabase/migrations/*_profile_sync_queue_limits.sql'):sql(db,fix.read_text())
  print(system,'migration compiled')
 a=str(uuid.uuid4());b=str(uuid.uuid4());pair={'pncl':a,'leadspply':b}
 for system,user in pair.items():
