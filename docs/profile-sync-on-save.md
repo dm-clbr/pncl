@@ -16,7 +16,7 @@ This deployment changes **PNCL Hub**. LeadSpply's existing deployed reads are al
 
 ## Deployment and verification
 
-1. Apply `20261104190150_profile_sync_on_save.sql` to PNCL. It includes the lease/trigger protections already present in production so a fresh checkout has the same behavior. No data reset or deletion is involved.
+1. Apply `20261104191028_profile_sync_on_save.sql` to PNCL. It includes the lease/trigger protections already present in production so a fresh checkout has the same behavior. No data reset or deletion is involved.
 2. Deploy PNCL's `profile-sync` Edge Function with the shared dependencies, preserving `verify_jwt = false` because the handler authenticates both user sessions and signed database wake-ups.
 3. Deploy the frontend. Confirm the cron job is inactive, `tick_users` returns `[]`, and the saved-event RPCs and deployed function exist.
 
