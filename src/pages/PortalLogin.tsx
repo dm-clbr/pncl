@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import PortalAuthLayout from "@/components/portal/PortalAuthLayout";
+import PortalAuthUnavailable from "@/components/portal/PortalAuthUnavailable";
 import Chip from "@/components/portal/Chip";
 import Skeleton from "@/components/portal/Skeleton";
 import { useAuth, isEmailConfirmed } from "@/contexts/AuthContext";
@@ -10,7 +11,7 @@ import { trackPageView } from "@/lib/analytics";
 import { toast } from "sonner";
 
 export default function PortalLogin() {
-  const { user, loading, signInWithGoogle } = useAuth();
+  const { user, loading, authError, retryAuth, signInWithGoogle } = useAuth();
   const location = useLocation();
   const [signingInWithGoogle, setSigningInWithGoogle] = useState(false);
   const configured = isSupabaseAuthConfigured();
@@ -36,6 +37,8 @@ export default function PortalLogin() {
       setSigningInWithGoogle(false);
     }
   };
+
+  if (authError) return <PortalAuthUnavailable message={authError} onRetry={retryAuth} />;
 
   if (!loading && user && isEmailConfirmed(user) && isPendingPortalEnrollment(user.app_metadata)) {
     return <Navigate to="/onboarding/activate" replace />;

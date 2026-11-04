@@ -1,7 +1,7 @@
 import {getSupabaseClient} from './supabase';
 const client=()=>getSupabaseClient();
-export async function profileSyncRequest(body:Record<string,unknown>):Promise<unknown>{
- const {data,error}=await client().functions.invoke('profile-sync',{body});
+export async function profileSyncRequest(body:Record<string,unknown>,options:{signal?:AbortSignal;timeout?:number}={}):Promise<unknown>{
+ const {data,error}=await client().functions.invoke('profile-sync',{body,...options});
  if(error){
   const context=(error as {context?:Response}).context;
   const result=await context?.json().catch(()=>null);
