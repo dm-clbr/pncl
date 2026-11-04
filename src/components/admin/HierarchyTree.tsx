@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { AssistHierarchyNode, HierarchyNode } from "@/lib/admin-api";
 import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
+import { nodeMatchesUserId } from "@/lib/hierarchy-utils";
 
 function formatEffectiveDate(value: string | null): string | null {
   if (!value) return null;
@@ -54,7 +55,11 @@ function HierarchyTreeNode({
 
   return (
     <li className="admin-tree-item">
-      <div className={`admin-tree-row${selected ? " admin-tree-row-selected" : ""}`}>
+      <div
+        className={`admin-tree-row${selected ? " admin-tree-row-selected" : ""}`}
+        data-hierarchy-node-id={node.id}
+        data-hierarchy-member-ids={node.memberIds?.join(" ")}
+      >
         {hasChildren ? (
           <button
             type="button"
@@ -173,13 +178,68 @@ function HierarchyTreeNode({
 interface HierarchyTreeProps {
   tree: HierarchyNode[] | AssistHierarchyNode[];
   selectedNodeId: string | null;
+  focusRequest?: { userId: string; requestId: number } | null;
   assistView?: boolean;
   onSelectNode: (nodeId: string) => void;
 }
 
-export function HierarchyTree({ tree, selectedNodeId, assistView = false, onSelectNode }: HierarchyTreeProps) {
+function getAncestorIds(
+  roots: ReadonlyArray<HierarchyNode | AssistHierarchyNode>,
+  userId: string,
+  ancestors: string[] = [],
+): string[] | null {
+  for (const node of roots) {
+    if (nodeMatchesUserId(node, userId)) return ancestors;
+    const match = getAncestorIds(node.children, userId, [...ancestors, node.id]);
+    if (match) return match;
+  }
+  return null;
+}
+
+export function HierarchyTree({ tree, selectedNodeId, focusRequest = null, assistView = false, onSelectNode }: HierarchyTreeProps) {
   const defaultExpanded = useMemo(() => collectExpandableIds(tree), [tree]);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set(defaultExpanded));
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const handledFocusRequest = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!focusRequest) {
+      handledFocusRequest.current = null;
+      return;
+    }
+    if (handledFocusRequest.current === focusRequest.requestId) return;
+    const ancestors = getAncestorIds(tree, focusRequest.userId);
+    if (!ancestors) return;
+    handledFocusRequest.current = focusRequest.requestId;
+    setExpandedIds((current) => new Set([...current, ...ancestors]));
+  }, [focusRequest, tree]);
+
+  useEffect(() => {
+    if (!focusRequest || handledFocusRequest.current !== focusRequest.requestId) return;
+    const viewport = viewportRef.current;
+    const target = [...(viewport?.querySelectorAll<HTMLElement>("[data-hierarchy-node-id]") ?? [])]
+      .find((row) => row.dataset.hierarchyNodeId === focusRequest.userId
+        || row.dataset.hierarchyMemberIds?.split(" ").includes(focusRequest.userId));
+    if (!viewport || !target) return;
+    const viewportBounds = viewport.getBoundingClientRect();
+    const targetBounds = target.getBoundingClientRect();
+    const top = Math.max(0, viewport.scrollTop + targetBounds.top - viewportBounds.top
+      - viewport.clientHeight / 2 + targetBounds.height / 2);
+    let left = viewport.scrollLeft;
+    if (targetBounds.left < viewportBounds.left) {
+      left = Math.max(0, viewport.scrollLeft + targetBounds.left - viewportBounds.left);
+    } else if (targetBounds.right > viewportBounds.right) {
+      left = Math.max(0, viewport.scrollLeft + (targetBounds.width >= viewport.clientWidth
+        ? targetBounds.left - viewportBounds.left
+        : targetBounds.right - viewportBounds.right));
+    }
+    if (typeof viewport.scrollTo === "function") {
+      viewport.scrollTo({ top, left });
+    } else {
+      viewport.scrollTop = top;
+      viewport.scrollLeft = left;
+    }
+  }, [expandedIds, focusRequest]);
 
   function handleToggle(nodeId: string) {
     setExpandedIds((current) => {
@@ -194,7 +254,7 @@ export function HierarchyTree({ tree, selectedNodeId, assistView = false, onSele
   }
 
   return (
-    <div className="admin-hierarchy-tree-wrap">
+    <div ref={viewportRef} className="admin-hierarchy-tree-wrap">
       <ul className="admin-tree">
         {tree.map((node) => (
           <HierarchyTreeNode
