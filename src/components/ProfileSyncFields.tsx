@@ -10,7 +10,7 @@ const SYNC_UNAVAILABLE='Profile sync is temporarily unavailable. Your existing p
 const str=(v:Json|undefined)=>typeof v==='string'?v:'';
 const show=(v:Json)=>v===null?'Blank':typeof v==='object'?(v as Record<string,Json>).name as string||JSON.stringify(v):String(v);
 export const ProfileSyncFields=forwardRef<ProfileSyncHandle,{userId:string;system:System;nativeDirty?:boolean;onDirty?:(dirty:boolean)=>void}>(function ProfileSyncFields({userId,system,nativeDirty=false,onDirty},ref){
-  const id=useId(),[view,setView]=useState<SyncView|null>(null),[draft,setDraft]=useState<Record<string,Json>>({}),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
+  const id=useId(),[view,setView]=useState<SyncView|null>(null),[draft,setDraft]=useState<Record<string,Json>>({}),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[loadAttempt,setLoadAttempt]=useState(0);
   const current=useRef<SyncView|null>(null),draftRef=useRef<Record<string,Json>>({}),dirty=useRef(new Set<string>()),base=useRef<Record<string,Clock>>({}),pending=useRef<Record<string,unknown>|null>(null),saving=useRef(false),native=useRef(nativeDirty),mounted=useRef(true),onDirtyRef=useRef(onDirty);native.current=nativeDirty;onDirtyRef.current=onDirty;
   const install=useCallback((next:SyncView)=>{
     const previous=current.current;current.current=next;setView(next);
@@ -20,41 +20,24 @@ export const ProfileSyncFields=forwardRef<ProfileSyncHandle,{userId:string;syste
   },[userId]);
   useEffect(()=>{
     mounted.current=true;current.current=null;dirty.current.clear();base.current={};draftRef.current={};pending.current=null;setView(null);setDraft({});setMessage('');
-    let stopped=false,inFlight=false,failures=0,nextReadAt=0;
-    let timer:ReturnType<typeof setTimeout>|undefined;
-    let deadline:ReturnType<typeof setTimeout>|undefined;
-    let controller:AbortController|undefined;
-    const schedule=()=>{
-      clearTimeout(timer);
-      if(!stopped&&!document.hidden)timer=setTimeout(()=>void read(),Math.max(0,nextReadAt-Date.now()));
-    };
+    let stopped=false;
+    const controller=new AbortController();
+    // This is only a deadline for the initial display read, never a poll.
+    const deadline=setTimeout(()=>{if(!stopped){setMessage(SYNC_UNAVAILABLE);controller.abort();}},15000);
     const read=async()=>{
-      if(stopped||document.hidden||inFlight)return;
-      if(Date.now()<nextReadAt){schedule();return;}
-      if(saving.current){nextReadAt=Date.now()+30000;schedule();return;}
-      inFlight=true;controller=new AbortController();
-      // Token refresh can stall before fetch starts. Show feedback without
-      // adding more reads behind that pending refresh.
-      deadline=setTimeout(()=>{if(!stopped){setMessage(SYNC_UNAVAILABLE);controller?.abort();}},15000);
       try{
         const next=await profileSyncRequest({action:'read'},{signal:controller.signal,timeout:15000}) as SyncView;
         if(!stopped&&!saving.current)install(next);
         if(!stopped)setMessage(message=>message===SYNC_UNAVAILABLE?'':message);
-        failures=0;
       }catch{
-        failures++;
         if(!stopped)setMessage(SYNC_UNAVAILABLE);
       }finally{
         clearTimeout(deadline);
-        inFlight=false;
-        nextReadAt=Date.now()+Math.min(300000,30000*2**Math.min(failures,4));
-        schedule();
       }
     };
-    const resume=()=>{if(document.hidden)clearTimeout(timer);else void read();};
-    void read();window.addEventListener('focus',resume);document.addEventListener('visibilitychange',resume);
-    return()=>{stopped=true;mounted.current=false;clearTimeout(timer);clearTimeout(deadline);controller?.abort();window.removeEventListener('focus',resume);document.removeEventListener('visibilitychange',resume);};
-  },[userId,install]);
+    void read();
+    return()=>{stopped=true;mounted.current=false;clearTimeout(deadline);controller.abort();};
+  },[userId,install,loadAttempt]);
   const edit=(key:string,value:Json)=>{if(!dirty.current.has(key))base.current[key]=current.current?.clocks[key]??zero();dirty.current.add(key);draftRef.current={...draftRef.current,[key]:value};setDraft(draftRef.current);pending.current=null;onDirtyRef.current?.(true);};
   useImperativeHandle(ref,()=>({save:async(nativeChanges={})=>{
     if(!current.current){if(dirty.current.size)throw new Error('Wait for profile sync to reconnect before saving these fields.');return;}
@@ -75,7 +58,7 @@ export const ProfileSyncFields=forwardRef<ProfileSyncHandle,{userId:string;syste
     saving.current=true;setBusy(true);
     try{const result=await profileSyncRequest({action:'upload',field,id:crypto.randomUUID(),clock:current.current?.clocks[field]??zero(),name:file.name,mime:file.type,base64:btoa(binary)}) as {outcome:string;view:SyncView};install(result.view);setMessage('File saved and queued for sync.');}catch(error){setMessage(error instanceof Error?error.message:'Upload failed.');}finally{saving.current=false;setBusy(false);}
   };
-  if(!view)return <p className="profile-sync-note" role="status">{message||'Checking connected profile…'}</p>;
+  if(!view)return <div className="profile-sync-note"><p role="status">{message||'Loading connected profile…'}</p>{message&&<button type="button" onClick={()=>setLoadAttempt(value=>value+1)}>Try loading again</button>}</div>;
   const missing=FIELDS.filter(f=>!f[system]);
   const render=(key:string)=>{
     const f=fieldFor(key),value=draft[key];const inputId=id+'-'+key;
@@ -90,8 +73,8 @@ export const ProfileSyncFields=forwardRef<ProfileSyncHandle,{userId:string;syste
     return <div className="profile-sync-field" key={key}><label htmlFor={inputId}>{f.label}</label>{options?<select id={inputId} value={str(value)} onChange={e=>edit(key,e.target.value||null)}><option value="">Select</option>{options.map(o=><option key={o}>{o}</option>)}</select>:<input id={inputId} readOnly={f.derived} value={str(value)} type={f.kind==='email'?'email':'text'} onChange={e=>edit(key,e.target.value||null)}/>}</div>;
   };
   return <div className="profile-sync-fields" aria-busy={busy}>
-    <p className="profile-sync-note" role="status">{view.linked?view.lastError?'Connected profile sync is paused. It will retry automatically.':view.errors?'Some profile updates need a retry.':view.pending?'Profile updates are syncing…':'Connected profile is up to date.':'Connect your PNCL and LeadSpply accounts to sync these details.'} {view.errors>0&&<button type="button" onClick={()=>void profileSyncRequest({action:'retry'}).then(v=>install(v as SyncView))}>Retry updates</button>}</p>
-    <p className="profile-sync-note">Changes saved here or in your connected profile update both. The latest saved change wins.</p>
+    <p className="profile-sync-note" role="status">{view.linked?view.lastError||view.errors?'Some saved updates could not be delivered. They will retry the next time you save your profile.':view.pending?'Saved updates are queued for your connected profile.':'Connected profile loaded.':'Connect your PNCL and LeadSpply accounts to sync these details.'}</p>
+    <p className="profile-sync-note">Your changes sync when you save your profile. The latest saved change wins.</p>
     {Object.entries(labels).map(([section,label])=>missing.some(f=>f.section===section)&&<section key={section}><h3>{label}</h3><div className="profile-sync-grid">{missing.filter(f=>f.section===section).map(f=>render(f.key))}</div></section>)}
     {system==='leadspply'&&<section><h3>My documents</h3>{Object.keys(view.values).filter(k=>k.startsWith('document:')&&view.values[k]!==null).map(key=><div key={key}>{render(key)}<label>Document name<input value={str(draft['document_label:'+key.slice(9)])} onChange={e=>edit('document_label:'+key.slice(9),e.target.value)}/></label></div>)}<label htmlFor={id+'-new-document'}>Add document</label><input id={id+'-new-document'} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" disabled={busy} onChange={e=>{const file=e.target.files?.[0];if(file)void upload('document:'+crypto.randomUUID(),file);e.target.value='';}}/></section>}
     {message&&<p role="status" className="profile-sync-note">{message}</p>}

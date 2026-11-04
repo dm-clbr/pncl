@@ -95,21 +95,41 @@ export function createProfileSyncHandler(d:SyncDependencies){
     if(system==='leadspply'&&receipts.some((r:ObjectValue)=>r.outcome==='applied')&&['first_name','last_name','phone','business_legal_name','business_address_line1','business_address_city','business_address_state','business_address_postal','business_website','timezone'].includes(event.field))defer(db.functions.invoke('sync-business-profile',{body:{target_user_id:pair[system]}}));
     return receipts;
   }
-  async function syncUserBody(key:string,user:string,reverse=true){
-    const pair=await link(key,user);
-    await peer(key,{action:'bind',pair});
-    const pendingEvents=await rpc('outbox',user);
-    const events=pendingEvents.slice(0,4);
-    // Bound fan-out and keep a failed field independent of the rest of the profile.
-    for(let i=0;i<events.length;i+=4)await Promise.all(events.slice(i,i+4).map(async(raw:ObjectValue)=>{
-      try{const event=await enrich(user,raw);const receipts=await peer(key,{action:'deliver',pair,event});await rpc('ack',user,{receipts});}
-      catch(error){await rpc('fail',user,{id:raw.id,error:safeCode(error)});}
-    }));
-    if(pendingEvents.length>events.length)await rpc('dispatch',user);
-    if(reverse)await peer(key,{action:'flush',pair});
-    return {processed:events.length};
+  async function wakeWaitingSaves(){
+    if(system!=='pncl')return;
+    const waiting=await rpc('ready_users');
+    for(const queuedUser of waiting)await rpc('dispatch',queuedUser);
   }
-  async function syncUser(key:string,user:string,reverse=true){try{await rpc('touch',user);return await syncUserBody(key,user,reverse);}catch(error){await rpc('touch',user,{error:safeCode(error)});throw error;}}
+  async function syncUser(key:string,user:string){
+    const token=await rpc('claim',user);
+    // Recheck after a capacity rejection: the last active worker may have
+    // finished just before this save became eligible for its continuation.
+    if(!token){await wakeWaitingSaves();return {processed:0};}
+    let failure:string|null=null,processed=0;
+    try{
+      // Claim before any peer call. Idle reads and duplicate wake-ups do no work.
+      const events=(await rpc('outbox',user)).slice(0,4);
+      if(events.length){
+        const pair=await link(key,user);
+        await peer(key,{action:'bind',pair});
+        await Promise.all(events.map(async(raw:ObjectValue)=>{
+          try{const event=await enrich(user,raw);const receipts=await peer(key,{action:'deliver',pair,event});await rpc('ack',user,{receipts});}
+          catch(error){await rpc('fail',user,{id:raw.id,error:safeCode(error)});}
+        }));
+        processed=events.length;
+      }
+      return {processed};
+    }catch(error){failure=safeCode(error);throw error;}
+    finally{
+      // Release only our token; a crashed isolate is recovered by the lease expiry.
+      const more=await rpc('finish',user,{token,error:failure});
+      console.info('profile_sync_worker',JSON.stringify({system,processed,error:failure}));
+      if(more)await rpc('dispatch',user);
+      // A save admitted while all workers were busy is drained when capacity
+      // becomes available. No timer or idle account scan wakes this work.
+      await wakeWaitingSaves();
+    }
+  }
   function defer(task:Promise<unknown>){d.defer(task.catch(()=>undefined));}
   async function getView(user:string){
     const data=await rpc('read',user),values:ObjectValue={},clocks:ObjectValue={},conflicts:ObjectValue={},urls:ObjectValue={};
@@ -177,7 +197,7 @@ export function createProfileSyncHandler(d:SyncDependencies){
     uuid(request.id);const keys=Object.keys(request.changes);
     if(keys.length>80||Object.keys(request.expected).length!==keys.length||Object.keys(request.expected).some(k=>!keys.includes(k))||request.resolve&&(!Array.isArray(request.resolve)||request.resolve.some((k:unknown)=>typeof k!=='string'||!keys.includes(k))))throw new MirrorError('invalid_request');
     const fingerprint=await hash(new TextEncoder().encode(JSON.stringify(request)));
-    const previous=await rpc('operation',user,{id:request.id});if(previous){if(previous.fingerprint!==fingerprint)throw new MirrorError('request_id_reused',409);return {...previous.result,view:await getView(user)};}
+    const previous=await rpc('operation',user,{id:request.id});if(previous){if(previous.fingerprint!==fingerprint)throw new MirrorError('request_id_reused',409);if(system==='pncl')await rpc('retry',user);return {...previous.result,view:await getView(user)};}
     const current=await rpc('read',user),files:ObjectValue={},changes:ObjectValue={};
     for(const field of keys){
       validateClock(request.expected[field]);const meta=fieldFor(field);if(meta.derived)throw new MirrorError('derived_field');
@@ -239,11 +259,17 @@ export function createProfileSyncHandler(d:SyncDependencies){
         if(body.action==='link'&&system==='leadspply'){
           const pair=await rpc('link',uuid(body.userId),{system:body.system});if(pair)await available(pair.leadspply);return json(pair);
         }
-        if(body.action==='tick'){const users=await rpc('tick_users');defer((async()=>{const garbage=await rpc('gc_candidates');for(const file of garbage)await db.storage.from(file.bucket).remove([file.path]);for(const user of users)await rpc('dispatch',user);})());return json({accepted:true,accounts:users.length},202);}
+        if(body.action==='tick'){
+          if(system==='pncl')return json({accepted:true,accounts:0},202);
+          const users=await rpc('tick_users');defer((async()=>{const garbage=await rpc('gc_candidates');for(const file of garbage)await db.storage.from(file.bucket).remove([file.path]);for(const user of users)await rpc('dispatch',user);})());return json({accepted:true,accounts:users.length},202);
+        }
         if(body.action==='sync'){const user=uuid(body.userId);defer(syncUser(key,user));return json({accepted:true},202);}
         if(body.action==='bind'){await checkPair(key,body.pair);return json({ok:true});}
         if(body.action==='deliver')return json(await receive(key,body.pair,body.event));
-        if(body.action==='flush'){const pair=await checkPair(key,body.pair);defer(syncUser(key,pair[system],false));return json({accepted:true},202);}
+        if(body.action==='flush'){
+          if(system==='pncl')return json({accepted:true,processed:0},202);
+          const pair=await checkPair(key,body.pair);defer(syncUser(key,pair[system]));return json({accepted:true},202);
+        }
         throw new MirrorError('invalid_action');
       }
       const authorization=req.headers.get('Authorization')??'';if(!authorization.startsWith('Bearer '))throw new MirrorError('unauthorized',401);
@@ -252,10 +278,12 @@ export function createProfileSyncHandler(d:SyncDependencies){
       if(Object.keys(body).some(k=>!['action','request','field','id','clock','name','mime','base64','label','query'].includes(k)))throw new MirrorError('invalid_request');
       if(body.action==='search_songs')return json(await searchSongs(user,body.query));
       if(body.action==='song_preview')return json(await songPreview(user,body.id));
-      if(body.action==='read'){defer(syncUser(config.secret,user));return json(await getView(user));}
-      if(body.action==='save'){const result=await userSave(user,body.request);defer(syncUser(config.secret,user));return json(result,result.outcome==='conflict'?409:200);}
-      if(body.action==='upload'){const result=await upload(user,body);defer(syncUser(config.secret,user));return json(result,result.outcome==='conflict'?409:200);}
-      if(body.action==='retry'){await rpc('retry',user);defer(syncUser(config.secret,user));return json(await getView(user));}
+      if(body.action==='read')return json(await getView(user));
+      // The committed database save queues a signed wake-up. Starting
+      // a second worker here duplicates that work and can run before commit.
+      if(body.action==='save'){const result=await userSave(user,body.request);if(system!=='pncl')defer(syncUser(config.secret,user));return json(result,result.outcome==='conflict'?409:200);}
+      if(body.action==='upload'){const result=await upload(user,body);if(system!=='pncl')defer(syncUser(config.secret,user));return json(result,result.outcome==='conflict'?409:200);}
+      if(body.action==='retry'){await rpc('retry',user);if(system!=='pncl')defer(syncUser(config.secret,user));return json(await getView(user));}
       throw new MirrorError('invalid_action');
     }catch(error){return json({error:safeCode(error)},error instanceof MirrorError?error.status:503);}
   };

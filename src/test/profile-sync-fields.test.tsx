@@ -14,13 +14,13 @@ describe('production profile fields',()=>{
   request.mockResolvedValue(base());render(<ProfileSyncFields userId="u" system="pncl"/>);
   expect(await screen.findByLabelText('Business legal name')).toBeInTheDocument();expect(screen.queryByLabelText('First name')).not.toBeInTheDocument();expect(screen.queryByRole('button',{name:/save/i})).not.toBeInTheDocument();
  });
- it('saves through the parent button and preserves drafts across refresh',async()=>{
+ it('keeps edits local until the parent Save profile action',async()=>{
   vi.useFakeTimers();
   const view=base();request.mockResolvedValue(view);const ref=createRef<ProfileSyncHandle>(),dirty=vi.fn();render(<ProfileSyncFields ref={ref} userId="u" system="pncl" onDirty={dirty}/>);
   await act(async()=>{});
   const input=screen.getByLabelText('Business legal name');fireEvent.change(input,{target:{value:'My agency'}});expect(dirty).toHaveBeenCalledWith(true);
   fireEvent(window,new Event('focus'));expect(request).toHaveBeenCalledTimes(1);
-  await act(()=>vi.advanceTimersByTimeAsync(30000));expect(request).toHaveBeenCalledTimes(2);expect(input).toHaveValue('My agency');
+  await act(()=>vi.advanceTimersByTimeAsync(3600000));expect(request).toHaveBeenCalledTimes(1);expect(input).toHaveValue('My agency');
   request.mockResolvedValue({outcome:'saved',view:{...view,values:{...view.values,business_legal_name:'My agency'}},conflicts:[]});await act(()=>ref.current!.save());
   expect(request).toHaveBeenLastCalledWith(expect.objectContaining({action:'save',request:expect.objectContaining({changes:{business_legal_name:'My agency'}})}));expect(dirty).toHaveBeenLastCalledWith(false);
  });
@@ -34,7 +34,7 @@ describe('production profile fields',()=>{
  });
 });
 
-describe('profile polling during an outage',()=>{
+describe('profile loading without polling',()=>{
  it('keeps a single read in flight and aborts it when leaving the profile',async()=>{
   vi.useFakeTimers();request.mockImplementation(()=>new Promise(()=>{}));
   const page=render(<ProfileSyncFields userId="u" system="pncl"/>);
@@ -46,25 +46,35 @@ describe('profile polling during an outage',()=>{
   const signal=request.mock.calls[0][1]!.signal!;
   page.unmount();expect(signal.aborted).toBe(true);
  });
- it('backs off failures even on focus, then returns to normal polling after success',async()=>{
+ it('never retries automatically after failure, but supports an explicit display reload',async()=>{
   vi.useFakeTimers();request.mockRejectedValue(new Error('unavailable'));
   render(<ProfileSyncFields userId="u" system="pncl"/>);await act(async()=>{});
   expect(screen.getByRole('status')).toHaveTextContent('temporarily unavailable');
   fireEvent(window,new Event('focus'));
-  await act(()=>vi.advanceTimersByTimeAsync(59999));expect(request).toHaveBeenCalledTimes(1);
-  await act(()=>vi.advanceTimersByTimeAsync(1));expect(request).toHaveBeenCalledTimes(2);
+  fireEvent(document,new Event('visibilitychange'));
+  await act(()=>vi.advanceTimersByTimeAsync(3600000));expect(request).toHaveBeenCalledTimes(1);
   request.mockResolvedValue(base());
-  await act(()=>vi.advanceTimersByTimeAsync(120000));expect(request).toHaveBeenCalledTimes(3);
+  await act(async()=>fireEvent.click(screen.getByRole('button',{name:'Try loading again'})));expect(request).toHaveBeenCalledTimes(2);
   expect(screen.queryByText(/Profile sync is temporarily unavailable/)).not.toBeInTheDocument();
-  await act(()=>vi.advanceTimersByTimeAsync(30000));expect(request).toHaveBeenCalledTimes(4);
+  await act(()=>vi.advanceTimersByTimeAsync(3600000));expect(request).toHaveBeenCalledTimes(2);
  });
- it('pauses hidden tabs and resumes a due read when visible',async()=>{
-  vi.useFakeTimers();let hidden=true;vi.spyOn(document,'hidden','get').mockImplementation(()=>hidden);
+ it('does not refetch on focus, tab visibility changes, or elapsed time after a successful load',async()=>{
+  vi.useFakeTimers();let hidden=false;vi.spyOn(document,'hidden','get').mockImplementation(()=>hidden);
   request.mockResolvedValue(base());render(<ProfileSyncFields userId="u" system="pncl"/>);
-  await act(()=>vi.advanceTimersByTimeAsync(60000));expect(request).not.toHaveBeenCalled();
-  hidden=false;await act(async()=>fireEvent(document,new Event('visibilitychange')));expect(request).toHaveBeenCalledTimes(1);
+  await act(async()=>{});expect(request).toHaveBeenCalledTimes(1);
   hidden=true;fireEvent(document,new Event('visibilitychange'));
-  await act(()=>vi.advanceTimersByTimeAsync(60000));expect(request).toHaveBeenCalledTimes(1);
-  hidden=false;await act(async()=>fireEvent(document,new Event('visibilitychange')));expect(request).toHaveBeenCalledTimes(2);
+  await act(()=>vi.advanceTimersByTimeAsync(3600000));expect(request).toHaveBeenCalledTimes(1);
+  hidden=false;fireEvent(document,new Event('visibilitychange'));fireEvent(window,new Event('focus'));
+  await act(()=>vi.advanceTimersByTimeAsync(3600000));expect(request).toHaveBeenCalledTimes(1);
+ });
+ it('retains unsaved edits and the request identity when Save profile fails',async()=>{
+  const view=base(),ref=createRef<ProfileSyncHandle>();request.mockResolvedValue(view);
+  render(<ProfileSyncFields ref={ref} userId="u" system="pncl"/>);
+  const input=await screen.findByLabelText('Business legal name');fireEvent.change(input,{target:{value:'My agency'}});
+  request.mockRejectedValueOnce(new Error('offline'));
+  await act(async()=>{await expect(ref.current!.save()).rejects.toThrow('offline');});
+  const failedRequest=request.mock.calls[1][0];expect(input).toHaveValue('My agency');
+  request.mockResolvedValue({outcome:'saved',view:{...view,values:{...view.values,business_legal_name:'My agency'}},conflicts:[]});
+  await act(()=>ref.current!.save());expect(request.mock.calls[2][0]).toEqual(failedRequest);
  });
 });
