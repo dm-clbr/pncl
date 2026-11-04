@@ -6,6 +6,7 @@ import { CloseOutSongField } from './CloseOutSongField';
 export interface ProfileSyncHandle {save:(native?:Record<string,Json>)=>Promise<Record<string,Json>|undefined>}
 interface SyncView {version:3;values:Record<string,Json>;clocks:Record<string,Clock>;conflicts:Record<string,{value:Json;clock:Clock}>;urls:Record<string,string>;pending:number;errors:number;linked:boolean;lastError?:string}
 const labels={personal:'Personal information',home:'Home address',sizes:'Clothing sizes',business:'Business information',licensing:'Licensing',email:'Email identity',documents:'Documents'};
+const SYNC_UNAVAILABLE='Profile sync is temporarily unavailable. Your existing profile fields can still be saved.';
 const str=(v:Json|undefined)=>typeof v==='string'?v:'';
 const show=(v:Json)=>v===null?'Blank':typeof v==='object'?(v as Record<string,Json>).name as string||JSON.stringify(v):String(v);
 export const ProfileSyncFields=forwardRef<ProfileSyncHandle,{userId:string;system:System;nativeDirty?:boolean;onDirty?:(dirty:boolean)=>void}>(function ProfileSyncFields({userId,system,nativeDirty=false,onDirty},ref){
@@ -18,11 +19,41 @@ export const ProfileSyncFields=forwardRef<ProfileSyncHandle,{userId:string;syste
     if(previous&&JSON.stringify(previous.clocks)!==JSON.stringify(next.clocks))window.dispatchEvent(new CustomEvent('profile-sync-updated',{detail:{userId}}));
   },[userId]);
   useEffect(()=>{
-    mounted.current=true;current.current=null;dirty.current.clear();base.current={};draftRef.current={};pending.current=null;setView(null);setDraft({});
-    let stopped=false;
-    const read=async()=>{if(saving.current)return;try{const next=await profileSyncRequest({action:'read'}) as SyncView;if(!stopped)install(next);}catch{if(!stopped)setMessage('Profile sync is temporarily unavailable. Your existing profile fields can still be saved.');}};
-    void read();const timer=setInterval(read,10000);window.addEventListener('focus',read);
-    return()=>{stopped=true;mounted.current=false;clearInterval(timer);window.removeEventListener('focus',read);};
+    mounted.current=true;current.current=null;dirty.current.clear();base.current={};draftRef.current={};pending.current=null;setView(null);setDraft({});setMessage('');
+    let stopped=false,inFlight=false,failures=0,nextReadAt=0;
+    let timer:ReturnType<typeof setTimeout>|undefined;
+    let deadline:ReturnType<typeof setTimeout>|undefined;
+    let controller:AbortController|undefined;
+    const schedule=()=>{
+      clearTimeout(timer);
+      if(!stopped&&!document.hidden)timer=setTimeout(()=>void read(),Math.max(0,nextReadAt-Date.now()));
+    };
+    const read=async()=>{
+      if(stopped||document.hidden||inFlight)return;
+      if(Date.now()<nextReadAt){schedule();return;}
+      if(saving.current){nextReadAt=Date.now()+30000;schedule();return;}
+      inFlight=true;controller=new AbortController();
+      // Token refresh can stall before fetch starts. Show feedback without
+      // adding more reads behind that pending refresh.
+      deadline=setTimeout(()=>{if(!stopped){setMessage(SYNC_UNAVAILABLE);controller?.abort();}},15000);
+      try{
+        const next=await profileSyncRequest({action:'read'},{signal:controller.signal,timeout:15000}) as SyncView;
+        if(!stopped&&!saving.current)install(next);
+        if(!stopped)setMessage(message=>message===SYNC_UNAVAILABLE?'':message);
+        failures=0;
+      }catch{
+        failures++;
+        if(!stopped)setMessage(SYNC_UNAVAILABLE);
+      }finally{
+        clearTimeout(deadline);
+        inFlight=false;
+        nextReadAt=Date.now()+Math.min(300000,30000*2**Math.min(failures,4));
+        schedule();
+      }
+    };
+    const resume=()=>{if(document.hidden)clearTimeout(timer);else void read();};
+    void read();window.addEventListener('focus',resume);document.addEventListener('visibilitychange',resume);
+    return()=>{stopped=true;mounted.current=false;clearTimeout(timer);clearTimeout(deadline);controller?.abort();window.removeEventListener('focus',resume);document.removeEventListener('visibilitychange',resume);};
   },[userId,install]);
   const edit=(key:string,value:Json)=>{if(!dirty.current.has(key))base.current[key]=current.current?.clocks[key]??zero();dirty.current.add(key);draftRef.current={...draftRef.current,[key]:value};setDraft(draftRef.current);pending.current=null;onDirtyRef.current?.(true);};
   useImperativeHandle(ref,()=>({save:async(nativeChanges={})=>{
