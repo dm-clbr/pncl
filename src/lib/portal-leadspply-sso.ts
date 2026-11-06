@@ -24,7 +24,8 @@ export async function requestLeadSpplyLink(token: string, challenge: string, sig
   return validateLink(value);
 }
 export function leadSpplyLaunchError(error: unknown) {
-  const e = error as { code?: string; status?: number };
+  const e = error as { code?: string; status?: number; name?: string };
+  if (e?.code === "sso_timeout" || ["AbortError", "TimeoutError"].includes(e?.name ?? "")) return "LeadSpply took too long to respond. Please try opening it again from the dashboard. Your existing account and session have not been changed.";
   switch (e?.code) {
     case "setup_incomplete": return "Finish your LeadSpply verification, email matching and approval in account setup.";
     case "work_email_review_required": return "Your work email needs a support review before you can open LeadSpply.";

@@ -1,7 +1,8 @@
 """Provision the dedicated LS SSO signer without exposing private material.
 
 Uses the already authenticated Supabase CLI. Never prints subprocess output,
-keys, JWTs, session data or secret values. Gates remain OFF on both projects.
+keys, JWTs, session data or secret values. This script leaves the Hub gate OFF.
+Configure the public-key-only LeadSpply receiver separately through operator SQL.
 """
 import hashlib, json, os, shutil, subprocess, tempfile
 from pathlib import Path

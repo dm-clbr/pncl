@@ -25,7 +25,7 @@ Deno.serve(async req => {
     if (typeof b.challenge !== "string" || !/^[0-9a-f]{64}$/.test(b.challenge)) throw new SsoError("invalid_request", 400);
     const body = JSON.stringify({ action: "issue", externalId: user.id, email, challenge: b.challenge });
     const jwt = await signRequest(body, env("PNCL_LEADSPPLY_PRIVATE_KEY_PEM")!);
-    const res = await fetch(SSO_ENDPOINT, { method: "POST", redirect: "error", signal: AbortSignal.timeout(25000), headers: { "Content-Type": "application/json", Authorization: "Bearer " + jwt }, body });
+    const res = await fetch(SSO_ENDPOINT, { method: "POST", redirect: "error", signal: AbortSignal.timeout(35000), headers: { "Content-Type": "application/json", Authorization: "Bearer " + jwt }, body });
     if (res.status !== 201) {
       const failure = await res.json().catch(() => null);
       throw new SsoError(res.status === 429 ? "rate_limited" : failure?.error === "setup_incomplete" ? "setup_incomplete" : "sso_unavailable", res.status === 429 ? 429 : failure?.error === "setup_incomplete" ? 409 : 503);
@@ -36,7 +36,8 @@ Deno.serve(async req => {
     console.info("pncl_leadspply_sso", { actor, requestId, outcome: "issued" });
     return json(200, link);
   } catch (error) {
-    const e = error instanceof SsoError || error instanceof AdminAuthError ? error : new SsoError(error instanceof SyntaxError ? "invalid_request" : "sso_unavailable", error instanceof SyntaxError ? 400 : 502);
+    const timedOut = error instanceof Error && ["TimeoutError", "AbortError"].includes(error.name);
+    const e = error instanceof SsoError || error instanceof AdminAuthError ? error : new SsoError(timedOut ? "sso_timeout" : error instanceof SyntaxError ? "invalid_request" : "sso_unavailable", timedOut ? 504 : error instanceof SyntaxError ? 400 : 502);
     console.info("pncl_leadspply_sso", { actor, requestId, outcome: e.code });
     return json(e.status, { error: e.code });
   }
