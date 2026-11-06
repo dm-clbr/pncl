@@ -10,7 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import HubAccountSetup from "@/components/leadspply/HubAccountSetup";
 import type { SetupStatus } from "@/lib/hub-account-setup";
 
-const LEADSPPLY_DASHBOARD_URL = "https://leadspply.com/dashboard";
+import { PORTAL_LEADSPPLY_OPEN } from "@/lib/portal-leadspply-sso";
 
 function formatDateTime(value: string, timezone: string): string {
   return new Intl.DateTimeFormat(undefined, {
@@ -124,7 +124,7 @@ export default function PortalLeadSpplySnapshot({ userId }: { userId: string | u
             <RefreshCw size={15} className={loading ? "portal-leadspply-spin" : ""} aria-hidden="true" />
             Refresh data
           </button>
-          <a href={LEADSPPLY_DASHBOARD_URL} target="_blank" rel="noopener noreferrer" className="portal-leadspply-open">
+          <a href={PORTAL_LEADSPPLY_OPEN} target="_blank" rel="noopener noreferrer" className="portal-leadspply-open">
             Open LeadSpply <ExternalLink size={15} aria-hidden="true" />
           </a>
           <Link to="/portal/leadspply" className="portal-leadspply-refresh">{setupEnabled ? "Account setup" : "Connect / manage"}</Link>

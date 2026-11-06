@@ -40,6 +40,7 @@ import PortalOnboardingAction from "@/components/portal/PortalOnboardingAction";
 import { useRequiredPortalOnboarding } from "@/contexts/PortalOnboardingContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { PORTAL_SECTIONS } from "@/lib/portal-links";
+import { portalLeadSpplyHref } from "@/lib/portal-leadspply-sso";
 import { portalPayHref, PORTAL_PAY_PATH } from "@/lib/portal-pay";
 import { usePortalDashboardTabs } from "@/hooks/usePortalDashboardTabs";
 import {
@@ -131,7 +132,7 @@ function SectionReveal({
     return (
       <ul className="ptile-reveal-list">
         {section.links.map((link) => {
-          const href = portalPayHref(link.href);
+          const href = portalLeadSpplyHref(portalPayHref(link.href));
           const outbound = isOutbound(href);
           return (
             <li key={link.id}>

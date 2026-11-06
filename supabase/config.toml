@@ -367,3 +367,7 @@ verify_jwt = true
 
 [functions.portal-document-requests]
 verify_jwt = true
+
+# Authentication is validated inside the function.
+[functions.portal-leadspply-sso]
+verify_jwt = false
