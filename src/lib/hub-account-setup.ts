@@ -35,7 +35,8 @@ export async function hubAccountSetup<T>(
       typeof value?.message === "string"
         ? value.message
         : "Account setup is unavailable. Try again shortly.",
-    ) as Error & { retryAfter?: number; code?: string };
+    ) as Error & { retryAfter?: number; code?: string; status?: number };
+    error.status = response.status;
     if (typeof value?.error === "string") error.code = value.error;
     const delay = Number(response.headers.get("Retry-After"));
     if (response.status === 429) {

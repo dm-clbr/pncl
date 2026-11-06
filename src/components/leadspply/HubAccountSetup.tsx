@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Pane from "@/components/portal/Pane";
 import Field from "@/components/portal/Field";
 import PortalWorkflowDialog from "@/components/PortalWorkflowDialog";
@@ -14,6 +14,7 @@ export default function HubAccountSetup(
     onStatusChange?: (status: SetupStatus | null) => void;
   },
 ) {
+  const navigate = useNavigate();
   const [status, setStatus] = useState<SetupStatus | null>(null);
   const [busy, setBusy] = useState(false);
   const [cooldownUntil, setCooldownUntil] = useState(0);
@@ -75,16 +76,13 @@ export default function HubAccountSetup(
     const c = new AbortController();
     controller.current = c;
     try {
-      const result = await hubAccountSetup<SetupStatus & { url?: string }>(
+      const result = await hubAccountSetup<SetupStatus>(
         token,
         body,
         c.signal,
       );
       if (!mounted.current) return false;
-      if (body.action === "pay") {
-        if (!result.url) throw new Error("PNCL Pay is unavailable.");
-        window.location.assign(result.url);
-      } else if (result.state) {
+      if (result.state) {
         setStatus(result);
         if (body.action === "update_email") {
           setMessage(
@@ -617,7 +615,7 @@ export default function HubAccountSetup(
             type="button"
             disabled={busy || cooldown > 0 || !status.ready ||
               !status.payEnabled}
-            onClick={() => void run({ action: "pay" })}
+            onClick={() => navigate("/portal/pay")}
           >
             Open PNCL Pay
           </button>

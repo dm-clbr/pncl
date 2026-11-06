@@ -114,6 +114,14 @@ export const PORTAL_SECTIONS: PortalLinkSection[] = [
     title: "PNCL",
     links: [
       {
+        id: "pncl-pay",
+        title: "PNCL Pay",
+        description: "Open Pay using your Hub account.",
+        href: "/portal/pay",
+        external: false,
+        icon: Building2,
+      },
+      {
         id: "website",
         title: "Company Website",
         description: "Public PNCL site and product pages.",

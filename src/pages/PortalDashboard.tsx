@@ -40,6 +40,7 @@ import PortalOnboardingAction from "@/components/portal/PortalOnboardingAction";
 import { useRequiredPortalOnboarding } from "@/contexts/PortalOnboardingContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { PORTAL_SECTIONS } from "@/lib/portal-links";
+import { portalPayHref, PORTAL_PAY_PATH } from "@/lib/portal-pay";
 import { usePortalDashboardTabs } from "@/hooks/usePortalDashboardTabs";
 import {
   isLinksDashboardSection,
@@ -130,13 +131,14 @@ function SectionReveal({
     return (
       <ul className="ptile-reveal-list">
         {section.links.map((link) => {
-          const outbound = isOutbound(link.href);
+          const href = portalPayHref(link.href);
+          const outbound = isOutbound(href);
           return (
             <li key={link.id}>
-              {link.external ? (
+              {link.external && href !== PORTAL_PAY_PATH ? (
                 <a
                   className={`ptile-link${outbound ? " is-external" : ""}`}
-                  href={link.href}
+                  href={href}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -145,7 +147,7 @@ function SectionReveal({
                   <span className="ptile-sr">opens in a new tab</span>
                 </a>
               ) : (
-                <Link className="ptile-link" to={link.href}>
+                <Link className="ptile-link" to={href}>
                   {link.title}
                 </Link>
               )}
