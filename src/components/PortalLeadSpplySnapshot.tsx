@@ -3,7 +3,6 @@ import Chip from "@/components/portal/Chip";
 import Pane from "@/components/portal/Pane";
 import "@/styles/portal-integrations.css";
 import { ExternalLink, RefreshCw } from "lucide-react";
-import { Link } from "react-router-dom";
 import { usePortalLeadSpplySnapshot } from "@/hooks/usePortalLeadSpplySnapshot";
 import type { LeadSpplySnapshot } from "@/lib/portal-leadspply-snapshot";
 import { useAuth } from "@/contexts/AuthContext";
@@ -127,7 +126,6 @@ export default function PortalLeadSpplySnapshot({ userId }: { userId: string | u
           <a href={PORTAL_LEADSPPLY_OPEN} target="_blank" rel="noopener noreferrer" className="portal-leadspply-open">
             Open LeadSpply <ExternalLink size={15} aria-hidden="true" />
           </a>
-          <Link to="/portal/leadspply" className="portal-leadspply-refresh">{setupEnabled ? "Account setup" : "Connect / manage"}</Link>
         </div>
       }>
       <p className="portal-leadspply-eyebrow">LeadSpply · Read-only</p>
