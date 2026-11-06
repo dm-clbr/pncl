@@ -579,6 +579,18 @@ body:has(.onboarding-panel-signing) {
   overflow-x: visible;
 }
 
+/* The staged rollout still serves the div-based legacy signing modal. Keep its
+   overlay until the legacy flow is retired; ::backdrop only styles <dialog>. */
+.ica-signature-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.ica-signature-modal-backdrop,
 .ica-signature-modal::backdrop {
   background: rgba(0, 0, 0, 0.72);
   backdrop-filter: blur(4px);
