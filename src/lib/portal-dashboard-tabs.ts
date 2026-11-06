@@ -28,6 +28,26 @@ export interface PortalDashboardSection {
   files: PortalDashboardFile[];
 }
 
+/** Keep account setup discoverable with both published and fallback tiles. */
+export function withAccountSetupLink(sections: PortalDashboardSection[]): PortalDashboardSection[] {
+  const setup: PortalDashboardLink = {
+    id: "hub-account-setup",
+    title: "LeadSpply & PNCL Pay setup",
+    description: "Connect and verify your accounts using your Hub email.",
+    href: "/portal/leadspply",
+    external: false,
+  };
+  const accountIndex = sections.findIndex(section => section.sectionType === "links" &&
+    (section.id === "account" || section.title.trim().toLowerCase() === "account"));
+  if (accountIndex === -1) return [...sections, {
+    id: "account", title: "Account", sectionType: "links", links: [setup], files: [],
+  }];
+  return sections.map((section, index) => index === accountIndex ? {
+    ...section,
+    links: [...section.links.filter(link => link.id !== setup.id && link.href !== setup.href), setup],
+  } : section);
+}
+
 export async function fetchPortalDashboardTabs(
   accessToken: string,
 ): Promise<PortalDashboardSection[]> {

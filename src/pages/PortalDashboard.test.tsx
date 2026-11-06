@@ -4,6 +4,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import PortalOnboardingProvider from "@/components/portal/PortalOnboardingProvider";
 import PortalDashboard from "@/pages/PortalDashboard";
 import type { PortalTodo } from "@/lib/portal-todos";
+import type { PortalDashboardSection } from "@/lib/portal-dashboard-tabs";
 
 function todo(overrides: Partial<PortalTodo>): PortalTodo {
   return {
@@ -21,6 +22,7 @@ function todo(overrides: Partial<PortalTodo>): PortalTodo {
 }
 
 let todos: PortalTodo[] = [];
+let dashboardSections: PortalDashboardSection[] = [];
 /** Whether the (max-width: 620px) query matches; every other query stays false. */
 let narrow = false;
 
@@ -34,7 +36,7 @@ const auth = vi.hoisted(() => ({
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => auth }));
 vi.mock("@/hooks/usePortalTodos", () => ({ usePortalTodos: () => ({ todos }) }));
 vi.mock("@/hooks/usePortalDashboardTabs", () => ({
-  usePortalDashboardTabs: () => ({ sections: [] }),
+  usePortalDashboardTabs: () => ({ sections: dashboardSections }),
 }));
 vi.mock("@/hooks/usePortalCarriers", () => ({ usePortalCarriers: () => ({ carriers: [] }) }));
 vi.mock("@/hooks/usePortalIca", () => ({ usePortalIca: () => ({ submitted: false }) }));
@@ -94,6 +96,7 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
+  dashboardSections = [];
   narrow = false;
   todos = [
     todo({ id: "welcome", title: "Watch the welcome video" }),
@@ -175,5 +178,29 @@ describe("PortalDashboard onboarding dock", () => {
     );
     expect(capsule).toHaveTextContent("3 of 3");
     expect(capsule).toHaveTextContent("You're sales ready");
+  });
+});
+
+describe("PortalDashboard app navigation", () => {
+  it.each([false, true])("keeps setup in Account with published tiles=%s", async (published) => {
+    if (published) dashboardSections = [{
+      id: "account", title: "Account", sectionType: "links", files: [], links: [
+        { id: "profile", title: "My Profile", description: null, href: "/portal/profile", external: false },
+        { id: "old-setup", title: "Old setup label", description: null, href: "/portal/leadspply", external: false },
+      ],
+    }];
+    renderDashboard();
+    const nav = within(screen.getByRole("navigation", { name: "Agent portal" }));
+    expect(nav.getByRole("link", { name: "LeadSpply", exact: true })).toHaveAttribute("href", "/portal/leadspply/open");
+    expect(nav.getByRole("link", { name: "LeadSpply", exact: true })).toHaveAttribute("target", "_blank");
+    expect(nav.getByRole("link", { name: "PNCL Pay", exact: true })).toHaveAttribute("href", "/portal/pay");
+    expect(nav.getByRole("link", { name: "PNCL Pay", exact: true })).toHaveAttribute("target", "_blank");
+    fireEvent.click(screen.getByRole("button", { name: "Account, 2 items" }));
+    await screen.findByRole("link", { name: "LeadSpply & PNCL Pay setup", exact: true });
+    expect(screen.getAllByRole("link", { name: "LeadSpply & PNCL Pay setup", exact: true })).toHaveLength(1);
+    expect(screen.getByRole("link", { name: "LeadSpply & PNCL Pay setup", exact: true })).toHaveAttribute("href", "/portal/leadspply");
+    expect(screen.getByRole("link", { name: "My Profile", exact: true })).toBeInTheDocument();
+    expect(screen.queryByText("Old setup label")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Account setup", exact: true })).not.toBeInTheDocument();
   });
 });

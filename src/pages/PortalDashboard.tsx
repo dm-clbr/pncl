@@ -47,7 +47,7 @@ import {
   isLinksDashboardSection,
   isDownloadsDashboardSection,
 } from "@/lib/portal-dashboard-section-types";
-import type { PortalDashboardSection } from "@/lib/portal-dashboard-tabs";
+import { withAccountSetupLink, type PortalDashboardSection } from "@/lib/portal-dashboard-tabs";
 import PortalLeadSpplySnapshot from "@/components/PortalLeadSpplySnapshot";
 import PortalReferralPanel from "@/components/PortalReferralPanel";
 import { isOutbound, useSlowLoading } from "@/components/portal-tile-helpers";
@@ -251,7 +251,7 @@ export default function PortalDashboard() {
 
   const displaySections = useMemo((): PortalDashboardSection[] => {
     if (dashboardSections.length > 0) {
-      return dashboardSections.filter((section) =>
+      return withAccountSetupLink(dashboardSections).filter((section) =>
         isLinksDashboardSection(section)
           ? section.links.length > 0
           : isDownloadsDashboardSection(section)
@@ -260,7 +260,7 @@ export default function PortalDashboard() {
       );
     }
 
-    return [
+    return withAccountSetupLink([
       ...PORTAL_SECTIONS.map((section) => ({
         id: section.id,
         title: section.title,
@@ -288,7 +288,7 @@ export default function PortalDashboard() {
         links: [],
         files: [],
       },
-    ];
+    ]);
   }, [dashboardSections]);
 
   useEffect(() => {
