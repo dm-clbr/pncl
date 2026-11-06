@@ -1,6 +1,6 @@
 # PNCL Hub to PNCL Pay SSO implementation brief
 
-Updated October 28, 2026 · Partner ID: `pnclhub-h7fyl` · Status: James reports ready; corrected Pay endpoint and signing key deployed; general SSO disabled, expiring test access for Vel only.
+Updated November 6, 2026 · Partner ID: `pnclhub-h7fyl` · Status: dashboard SSO shortcut deployed; live automatic sign-in verified as Vel Fuimaono / vf@thepncl.com with Pay viewer access. General SSO is enabled for eligible users; the temporary test exception has been expired.
 
 PNCL Hub initiates SSO into PNCL Pay using partner login links. This proceeds independently of LeadSpply consolidation. Keep the Hub and LeadSpply Supabase projects, identities, and credentials separate for now; database consolidation and LeadSpply session handoff are outside this integration.
 
@@ -96,8 +96,8 @@ For unexpected 401/404 responses, retain the timestamp and safe correlation deta
 - [x] **Hub / Vel:** Provision and verify the existing private key in server-only secret storage without exposing it. Vel/PNCL owns the key; coordinate any rotation with James before replacing it, and revoke the partner key immediately on suspected compromise.
 - [x] **Hub / Vel:** Resolve the guide’s hostname typo. Use `https://www.pnclpay.com/api/partner/login-links` for the endpoint and JWT audience. The www endpoint responds with the documented authentication error; the bare host currently returns Cloudflare 525.
 - [ ] **James / Vel:** Verify partner authentication end to end and confirm configured limits/destinations during live testing.
-- [x] **Hub:** Implement and locally test session/authorization checks, trusted identity lookup, JWT signing, link requests, safe navigation, shared throttling, redacted Pay audit events and user-facing errors. Live partner testing remains pending.
-- [x] **Hub:** Add the gated PNCL Pay entry point with loading, duplicate-click prevention, server-directed cooldown and recovery states. Production enablement remains off.
+- [x] **Hub:** Implement and locally test session/authorization checks, trusted identity lookup, JWT signing, link requests, safe navigation, shared throttling, redacted Pay audit events and user-facing errors. Live partner authentication and Vel browser handoff passed November 6; provider-side replay/expiry checks remain separately documented.
+- [x] **Hub:** Add the gated PNCL Pay entry point with loading, duplicate-click prevention, server-directed cooldown and recovery states. Production enablement completed November 6 after live sign-in and focused checks.
 - [ ] **Hub + James:** Test correct-account login, unauthorized/cross-user attempts, changed/reassigned email, rejection of non-`thepncl.com` domains, migrated LeadSpply accounts, bad/expired/replayed JWTs, unsafe destinations, one-time link reuse/expiry, limits, and upstream failures. Confirm Pay permissions, existing-session/account switching, and logout/revocation expectations.
 - [ ] **Vel + James:** Report live-test results, then coordinate any remaining joint checks with Bill and DM. James explicitly said an initial independent test is fine; no calendar invitation is scheduled.
 - [ ] **Hub + James:** Record joint-test results, resolve launch blockers, and document rollback by disabling Hub SSO entry/issuance plus partner revocation when needed.
@@ -116,3 +116,63 @@ For unexpected 401/404 responses, retain the timestamp and safe correlation deta
 - Ten focused security/signing tests pass, including incorrect user IDs, expiry/missing key/endpoint, request injection, unready accounts, the exact corrected JWT audience, signature verification and unsafe links. A disposable real hosted Hub session confirmed non-allowlisted API denial (503), identity/config injection denial (400) and anonymous denial (401); sessions, user and onboarding fixture were removed and zero residue confirmed.
 - Full Hub → Pay login remains pending Vel’s existing-account ownership verification in the Hub interface. Do not bypass it or claim successful Pay redemption from key provisioning or the unauthenticated endpoint probe. No new email was sent.
 - Test rollback: clear `PNCL_PAY_TEST_USER_ID` or set the test expiry to the past; leave general SSO false. Full emergency stop: set `PNCL_PAY_ENDPOINT_CONFIRMED=false`. General rollout is a separate server-flag change after the live test passes.
+
+## October 29 release and partner connection probe
+
+- Hub commit `008b9c99` deployed successfully to production and staging. Dashboard **Your sales snapshot** and the dedicated setup page share the ownership-verification and conditional email-update modal. The current live dashboard shows the existing-link banner. Forty focused UI/snapshot/security tests passed; TypeScript and production build passed.
+- After Vel explicitly requested connection feedback without a known Pay account, a controlled diagnostic sent unsigned and fresh RS256-signed requests to the exact configured www endpoint using Vel’s verified Hub email and immutable Hub UUID. OpenSSL read the existing private key directly; neither private material, signed tokens nor returned link URLs were printed or persisted.
+- Unsigned request: **401 `partner_auth_failed`**, as expected. Signed request: **201**, with a login-link field. The returned link was discarded without browser redemption. This verifies endpoint reachability, partner authentication and link issuance; it does **not** verify Hub-mediated launch, final account identity, permissions, replay/expiry or logout. Initial Python HTTP probes returned 403; the working curl transport returned the documented responses above.
+- Vel reports not having knowingly set up a Pay account. Link issuance alone does not establish whether Pay already has an account or provisions one later. Confirm final identity/permissions through an authorized full test and clarify provisioning behavior with James before general rollout.
+- A read-only comparison of configuration hashes confirmed general Pay is still false, endpoint confirmation true, the signing configuration present, and the old October 28 test expiry unchanged. Automatic approval review blocked a proposed 30-minute production test-window renewal pending explicit scope/duration confirmation; it was not applied. The subsequently authorized one-off connection probe changed no Pay flags and created no browser session.
+- Vel completed live ownership verification in Hub; the backend confirms ownership verification and an exact Hub/LeadSpply email match. A newly authorized restricted test window and browser redemption remain next steps for the full SSO test.
+- At Vel's explicit request, a follow-up email was sent to James on October 29 asking how first-time Pay accounts are provisioned, what default access/approval applies, and why Vel's request returned a login link. No login link or secret was included. Vel subsequently requested draft-first review: show future email drafts and wait for approval before sending.
+
+
+## November 6 launch verification
+
+- James's October 29 reply confirms **SSO does not create Pay accounts**. Bill provisions accounts manually; absent accounts fail at login-link issuance. James confirmed Vel already has a Pay account. Vel independently confirmed with the Pay team on November 6 that its email matches Hub. [James's reply](https://mail.google.com/mail/u/?authuser=vf%40thepncl.com#all/1a189caa8e9ac457).
+- Current live checks confirm Vel's Hub identity is active/confirmed, onboarding work email matches, and LeadSpply ownership, exact Auth email match and approval are complete. Both projects remain separate. Deployed Hub/LeadSpply setup source was compared with the tested checkout and matches.
+- Found and fixed the normal dashboard shortcut: the CMS's direct `https://pnclpay.com` link previously bypassed SSO. Release `09a7b1c0` routes recognized Pay home/login links through protected `/portal/pay`, which automatically requests a fresh server-validated link and navigates the browser. The setup page uses the same launch route; the Pay & Commissions policy link is unchanged. Production and staging deployments succeeded November 6.
+- The launch page suppresses StrictMode duplicate requests, cancels stale responses after identity changes/unmount, validates the returned Pay destination/lifetime again, and never renders or persists the link. No automatic retry loop; throttling enforces the server cooldown. Missing Pay accounts receive Bill/provisioning guidance and support rather than another login or registration prompt.
+- **75 focused tests passed**: 54 backend/setup/dashboard/launch checks plus 21 Hub auth/enrollment/session-routing checks. TypeScript, targeted ESLint and production build passed; the existing bundle-size warning remains. The additional auth tests initially failed in setup because Node 26 native web storage shadowed JSDOM; rerunning with `NODE_OPTIONS=--no-experimental-webstorage` passed all 21 without source changes.
+- Vel explicitly approved enabling only his immutable Hub ID for 30 minutes. General flag remained false, expiry `2026-11-06T17:16:38.958517+00:00` (10:16 a.m. Mountain), and exact scope/expiry were verified using metadata digest comparisons without exposing secrets.
+- Live normal dashboard click reached Pay `/people` with no second login. The Pay profile menu identifies **Vel Fuimaono, vf@thepncl.com, Pay viewer**. Pay displays only the People navigation for this role, with access to view 55 people; no payroll/admin editing navigation was exposed. This is the existing role assigned by Pay, not a role supplied by Hub (Hub sends only email and immutable external ID). No person's pay details or financial actions were opened.
+- Pay sign-out returned to the Google sign-in screen. A second normal dashboard click signed back into the same Vel / vf@thepncl.com / Pay viewer account without a second login, proving a fresh Pay session. The test Pay session was then signed out again. Hub remained signed in, as expected for separate application sessions. Signing out of Hub is not global Pay logout; emergency stopping link issuance does not revoke an already-issued Pay session. Pay session revocation remains Pay's responsibility.
+- Screenshots and safe test evidence are local under `output/pay-launch-2026-11-06/`. No private key, JWT, session cookie or one-time URL is included.
+- Provider-side replay/expiry enforcement, a different real Pay role/account, and cross-account Pay session switching have not been exercised live. Hub's identity-switch cancellation, invalid/expired-link rejection, non-eligible-user denial and provider error handling have automated coverage. Full new LeadSpply signup/approval and bulk roster reconciliation are separate work; per-launch eligibility checks exclude unfinished accounts.
+
+- After the successful test, normal rollout set `PNCL_PAY_SSO_ENABLED=true` and expired the temporary test exception. Exact configuration was verified by metadata hashes. All existing per-user eligibility checks and Pay-side roles remain in force. A third live smoke test, from the setup-page button with the test exception expired, again signed in automatically as Vel / vf@thepncl.com / Pay viewer. The Pay session was signed out afterward. The live dashboard still shows Linked and Verified. No key change, account provisioning, bulk migration or email was performed.
+
+### Rollback
+
+Set `PNCL_PAY_SSO_ENABLED=false` and expire/clear the single-user test gate to stop new Hub SSO links. For an emergency stop regardless of either gate, set `PNCL_PAY_ENDPOINT_CONFIRMED=false`. Existing Pay sessions must be revoked in Pay. The frontend can remain deployed with the disabled-access/support message. For a frontend regression revert `09a7b1c0` through the normal release process; never restore an exposed/revoked key.
+
+
+## Hub and LeadSpply shared-sign-on audit — November 6
+
+**Finding: account linking exists; shared login sessions do not.**
+
+- Hub uses Google OAuth into its own Supabase project and persists/refreshes that project's session. Its login return path retains `/portal/pay`, so a signed-out user first completes Hub Google sign-in and then continues through the same server checks. Pending enrollment is routed to activation.
+- Hub's ordinary **Open LeadSpply** link is a plain new-tab link to `https://leadspply.com/dashboard`. It carries no auth token, code or requested identity. LeadSpply restores its own existing session, otherwise uses its own email/password sign-in. Matching email does not synchronize passwords, create a session or end another application's session.
+- A live click from Vel's Hub opened an existing LeadSpply session displaying a different book/account view. That proves the shortcut does not enforce a Hub-to-LeadSpply identity switch; it does not prove an authorization breach, because LeadSpply already had that session/view. No logout, impersonation, dialer or account change was performed in LeadSpply; its separate active release was left untouched.
+- LeadSpply's current main `PnclConnect` page generates a 10-minute **ownership code** and links back to Hub's `/portal/leadspply` page. It does not exchange a session into Hub. The older instruction to paste that code in Hub is now stale: current Hub uses the native credential/TOTP verification modal. That LeadSpply UI should be updated in its own isolated release; no unreviewed changes were made to its busy checkout.
+- The native Hub ownership check signs into LeadSpply server-side with the entered credentials, requires enrolled TOTP, records ownership, then signs out that temporary session. LeadSpply tokens never reach Hub's browser. Ownership remains valid for ordinary Pay eligibility; the 10-minute proof lifetime applies to a new email change, not recurring Pay access. Each Pay launch still rechecks current linked-account status, exact email and approval.
+- Pay cannot use a LeadSpply browser identity, preview/impersonation identity or connection code to choose its user. It requires an independently authenticated Hub session; the backend obtains the current Hub email/UUID and validates the linked LeadSpply account. The successful Vel Pay tests ran while the separate LeadSpply browser session existed, and Pay still reached Vel's exact Hub identity.
+- Logout/expiry are independent: LeadSpply refreshes its project session and its normal logout is local to that application/browser; Hub uses its own Auth sign-out; Pay has its own session/sign-out. There is no federated logout or shared refresh-token system. Expired or invalid Hub authentication is rejected before Pay issuance; unresolved setup remains ineligible.
+- This audit used current GitHub main auth/connection sources, deployed Hub/setup sources and a live shortcut observation. The main LeadSpply checkout contains unrelated VA/tracker work and was inspected read-only. Genuine automatic Hub ↔ LeadSpply SSO is a new integration feature, not completed by the Pay launch, and requires a separately agreed trust/session-handoff design while keeping both projects separate.
+
+Plain-language journey: sign into Hub with your PNCL Google email; verify/link LeadSpply once and align its email; click PNCL Pay for automatic Pay sign-in. Opening LeadSpply currently uses its own login session. Coming from LeadSpply still requires a valid Hub session before Pay can open.
+
+
+### Draft update to James — not sent
+
+Hi James,
+
+Hub-to-Pay SSO is now working end to end. Clicking PNCL Pay from the normal Hub dashboard signed me in without another login. We confirmed vf@thepncl.com and the existing Pay viewer role, then signed out and repeated successfully from a fresh Pay session.
+
+We corrected the dashboard shortcut to use the secure handoff and enabled SSO only through Hub's existing verified-email, account-link and approval checks. Users without a Pay account now see guidance to have Bill provision it, as you confirmed.
+
+We have not live-tested provider-side JWT replay/expiry, reused/expired login links, or switching between two different Pay accounts. Could we arrange a short joint check of those cases and confirm the intended session-revocation behavior? No secrets or login links are included here.
+
+Thanks,
+Vel
