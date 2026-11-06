@@ -49,3 +49,12 @@ it("sanitizes provider errors and preserves setup and rate-limit outcomes", asyn
     const f=fixture({upstream:status}); const r=await f.call(); expect(r.status).toBe(expected); expect(await r.text()).not.toContain("sensitive-error");
   }
 });
+it("reports an upstream timeout without leaking details or retrying a signed request", async () => {
+  const f = fixture();
+  f.fetcher.mockRejectedValueOnce(Object.assign(new Error("sensitive network details"), { name: "TimeoutError" }));
+  const response = await f.call();
+  expect(response.status).toBe(504);
+  expect(await response.json()).toEqual({ error: "sso_timeout" });
+  expect(f.sign).toHaveBeenCalledOnce();
+  expect(f.fetcher).toHaveBeenCalledOnce();
+});

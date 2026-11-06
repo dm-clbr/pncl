@@ -47,6 +47,14 @@ it("does not restart on a token refresh or automatically retry a failure", async
   v.rerender(<StrictMode><MemoryRouter><PortalLeadSpplyOpen /></MemoryRouter></StrictMode>);
   await act(async () => {}); expect(api).toHaveBeenCalledOnce();
 });
+it.each([{ code: "sso_timeout" }, { name: "AbortError" }])("offers a manual retry for a slow request without calling it an eligibility failure", async error => {
+  api.mockRejectedValue(error);
+  view();
+  await screen.findByText(/LeadSpply took too long to respond/);
+  expect(screen.queryByText(/not available for your account/)).not.toBeInTheDocument();
+  expect(api).toHaveBeenCalledOnce();
+  expect(redirect).not.toHaveBeenCalled();
+});
 it("rewrites only known LeadSpply entry points and rejects injected launch parameters", () => {
   expect(portalLeadSpplyHref("https://leadspply.com/dashboard")).toBe("/portal/leadspply/open");
   for (const value of ["https://leadspply.com/admin", "https://leadspply.com.evil.test", "https://leadspply.com/?next=evil", "/portal/leadspply"]) expect(portalLeadSpplyHref(value)).toBe(value);
