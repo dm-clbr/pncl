@@ -8,7 +8,7 @@ the homepage or use a separate hosted site.
 
 - `https://thepncl.com/summit` — presentation screen and high-contrast QR.
 - `https://thepncl.com/summit/ask` — anonymous, mobile-friendly question form.
-- `https://thepncl.com/summit/presenter` — full-admin portal access required.
+- `https://thepncl.com/summit/presenter` — public ranked questions, originals, and slides; no sign-in required.
 
 The apex domain follows the site's existing redirect to `www.thepncl.com`.
 The QR asset encodes the exact canonical ask URL above.
@@ -22,8 +22,12 @@ throttle. It is a basic accidental-spam guard, not strong bot protection.
 Each request carries an idempotency ID; retrying a lost response doesn't inflate
 counts. The original text is retained without rewriting.
 
-`summit-presenter` verifies the existing confirmed PNCL full-admin session. Raw
-tables and RPCs are inaccessible to anonymous and ordinary authenticated clients.
+`summit-presenter` intentionally allows signed-out visitors to read all Summit
+groups, counts, and original submissions, including questions awaiting grouping.
+The ask form explains this public visibility before submission. The endpoint
+exposes only the Summit summary and paginated originals; service-role and OpenAI
+credentials remain server-side. Raw tables and RPCs remain inaccessible to
+anonymous and ordinary authenticated clients. Other PNCL access rules are unchanged.
 The dashboard polls the server every three seconds, also refreshing on window
 focus and retrying connection errors. An atomic summary snapshot includes every
 group and count; unchanged snapshots return a small revision response. Originals
@@ -90,7 +94,9 @@ rolls back its fixtures. It requires an empty Summit database. It checks retry
 idempotency, concurrent-worker exclusion, assignment completeness, rank ordering,
 original retention beyond 1,000 submissions, and access restrictions. React tests
 cover validation, honest confirmation, retry identity, all groups, expansion,
-rank changes, automatic polling, and pending visibility. Grouping contract tests
+rank changes, automatic polling, and pending visibility. HTTP access tests verify
+signed-out summary and original-question reads, cursor validation, and rejected
+mutation actions. Grouping contract tests
 use fixtures and must not be represented as a live semantic-quality evaluation.
 
 ## Capacity evidence (November 9, 2026)
