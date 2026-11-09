@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { AdminAuthError, requireAdmin } from "../_shared/adminAuth.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { processSummitQuestions } from "../_shared/summitWorker.ts";
 import { UUID } from "../_shared/summitRules.ts";
@@ -9,8 +9,11 @@ Deno.serve(async (req) => {
   if (preflight) return preflight;
   if (req.method !== "POST") return errorResponse("Method not allowed", 405);
   try {
-    const { adminClient } = await requireAdmin(req);
+    // Summit questions and originals are intentionally public. Database access
+    // stays server-side and is limited to these two read-only RPCs.
+    const adminClient = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false, autoRefreshToken: false } });
     const body = await req.json().catch(() => ({}));
+    if (!body || typeof body !== "object" || (body.action !== undefined && body.action !== "snapshot" && body.action !== "originals")) return errorResponse("Invalid request", 400);
     if (body.action === "originals") {
       if (body.group_id !== null && (typeof body.group_id !== "string" || !UUID.test(body.group_id))) return errorResponse("Invalid group",400);
       const cursor = body.cursor;
@@ -27,8 +30,7 @@ Deno.serve(async (req) => {
     const response = jsonResponse({ ...data, ai_configured: Boolean(Deno.env.get("OPENAI_API_KEY")) });
     response.headers.set("Cache-Control", "no-store");
     return response;
-  } catch (error) {
-    if (error instanceof AdminAuthError) return errorResponse(error.message, error.status, error.code);
+  } catch {
     return errorResponse("Questions couldn’t be loaded. Retrying shortly.", 503);
   }
 });

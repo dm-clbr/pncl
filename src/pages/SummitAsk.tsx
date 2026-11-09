@@ -57,7 +57,7 @@ export default function SummitAsk() {
               <div className="summit-form-meta"><span id="question-help">Anonymous. No sign-in required.</span><span id="question-count">{question.length.toLocaleString()} / 1,000</span></div>
               {error && <p id="question-error" className="summit-error" role="alert">{error}</p>}
               <button className="summit-button" type="submit" disabled={submitting}>{submitting ? <>Sending your question <Loader2 className="summit-spinner" size={20} /></> : <>Send question <ArrowUpRight size={20} /></>}</button>
-              <p className="summit-privacy">Your question will be shared with the presenter and grouped with similar questions using AI. Please leave out personal or sensitive details.</p>
+              <p className="summit-privacy">Your original question and its AI group will be publicly visible on the Summit presenter page. Please leave out personal or sensitive details.</p>
             </form>
           </>
         )}

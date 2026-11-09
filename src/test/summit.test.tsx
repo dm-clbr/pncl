@@ -26,6 +26,11 @@ describe("Summit audience experience", () => {
     expect(validateSummitQuestion("x".repeat(1001))).not.toBeNull();
     expect(validateSummitQuestion("How can I grow?")).toBeNull();
   });
+  it("explains public visibility before an anonymous question is submitted", () => {
+    mount(<SummitAsk />);
+    expect(screen.getByText(/Your original question and its AI group will be publicly visible/)).toBeVisible();
+    expect(screen.getByText("Anonymous. No sign-in required.")).toBeVisible();
+  });
   it("only confirms after storage succeeds and keeps an idempotency key on retry", async () => {
     vi.mocked(submitSummitQuestion).mockRejectedValueOnce(new Error("Connection lost")).mockResolvedValueOnce({ id: "saved" });
     mount(<SummitAsk />);

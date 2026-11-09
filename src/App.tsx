@@ -104,7 +104,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/summit" element={<Summit />} />
           <Route path="/summit/ask" element={<SummitAsk />} />
-          <Route path="/summit/presenter" element={<ProtectedRoute><AdminRoute><AdminFullRoute><SummitPresenter /></AdminFullRoute></AdminRoute></ProtectedRoute>} />
+          <Route path="/summit/presenter" element={<SummitPresenter />} />
           <Route path="/mortgage-protection" element={<MortgageProtection />} />
           <Route path="/mortgage-coverage" element={<MortgageCoverage />} />
           <Route path="/family-protection" element={<FamilyProtection />} />
