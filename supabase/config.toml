@@ -2,6 +2,18 @@
 # working directory name when running `supabase init`.
 project_id = "pncl"
 
+# Audience submissions are anonymous; presenter validates the existing admin
+# session inside its handler (supports both legacy and modern Supabase keys).
+[functions.summit-submit]
+verify_jwt = false
+
+[functions.summit-presenter]
+verify_jwt = false
+
+# Validates single-use cron tokens inside the handler.
+[functions.summit-worker]
+verify_jwt = false
+
 [api]
 enabled = true
 

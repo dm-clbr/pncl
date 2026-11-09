@@ -77,6 +77,9 @@ import PortalTabLayout from "./components/portal/PortalTabLayout.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import Summit from "./pages/Summit";
+import SummitAsk from "./pages/SummitAsk";
+import SummitPresenter from "./pages/SummitPresenter";
 
 const queryClient = new QueryClient();
 
@@ -99,6 +102,9 @@ const App = () => (
         <AuthProvider>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/summit" element={<Summit />} />
+          <Route path="/summit/ask" element={<SummitAsk />} />
+          <Route path="/summit/presenter" element={<ProtectedRoute><AdminRoute><AdminFullRoute><SummitPresenter /></AdminFullRoute></AdminRoute></ProtectedRoute>} />
           <Route path="/mortgage-protection" element={<MortgageProtection />} />
           <Route path="/mortgage-coverage" element={<MortgageCoverage />} />
           <Route path="/family-protection" element={<FamilyProtection />} />
