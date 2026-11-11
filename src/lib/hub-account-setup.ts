@@ -1,6 +1,7 @@
 import { getSupabaseConfig } from "./supabase";
 export type SetupStatus = {
   state: "not_linked" | "connected" | "account_unavailable";
+  blockedReason?: "email_confirmation_required" | "invitation_pending";
   email: string;
   account: null | { id: string; email: string };
   ownershipVerified: boolean;

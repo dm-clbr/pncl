@@ -266,3 +266,9 @@
 .home2-page .portal-shared-signin-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .home2-page .portal-shared-signin-back { width: fit-content; text-decoration: underline; text-underline-offset: 4px; }
 .home2-page .portal-shared-signin :is(button, a):focus-visible { outline: var(--portal-focus-ring); outline-offset: var(--portal-focus-offset); }
+
+.home2-page .hub-setup-confirmation { display: grid; gap: 16px; line-height: 1.6; }
+.home2-page .hub-setup-confirmation p { margin: 0; }
+.home2-page .hub-setup-confirmation ol { padding-left: 24px; }
+.home2-page .hub-setup-confirmation li + li { margin-top: 8px; }
+.home2-page .hub-setup-confirmation > a { width: fit-content; text-decoration: underline; text-underline-offset: 4px; }

@@ -307,3 +307,29 @@ it("shows authenticator input only after the server requires it, with errors ins
   fireEvent.click(screen.getByRole("button", { name: "I have a LeadSpply account" }));
   expect(screen.queryByLabelText(/Authenticator code/)).toBeNull();
 });
+
+it("explains the email-confirmation block and opens login without sending mail or changing ownership", async () => {
+  api.mockResolvedValue({ ...empty, state: "account_unavailable", blockedReason: "email_confirmation_required" });
+  view();
+  await screen.findByText("Confirm your LeadSpply email");
+  expect(screen.getByRole("alert")).toHaveTextContent(/Hub email is verified/);
+  expect(screen.getByText("Resend confirmation email")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Open LeadSpply login (new tab)" })).toHaveAttribute("href", "https://leadspply.com/login");
+  expect(screen.queryByLabelText(/LeadSpply password/)).toBeNull();
+  expect(api.mock.calls.every(call => call[1].action === "status")).toBe(true);
+  api.mockResolvedValue({ ...linked, account: { id: "ls-1", email: empty.email }, emailMatches: true, approved: true, ownershipVerified: false, proofExpiresAt: null });
+  fireEvent.click(screen.getByRole("button", { name: "Refresh status" }));
+  await waitFor(() => expect(screen.queryByText("Confirm your LeadSpply email")).toBeNull());
+  expect(screen.getByRole("button", { name: /Verify/ })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Open PNCL Pay" })).toBeDisabled();
+});
+
+it("explains an unaccepted invitation without suggesting a password login or sending mail", async () => {
+  api.mockResolvedValue({ ...empty, state: "account_unavailable", blockedReason: "invitation_pending" });
+  view();
+  await screen.findByText("Accept your LeadSpply invitation");
+  expect(screen.getByRole("alert")).toHaveTextContent(/follow the link to set your password/);
+  expect(screen.getByRole("link", { name: "Get help with my invitation" })).toHaveAttribute("href", "/portal/support");
+  expect(screen.queryByText("Resend confirmation email")).toBeNull();
+  expect(api.mock.calls.every(call => call[1].action === "status")).toBe(true);
+});
