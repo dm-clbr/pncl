@@ -81,7 +81,9 @@ it.each([
   expect(screen.queryByText(/Sensitive provider/)).toBeNull();
   expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
   expect(screen.getByRole("link", { name: "Contact support" })).toHaveAttribute("href", "/portal/support");
-  expect(api).toHaveBeenCalledOnce(); expect(redirect).not.toHaveBeenCalled();
+  expect(api).toHaveBeenCalledTimes(code === "setup_incomplete" ? 2 : 1);
+  expect(api.mock.calls.filter(call => call[1].action === "pay")).toHaveLength(1);
+  expect(redirect).not.toHaveBeenCalled();
 });
 
 it("waits out throttling and only retries after a deliberate click", async () => {
@@ -110,4 +112,24 @@ it("offers a manual retry after a network failure", async () => {
   expect(api).toHaveBeenCalledOnce();
   fireEvent.click(screen.getByRole("button", { name: "Try again" }));
   await waitFor(() => expect(redirect).toHaveBeenCalledOnce());
+});
+
+it("explains pending approval using the signed-in user's setup status", async () => {
+  api.mockRejectedValueOnce({ code: "setup_incomplete" }).mockResolvedValueOnce({ state: "connected", ownershipVerified: true, emailMatches: true, approved: false, ready: false });
+  view();
+  await screen.findByText(/contact support for the required LeadSpply account approval/);
+  expect(api).toHaveBeenNthCalledWith(2, "hub-token", { action: "status" }, expect.any(AbortSignal));
+  expect(redirect).not.toHaveBeenCalled();
+});
+
+it("times out a silent Pay request and never redirects a late response", async () => {
+  vi.useFakeTimers();
+  let resolve!: (value: unknown) => void;
+  api.mockImplementationOnce(() => new Promise(done => { resolve = done; }));
+  view(); await act(async () => {});
+  await act(async () => vi.advanceTimersByTime(60000));
+  expect(screen.getByRole("alert")).toHaveTextContent(/PNCL Pay took too long/);
+  expect(screen.getByRole("button", { name: "Try again" })).toBeEnabled();
+  await act(async () => resolve(link()));
+  expect(redirect).not.toHaveBeenCalled();
 });

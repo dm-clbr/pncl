@@ -6,6 +6,8 @@ Implemented October 27; production rollout October 28, 2026. Both server endpoin
 
 PNCL Hub → LeadSpply is the account setup entry point. A current verified `@thepncl.com` Hub Auth email must match a completed, unreleased onboarding record, or an administrator-provisioned legacy `manual` record. Incomplete enrollment-v3 accounts cannot use the legacy path.
 
+Staff accounts with a server-assigned `admin`, `genesis_admin`, or `admin_assist` role can use setup without an agent onboarding record. Other staff can receive an operator-approved exception: the server-controlled Auth `app_metadata.hub_setup_onboarding_exception` must contain the account's exact `user_id` and current normalized `email`. Both paths use the current Auth user, never browser metadata or stale JWT claims. They do not apply to enrollment-v3 accounts, accounts with an onboarding ID, or accounts with any onboarding record; database errors fail closed. Neither path grants an admin role, confirms a LeadSpply email, proves ownership, approves an account, or provisions PNCL Pay. Removing the admin role or individual exception revokes that path. A work-email rename requires a new explicit individual exception.
+
 1. Existing users enter their current LeadSpply credentials inside Hub. Verified TOTP factors require an authenticator code. The temporary LeadSpply session is signed out locally; its tokens never reach the browser. Unsupported MFA/passwordless recovery goes to support.
 2. Ownership verification links the immutable Hub and LeadSpply UUIDs. A conflicting existing link or NPN requires review. It does not change email automatically.
 3. The user explicitly selects **Update to my Hub email**. A fresh ownership proof and exact, short-lived server permit authorize the Auth Admin change. Existing account ID, password and data remain. Direct Auth and provider identity updates cannot bypass this process.
@@ -90,3 +92,9 @@ Vel subsequently completed live ownership verification in Hub. The backend confi
 ## November 6 Pay shortcut release
 
 Release `09a7b1c0` routes the normal dashboard PNCL Pay shortcut and setup-page launch button through `/portal/pay` for automatic sign-in. The verified badge remains live and is driven by server-confirmed ownership. Missing Pay accounts must be provisioned by Bill; SSO does not create them. Live sign-in confirmed the correct Vel account and existing Pay viewer role. All 75 focused setup/SSO/auth tests, TypeScript, targeted ESLint and production build passed. See [current launch verification](pncl-pay-sso.md#november-6-launch-verification) for gate status, live evidence, limitations and rollback.
+
+## Shared sign-in feedback
+
+Hub shows the company email and connection progress when opening LeadSpply or PNCL Pay. Failures stay visible with a recovery action. A `setup_incomplete` response triggers one authenticated status read to explain missing linking, ownership verification, email matching, or approval; this read never authorizes a sign-in. If status is unavailable, the original explanation remains visible.
+
+Session checks stop after 12 seconds. LeadSpply and Pay requests stop after 45 and 60 seconds respectively, and late responses cannot redirect after cancellation. Rate-limited retries honor the countdown, and deliberate retries use the current Hub token. Raw provider messages, credentials and sign-in URLs are never rendered. The LeadSpply issuer distinguishes account rollout (`sso_not_enabled`) from a service/configuration failure (`sso_unavailable`).

@@ -41,7 +41,7 @@ it("uses only canonical server identity and the fixed signed destination", async
   expect(r.headers.get("Cache-Control")).toBe("no-store"); expect(r.headers.get("Referrer-Policy")).toBe("no-referrer");
 });
 it("fails closed when disabled or the authoritative Hub email changes during issuance", async () => {
-  const f=fixture({disabled:true}); expect((await f.call()).status).toBe(503); expect(f.sign).not.toHaveBeenCalled();
+  const f=fixture({disabled:true}); const disabled = await f.call(); expect(disabled.status).toBe(503); expect(await disabled.json()).toEqual({ error: "sso_not_enabled" }); expect(f.sign).not.toHaveBeenCalled();
   const g=fixture({changedEmail:true}); const r=await g.call(); expect(r.status).toBe(409); expect((await r.json()).error).toBe("work_email_review_required");
 });
 it("sanitizes provider errors and preserves setup and rate-limit outcomes", async () => {
