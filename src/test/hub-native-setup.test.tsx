@@ -308,7 +308,7 @@ it("shows authenticator input only after the server requires it, with errors ins
   expect(screen.queryByLabelText(/Authenticator code/)).toBeNull();
 });
 
-it("explains the email-confirmation block and opens login without sending mail or changing ownership", async () => {
+it("refreshes a confirmed matching account directly to ready without another password prompt", async () => {
   api.mockResolvedValue({ ...empty, state: "account_unavailable", blockedReason: "email_confirmation_required" });
   view();
   await screen.findByText("Confirm your LeadSpply email");
@@ -317,11 +317,11 @@ it("explains the email-confirmation block and opens login without sending mail o
   expect(screen.getByRole("link", { name: "Open LeadSpply login (new tab)" })).toHaveAttribute("href", "https://leadspply.com/login");
   expect(screen.queryByLabelText(/LeadSpply password/)).toBeNull();
   expect(api.mock.calls.every(call => call[1].action === "status")).toBe(true);
-  api.mockResolvedValue({ ...linked, account: { id: "ls-1", email: empty.email }, emailMatches: true, approved: true, ownershipVerified: false, proofExpiresAt: null });
+  api.mockResolvedValue({ ...linked, account: { id: "ls-1", email: empty.email }, emailMatches: true, approved: true, ownershipVerified: true, proofExpiresAt: null, ready: true, payEnabled: true });
   fireEvent.click(screen.getByRole("button", { name: "Refresh status" }));
   await waitFor(() => expect(screen.queryByText("Confirm your LeadSpply email")).toBeNull());
-  expect(screen.getByRole("button", { name: /Verify/ })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "Open PNCL Pay" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: /Verify/ })).toBeNull();
+  expect(screen.getByRole("button", { name: "Open PNCL Pay" })).toBeEnabled();
 });
 
 it("explains an unaccepted invitation without suggesting a password login or sending mail", async () => {

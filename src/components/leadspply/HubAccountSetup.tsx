@@ -354,7 +354,7 @@ export default function HubAccountSetup(
       <ol>
         <li>Open your LeadSpply invitation email and follow the link to set your password.</li>
         <li>If the invitation has expired or is missing, contact support for a fresh invitation.</li>
-        <li>Return here, select <strong>Refresh status</strong>, and verify your existing LeadSpply login once to finish connecting.</li>
+        <li>Return here and select <strong>Refresh status</strong>. Your existing link connects automatically when both verified company emails match.</li>
       </ol>
       <Link className="ptools-cta is-primary" to="/portal/support">Get help with my invitation</Link>
     </div>
@@ -365,7 +365,7 @@ export default function HubAccountSetup(
       <ol>
         <li>Open LeadSpply login and sign in. If prompted, choose <strong>Resend confirmation email</strong>.</li>
         <li>Follow the link in the confirmation email.</li>
-        <li>Return here, select <strong>Refresh status</strong>, and verify your existing LeadSpply login once to finish connecting.</li>
+        <li>Return here and select <strong>Refresh status</strong>. Your existing link connects automatically when both verified company emails match.</li>
       </ol>
       <a className="ptools-cta is-primary" href="https://leadspply.com/login" target="_blank" rel="noopener noreferrer">Open LeadSpply login (new tab)</a>
       <p>If you cannot confirm your email, <Link to="/portal/support">contact support</Link>.</p>

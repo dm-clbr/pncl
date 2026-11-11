@@ -134,7 +134,7 @@ it("does not expose provider details and gives work-email failures a support pat
 
 it.each([
   [{ state: "not_linked" }, /not linked to LeadSpply yet/],
-  [{ state: "account_unavailable" }, /Confirm your LeadSpply email/],
+  [{ state: "account_unavailable" }, /Contact support to review account access/],
   [{ state: "connected", ownershipVerified: true, emailMatches: true, approved: true, ready: true }, /Finish your LeadSpply account verification/],
 ])("explains the diagnostic status without assuming ownership", async (status, message) => {
   api.mockRejectedValue({ code: "setup_incomplete" }); statusApi.mockResolvedValue(status);
