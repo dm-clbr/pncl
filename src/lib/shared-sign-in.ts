@@ -1,6 +1,10 @@
 import { hubAccountSetup, type SetupStatus } from "./hub-account-setup";
 
 export type SignInProduct = "LeadSpply" | "PNCL Pay";
+export function sharedSignInSetupHref(product: SignInProduct, status?: SetupStatus | null) {
+  const target = product === "PNCL Pay" ? "pay" : "leadspply";
+  return `/portal/leadspply?continue=${target}${status?.state === "connected" && !status.emailMatches ? "&step=email" : ""}`;
+}
 export type SignInFailure = {
   message: string;
   retry: boolean;

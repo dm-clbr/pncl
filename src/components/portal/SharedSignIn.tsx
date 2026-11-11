@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Pane from "./Pane";
 import { useAuth } from "@/contexts/AuthContext";
-import { explainSignInFailure, sharedSignInError, type SignInFailure, type SignInProduct } from "@/lib/shared-sign-in";
+import { explainSignInFailure, setupSignInError, sharedSignInError, sharedSignInSetupHref, type SignInFailure, type SignInProduct } from "@/lib/shared-sign-in";
+import { hubAccountSetup, type SetupStatus } from "@/lib/hub-account-setup";
+import SharedSignInSetupDialog from "./SharedSignInSetupDialog";
 
-export function SignInStatus({ product, email, message, failure, retry, cooldown = 0, slow = false }: {
+export function SignInStatus({ product, email, message, failure, retry, cooldown = 0, slow = false, setupHref = "/portal/leadspply", showSetup }: {
   product: SignInProduct; email?: string; message?: string; failure?: SignInFailure | null;
   retry?: () => void; cooldown?: number; slow?: boolean;
+  setupHref?: string; showSetup?: () => void;
 }) {
   const { signInWithGoogle } = useAuth();
   const [signInFailed, setSignInFailed] = useState(false);
@@ -17,7 +20,7 @@ export function SignInStatus({ product, email, message, failure, retry, cooldown
     catch { setSignInFailed(true); }
     finally { setSigningIn(false); }
   }
-  return <div className="portal-shared-signin"><Pane title={failure ? `Couldn’t sign in to ${product}` : `Connecting to ${product}`}>
+  return <div className="portal-shared-signin"><Pane title={showSetup ? `Finish setting up ${product}` : failure ? `Couldn’t sign in to ${product}` : `Connecting to ${product}`}>
     <div className="portal-shared-signin-body">
       {email && <p>Using your Hub account: <strong>{email}</strong></p>}
       {failure ? <>
@@ -26,7 +29,8 @@ export function SignInStatus({ product, email, message, failure, retry, cooldown
         <div className="portal-shared-signin-actions">
           {failure.retry && retry && <button className="ptools-cta is-primary" type="button" disabled={cooldown > 0} onClick={retry}>{cooldown > 0 ? `Try again in ${cooldown} seconds` : "Try again"}</button>}
           {failure.action === "signin" && <button className="ptools-cta is-primary" type="button" disabled={signingIn} onClick={() => void signIn()}>{signingIn ? "Opening Google sign-in…" : "Sign in to Hub again"}</button>}
-          <Link className={`ptools-cta${failure.action === "setup" ? " is-primary" : ""}`} to="/portal/leadspply">Account setup</Link>
+          {showSetup && <button className="ptools-cta is-primary" type="button" onClick={showSetup}>View setup steps</button>}
+          <Link className={`ptools-cta${failure.action === "setup" && !showSetup ? " is-primary" : ""}`} to={setupHref}>Account setup</Link>
           <Link className={`ptools-cta${failure.action === "support" && !failure.retry ? " is-primary" : ""}`} to="/portal/support">Contact support</Link>
           {product === "LeadSpply" && <a className="ptools-cta" href="https://leadspply.com/login" rel="noreferrer">Use normal LeadSpply login</a>}
         </div>
@@ -60,6 +64,8 @@ export function SharedSignIn({ product, email, token, launch, timeout = 60000 }:
   // Refreshes do not issue duplicate links; a deliberate retry uses the latest token.
   const [attempt, setAttempt] = useState({ token, version: 0 });
   const [failure, setFailure] = useState<SignInFailure | null>(null);
+  const [setup, setSetup] = useState<{ status: SetupStatus | null } | null>(null);
+  const [setupOpen, setSetupOpen] = useState(false);
   const [message, setMessage] = useState("Checking your account connection…");
   const [slow, setSlow] = useState(false);
   const [retryAt, setRetryAt] = useState(0);
@@ -73,7 +79,8 @@ export function SharedSignIn({ product, email, token, launch, timeout = 60000 }:
   useEffect(() => {
     let active = true;
     const controller = new AbortController();
-    setFailure(null); setSlow(false);
+    setFailure(null); setSlow(false); setSetup(null); setSetupOpen(false);
+    setMessage("Checking your account connection…");
     const slowTimer = setTimeout(() => { if (active) setSlow(true); }, 8000);
     const deadline = setTimeout(() => {
       if (!active) return;
@@ -84,12 +91,25 @@ export function SharedSignIn({ product, email, token, launch, timeout = 60000 }:
     void Promise.resolve().then(async () => {
       if (!active) return;
       try {
+        const status = await hubAccountSetup<SetupStatus>(attempt.token, { action: "status" }, controller.signal);
+        if (!active) return;
+        if (!status || status.email !== email || !["connected", "not_linked", "account_unavailable"].includes(status.state)) {
+          throw { code: "integration_unavailable" };
+        }
+        if (!status.ready || product === "PNCL Pay" && !status.payEnabled) {
+          setSetup({ status }); setSetupOpen(true);
+          setFailure(setupSignInError(status) ?? sharedSignInError({ code: status.ready ? "pay_unavailable" : "setup_incomplete", status: 503 }, product));
+          return;
+        }
         await launch(attempt.token, controller.signal, text => { if (active) setMessage(text); });
       } catch (error) {
         if (!active) return;
         clearTimeout(deadline); clearTimeout(slowTimer);
         // Show an explanation immediately while looking up more precise setup steps.
         setFailure(sharedSignInError(error, product));
+        if ((error as { code?: string })?.code === "pay_user_not_found" && product === "PNCL Pay") {
+          setSetup({ status: null }); setSetupOpen(true);
+        }
         const delay = Number((error as { retryAfter?: number })?.retryAfter);
         setNow(Date.now());
         setRetryAt((error as { code?: string })?.code === "rate_limited" ? Date.now() + (Number.isFinite(delay) && delay > 0 ? Math.min(3600, delay) : 60) * 1000 : 0);
@@ -100,6 +120,11 @@ export function SharedSignIn({ product, email, token, launch, timeout = 60000 }:
       }
     });
     return () => { active = false; clearTimeout(deadline); clearTimeout(slowTimer); controller.abort(); };
-  }, [attempt, launch, product, timeout]);
-  return <SignInStatus product={product} email={email} message={message} failure={failure} slow={slow} cooldown={cooldown} retry={() => setAttempt(value => ({ token, version: value.version + 1 }))} />;
+  }, [attempt, launch, product, email, timeout]);
+  const retry = () => setAttempt(value => ({ token, version: value.version + 1 }));
+  return <>
+    <SignInStatus product={product} email={email} message={message} failure={failure} slow={slow} cooldown={cooldown} retry={retry}
+      setupHref={sharedSignInSetupHref(product, setup?.status)} showSetup={setup ? () => setSetupOpen(true) : undefined} />
+    {setup && setupOpen && <SharedSignInSetupDialog product={product} email={email} status={setup.status} onClose={() => setSetupOpen(false)} onRefresh={retry} />}
+  </>;
 }

@@ -6,10 +6,11 @@ import PortalWorkflowDialog from "@/components/PortalWorkflowDialog";
 import HubRegistration from "@/components/leadspply/HubRegistration";
 import { hubAccountSetup, type SetupStatus } from "@/lib/hub-account-setup";
 export default function HubAccountSetup(
-  { email, token, compact = false, onChanged, onStatusChange }: {
+  { email, token, compact = false, initialStep, onChanged, onStatusChange }: {
     email: string;
     token: string;
     compact?: boolean;
+    initialStep?: "email";
     onChanged?: () => void;
     onStatusChange?: (status: SetupStatus | null) => void;
   },
@@ -36,6 +37,12 @@ export default function HubAccountSetup(
   const [password, setPassword] = useState("");
   const [totp, setTotp] = useState("");
   const [step, setStep] = useState<"verify" | "email" | "create" | null>(null);
+  const guidedStepOpened = useRef(false);
+  useEffect(() => {
+    if (!status || guidedStepOpened.current || !initialStep) return;
+    guidedStepOpened.current = true;
+    if (status.state === "connected" && !status.emailMatches) setStep("email");
+  }, [status, initialStep]);
   const dialogVersion = useRef(0);
   const verificationOpen = step !== null;
   const [requiresAuthenticator, setRequiresAuthenticator] = useState(false);
@@ -205,9 +212,7 @@ export default function HubAccountSetup(
         <>
           <p>
             {status?.state === "connected"
-              ? status.ownershipVerified
-                ? "Confirm your current LeadSpply login before updating its email."
-                : "Your account is already linked. This one-time check confirms ownership for Pay. Normal Pay sign-ins won’t require this step again."
+              ? "Confirm your current LeadSpply login before updating its email. Matching verified emails will handle future shared sign-ins."
               : "Sign in with your existing LeadSpply account to link it to Hub. Your account and data stay together."}
           </p>
           <p>Verification does not change your login email.</p>
@@ -433,14 +438,10 @@ export default function HubAccountSetup(
           <div className="hub-setup-banner">
             <div>
               <strong>
-                {!status.ownershipVerified
-                  ? "One quick check for PNCL Pay"
-                  : "Use one email for Hub, LeadSpply and Pay"}
+                Use one email for Hub, LeadSpply and Pay
               </strong>
               <p>
-                {!status.ownershipVerified
-                  ? "Your LeadSpply account is already connected. Verify your link once to prepare for PNCL Pay. Your connection and sales data stay in place."
-                  : "Your account is verified. Update your LeadSpply login to match your Hub email to finish this step."}
+                Update your LeadSpply login to match your Hub email. Your existing account and sales data stay in place.
               </p>
             </div>
             <button
@@ -454,9 +455,7 @@ export default function HubAccountSetup(
                 }
               }}
             >
-              {!status.ownershipVerified
-                ? "Verify link once"
-                : "Continue email setup"}
+              Continue email setup
             </button>
           </div>
         )}
@@ -521,13 +520,11 @@ export default function HubAccountSetup(
               ? "Your LeadSpply login email matches Hub."
               : "Verify this account, then update its login email to your Hub email."}
           </p>
-          {status.ownershipVerified && <p>Account ownership verified.</p>}
+          {status.emailMatches && status.ownershipVerified && <p>Your verified emails match. No extra password check is needed for shared sign-in.</p>}
           {needsVerification && (
             <>
               <p>
-                {status.ownershipVerified
-                  ? "Confirm your current login before changing your LeadSpply email."
-                  : "Your account is already linked. Verify ownership once to finish setting up Pay. You won’t need to repeat this for normal Pay sign-ins."}
+                Confirm your current login before changing your LeadSpply email.
               </p>
               <button
                 className="ptools-cta is-primary"
@@ -535,9 +532,7 @@ export default function HubAccountSetup(
                 disabled={busy || cooldown > 0}
                 onClick={openVerification}
               >
-                {status.ownershipVerified
-                  ? "Verify to update email"
-                  : "Verify account one time"}
+                Verify to update email
               </button>
             </>
           )}

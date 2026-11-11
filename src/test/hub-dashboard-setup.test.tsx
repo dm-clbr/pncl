@@ -110,18 +110,18 @@ it("explains that an existing link is intact, then removes the banner after one-
     body.action === "status" ? linked : verified
   );
   view();
-  expect(await screen.findByText(/Your LeadSpply account is already connected/))
+  expect(await screen.findByText(/Update your LeadSpply login to match your Hub email/))
     .toBeInTheDocument();
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(screen.getByText("Linked", { exact: true })).toBeInTheDocument();
   expect(screen.queryByText("Verified", { exact: true })).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Verify link once" }));
+  fireEvent.click(screen.getByRole("button", { name: "Continue email setup" }));
   expect(screen.getByLabelText(/Current LeadSpply email/)).toHaveValue(
     auth.email,
   );
   submit();
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-  expect(screen.queryByRole("button", { name: "Verify link once" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Continue email setup" })).toBeNull();
   expect(screen.getByText(/Link verified · Your LeadSpply login matches Hub/))
     .toBeInTheDocument();
   expect(screen.getByText("Verified", { exact: true })).toBeInTheDocument();
@@ -179,7 +179,7 @@ it.each(["old@example.com", "other@thepncl.com"])(
       action: "update_email",
       expectedEmail: auth.email,
     }, expect.any(AbortSignal));
-    expect(screen.queryByRole("button", { name: "Verify link once" }))
+    expect(screen.queryByRole("button", { name: "Continue email setup" }))
       .toBeNull();
     expect(reload).toHaveBeenCalledTimes(2);
   },
@@ -211,7 +211,7 @@ it("does not reopen a dismissed dialog when a pending verification finishes", as
   );
   view();
   fireEvent.click(
-    await screen.findByRole("button", { name: "Verify link once" }),
+    await screen.findByRole("button", { name: "Continue email setup" }),
   );
   submit();
   fireEvent.keyDown(window, { key: "Escape" });

@@ -269,7 +269,7 @@ it('honors server cooldowns before allowing another attempt',async()=>{
 it("presents a one-time action for a legacy linked account and clears secrets on close", async () => {
   api.mockResolvedValue({ ...linked, ownershipVerified: false, emailMatches: true, account: { id: "ls-1", email: auth.email } });
   view();
-  const trigger = await screen.findByRole("button", { name: "Verify account one time" });
+  const trigger = await screen.findByRole("button", { name: "Verify to update email" });
   expect(screen.queryByRole("dialog")).toBeNull();
   fireEvent.click(trigger);
   expect(screen.getByRole("dialog", { name: "Verify your LeadSpply account" })).toBeInTheDocument();
@@ -285,12 +285,12 @@ it("closes after one-time verification and does not request it again for matchin
   const verified = { ...linked, emailMatches: true, approved: true, ready: true, account: { id: "ls-1", email: auth.email } };
   api.mockImplementation(async (_t,b) => b.action === "status" ? { ...verified, ownershipVerified: false, ready: false } : verified);
   view();
-  fireEvent.click(await screen.findByRole("button", { name: "Verify account one time" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Verify to update email" }));
   fireEvent.change(screen.getByLabelText(/LeadSpply password/), { target: { value: "Secret123!" } });
   fireEvent.click(screen.getByRole("button", { name: "Verify account", exact: true }));
   await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-  expect(screen.getByText("Account ownership verified.")).toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "Verify account one time" })).toBeNull();
+  expect(screen.getByText("Your verified emails match. No extra password check is needed for shared sign-in.")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Verify to update email" })).toBeNull();
   expect(screen.queryByDisplayValue("Secret123!")).toBeNull();
 });
 it("shows authenticator input only after the server requires it, with errors inside the dialog", async () => {
