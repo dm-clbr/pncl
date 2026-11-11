@@ -34,6 +34,7 @@ export function sharedSignInError(error: unknown, product: SignInProduct): SignI
 }
 
 export function setupSignInError(status: SetupStatus): SignInFailure | null {
+  if (status.state === "account_unavailable" && status.blockedReason === "email_confirmation_required") return { message: "Your LeadSpply email has not been confirmed. Open LeadSpply login, sign in and choose Resend confirmation email if prompted. Confirm the email, then return to Account setup to verify your existing login once.", action: "setup", retry: false };
   if (status.state === "account_unavailable") return sharedSignInError({ code: "account_unavailable" }, "LeadSpply");
   if (status.state === "not_linked") return { message: "Your Hub account is not linked to LeadSpply yet. Open Account setup to verify and link your existing account, or create one if you do not have one.", action: "setup", retry: false };
   if (status.state !== "connected") return null;

@@ -437,3 +437,10 @@ describe("Pay JWT and one-time-link boundary", () => {
     }
   });
 });
+
+it("passes only the known email-confirmation reason for an unavailable account", () => {
+  const blocked = { ...ready, state: "account_unavailable", account: null, ready: false, ownershipVerified: false, approved: false, emailMatches: false };
+  expect(sanitizeSetupStatus({ ...blocked, blockedReason: "email_confirmation_required" }, source.email)).toMatchObject({ blockedReason: "email_confirmation_required", ready: false, account: null });
+  expect(sanitizeSetupStatus({ ...blocked, blockedReason: "private-token" }, source.email)).not.toHaveProperty("blockedReason");
+  expect(sanitizeSetupStatus({ ...ready, blockedReason: "email_confirmation_required" }, source.email)).not.toHaveProperty("blockedReason");
+});

@@ -141,3 +141,11 @@ it.each([
   view(); await screen.findByText(message as RegExp);
   expect(api).toHaveBeenCalledOnce(); expect(redirect).not.toHaveBeenCalled();
 });
+
+it("explains unconfirmed LeadSpply email instead of generic account review", async () => {
+  api.mockRejectedValue({ code: "setup_incomplete" });
+  statusApi.mockResolvedValue({ state: "account_unavailable", blockedReason: "email_confirmation_required" });
+  view(); await screen.findByText(/Your LeadSpply email has not been confirmed/);
+  expect(redirect).not.toHaveBeenCalled();
+  expect(screen.queryByText(/Admin accounts do not need/)).toBeNull();
+});

@@ -347,6 +347,20 @@ export default function HubAccountSetup(
     </PortalWorkflowDialog>
   );
 
+  const unavailableMessage = status?.blockedReason === "email_confirmation_required" ? (
+    <div role="alert" className="hub-setup-confirmation">
+      <strong>Confirm your LeadSpply email</strong>
+      <p>Your Hub email is verified, but your linked LeadSpply account still needs its own email confirmation.</p>
+      <ol>
+        <li>Open LeadSpply login and sign in. If prompted, choose <strong>Resend confirmation email</strong>.</li>
+        <li>Follow the link in the confirmation email.</li>
+        <li>Return here, select <strong>Refresh status</strong>, and verify your existing LeadSpply login once to finish connecting.</li>
+      </ol>
+      <a className="ptools-cta is-primary" href="https://leadspply.com/login" target="_blank" rel="noopener noreferrer">Open LeadSpply login (new tab)</a>
+      <p>If you cannot confirm your email, <Link to="/portal/support">contact support</Link>.</p>
+    </div>
+  ) : <p role="alert">Your linked LeadSpply account is unavailable for shared sign-in. <Link to="/portal/support">Contact support</Link> to review account access.</p>;
+
   if (compact) {
     return (
       <div className="hub-setup-dashboard">
@@ -369,12 +383,10 @@ export default function HubAccountSetup(
           <p role="status">Try again in {cooldown} seconds.</p>
         )}
         {message && !verificationOpen && <p role="status">{message}</p>}
-        {status?.state === "account_unavailable" && (
-          <p>
-            Your account needs review.{" "}
-            <Link to="/portal/support">Contact support</Link>.
-          </p>
-        )}
+        {status?.state === "account_unavailable" && <>
+          {unavailableMessage}
+          <button className="portal-leadspply-refresh" disabled={busy || cooldown > 0} onClick={() => void run({ action: "status" })}>Refresh status</button>
+        </>}
         {status?.state === "not_linked" && (
           <div className="hub-setup-banner">
             <div>
@@ -485,10 +497,7 @@ export default function HubAccountSetup(
       {!status && !error && <p role="status">Loading your account status…</p>}
       {status?.state === "account_unavailable" && (
         <Pane>
-          <p>
-            Your account needs review.{" "}
-            <Link to="/portal/support">Contact support</Link>.
-          </p>
+          {unavailableMessage}
         </Pane>
       )}
       {status?.state === "connected" && (

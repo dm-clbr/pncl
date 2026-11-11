@@ -248,3 +248,10 @@ it("does not fetch setup or allow connecting with an unverified Hub email", asyn
   expect(screen.queryByRole("button", { name: "Connect LeadSpply" }))
     .toBeNull();
 });
+
+it("shows the same confirmation explanation on the dashboard", async () => {
+  api.mockResolvedValue({ ...unlinked, state: "account_unavailable", blockedReason: "email_confirmation_required" });
+  view();
+  await screen.findByText("Confirm your LeadSpply email");
+  expect(screen.getByRole("link", { name: "Open LeadSpply login (new tab)" })).toHaveAttribute("href", "https://leadspply.com/login");
+});
