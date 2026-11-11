@@ -78,8 +78,8 @@ export function sanitizeSetupStatus(
   );
   return {
     state: b.state as SetupStatus["state"],
-    ...(b.state === "account_unavailable" && b.blockedReason === "email_confirmation_required"
-      ? { blockedReason: "email_confirmation_required" as const } : {}),
+    ...(b.state === "account_unavailable" && (b.blockedReason === "email_confirmation_required" || b.blockedReason === "invitation_pending")
+      ? { blockedReason: b.blockedReason } : {}),
     email,
     account: account
       ? { id: account.id as string, email: account.email as string }

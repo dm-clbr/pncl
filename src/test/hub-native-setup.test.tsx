@@ -323,3 +323,13 @@ it("explains the email-confirmation block and opens login without sending mail o
   expect(screen.getByRole("button", { name: /Verify/ })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Open PNCL Pay" })).toBeDisabled();
 });
+
+it("explains an unaccepted invitation without suggesting a password login or sending mail", async () => {
+  api.mockResolvedValue({ ...empty, state: "account_unavailable", blockedReason: "invitation_pending" });
+  view();
+  await screen.findByText("Accept your LeadSpply invitation");
+  expect(screen.getByRole("alert")).toHaveTextContent(/follow the link to set your password/);
+  expect(screen.getByRole("link", { name: "Get help with my invitation" })).toHaveAttribute("href", "/portal/support");
+  expect(screen.queryByText("Resend confirmation email")).toBeNull();
+  expect(api.mock.calls.every(call => call[1].action === "status")).toBe(true);
+});

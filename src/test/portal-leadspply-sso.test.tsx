@@ -149,3 +149,10 @@ it("explains unconfirmed LeadSpply email instead of generic account review", asy
   expect(redirect).not.toHaveBeenCalled();
   expect(screen.queryByText(/Admin accounts do not need/)).toBeNull();
 });
+
+it("explains the pending invitation before asking for account ownership", async () => {
+  api.mockRejectedValue({ code: "setup_incomplete" });
+  statusApi.mockResolvedValue({ state: "account_unavailable", blockedReason: "invitation_pending" });
+  view(); await screen.findByText(/Your LeadSpply invitation has not been accepted/);
+  expect(redirect).not.toHaveBeenCalled();
+});

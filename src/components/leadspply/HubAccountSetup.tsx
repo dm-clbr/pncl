@@ -347,7 +347,18 @@ export default function HubAccountSetup(
     </PortalWorkflowDialog>
   );
 
-  const unavailableMessage = status?.blockedReason === "email_confirmation_required" ? (
+  const unavailableMessage = status?.blockedReason === "invitation_pending" ? (
+    <div role="alert" className="hub-setup-confirmation">
+      <strong>Accept your LeadSpply invitation</strong>
+      <p>Your Hub email is verified, but your LeadSpply invitation has not been accepted yet.</p>
+      <ol>
+        <li>Open your LeadSpply invitation email and follow the link to set your password.</li>
+        <li>If the invitation has expired or is missing, contact support for a fresh invitation.</li>
+        <li>Return here, select <strong>Refresh status</strong>, and verify your existing LeadSpply login once to finish connecting.</li>
+      </ol>
+      <Link className="ptools-cta is-primary" to="/portal/support">Get help with my invitation</Link>
+    </div>
+  ) : status?.blockedReason === "email_confirmation_required" ? (
     <div role="alert" className="hub-setup-confirmation">
       <strong>Confirm your LeadSpply email</strong>
       <p>Your Hub email is verified, but your linked LeadSpply account still needs its own email confirmation.</p>
