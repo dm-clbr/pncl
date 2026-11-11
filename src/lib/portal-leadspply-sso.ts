@@ -1,3 +1,4 @@
+import { sharedSignInError } from "./shared-sign-in";
 import { getSupabaseConfig } from "./supabase";
 import { validateLink } from "../../supabase/functions/_shared/pnclSsoContract";
 export const PORTAL_LEADSPPLY_OPEN = "/portal/leadspply/open";
@@ -13,7 +14,7 @@ export function launchChallenge(search: string): string | null {
   if (!search) return null;
   const params = new URLSearchParams(search);
   const challenge = params.get("challenge");
-  if ([...params.keys()].some(k => k !== "challenge") || params.getAll("challenge").length !== 1 || !challenge || !/^[0-9a-f]{64}$/.test(challenge)) throw new Error("invalid_request");
+  if ([...params.keys()].some(k => k !== "challenge") || params.getAll("challenge").length !== 1 || !challenge || !/^[0-9a-f]{64}$/.test(challenge)) throw Object.assign(new Error("invalid_request"), { code: "invalid_request" });
   return challenge;
 }
 export async function requestLeadSpplyLink(token: string, challenge: string, signal: AbortSignal) {
@@ -24,14 +25,6 @@ export async function requestLeadSpplyLink(token: string, challenge: string, sig
   return validateLink(value);
 }
 export function leadSpplyLaunchError(error: unknown) {
-  const e = error as { code?: string; status?: number; name?: string };
-  if (e?.code === "sso_timeout" || ["AbortError", "TimeoutError"].includes(e?.name ?? "")) return "LeadSpply took too long to respond. Please try opening it again from the dashboard. Your existing account and session have not been changed.";
-  switch (e?.code) {
-    case "setup_incomplete": return "Finish your LeadSpply verification, email matching and approval in account setup.";
-    case "work_email_review_required": return "Your work email needs a support review before you can open LeadSpply.";
-    case "sso_unavailable": return "Hub sign-in to LeadSpply is not available for your account yet. You can still use your normal LeadSpply login.";
-    case "rate_limited": return "Too many sign-in attempts. Please wait a few minutes, then open LeadSpply from the dashboard again.";
-    default: return e?.status === 401 ? "Your Hub session has expired. Sign in to Hub again." : "LeadSpply could not be opened. Please try again from the dashboard.";
-  }
+  return sharedSignInError(error, "LeadSpply").message;
 }
 export function redirectToLeadSpply(url: string) { window.location.replace(url); }

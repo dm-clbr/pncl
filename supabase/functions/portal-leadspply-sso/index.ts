@@ -16,7 +16,8 @@ Deno.serve(async req => {
     actor = user.id;
     const email = await requireHubWorkEmail(user, adminClient);
     const env = (name: string) => Deno.env.get(name);
-    if (!accessEnabled(user.id, env) || !env("PNCL_LEADSPPLY_PRIVATE_KEY_PEM")) throw new SsoError("sso_unavailable", 503);
+    if (!accessEnabled(user.id, env)) throw new SsoError("sso_not_enabled", 503);
+    if (!env("PNCL_LEADSPPLY_PRIVATE_KEY_PEM")) throw new SsoError("sso_unavailable", 503);
     if (new URL(req.url).search || Number(req.headers.get("Content-Length") ?? 0) > 1024) throw new SsoError("invalid_request", 400);
     const raw = await req.text();
     if (raw.length > 1024) throw new SsoError("invalid_request", 400);

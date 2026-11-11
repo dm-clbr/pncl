@@ -92,3 +92,9 @@ Vel subsequently completed live ownership verification in Hub. The backend confi
 ## November 6 Pay shortcut release
 
 Release `09a7b1c0` routes the normal dashboard PNCL Pay shortcut and setup-page launch button through `/portal/pay` for automatic sign-in. The verified badge remains live and is driven by server-confirmed ownership. Missing Pay accounts must be provisioned by Bill; SSO does not create them. Live sign-in confirmed the correct Vel account and existing Pay viewer role. All 75 focused setup/SSO/auth tests, TypeScript, targeted ESLint and production build passed. See [current launch verification](pncl-pay-sso.md#november-6-launch-verification) for gate status, live evidence, limitations and rollback.
+
+## Shared sign-in feedback
+
+Hub shows the company email and connection progress when opening LeadSpply or PNCL Pay. Failures stay visible with a recovery action. A `setup_incomplete` response triggers one authenticated status read to explain missing linking, ownership verification, email matching, or approval; this read never authorizes a sign-in. If status is unavailable, the original explanation remains visible.
+
+Session checks stop after 12 seconds. LeadSpply and Pay requests stop after 45 and 60 seconds respectively, and late responses cannot redirect after cancellation. Rate-limited retries honor the countdown, and deliberate retries use the current Hub token. Raw provider messages, credentials and sign-in URLs are never rendered. The LeadSpply issuer distinguishes account rollout (`sso_not_enabled`) from a service/configuration failure (`sso_unavailable`).

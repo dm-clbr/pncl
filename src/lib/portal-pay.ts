@@ -1,3 +1,4 @@
+import { sharedSignInError } from "./shared-sign-in";
 export const PORTAL_PAY_PATH = "/portal/pay";
 
 /** Existing CMS shortcuts must enter through Hub to use its authenticated session. */
@@ -30,24 +31,7 @@ export function payRedirectUrl(value: { url?: unknown; expiresAt?: unknown }): s
 }
 
 export function payLaunchError(error: unknown) {
-  const value = error as { code?: string; status?: number; retryAfter?: number } | null;
-  switch (value?.code) {
-    case "pay_user_not_found":
-      return { message: "Your PNCL Pay account needs to be created by Bill before you can sign in. Contact PNCL support to arrange setup.", retry: false };
-    case "setup_incomplete":
-      return { message: "Finish your LeadSpply account verification, email matching and required approval before opening PNCL Pay.", retry: false };
-    case "work_email_review_required":
-    case "account_unavailable":
-      return { message: "Your account needs review before you can open PNCL Pay. Contact PNCL support.", retry: false };
-    case "pay_unavailable":
-      return { message: value.status === 503 ? "PNCL Pay access is not enabled for your account yet." : "PNCL Pay is temporarily unavailable. Please try again shortly.", retry: value.status !== 503 };
-    case "pay_validation_failed":
-      return { message: "PNCL Pay needs a setup review. Contact PNCL support.", retry: false };
-    case "rate_limited":
-      return { message: "Too many attempts. Please wait before trying again.", retry: true };
-    default:
-      return { message: value?.status === 401 ? "Your Hub session has expired. Sign in to Hub again." : "PNCL Pay could not be opened. Please try again shortly.", retry: value?.status !== 401 };
-  }
+  return sharedSignInError(error, "PNCL Pay");
 }
 
 export function redirectToPay(url: string) {

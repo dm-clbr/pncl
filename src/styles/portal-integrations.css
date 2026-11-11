@@ -25,7 +25,7 @@
 }
 .home2-page .portal-leadspply-card :is(.portal-leadspply-refresh, .portal-leadspply-open),
 .home2-page .portal-leadspply-card .portal-leadspply-error button,
-.home2-page .portal-leadspply-page .ptools-cta {
+.home2-page :is(.portal-leadspply-page, .portal-shared-signin) .ptools-cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -48,21 +48,21 @@
   touch-action: manipulation;
 }
 .home2-page .portal-leadspply-card .portal-leadspply-open,
-.home2-page .portal-leadspply-page .ptools-cta.is-primary {
+.home2-page :is(.portal-leadspply-page, .portal-shared-signin) .ptools-cta.is-primary {
   background: var(--portal-text-strong);
   color: var(--portal-bar-fill);
 }
 .home2-page .portal-leadspply-card :is(button, a):hover,
-.home2-page .portal-leadspply-page .ptools-cta:hover {
+.home2-page :is(.portal-leadspply-page, .portal-shared-signin) .ptools-cta:hover {
   border-color: var(--portal-text-faint);
 }
 .home2-page .portal-leadspply-card :is(button, a):focus-visible,
-.home2-page .portal-leadspply-page .ptools-cta:focus-visible {
+.home2-page :is(.portal-leadspply-page, .portal-shared-signin) .ptools-cta:focus-visible {
   outline: var(--portal-focus-ring);
   outline-offset: var(--portal-focus-offset);
 }
 .home2-page .portal-leadspply-card button:disabled,
-.home2-page .portal-leadspply-page button:disabled {
+.home2-page :is(.portal-leadspply-page, .portal-shared-signin) button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -257,3 +257,12 @@
 .hub-setup-terms details>div { max-height:360px;overflow:auto;padding:16px;border:1px solid currentColor;border-radius:8px;margin-top:12px; }
 .hub-setup-terms h2,.hub-setup-terms h3 { font-weight:600;margin:16px 0 8px; }
 .hub-setup-terms p { margin-bottom:12px; }
+
+.home2-page .portal-shared-signin { max-width: 720px; }
+.home2-page .portal-shared-signin-body { display: grid; gap: 20px; }
+.home2-page .portal-shared-signin-body p { margin: 0; line-height: 1.6; overflow-wrap: anywhere; }
+.home2-page .portal-shared-signin-body [role="alert"] { padding: 16px; border-left: 3px solid var(--portal-text-strong); background: rgba(255,255,255,.045); }
+.home2-page .portal-shared-signin-body [role="status"] { display: grid; gap: 12px; }
+.home2-page .portal-shared-signin-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.home2-page .portal-shared-signin-back { width: fit-content; text-decoration: underline; text-underline-offset: 4px; }
+.home2-page .portal-shared-signin :is(button, a):focus-visible { outline: var(--portal-focus-ring); outline-offset: var(--portal-focus-offset); }
