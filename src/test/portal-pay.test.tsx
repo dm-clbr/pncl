@@ -6,18 +6,20 @@ import PortalPay from "@/pages/PortalPay";
 import { payRedirectUrl, portalPayHref } from "@/lib/portal-pay";
 
 const api = vi.hoisted(() => vi.fn());
+const statusApi = vi.hoisted(() => vi.fn());
 const redirect = vi.hoisted(() => vi.fn());
 const auth = vi.hoisted(() => ({ id: "hub-1", email: "agent@thepncl.com", confirmed: true, sessionId: "hub-1", token: "hub-token" }));
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({
   user: { id: auth.id, email: auth.email, email_confirmed_at: auth.confirmed ? "2026-10-27" : null },
   session: { access_token: auth.token, user: { id: auth.sessionId } },
 }) }));
-vi.mock("@/lib/hub-account-setup", () => ({ hubAccountSetup: api }));
+vi.mock("@/lib/hub-account-setup", () => ({ hubAccountSetup: (token: string, body: { action: string }, signal: AbortSignal) => (body.action === "status" ? statusApi : api)(token, body, signal) }));
 vi.mock("@/lib/portal-pay", async original => ({ ...await original<typeof import("@/lib/portal-pay")>(), redirectToPay: redirect }));
 vi.mock("@/components/portal/PortalToolLayout", () => ({ default: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
 const link = () => ({ url: "https://www.pnclpay.com/api/auth/partner/redeem?token=synthetic-test-token", expiresAt: new Date(Date.now() + 120000).toISOString() });
 const view = () => render(<StrictMode><MemoryRouter><PortalPay /></MemoryRouter></StrictMode>);
-beforeEach(() => { api.mockImplementation(async () => link()); });
+const ready = { state: "connected", email: "agent@thepncl.com", account: { id: "ls-1", email: "agent@thepncl.com" }, ownershipVerified: true, proofExpiresAt: null, emailMatches: true, approved: true, ready: true, payEnabled: true };
+beforeEach(() => { statusApi.mockImplementation(async () => ({ ...ready, email: auth.email })); api.mockImplementation(async () => link()); });
 afterEach(() => {
   vi.resetAllMocks(); vi.useRealTimers();
   Object.assign(auth, { id: "hub-1", email: "agent@thepncl.com", confirmed: true, sessionId: "hub-1", token: "hub-token" });
@@ -80,8 +82,8 @@ it.each([
   view(); await screen.findByText(message as RegExp);
   expect(screen.queryByText(/Sensitive provider/)).toBeNull();
   expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
-  expect(screen.getByRole("link", { name: "Contact support" })).toHaveAttribute("href", "/portal/support");
-  expect(api).toHaveBeenCalledTimes(code === "setup_incomplete" ? 2 : 1);
+  expect(screen.getAllByRole("link", { name: "Contact support" })[0]).toHaveAttribute("href", "/portal/support");
+  expect(api).toHaveBeenCalledOnce();
   expect(api.mock.calls.filter(call => call[1].action === "pay")).toHaveLength(1);
   expect(redirect).not.toHaveBeenCalled();
 });
@@ -115,10 +117,11 @@ it("offers a manual retry after a network failure", async () => {
 });
 
 it("explains pending approval using the signed-in user's setup status", async () => {
-  api.mockRejectedValueOnce({ code: "setup_incomplete" }).mockResolvedValueOnce({ state: "connected", ownershipVerified: true, emailMatches: true, approved: false, ready: false });
+  api.mockRejectedValueOnce({ code: "setup_incomplete" });
+  statusApi.mockResolvedValueOnce(ready).mockResolvedValueOnce({ ...ready, approved: false, ready: false });
   view();
   await screen.findByText(/contact support for the required LeadSpply account approval/);
-  expect(api).toHaveBeenNthCalledWith(2, "hub-token", { action: "status" }, expect.any(AbortSignal));
+  expect(statusApi).toHaveBeenNthCalledWith(2, "hub-token", { action: "status" }, expect.any(AbortSignal));
   expect(redirect).not.toHaveBeenCalled();
 });
 

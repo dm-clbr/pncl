@@ -15,7 +15,8 @@ vi.mock("@/lib/hub-account-setup", () => ({ hubAccountSetup: statusApi }));
 vi.mock("@/components/portal/PortalToolLayout", () => ({ default: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
 const challenge = "a".repeat(64);
 const view = (search = "?challenge=" + challenge) => render(<StrictMode><MemoryRouter initialEntries={["/portal/leadspply/open" + search]}><PortalLeadSpplyOpen /></MemoryRouter></StrictMode>);
-beforeEach(() => { statusApi.mockRejectedValue(new Error("Unavailable")); api.mockResolvedValue({ url: LEADSPPLY_START + "#token=" + "a".repeat(43) }); });
+const ready = { state: "connected", email: "agent@thepncl.com", account: { id: "ls-1", email: "agent@thepncl.com" }, ownershipVerified: true, proofExpiresAt: null, emailMatches: true, approved: true, ready: true, payEnabled: true };
+beforeEach(() => { statusApi.mockImplementation(async () => ({ ...ready, email: auth.email })); api.mockResolvedValue({ url: LEADSPPLY_START + "#token=" + "a".repeat(43) }); });
 afterEach(() => { vi.resetAllMocks(); vi.useRealTimers(); Object.assign(auth, { id: "hub-1", email: "agent@thepncl.com", confirmed: true, sessionId: "hub-1", token: "hub-token" }); });
 it("starts the browser check without issuing an unbound handoff", async () => {
   view(""); await waitFor(() => expect(redirect).toHaveBeenCalledExactlyOnceWith(LEADSPPLY_START));
@@ -66,20 +67,21 @@ it("rewrites only known LeadSpply entry points and rejects injected launch param
 
 it("shows the actual missing setup steps without another sign-in attempt", async () => {
   api.mockRejectedValue({ code: "setup_incomplete" });
-  statusApi.mockResolvedValue({ state: "connected", ownershipVerified: false, emailMatches: false, approved: true, ready: false });
+  statusApi.mockResolvedValueOnce(ready).mockResolvedValue({ state: "connected", ownershipVerified: false, emailMatches: false, approved: true, ready: false });
   view();
   await screen.findByText(/verify ownership with your existing LeadSpply login; match your LeadSpply login email/);
-  expect(screen.getByRole("link", { name: "Account setup" })).toHaveAttribute("href", "/portal/leadspply");
+  expect(screen.getByRole("link", { name: "Account setup" })).toHaveAttribute("href", "/portal/leadspply?continue=leadspply");
   expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
-  expect(statusApi).toHaveBeenCalledExactlyOnceWith("hub-token", { action: "status" }, expect.any(AbortSignal));
+  expect(statusApi).toHaveBeenLastCalledWith("hub-token", { action: "status" }, expect.any(AbortSignal));
   expect(api).toHaveBeenCalledOnce(); expect(redirect).not.toHaveBeenCalled();
 });
 
 it("keeps the initial explanation if the diagnostic request fails", async () => {
+  statusApi.mockResolvedValueOnce(ready).mockRejectedValue(new Error("Unavailable"));
   api.mockRejectedValue({ code: "setup_incomplete" });
   view();
   await screen.findByRole("alert");
-  await waitFor(() => expect(statusApi).toHaveBeenCalledOnce());
+  await waitFor(() => expect(statusApi).toHaveBeenCalledTimes(2));
   expect(screen.getByRole("alert")).toHaveTextContent(/Finish your LeadSpply account verification/);
   expect(screen.queryByText("Unavailable")).toBeNull();
 });
@@ -134,17 +136,17 @@ it("does not expose provider details and gives work-email failures a support pat
 
 it.each([
   [{ state: "not_linked" }, /not linked to LeadSpply yet/],
-  [{ state: "account_unavailable" }, /Confirm your LeadSpply email/],
+  [{ state: "account_unavailable" }, /Contact support to review account access/],
   [{ state: "connected", ownershipVerified: true, emailMatches: true, approved: true, ready: true }, /Finish your LeadSpply account verification/],
 ])("explains the diagnostic status without assuming ownership", async (status, message) => {
-  api.mockRejectedValue({ code: "setup_incomplete" }); statusApi.mockResolvedValue(status);
+  api.mockRejectedValue({ code: "setup_incomplete" }); statusApi.mockResolvedValueOnce(ready).mockResolvedValue(status);
   view(); await screen.findByText(message as RegExp);
   expect(api).toHaveBeenCalledOnce(); expect(redirect).not.toHaveBeenCalled();
 });
 
 it("explains unconfirmed LeadSpply email instead of generic account review", async () => {
   api.mockRejectedValue({ code: "setup_incomplete" });
-  statusApi.mockResolvedValue({ state: "account_unavailable", blockedReason: "email_confirmation_required" });
+  statusApi.mockResolvedValueOnce(ready).mockResolvedValue({ state: "account_unavailable", blockedReason: "email_confirmation_required" });
   view(); await screen.findByText(/Your LeadSpply email has not been confirmed/);
   expect(redirect).not.toHaveBeenCalled();
   expect(screen.queryByText(/Admin accounts do not need/)).toBeNull();
@@ -152,7 +154,7 @@ it("explains unconfirmed LeadSpply email instead of generic account review", asy
 
 it("explains the pending invitation before asking for account ownership", async () => {
   api.mockRejectedValue({ code: "setup_incomplete" });
-  statusApi.mockResolvedValue({ state: "account_unavailable", blockedReason: "invitation_pending" });
+  statusApi.mockResolvedValueOnce(ready).mockResolvedValue({ state: "account_unavailable", blockedReason: "invitation_pending" });
   view(); await screen.findByText(/Your LeadSpply invitation has not been accepted/);
   expect(redirect).not.toHaveBeenCalled();
 });

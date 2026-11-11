@@ -1,6 +1,10 @@
 import { hubAccountSetup, type SetupStatus } from "./hub-account-setup";
 
 export type SignInProduct = "LeadSpply" | "PNCL Pay";
+export function sharedSignInSetupHref(product: SignInProduct, status?: SetupStatus | null) {
+  const target = product === "PNCL Pay" ? "pay" : "leadspply";
+  return `/portal/leadspply?continue=${target}${status?.state === "connected" && !status.emailMatches ? "&step=email" : ""}`;
+}
 export type SignInFailure = {
   message: string;
   retry: boolean;
@@ -18,7 +22,7 @@ export function sharedSignInError(error: unknown, product: SignInProduct): SignI
     case "work_email_review_required": return fail("Hub could not verify your work email or onboarding eligibility. Contact support to review your account. Admin accounts do not need agent onboarding.");
     case "setup_incomplete": return fail("Finish your LeadSpply account verification, email matching and required approval in Account setup before using shared sign-in.", "setup");
     case "ownership_required": return fail("Ownership of your LeadSpply account has not been verified. Open Account setup and verify your existing LeadSpply login.", "setup");
-    case "account_unavailable": return fail("Your linked LeadSpply account is unavailable for shared sign-in. Confirm your LeadSpply email, then contact support if access is still blocked.");
+    case "account_unavailable": return fail("Your linked LeadSpply account is unavailable for shared sign-in. Contact support to review account access.");
     case "pay_user_not_found": return fail("Your PNCL Pay account needs to be created by Bill before you can sign in. Contact PNCL support to arrange setup.");
     case "pay_validation_failed": return fail("PNCL Pay could not validate the account connection. Contact support to review Pay setup.");
     case "sso_not_enabled": return fail("Shared sign-in to LeadSpply is not enabled for your account yet. Contact support or use your normal LeadSpply login.");
@@ -34,8 +38,8 @@ export function sharedSignInError(error: unknown, product: SignInProduct): SignI
 }
 
 export function setupSignInError(status: SetupStatus): SignInFailure | null {
-  if (status.state === "account_unavailable" && status.blockedReason === "invitation_pending") return { message: "Your LeadSpply invitation has not been accepted. Open the invitation email and set your password. If the link has expired, contact support for a fresh invitation. Then return to Account setup to verify your existing login once.", action: "setup", retry: false };
-  if (status.state === "account_unavailable" && status.blockedReason === "email_confirmation_required") return { message: "Your LeadSpply email has not been confirmed. Open LeadSpply login, sign in and choose Resend confirmation email if prompted. Confirm the email, then return to Account setup to verify your existing login once.", action: "setup", retry: false };
+  if (status.state === "account_unavailable" && status.blockedReason === "invitation_pending") return { message: "Your LeadSpply invitation has not been accepted. Open the invitation email and set your password. If the link has expired, contact support for a fresh invitation. Then return to Account setup and refresh status. Matching verified company emails connect your existing link automatically.", action: "setup", retry: false };
+  if (status.state === "account_unavailable" && status.blockedReason === "email_confirmation_required") return { message: "Your LeadSpply email has not been confirmed. Open LeadSpply login, sign in and choose Resend confirmation email if prompted. Confirm the email, then return to Account setup and refresh status. Matching verified company emails connect your existing link automatically.", action: "setup", retry: false };
   if (status.state === "account_unavailable") return sharedSignInError({ code: "account_unavailable" }, "LeadSpply");
   if (status.state === "not_linked") return { message: "Your Hub account is not linked to LeadSpply yet. Open Account setup to verify and link your existing account, or create one if you do not have one.", action: "setup", retry: false };
   if (status.state !== "connected") return null;

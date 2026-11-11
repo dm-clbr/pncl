@@ -4,6 +4,7 @@
 .portal-workflow-dialog h2 { margin: 0; font-size: 20px; font-weight: 600; color: var(--portal-text-strong, #fff); }
 .portal-workflow-dialog p, .portal-workflow-dialog ul { margin: 18px 0; }
 .portal-workflow-dialog ul { padding-left: 24px; list-style: disc; }
+.portal-workflow-dialog ol { margin: 18px 0; padding-left: 24px; list-style: decimal; }
 .portal-workflow-dialog li { margin: 6px 0; }
 .portal-workflow-warning { padding: 14px; border: 1px solid #b08b4d80; border-radius: 8px; background: #b08b4d15; }
 .home2-page .portal-workflow-dialog footer, .portal-workflow-dialog footer { display: flex; justify-content: flex-end; gap: 10px; margin: 24px 0 0; padding: 0; background: transparent; border: 0; flex-wrap: wrap; }
