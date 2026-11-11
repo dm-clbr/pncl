@@ -150,10 +150,10 @@ function proxy(opts: Record<string, unknown> = {}) {
       status: Number(opts.upstreamStatus ?? 200),
     })
   );
-  const pay = vi.fn(async () => ({
+  const pay = vi.fn((opts.payImplementation as typeof issuePayLink | undefined) ?? (async () => ({
     url: "https://www.pnclpay.com/redeem?token=fixture",
     expiresAt: new Date(Date.now() + 120000).toISOString(),
-  }));
+  })));
   const code = ts.transpileModule(
     readFileSync("supabase/functions/portal-leadspply-setup/index.ts", "utf8")
       .replace(/^import[\s\S]*?;\n/gm, ""),
@@ -193,6 +193,8 @@ function proxy(opts: Record<string, unknown> = {}) {
             ? "false"
             : name === "PNCL_PAY_PRIVATE_KEY_PEM" && opts.keyMissing
             ? undefined
+            : name === "PNCL_PAY_PRIVATE_KEY_PEM" && opts.payKey
+            ? opts.payKey as string
             : name === "PNCL_HUB_SETUP_ENABLED" && opts.disabled
             ? "false"
             : name === "PNCL_PAY_SSO_ENABLED" && opts.payDisabled
@@ -359,6 +361,49 @@ describe("Pay JWT and one-time-link boundary", () => {
       Buffer.from(await crypto.subtle.exportKey("pkcs8", pair.privateKey))
         .toString("base64") +
       "\n-----END PRIVATE KEY-----";
+  });
+  it("completes Hub Pay issuance with verified-email ownership and no password-proof timestamp", async () => {
+    const expiresAt = new Date(Date.now() + 120000).toISOString();
+    const url = "https://www.pnclpay.com/api/auth/partner/redeem?token=verified-email-fixture";
+    const receiver = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(input).toBe(PAY_ENDPOINT);
+      expect(init?.method).toBe("POST");
+      expect(init?.redirect).toBe("error");
+      expect(JSON.parse(String(init?.body))).toEqual({ email: source.email, externalId: hub });
+      const jwt = new Headers(init?.headers).get("Authorization")!.replace(/^Bearer /, "");
+      const [header, payload, signature] = jwt.split(".");
+      const claims = JSON.parse(Buffer.from(payload, "base64url").toString());
+      expect(claims).toMatchObject({ iss: PARTNER_ID, aud: PAY_ENDPOINT });
+      expect(claims.exp - claims.iat).toBe(120);
+      expect(await crypto.subtle.verify("RSASSA-PKCS1-v1_5", publicKey,
+        Buffer.from(signature, "base64url"), new TextEncoder().encode(header + "." + payload))).toBe(true);
+      return new Response(JSON.stringify({ url, expiresAt }), { status: 201 });
+    });
+    const h = proxy({ payload: { ...ready, proofExpiresAt: null }, payKey: pem,
+      payImplementation: (email: string, id: string, key: string, path: string) => issuePayLink(email, id, key, path, receiver) });
+    const response = await h.request({ action: "pay" });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ url, expiresAt });
+    expect(receiver).toHaveBeenCalledOnce();
+  });
+  it("still requires a provisioned Pay account when verified-email ownership is ready", async () => {
+    const receiver = vi.fn(async () => new Response("not found", { status: 404 }));
+    const h = proxy({ payload: { ...ready, proofExpiresAt: null }, payKey: pem,
+      payImplementation: (email: string, id: string, key: string, path: string) => issuePayLink(email, id, key, path, receiver) });
+    const response = await h.request({ action: "pay" });
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ error: "pay_user_not_found" });
+    expect(receiver).toHaveBeenCalledOnce();
+  });
+  it("never requests a Pay link for an email-only status with mismatched or revoked access", async () => {
+    for (const changed of [{ emailMatches: false }, { approved: false }, { ownershipVerified: false },
+      { state: "account_unavailable", account: null }]) {
+      const receiver = vi.fn();
+      const h = proxy({ payload: { ...ready, proofExpiresAt: null, ...changed }, payKey: pem,
+        payImplementation: (email: string, id: string, key: string, path: string) => issuePayLink(email, id, key, path, receiver) });
+      expect((await h.request({ action: "pay" })).status).toBe(409);
+      expect(receiver).not.toHaveBeenCalled();
+    }
   });
   it("signs verifiable RS256 tokens with the exact audience and fresh jti each time", async () => {
     const a = await signPartnerJwt(pem), b = await signPartnerJwt(pem);
