@@ -6,6 +6,8 @@ Implemented October 27; production rollout October 28, 2026. Both server endpoin
 
 PNCL Hub → LeadSpply is the account setup entry point. A current verified `@thepncl.com` Hub Auth email must match a completed, unreleased onboarding record, or an administrator-provisioned legacy `manual` record. Incomplete enrollment-v3 accounts cannot use the legacy path.
 
+An operator-approved staff exception can allow an account with no onboarding record to use setup. The server-controlled Auth `app_metadata.hub_setup_onboarding_exception` must contain the account's exact `user_id` and current normalized `email`. It is checked against the current Auth user, never browser metadata or stale JWT claims. The exception does not apply to enrollment-v3 accounts, accounts with an onboarding ID, or accounts with any onboarding record; database errors fail closed. It does not grant an admin role, confirm a LeadSpply email, prove ownership, approve an account, or provision PNCL Pay. Remove the metadata entry to revoke it. A work-email rename requires a new explicit exception.
+
 1. Existing users enter their current LeadSpply credentials inside Hub. Verified TOTP factors require an authenticator code. The temporary LeadSpply session is signed out locally; its tokens never reach the browser. Unsupported MFA/passwordless recovery goes to support.
 2. Ownership verification links the immutable Hub and LeadSpply UUIDs. A conflicting existing link or NPN requires review. It does not change email automatically.
 3. The user explicitly selects **Update to my Hub email**. A fresh ownership proof and exact, short-lived server permit authorize the Auth Admin change. Existing account ID, password and data remain. Direct Auth and provider identity updates cannot bypass this process.

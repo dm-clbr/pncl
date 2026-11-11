@@ -13,6 +13,19 @@ export async function requireHubWorkEmail(user: User, db: SupabaseClient): Promi
   const { data, error } = await db.from("onboarding_records")
     .select("workspace_email,released_at,status,enrollment_status").eq("supabase_user_id", user.id)
     .eq("workspace_email", email).maybeSingle();
+  // An operator may exempt a staff account that has never entered onboarding.
+  // requirePortalUser/getUserById read current server-controlled app metadata;
+  // user metadata, JWT claims and the account's role never grant this exception.
+  // Bind it to both UUID and email so a rename or copied grant cannot reuse it.
+  const exception = user.app_metadata?.hub_setup_onboarding_exception;
+  if (!error && !data && user.app_metadata?.enrollment_version !== 3
+    && !user.app_metadata?.onboarding_id
+    && exception?.user_id === user.id && exception?.email === email) {
+    const records = await db.from("onboarding_records")
+      .select("id", { count: "exact", head: true }).eq("supabase_user_id", user.id);
+    // A mismatched, released or unfinished record still requires review.
+    if (!records.error && records.count === 0) return email;
+  }
   // Existing administrator-provisioned accounts predate enrollment v3. Their
   // server-managed manual record is authoritative; an unfinished v3 enrollment
   // still cannot use this legacy path.
