@@ -68,6 +68,16 @@ beforeEach(() => {
 });
 
 describe("enrollment profile finalization", () => {
+  it("preserves the durable portal link when a later welcome email fails", async () => {
+    const client = clientFor();
+    vi.mocked(provisionPortalAccount).mockImplementationOnce(async () => {
+      Object.assign(client.row, { supabase_user_id: "persisted-portal" });
+      throw new Error("Welcome email failed");
+    });
+    const failed = await provisionEnrollment(client as never, client.row.id);
+    expect(failed).toMatchObject({ status: "failed", failedStep: "portal", supabaseUserId: "persisted-portal" });
+    expect(client.row.supabase_user_id).toBe("persisted-portal");
+  });
   it("saves the personal recovery email through the real profile sync before completing a new enrollment", async () => {
     const client = clientFor();
     const result = await provisionEnrollment(client as never, client.row.id);

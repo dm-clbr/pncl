@@ -8,6 +8,8 @@ export const setupMessages: Record<string, string> = {
     "Contact support to verify this account’s authentication method.",
   work_email_review_required:
     "Your Hub work email needs review. Refresh this page or contact support.",
+  onboarding_link_missing:
+    "Your completed onboarding needs to be connected to your Hub account. Contact PNCL support to repair the link.",
   integration_unavailable:
     "Account setup is temporarily unavailable. Try again shortly.",
   account_unavailable: "This account needs support review.",

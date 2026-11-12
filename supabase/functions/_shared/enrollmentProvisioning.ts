@@ -100,8 +100,13 @@ async function failStep(
   const detail = errorDetail(error);
   const verificationRequired = code === "google_verification_required";
   const identityConflict = code === "identity_reserved_by_another_enrollment";
-  const googleUserId = ids.googleUserId ?? row.google_user_id;
-  const supabaseUserId = ids.supabaseUserId ?? row.supabase_user_id;
+  // Portal provisioning commits its link before sending mail. A later delivery
+  // failure must not overwrite that durable link with this attempt's stale row.
+  const { data: persisted, error: persistedError } = await supabase.from("onboarding_records")
+    .select("google_user_id,supabase_user_id").eq("id", row.id).maybeSingle();
+  if (persistedError) throw new Error("Unable to preserve enrollment identity after failure");
+  const googleUserId = persisted?.google_user_id ?? ids.googleUserId ?? row.google_user_id;
+  const supabaseUserId = persisted?.supabase_user_id ?? ids.supabaseUserId ?? row.supabase_user_id;
   const now = new Date().toISOString();
   const stepUpdates = step === "application"
     ? { application_status: "failed" }

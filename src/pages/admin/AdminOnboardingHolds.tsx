@@ -7,6 +7,7 @@ import {
   listOnboardingHolds,
   releaseOnboardingHold,
   retryOnboardingEnrollment,
+  reconcileOnboardingLink,
   type OnboardingHold,
 } from "@/lib/admin-api";
 import { trackPageView } from "@/lib/analytics";
@@ -134,6 +135,15 @@ export default function AdminOnboardingHolds() {
     toast.success("24-hour resume link copied");
   });
 
+  const handleRepairLink = (hold: OnboardingHold) => runAction(hold, async () => {
+    const token = session?.access_token;
+    const expectedUserId = hold.linkRepair?.candidateUserId;
+    if (!token || !expectedUserId || !hold.linkRepair?.canRepair) return;
+    if (!window.confirm(`Connect ${hold.legalName}’s completed onboarding to their verified existing Hub account? This preserves their original completion and sends no email.`)) return;
+    const response = await reconcileOnboardingLink(token, hold.onboardingId, expectedUserId);
+    toast.success(response.message);
+  });
+
   const handleToggleRelease = (hold: OnboardingHold) => runAction(hold, async () => {
     const token = session?.access_token;
     if (!token) return;
@@ -222,6 +232,7 @@ export default function AdminOnboardingHolds() {
                     </td>
                     <td data-label="Progress"><StepList hold={hold} /></td>
                     <td data-label="Attention">
+                      {hold.linkRepair && <p>{hold.linkRepair.message}</p>}
                       {hold.needsAttention ? (
                         <>
                           <strong><AlertTriangle size={15} aria-hidden="true" /> {formatStatus(hold.failedStep ?? "unknown step")}</strong><br />
@@ -235,7 +246,12 @@ export default function AdminOnboardingHolds() {
                     <td data-label="Actions">
                       <div className="admin-action-row">
                         {hold.hasPortalAccount && hold.supabaseUserId && <Link to={`/portal/admin/users/${hold.supabaseUserId}`} className="admin-secondary-btn">View user</Link>}
-                        {hold.needsAttention && (
+                        {hold.linkRepair?.canRepair && (
+                          <button type="button" className="admin-primary-btn" disabled={isUpdating} onClick={() => void handleRepairLink(hold)}>
+                            Connect existing account
+                          </button>
+                        )}
+                        {hold.needsAttention && !hold.linkRepair?.canRepair && (
                           <button type="button" className="admin-primary-btn" disabled={isUpdating} onClick={() => void handleRetry(hold)}>
                             <RotateCcw size={14} aria-hidden="true" /> Retry step
                           </button>

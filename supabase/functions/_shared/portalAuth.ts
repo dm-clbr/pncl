@@ -26,15 +26,16 @@ async function findPortalUserByEmail(
 
   while (page <= 10) {
     const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 200 });
-    if (error || !data.users.length) break;
+    if (error) throw new Error("Unable to verify existing portal accounts");
+    if (!data.users.length) break;
 
     const match = data.users.find((user) => user.email?.toLowerCase() === normalized);
     if (match) return match.id;
 
-    if (data.users.length < 200) break;
+    if (data.users.length < 200) return null;
     page++;
   }
-
+  if (page > 10) throw new Error("Portal account lookup requires support review");
   return null;
 }
 
@@ -62,25 +63,19 @@ function isDuplicateEmailError(message: string): boolean {
     || normalized.includes("duplicate");
 }
 
-async function syncPortalUserMetadata(
+async function verifyExistingPortalUser(
   supabase: SupabaseClient,
   userId: string,
   input: ProvisionPortalAccountInput,
 ): Promise<void> {
-  const { userMetadata, appMetadata } = buildPortalMetadata(input);
-  const { error } = await supabase.auth.admin.updateUserById(userId, {
-    email_confirm: true,
-    user_metadata: userMetadata,
-    app_metadata: appMetadata,
+  const { error } = await supabase.rpc("check_portal_account_link", {
+    p_onboarding: input.onboardingId,
+    p_user: userId,
+    p_email: input.email.trim().toLowerCase(),
   });
-
-  if (error) {
-    logOnboarding("portal_user_metadata_failed", {
-      onboardingId: input.onboardingId,
-      email: input.email,
-      error: error.message,
-    }, "warn");
-  }
+  if (error) throw new Error("Existing portal identity needs support review before linking");
+  // Existing identities keep their roles, names, confirmation and readiness.
+  // Email equality alone must never overwrite server-owned account provenance.
 }
 
 async function createPortalUser(
@@ -100,7 +95,7 @@ async function createPortalUser(
     if (isDuplicateEmailError(error.message)) {
       const existingId = await findPortalUserByEmail(supabase, input.email);
       if (existingId) {
-        await syncPortalUserMetadata(supabase, existingId, input);
+        await verifyExistingPortalUser(supabase, existingId, input);
         return existingId;
       }
     }
@@ -152,10 +147,19 @@ async function provisionPortalUser(
 
   const supabaseUserId = existingId
     ? await (async () => {
-      await syncPortalUserMetadata(supabase, existingId, input);
+      await verifyExistingPortalUser(supabase, existingId, input);
       return existingId;
     })()
     : await createPortalUser(supabase, input);
+
+  // Persist the identity before mail delivery or caller-side finalization can
+  // fail. A retry reuses this link; it does not create a second account.
+  const { error: linkError } = await supabase.rpc("persist_portal_account_link", {
+    p_onboarding: input.onboardingId,
+    p_user: supabaseUserId,
+    p_email: input.email.trim().toLowerCase(),
+  });
+  if (linkError) throw new Error("Unable to save the portal account link; contact support");
 
   if (options.sendWelcomeEmail) {
     await sendPortalWelcome(input, supabaseUserId, options.delivery);
@@ -195,7 +199,7 @@ export async function provisionPortalAccount(
     });
   }
 
-  return provisionPortalUser(supabase, input, { sendWelcomeEmail: true, delivery: "provision" });
+  return provisionPortalUser(supabase, { ...input, existingSupabaseUserId: existingId }, { sendWelcomeEmail: true, delivery: "provision" });
 }
 
 export async function markPortalEnrollmentReady(

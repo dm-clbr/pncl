@@ -42,6 +42,7 @@ Deno.serve(async (req) => {
     });
   try {
     const { user, adminClient } = await requirePortalUser(req);
+    auditActor = user.id;
     const email = await requireHubWorkEmail(user, adminClient);
     if (Deno.env.get("PNCL_HUB_SETUP_ENABLED") !== "true") {
       throw new SetupError("integration_unavailable", 503);
@@ -125,6 +126,7 @@ Deno.serve(async (req) => {
     return json(200, { ...status, payEnabled });
   } catch (e) {
     if (e instanceof AdminAuthError) {
+      if (auditActor) console.info("pncl_hub_eligibility", { actor: auditActor, requestId, outcome: e.code, at: new Date().toISOString() });
       return json(e.status, { error: e.code, message: e.message });
     }
     const error = e instanceof SetupError ? e : new SetupError(

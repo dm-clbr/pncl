@@ -32,6 +32,15 @@ export async function requireHubWorkEmail(user: User, db: SupabaseClient): Promi
   // server-managed manual record is authoritative; an unfinished v3 enrollment
   // still cannot use this legacy path.
   const legacyManual = data?.status === "manual" && user.app_metadata?.enrollment_version !== 3;
+  if (!error && !data) {
+    const orphan = await db.from("onboarding_records")
+      .select("supabase_user_id,released_at,onboarding_completed_at")
+      .eq("workspace_email", email).maybeSingle();
+    if (!orphan.error && orphan.data && !orphan.data.supabase_user_id
+      && !orphan.data.released_at && orphan.data.onboarding_completed_at) {
+      throw new AdminAuthError("Your completed onboarding needs to be connected to your Hub account by PNCL support.", 409, "onboarding_link_missing");
+    }
+  }
   if (error || !data || data.released_at || !(["ready", "credentials_viewed"].includes(data.status) || data.enrollment_status === "ready" || legacyManual) || data.workspace_email?.toLowerCase() !== email) {
     throw new AdminAuthError("Your PNCL work email needs support review before updating LeadSpply.", 409, "work_email_review_required");
   }

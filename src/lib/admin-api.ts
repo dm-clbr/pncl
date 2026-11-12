@@ -592,6 +592,7 @@ export async function sendGmailVerificationEmail(
  * from ever re-onboarding, so admins need to see and clear them.
  */
 export interface OnboardingHold {
+  linkRepair?: { candidateUserId: string | null; canRepair: boolean; reason: string; message: string };
   onboardingId: string;
   legalName: string;
   phoneNumber: string;
@@ -662,6 +663,12 @@ export async function retryOnboardingEnrollment(
   return adminFetch("admin-retry-onboarding", accessToken, {
     method: "POST",
     body: JSON.stringify({ onboardingId }),
+  });
+}
+
+export async function reconcileOnboardingLink(accessToken: string, onboardingId: string, expectedUserId: string): Promise<{ message: string }> {
+  return adminFetch("admin-reconcile-onboarding-link", accessToken, {
+    method: "POST", body: JSON.stringify({ onboardingId, expectedUserId }),
   });
 }
 

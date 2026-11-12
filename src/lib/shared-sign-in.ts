@@ -20,6 +20,7 @@ export function sharedSignInError(error: unknown, product: SignInProduct): SignI
   switch (e?.code) {
     case "work_email_unverified": return fail("Hub could not verify your company account. Sign in with your confirmed @thepncl.com Google account. If this is already your account, contact support to review its access.", "signin");
     case "work_email_review_required": return fail("Hub could not verify your work email or onboarding eligibility. Contact support to review your account. Admin accounts do not need agent onboarding.");
+    case "onboarding_link_missing": return fail("Your completed onboarding needs to be connected to your Hub account. Contact PNCL support to repair the link.");
     case "setup_incomplete": return fail("Finish your LeadSpply account verification, email matching and required approval in Account setup before using shared sign-in.", "setup");
     case "ownership_required": return fail("Ownership of your LeadSpply account has not been verified. Open Account setup and verify your existing LeadSpply login.", "setup");
     case "account_unavailable": return fail("Your linked LeadSpply account is unavailable for shared sign-in. Contact support to review account access.");

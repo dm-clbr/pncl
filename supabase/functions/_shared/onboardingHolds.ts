@@ -2,6 +2,7 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1
 import { holdsDedupReservation } from "./portalReferralInvites.ts";
 import { listPortalUsers } from "./adminAgents.ts";
 import { isEnrollmentReady } from "./enrollmentState.ts";
+import { portalLinkRepairStatus, type PortalLinkRepairStatus } from "./portalLinkRepair.ts";
 
 /**
  * An onboarding record reserves its applicant's phone number and SSN so a
@@ -12,6 +13,7 @@ import { isEnrollmentReady } from "./enrollmentState.ts";
  * clears those reservations.
  */
 export interface OnboardingHold {
+  linkRepair?: PortalLinkRepairStatus;
   onboardingId: string;
   legalName: string;
   phoneNumber: string;
@@ -235,9 +237,27 @@ export async function listOnboardingHolds(
   const term = search?.trim() ?? "";
   const rows = (data ?? []) as OnboardingHoldRow[];
 
-  const holds = rows
+  // Old broken links must not disappear behind the newest-250 UI window.
+  const byId = new Map(rows.map(row => [row.id, row]));
+  for (let offset = 0; ; offset += 250) {
+    const missing = await adminClient.from("onboarding_records").select(HOLD_COLUMNS)
+      .is("supabase_user_id", null).is("released_at", null).order("id").range(offset, offset + 249);
+    if (missing.error) throw new Error("Unable to check missing onboarding account links");
+    for (const row of (missing.data ?? []) as OnboardingHoldRow[]) byId.set(row.id, row);
+    if ((missing.data?.length ?? 0) < 250) break;
+  }
+
+  const holds = [...byId.values()]
     .filter((row) => (term ? matchesSearch(row, term) : true))
     .map((row) => toHold(row, livePortalUserIds));
+
+  for (const hold of holds) {
+    if (hold.supabaseUserId || hold.releasedAt) continue;
+    const matches = portalUsers.filter(user => user.email?.toLowerCase() === hold.workspaceEmail?.toLowerCase());
+    hold.linkRepair = await portalLinkRepairStatus(adminClient, hold.onboardingId, matches.length === 1 ? matches[0].id : null);
+    // Surface the inconsistency even if a historical row claims to be ready.
+    if (hold.linkRepair.canRepair || hold.enrollmentStatus === "ready") hold.needsAttention = true;
+  }
 
   return holds;
 }
