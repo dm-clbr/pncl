@@ -534,3 +534,11 @@
   line-height: 1.6;
   color: var(--portal-text);
 }
+
+.ica-agreement-stack { display: grid; gap: var(--portal-gap); margin-top: var(--portal-gap); }
+.ica-agreement-stack:empty { display: none; }
+.ica-agreement-preview { margin-top: var(--portal-gap); }
+.ica-agreement-preview summary { cursor: pointer; min-height: var(--portal-control-h); display: flex; align-items: center; gap: 8px; color: var(--portal-text-strong); }
+.ica-agreement-preview summary::before { content: "+"; }
+.ica-agreement-preview[open] summary::before { content: "−"; }
+.ica-agreement-preview summary:focus-visible { outline: var(--portal-focus-ring); outline-offset: var(--portal-focus-offset); }

@@ -18,6 +18,7 @@ const authState = vi.hoisted(() => ({
 }));
 
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => authState }));
+vi.mock("@/lib/document-requests", async original => ({ ...await original<typeof import("@/lib/document-requests")>(), listAgentDocumentRequests: vi.fn().mockResolvedValue([]) }));
 vi.mock("@/hooks/useOnboardingContent", () => ({
   useOnboardingContent: () => ({ content: { designation: "loa", ica: { id: "ica-upload", url: "/uploaded-ica.pdf", signing_mode: "ica_fields" }, welcomeVideo: null, surelcVideo: null }, error: null, retry: vi.fn() }),
 }));

@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { webcrypto } from "node:crypto";
 import { PDFDocument } from "pdf-lib";
-const state = vi.hoisted(() => ({ handler: null as unknown as (req: Request) => Promise<Response>, auth: vi.fn(), single: vi.fn(), eq: vi.fn(), not: vi.fn(), upload: vi.fn(), download: vi.fn(), update: vi.fn(), is: vi.fn(), remove: vi.fn(), url: vi.fn() }));
+const state = vi.hoisted(() => ({ handler: null as unknown as (req: Request) => Promise<Response>, auth: vi.fn(), single: vi.fn(), eq: vi.fn(), not: vi.fn(), upload: vi.fn(), download: vi.fn(), update: vi.fn(), is: vi.fn(), remove: vi.fn(), url: vi.fn(), list: vi.fn() }));
 vi.mock("https://deno.land/std@0.177.0/http/server.ts", () => ({ serve: (handler: typeof state.handler) => { state.handler = handler; } }));
 vi.mock("https://esm.sh/pdf-lib@1.17.1", async () => import("pdf-lib"));
 vi.mock("../../supabase/functions/_shared/adminAuth.ts", () => ({ requirePortalUser: state.auth, AdminAuthError: class extends Error { status = 401; code = "unauthorized"; } }));
 vi.mock("../../supabase/functions/_shared/onboarding.ts", () => ({ getEmailDomain: () => "thepncl.com" }));
+vi.mock("../../supabase/functions/_shared/documentRequests.ts", async original => ({ ...await original<typeof import("../../supabase/functions/_shared/documentRequests")>(), listUserDocumentRequests: state.list }));
 import "../../supabase/functions/portal-document-requests/index";
 import { sha256 } from "../../supabase/functions/_shared/documentSigningPdf";
 const adopted = { signatureAdoption: { method: "typed", accepted: true, version: "2026-11-13", name: "Alex Agent" }, signatureImageBase64: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==" };
@@ -28,6 +29,13 @@ beforeEach(async () => {
 });
 afterEach(() => vi.unstubAllGlobals());
 describe("portal document endpoint", () => {
+  it("returns the assigned onboarding step and exact template identity for the ICA page", async () => {
+    state.list.mockResolvedValue([{ ...row, campaign: { title: "New ICA", pdf_sha256: hash, onboarding_step: { slug: "ica_setup" }, onboarding_asset_id: "published-asset" } }]);
+    const response = await state.handler(request({ action: "list" }));
+    expect(response.status).toBe(200);
+    expect(state.list).toHaveBeenCalledWith(client, userId);
+    expect((await response.json()).requests).toEqual([expect.objectContaining({ id, documentHash: hash, stepSlug: "ica_setup", templateAssetId: "published-asset" })]);
+  });
   it("scopes both signed downloads and signatures to the authenticated agent", async () => {
     state.single.mockResolvedValue({ data: null, error: null });
     expect((await state.handler(request({ action: "url", id }))).status).toBe(404);

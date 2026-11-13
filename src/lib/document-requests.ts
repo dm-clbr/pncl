@@ -27,6 +27,8 @@ export interface DocumentRecipientStatus {
 export interface AgentDocumentRequest {
   id: string; title: string; description: string; assignedAt: string;
   signedAt: string | null; signatureName: string | null; documentHash: string;
+  stepSlug?: string | null;
+  templateAssetId?: string | null;
 }
 async function call<T>(token: string, endpoint: string, input: unknown): Promise<T> {
   const { url, anonKey } = getSupabaseConfig();

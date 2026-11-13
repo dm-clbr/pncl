@@ -18,6 +18,8 @@ serve(async req => {
         id: row.id, title: row.campaign.title, description: row.campaign.description,
         assignedAt: row.assigned_at, signedAt: row.signed_at, signatureName: row.signature_name,
         documentHash: row.campaign.pdf_sha256,
+        stepSlug: row.campaign.onboarding_step?.slug ?? null,
+        templateAssetId: row.campaign.onboarding_asset_id ?? null,
       })) });
     }
     const { data, error } = await client.from("portal_document_requests").select("*, campaign:portal_document_campaigns(*)")

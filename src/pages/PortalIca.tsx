@@ -1,3 +1,5 @@
+import { useIcaDocumentRequests } from "@/hooks/useIcaDocumentRequests";
+import IcaDocumentRequests from "@/components/portal/IcaDocumentRequests";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileCheck2 } from "lucide-react";
@@ -30,6 +32,9 @@ export default function PortalIca() {
   const { user, session } = useAuth();
   const { content, error: contentError, retry: retryContent } = useOnboardingContent({ accessToken: session?.access_token, portal: true });
   const { ica, submitted, loading, setIca } = usePortalIca();
+  const requests = useIcaDocumentRequests(session?.access_token);
+  const hasIcaRequests = requests.rows.length > 0;
+  const hasPendingIca = requests.rows.some(row => !row.signedAt);
   const [prefill, setPrefill] = useState({ legalName: "", email: "" });
   const [prefillReady, setPrefillReady] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -148,7 +153,7 @@ export default function PortalIca() {
           )}
 
           {!loading && submitted && ica && (
-            <Pane title="Agreement on file">
+            <Pane title={hasIcaRequests ? "Previous agreement on file" : "Agreement on file"}>
               <p className="portal-panel-note">
                 Your Independent Contractor Agreement was signed{signedDate ? ` on ${signedDate}` : ""} for{" "}
                 <strong>{ica.legalName}</strong>.
@@ -176,13 +181,18 @@ export default function PortalIca() {
                   }}
                 />
               )}
-              <p className="portal-panel-note">Need a new agreement? Contact PNCL support.</p>
+              {pdfUrl && <details className="ica-agreement-preview"><summary>View agreement on file</summary><iframe title="Previous signed ICA" className="document-agent-pdf" src={pdfUrl} /></details>}
+              {hasPendingIca && <p className="portal-panel-note">Your new ICA is ready to review and sign below.</p>}
             </Pane>
           )}
 
-          {!loading && !submitted && !content && <Pane><p role={contentError ? "alert" : "status"}>{contentError || "Loading your agreement…"}</p>{contentError && <button className="btn btn-ghost" onClick={retryContent}>Retry agreement</button>}</Pane>}
-          {!loading && !submitted && prefillReady && content?.ica && <UploadedIcaSigningStep key={content.ica.id} asset={content.ica} prefillLegalName={prefill.legalName} prefillEmail={prefill.email} onSubmit={handleSubmit} finishLabel="Sign and save to profile" />}
-          {!loading && !submitted && prefillReady && content && !content.ica && (
+          {!loading && <IcaDocumentRequests token={session?.access_token ?? ""} {...requests}
+            initialName={ica?.legalName ?? displayName}
+            previewAsset={submitted && user?.app_metadata?.role === "admin" && content?.signingEnabled !== false && content?.ica && !ica?.icaVersion?.endsWith(content.ica.id) ? content.ica : null} />}
+
+          {!loading && !submitted && !requests.loading && !requests.error && !hasIcaRequests && !content && <Pane><p role={contentError ? "alert" : "status"}>{contentError || "Loading your agreement…"}</p>{contentError && <button className="btn btn-ghost" onClick={retryContent}>Retry agreement</button>}</Pane>}
+          {!loading && !submitted && !requests.loading && !requests.error && !hasIcaRequests && prefillReady && content?.ica && <UploadedIcaSigningStep key={content.ica.id} asset={content.ica} prefillLegalName={prefill.legalName} prefillEmail={prefill.email} onSubmit={handleSubmit} finishLabel="Sign and save to profile" />}
+          {!loading && !submitted && !requests.loading && !requests.error && !hasIcaRequests && prefillReady && content && !content.ica && (
             <Pane><p role="alert">PNCL needs to upload the ICA for your onboarding flow. Please contact PNCL support before signing.</p></Pane>
           )}
         </div>
