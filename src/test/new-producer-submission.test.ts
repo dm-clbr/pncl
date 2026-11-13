@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { submitNewProducer } from "../../supabase/functions/_shared/newProducerSubmission";
-import { computeAutoCompletionSets } from "../../supabase/functions/_shared/portalTodos";
+import { computeAutoCompletionSets, computePortalTodoProgressByUserId } from "../../supabase/functions/_shared/portalTodos";
 import { isTodoCompleteForUser } from "../../supabase/functions/_shared/todoCompletion";
 import { listIcaSignedUserIds } from "../../supabase/functions/_shared/portalIca";
 import { validateSubmitTicketPayload } from "../../supabase/functions/_shared/portalTickets";
@@ -87,6 +87,39 @@ describe("New Producer server submission", () => {
   it("keeps W-9 and direct deposit mandatory for LOA", async () => {
     const s = scenario("loa"); s.tables.portal_w9_forms = []; s.tables.portal_direct_deposit_forms = [];
     await expect(submitNewProducer(s.client as never, s.user as never)).rejects.toThrow("W-9");
+  });
+  it("allows an old-flow agent with an unsigned comp attachment after retiring the saved step", async () => {
+    const s = scenario("loa");
+    const oldComp = { ...s.tables.portal_todos.find(row => row.slug === "comp_agreement"), completion_type: "agent", auto_key: null };
+    const rollout = s.tables.onboarding_signing_rollout[0];
+    rollout.enabled = false;
+    rollout.legacy_steps = [oldComp];
+    s.tables.portal_todos = s.tables.portal_todos.filter(row => row.slug !== "comp_agreement");
+    s.tables.portal_comp_attachments = [{ user_id: s.user.id, status: "pending", signed_pdf_path: null }];
+    delete s.user.user_metadata.completed_portal_todos.comp_agreement;
+    await expect(submitNewProducer(s.client as never, s.user as never)).rejects.toThrow("comp");
+    expect(s.rpc).not.toHaveBeenCalled();
+
+    rollout.legacy_steps = [{ ...oldComp, published: false, show_loa: false, show_ibo: false }];
+    await expect(submitNewProducer(s.client as never, s.user as never)).resolves.toBe("test-ticket");
+    expect(s.tables.portal_comp_attachments).toEqual([{ user_id: s.user.id, status: "pending", signed_pdf_path: null }]);
+  });
+  it("removes the retired requirement from old-flow progress without granting a completion", async () => {
+    const s = scenario("loa");
+    const oldComp = { ...s.tables.portal_todos.find(row => row.slug === "comp_agreement"), completion_type: "agent", auto_key: null };
+    const rollout = s.tables.onboarding_signing_rollout[0];
+    rollout.enabled = false;
+    rollout.legacy_steps = [oldComp];
+    s.tables.portal_todos = s.tables.portal_todos.filter(row => row.slug !== "comp_agreement");
+    delete s.user.user_metadata.completed_portal_todos.comp_agreement;
+    s.rpc.mockResolvedValue({ data: [] as never, error: null });
+    const before = (await computePortalTodoProgressByUserId(s.client as never, [s.user])).get(s.user.id)!;
+    rollout.legacy_steps = [{ ...oldComp, published: false, show_loa: false, show_ibo: false }];
+    const after = (await computePortalTodoProgressByUserId(s.client as never, [s.user])).get(s.user.id)!;
+    expect(after.totalCount).toBe(before.totalCount - 1);
+    expect(after.completedCount).toBe(before.completedCount);
+    expect(s.user.user_metadata.completed_portal_todos.comp_agreement).toBeUndefined();
+    expect(s.tables.portal_comp_attachments[0].status).toBe("signed");
   });
   it("returns the same accepted ticket on retries even if requirements later change", async () => {
     const s = scenario(); s.tables.portal_tickets = [{ id: "existing", user_id: "agent", type: "new_producer" }];

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { legacySigningRows, loadSigningRollout, signingRowsForUser, uploadedSigningEnabled } from "../../supabase/functions/_shared/signingRollout";
 import { isTodoCompleteForUser } from "../../supabase/functions/_shared/todoCompletion";
+import { filterAgentTodos } from "../../supabase/functions/_shared/agentDesignation";
 
 const savedStep = { slug: "comp_agreement", title: "Existing compensation", published: true, show_loa: true, show_ibo: false, completion_type: "agent" as const, auto_key: null };
 const state = { enabled: false, revision: 0, legacy_ica_sources: { loa: "previous-ica", ibo: null }, legacy_steps: [savedStep] };
@@ -36,6 +37,13 @@ describe("staged signing activation", () => {
   });
   it("retains a previous required step when the new version is unpublished or absent from the live query", () => {
     expect(legacySigningRows([], state)).toEqual([{ ...savedStep, uploaded_signing: false }]);
+  });
+  it.each(["loa", "ibo"])("keeps the retired legacy comp step out of the %s checklist", designation => {
+    const ica = { ...savedStep, slug: "ica_setup", show_ibo: true };
+    const retired = { ...savedStep, published: false, show_loa: false, show_ibo: false };
+    const rows = legacySigningRows([ica], { ...state, legacy_steps: [ica, retired] });
+    const visible = filterAgentTodos(rows.filter(row => row.published), designation);
+    expect(visible.map(row => row.slug)).toEqual(["ica_setup"]);
   });
   it("preserves permitted old checkoffs until uploaded signing is active", () => {
     const row = { slug: "ica_setup", completion_type: "auto" as const, auto_key: "ica" };
