@@ -5,7 +5,7 @@ create role anon; create role authenticated; create role service_role;
 create table auth.users(id uuid primary key,email text,created_at timestamptz default now(),raw_app_meta_data jsonb default '{}',raw_user_meta_data jsonb default '{}',banned_until timestamptz,deleted_at timestamptz);
 create table public.portal_profiles(user_id uuid,first_name text,last_name text,address_state text);
 create table public.portal_agent_designations(user_id uuid,designation text);
-create table public.onboarding_records(id uuid,supabase_user_id uuid);
+create table public.onboarding_records(id uuid,supabase_user_id text);
 create table public.onboarding_content_assets(id uuid primary key,designation text,kind text,path text,filename text,size_bytes bigint,sha256 text,created_by uuid);
 create table public.portal_todos(id uuid primary key,slug text,title text,description text,content_type text,flow_content jsonb default '{}',published boolean,show_loa boolean,show_ibo boolean,updated_at timestamptz default now());
 create table public.onboarding_flow_content(designation text,ica_asset_id uuid,w9_asset_id uuid,direct_deposit_asset_id uuid,comp_agreement_asset_id uuid,updated_at timestamptz);
@@ -197,6 +197,7 @@ insert into public.onboarding_flow_content(designation) values('loa'),('ibo');
 insert into public.onboarding_content_assets select '10000000-0000-0000-0000-000000000000','loa','signing_document','historical.pdf','historical.pdf',100,repeat('a',64),'00000000-0000-0000-0000-000000000007';
 insert into public.portal_todos values('20000000-0000-0000-0000-000000000000','unrelated','Unrelated addendum','Test','signing_document','{"loa":{"assetId":"10000000-0000-0000-0000-000000000000"}}',true,true,false,now());
 \ir ../migrations/20261113185812_require_published_document_editions.sql
+\ir ../migrations/20261113211226_fix_required_document_user_id_comparison.sql
 
 do $$
 declare step_id uuid := '20000000-0000-0000-0000-000000000001'; a uuid; filters jsonb; recipients uuid[]; snapshot text; failed boolean;
@@ -247,4 +248,45 @@ begin
   assert (select md5(string_agg(to_jsonb(s)::text,'' order by user_id)) from public.portal_ica_signatures s)=snapshot,'Historical native signatures changed';
   assert not exists(select 1 from public.portal_document_requests where campaign_id='10000000-0000-0000-0000-000000000000'),'Unrelated addendum was assigned';
   raise notice 'PASS: publication, drafts, full audience, exact editions, history, sequencing, and no-email assertions';
+end $$;
+
+-- Match production's text identity column, including legacy non-UUID values.
+do $$
+declare step_id uuid := '20000000-0000-0000-0000-000000000009';
+  exact_asset uuid := '10000000-0000-0000-0000-000000000009';
+  future_asset uuid := '10000000-0000-0000-0000-000000000010';
+  before_count integer;
+begin
+  insert into public.onboarding_content_assets values
+    (exact_asset,'loa','w9','w9-exact.pdf','w9-exact.pdf',100,repeat('9',64),'00000000-0000-0000-0000-000000000007'),
+    (future_asset,'loa','w9','w9-future.pdf','w9-future.pdf',100,repeat('b',64),'00000000-0000-0000-0000-000000000007');
+  insert into public.onboarding_records values
+    ('30000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000002'),
+    ('30000000-0000-0000-0000-000000000002','legacy-pending');
+  insert into public.onboarding_contract_signatures values
+    ('30000000-0000-0000-0000-000000000001',exact_asset,repeat('9',64),now()),
+    ('30000000-0000-0000-0000-000000000002',exact_asset,repeat('9',64),now());
+  insert into public.portal_todos values(step_id,'w9_setup','W-9','Test','w9',
+    jsonb_build_object('loa',jsonb_build_object('assetId',exact_asset)),true,true,false,now());
+  assert (select count(*) from public.portal_document_requests where campaign_id=exact_asset)=2,
+    'Text-linked exact signature did not suppress its request';
+  assert not exists(select 1 from public.portal_document_requests where campaign_id=exact_asset and user_id='00000000-0000-0000-0000-000000000002'),
+    'Exact onboarding signature was reissued';
+  perform public.ensure_onboarding_document_edition(step_id,'loa',future_asset);
+  update public.portal_document_campaigns set require_existing_agents=false where id=future_asset;
+  select count(*) into before_count from public.portal_document_requests;
+  update public.portal_todos set flow_content=jsonb_build_object('loa',jsonb_build_object('assetId',future_asset)) where id=step_id;
+  assert (select onboarding_enabled from public.portal_document_campaigns where id=future_asset),
+    'Future-only edition was not selected for onboarding';
+  assert (select count(*) from public.portal_document_requests)=before_count,
+    'Future-only publication assigned existing agents';
+  update public.portal_todos set published=false where id=step_id;
+  update public.portal_todos set published=true where id=step_id;
+  assert (select count(*) from public.portal_document_requests)=before_count,
+    'Republishing lost future-only preference';
+  assert public.assign_required_document_edition(future_asset)=0,
+    'Direct assignment ignored future-only preference';
+  assert not exists(select 1 from public.portal_document_requests where notification_status<>'none'),
+    'Future-only setup queued email';
+  raise notice 'PASS: production text IDs, exact signatures, future-only publication and republication, no requests or emails';
 end $$;
