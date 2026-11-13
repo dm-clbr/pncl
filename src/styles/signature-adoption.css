@@ -27,3 +27,5 @@
 .signing-document-canvas button.signing-pdf-signature img { display:block; width:100%; height:100%; object-fit:contain; object-position:left center; }
 .signing-document-canvas button.signing-pdf-signature:focus-visible { outline:3px solid #826027; outline-offset:2px; }
 .adopted-signature-summary img { display:block; max-width:360px; width:100%; height:100px; object-fit:contain; background:white; border-radius:8px; margin:12px 0; }
+
+.signature-adoption button.signature-adopt-action { display:block; width:100%; margin-top:16px; padding:11px 16px; border:1px solid #b8a691; border-radius:8px; background:#e8dbc5; color:#252017; font:inherit; font-weight:600; cursor:pointer; }

@@ -11,7 +11,10 @@ describe("signature adoption", () => {
     const page = render(<SignatureAdoption name="Alex Agent" onChange={changed} />);
     await screen.findByAltText("Signature preview for Alex Agent");
     expect(changed).toHaveBeenLastCalledWith(null);
+    expect(screen.getByRole("button", { name: "Adopt signature" })).toBeDisabled();
     fireEvent.click(screen.getByRole("checkbox"));
+    expect(changed).toHaveBeenLastCalledWith(null);
+    fireEvent.click(screen.getByRole("button", { name: "Adopt signature" }));
     expect(changed).toHaveBeenLastCalledWith(expect.objectContaining({ method: "typed", accepted: true, name: "Alex Agent", imageDataUrl: "data:image/png;base64,Alex Agent" }));
     page.rerender(<SignatureAdoption name="Alex Morgan" onChange={changed} />);
     await screen.findByAltText("Signature preview for Alex Morgan");
@@ -27,6 +30,8 @@ describe("signature adoption", () => {
     fireEvent.click(screen.getByRole("button", { name: "Draw signature" }));
     fireEvent.click(screen.getByRole("button", { name: "Test draw" }));
     fireEvent.click(screen.getByRole("checkbox"));
+    expect(changed).toHaveBeenLastCalledWith(null);
+    fireEvent.click(screen.getByRole("button", { name: "Save and use signature" }));
     expect(changed).toHaveBeenLastCalledWith(expect.objectContaining({ method: "drawn", imageDataUrl: "drawn-png", accepted: true }));
     fireEvent.click(screen.getByRole("button", { name: "Test clear" }));
     expect(changed).toHaveBeenLastCalledWith(null);

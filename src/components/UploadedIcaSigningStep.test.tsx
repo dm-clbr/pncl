@@ -32,6 +32,7 @@ describe("uploaded ICA review", () => {
     fireEvent.click(screen.getByRole("button", { name: "Draw signature", exact: true }));
     fireEvent.click(screen.getByRole("button", { name: "Draw test signature" }));
     fireEvent.click(screen.getByRole("checkbox", { name: /I adopt the signature/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Save and use signature" }));
     for (const checkbox of screen.getAllByRole("checkbox")) fireEvent.click(checkbox);
     expect(sign).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Next page" }));
