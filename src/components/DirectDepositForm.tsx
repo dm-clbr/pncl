@@ -79,7 +79,7 @@ export default function DirectDepositForm({ initialValues = EMPTY_DIRECT_DEPOSIT
           Submit your banking details so PNCL can deposit commission payments directly
           to your account. A signed PDF is saved to your profile automatically.
         </p>
-    
+
         <div className="pforms-dd-stack">
           <Field
             label="Name"
@@ -91,7 +91,7 @@ export default function DirectDepositForm({ initialValues = EMPTY_DIRECT_DEPOSIT
             error={errorFor("dd-name")}
             required
           />
-    
+
           <Field
             label="Address"
             id="dd-address"
@@ -102,7 +102,7 @@ export default function DirectDepositForm({ initialValues = EMPTY_DIRECT_DEPOSIT
             error={errorFor("dd-address")}
             required
           />
-    
+
           <Field
             label="City"
             id="dd-city"
@@ -113,7 +113,7 @@ export default function DirectDepositForm({ initialValues = EMPTY_DIRECT_DEPOSIT
             error={errorFor("dd-city")}
             required
           />
-    
+
           <Field label="State" id="dd-state" error={errorFor("dd-state")} required>
             <select
               className="portal-select"
@@ -129,7 +129,7 @@ export default function DirectDepositForm({ initialValues = EMPTY_DIRECT_DEPOSIT
               ))}
             </select>
           </Field>
-    
+
           <Field
             label="ZIP code"
             id="dd-zip"
@@ -141,13 +141,13 @@ export default function DirectDepositForm({ initialValues = EMPTY_DIRECT_DEPOSIT
             error={errorFor("dd-zip")}
             required
           />
-    
+
           <fieldset className="pforms-dd-group">
             <legend>Deposit account</legend>
             <p className="pforms-dd-note">
               Please have my check automatically deposited into the following account:
             </p>
-    
+
             <div className="pforms-acks">
               <label className="pforms-ack">
                 <input
@@ -174,7 +174,7 @@ export default function DirectDepositForm({ initialValues = EMPTY_DIRECT_DEPOSIT
                 <span>Savings / MIA / Money market account</span>
               </label>
             </div>
-    
+
             <Field
               label={
                 form.accountType === "checking"
@@ -190,7 +190,7 @@ export default function DirectDepositForm({ initialValues = EMPTY_DIRECT_DEPOSIT
               error={errorFor("dd-account")}
               required
             />
-    
+
             <Field
               label="Your bank's name"
               id="dd-bank"
@@ -202,7 +202,7 @@ export default function DirectDepositForm({ initialValues = EMPTY_DIRECT_DEPOSIT
               error={errorFor("dd-bank")}
               required
             />
-    
+
             <Field
               label="Your bank's routing number"
               id="dd-routing"
@@ -216,11 +216,11 @@ export default function DirectDepositForm({ initialValues = EMPTY_DIRECT_DEPOSIT
               required
             />
           </fieldset>
-    
+
           <fieldset className="pforms-dd-group">
             <legend>Authorization</legend>
             <p className="pforms-dd-note">{DIRECT_DEPOSIT_AUTHORIZATION}</p>
-    
+
             <Field
               label="Signature"
               id="dd-signature"
@@ -230,7 +230,7 @@ export default function DirectDepositForm({ initialValues = EMPTY_DIRECT_DEPOSIT
               error={errorFor("dd-signature")}
               required
             />
-    
+
             <Field
               label="Date"
               id="dd-date"
@@ -239,7 +239,7 @@ export default function DirectDepositForm({ initialValues = EMPTY_DIRECT_DEPOSIT
               readOnly
               aria-readonly="true"
             />
-    
+
             <div className="pforms-acks">
               <label className="pforms-ack">
                 <input
@@ -262,14 +262,14 @@ export default function DirectDepositForm({ initialValues = EMPTY_DIRECT_DEPOSIT
               </p>
             )}
           </fieldset>
-    
+
           <p className="pforms-dd-note">
             Your account and routing numbers are encrypted and stored securely. Only a signed
             PDF copy is saved to your profile.
           </p>
         </div>
       </Pane>
-    
+
       {/* Sticky so the action stays in the thumb zone on a form this
           long; outside the Pane so the pane's padding never clips it. */}
       <div className="pforms-submit-bar">
