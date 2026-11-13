@@ -56,7 +56,6 @@ export default function OnboardingStepModal({
   const fileType = [
     "ica",
     "w9",
-    "direct_deposit",
     "comp_agreement",
     "signing_document",
     "document",
@@ -233,16 +232,23 @@ export default function OnboardingStepModal({
                 </select>
               </label>
             </div>
+            <p className="onboarding-hint">
+              {fixed
+                ? "This step has built-in behavior, so its content type is fixed. You can edit its content, stage, and visibility."
+                : "You can change this step’s content type. Saving a new type replaces its current content selection."}
+            </p>
+            {draft.contentType === "direct_deposit" && <section className="onboarding-modal-section"><h3>Built-in direct deposit form</h3><p>Agents enter their name, address, bank, account and routing numbers, then sign the authorization. A completed PDF is generated and saved to their profile. No template upload is needed.</p><a className="admin-secondary-link" href="/portal/direct-deposit" target="_blank" rel="noreferrer">Open direct deposit form</a></section>}
             {!fileType && (
               <div className="onboarding-link-fields">
                 <label className="admin-field">
                   <span>
-                    {draft.contentType === "system"
+                    {draft.contentType === "system" || draft.contentType === "direct_deposit"
                       ? "Step destination"
                       : "Link URL"}
                   </span>
                   <input
                     value={draft.href}
+                    readOnly={draft.contentType === "direct_deposit"}
                     placeholder="https://… or /portal/…"
                     onChange={(e) => change("href", e.target.value)}
                   />

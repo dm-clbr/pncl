@@ -43,7 +43,7 @@ export async function loadOnboardingContent(client: SupabaseClient, designation:
   const { data: settings, error } = await client.from("onboarding_flow_content")
     .select("ica_asset_id, w9_asset_id, direct_deposit_asset_id, comp_agreement_asset_id, welcome_video_asset_id, surelc_video_asset_id, welcome_video_url, surelc_video_url").eq("designation", designation).single();
   if (error || !settings) throw new Error(error?.message ?? "Onboarding content is not configured.");
-  const ids = [settings.ica_asset_id, settings.w9_asset_id, settings.direct_deposit_asset_id, settings.comp_agreement_asset_id, settings.welcome_video_asset_id, settings.surelc_video_asset_id].filter(Boolean);
+  const ids = [settings.ica_asset_id, settings.w9_asset_id, settings.comp_agreement_asset_id, settings.welcome_video_asset_id, settings.surelc_video_asset_id].filter(Boolean);
   const assets = new Map<string, OnboardingAsset>();
   if (ids.length) {
     const { data, error: assetError } = await client.from("onboarding_content_assets")
@@ -68,12 +68,12 @@ export async function loadOnboardingContent(client: SupabaseClient, designation:
     }
     return asset;
   };
-  const [ica, w9, directDeposit, compAgreement] = await Promise.all([
-    signing("ica_setup"), signing("w9_setup"), signing("direct_deposit_setup"), signing("comp_agreement"),
+  const [ica, w9, compAgreement] = await Promise.all([
+    signing("ica_setup"), signing("w9_setup"), signing("comp_agreement"),
   ]);
   const linked = (url: string | null): OnboardingAsset | null => url ? { id: `link:${url}`, designation, kind: "video" as OnboardingAssetKind, path: "", filename: "Hosted video", content_type: "video/link", size_bytes: 0, sha256: "", created_at: "", url } : null;
   const { rules } = await loadFlowRules(client, designation);
-  return { rules, designation, ica, w9, directDeposit, compAgreement, welcomeVideo: linked(settings.welcome_video_url) ?? assets.get(settings.welcome_video_asset_id) ?? null, surelcVideo: linked(settings.surelc_video_url) ?? assets.get(settings.surelc_video_asset_id) ?? null };
+  return { rules, designation, ica, w9, directDeposit: null, compAgreement, welcomeVideo: linked(settings.welcome_video_url) ?? assets.get(settings.welcome_video_asset_id) ?? null, surelcVideo: linked(settings.surelc_video_url) ?? assets.get(settings.surelc_video_asset_id) ?? null };
 }
 
 export async function downloadIcaAsset(client: SupabaseClient, asset: OnboardingAsset | null) {

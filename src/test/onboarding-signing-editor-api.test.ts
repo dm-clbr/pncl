@@ -22,13 +22,24 @@ const upload = (bytes: Uint8Array, kind: string) => {
   return state.handler({ method: "POST", headers: new Headers({ "content-type": "multipart/form-data" }), formData: async () => ({ get: (key: string) => fields.get(key) }) } as Request);
 };
 describe("Onboarding Steps signing uploads", () => {
+  it("publishes the coded deposit step without requiring or retaining a main PDF", async () => {
+    state.rows = [{ id: "dd-step", slug: "direct_deposit_setup", content_type: "direct_deposit", completion_type: "auto", auto_key: "direct_deposit_setup" }];
+    const response = await state.handler(new Request("https://example.invalid", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "saveStep", row: { id: "dd-step", contentType: "direct_deposit", title: "Direct deposit", description: "Enter bank details", actionLabel: "Open form", href: "/portal/direct-deposit", published: true, showLoa: true, showIbo: false, flowContent: { loa: { mode: "file", assetId: "obsolete" } } } }) }));
+    expect(response.status, JSON.stringify(await response.clone().json())).toBe(200);
+    expect(state.rpc).toHaveBeenCalledWith("save_onboarding_editor_step", { payload: expect.objectContaining({ contentType: "direct_deposit", href: "/portal/direct-deposit", external: false, flowContent: { attachments: expect.any(Object) } }) });
+  });
+  it("rejects main PDF uploads for the coded direct deposit step", async () => {
+    const pdf = await PDFDocument.create(); pdf.addPage();
+    expect((await upload(await pdf.save(), "direct_deposit")).status).toBe(400);
+    expect(state.upload).not.toHaveBeenCalled();
+  });
   it("can save an existing signing step again without a legacy auto-completion rule", async () => {
     state.rows = [{ id: "custom-step", slug: "additional_agreement", content_type: "signing_document", completion_type: "auto", auto_key: null }];
     const response = await state.handler(new Request("https://example.invalid", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "saveStep", row: { id: "custom-step", contentType: "signing_document", title: "Additional agreement", description: "Review and sign", completionType: "auto", autoKey: null, published: false, showLoa: true, showIbo: false, flowContent: {} } }) }));
     expect(response.status).toBe(200);
     expect(state.rpc).toHaveBeenCalledWith("save_onboarding_editor_step", { payload: expect.objectContaining({ contentType: "signing_document", completionType: "auto", autoKey: null }) });
   });
-  it.each(["ica", "direct_deposit", "comp_agreement", "signing_document"])("registers an immutable %s source without publishing it before Save", async kind => {
+  it.each(["ica", "comp_agreement", "signing_document"])("registers an immutable %s source without publishing it before Save", async kind => {
     const pdf = await PDFDocument.create(); pdf.addPage();
     const response = await upload(await pdf.save(), kind);
     expect(response.status).toBe(200);

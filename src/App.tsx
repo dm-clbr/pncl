@@ -1,5 +1,4 @@
 import LegacyPortalCompAgreement from "./pages/PortalCompAgreement.legacy";
-import LegacyPortalDirectDeposit from "./pages/PortalDirectDeposit.legacy";
 import LegacyPortalW9 from "./pages/PortalW9.legacy";
 import LegacyPortalIca from "./pages/PortalIca.legacy";
 import SigningFlowGate from "./components/SigningFlowGate";
@@ -172,7 +171,7 @@ const App = () => (
             path="/portal/direct-deposit"
             element={
               <ProtectedRoute>
-                <SigningFlowGate legacy={<LegacyPortalDirectDeposit />}><PortalDirectDeposit /></SigningFlowGate>
+                <PortalDirectDeposit />
               </ProtectedRoute>
             }
           />

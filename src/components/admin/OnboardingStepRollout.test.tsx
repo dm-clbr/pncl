@@ -20,6 +20,17 @@ async function replacePdf() {
   await screen.findByText("new.pdf");
 }
 describe("replacing a step's signing PDF", () => {
+  it("saves direct deposit as a coded form with no PDF or signing rollout", async () => {
+    const directDeposit = { ...row, slug: "direct_deposit_setup", contentType: "direct_deposit" as const, title: "Set up direct deposit", href: "/portal/direct-deposit", flowContent: {} };
+    render(<OnboardingStepModal row={directDeposit} token="admin" limits={{ video: 50000000, document: 20000000 }} onClose={() => {}} onSaved={saved} />);
+    expect(screen.getByRole("heading", { name: "Built-in direct deposit form" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Content type")).toHaveDisplayValue("Direct deposit coded form");
+    expect(screen.queryByLabelText("LOA document file")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Upload the LOA signing PDF/)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(saveEditorStep).toHaveBeenCalledWith("admin", expect.objectContaining({ contentType: "direct_deposit", published: true, flowContent: {} })));
+    expect(navigate).not.toHaveBeenCalled();
+  });
   it("makes a published replacement required for every applicable existing agent", async () => {
     await replacePdf();
     expect(screen.getByLabelText("Review a staged rollout before requiring signatures")).toBeChecked();

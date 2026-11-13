@@ -1,7 +1,6 @@
 export const SIGNING_STEP_KINDS = {
   ica_setup: "ica",
   w9_setup: "w9",
-  direct_deposit_setup: "direct_deposit",
   comp_agreement: "comp_agreement",
 } as const;
 export type SigningDocumentKind = typeof SIGNING_STEP_KINDS[keyof typeof SIGNING_STEP_KINDS] | "signing_document";

@@ -22,7 +22,8 @@ export default function OnboardingStepPreview({
   const dialog = useRef<HTMLDialogElement>(null);
   const [flow, setFlow] = useState(initialFlow);
   const [mediaError, setMediaError] = useState(false);
-  const media = row.flowContent[flow];
+  const coded = row.contentType === "direct_deposit";
+  const media = coded ? undefined : row.flowContent[flow];
   const video = row.contentType.includes("video");
   // Missing content for one flow must never use the other flow's uploaded file.
   const source =
@@ -112,6 +113,7 @@ export default function OnboardingStepPreview({
         <article className="onboarding-preview-content" key={flow}>
           <h3>{row.title}</h3>
           <p className="onboarding-preview-description">{row.description}</p>
+          {coded && <p>Agents complete the built-in bank-details form and sign the authorization. A PDF receipt is generated automatically.</p>}
           {source ? (
             <>
               {video ? (

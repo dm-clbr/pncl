@@ -43,7 +43,7 @@ export const CONTENT_LABELS: Record<StepContentType, string> = {
   system: "System step",
   ica: "ICA signing PDF",
   w9: "W-9 signing PDF",
-  direct_deposit: "Direct deposit signing PDF",
+  direct_deposit: "Direct deposit coded form",
   comp_agreement: "Compensation signing PDF",
   signing_document: "Signing PDF",
   welcome_video: "Welcome video",

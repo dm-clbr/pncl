@@ -66,6 +66,7 @@ export function canonicalStepSlug(slug: string) {
   );
 }
 export function inferContentType(slug: string): StepContentType {
+  if (slug === "direct_deposit_setup") return "direct_deposit";
   if (slug in SIGNING_STEP_KINDS) return SIGNING_STEP_KINDS[slug as keyof typeof SIGNING_STEP_KINDS];
   if (slug.startsWith("onboarding_welcome_")) return "welcome_video";
   if (slug === "surelc_tutorial" || slug === "surelc_tutorial_ibo")

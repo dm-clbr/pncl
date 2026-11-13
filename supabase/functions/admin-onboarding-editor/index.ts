@@ -66,7 +66,7 @@ serve(async (req) => {
       if (
         !(file instanceof File) ||
         !["loa", "ibo"].includes(String(designation)) ||
-        !["ica", "w9", "direct_deposit", "comp_agreement", "signing_document", "welcome_video", "surelc_video", "video", "document"].includes(
+        !["ica", "w9", "comp_agreement", "signing_document", "welcome_video", "surelc_video", "video", "document"].includes(
           String(kind),
         )
       )
@@ -308,6 +308,7 @@ serve(async (req) => {
       throw new Error("The content type of a system step cannot be changed.");
     const flowContent: Record<string, unknown> = {};
     for (const designation of ["loa", "ibo"]) {
+      if (row.contentType === "direct_deposit") continue;
       const media = row.flowContent?.[designation];
       if (!media) continue;
       if (media.mode === "link") {
@@ -342,7 +343,7 @@ serve(async (req) => {
     }
     if (
       todo.published &&
-      ["ica", "w9", "direct_deposit", "comp_agreement", "signing_document", "video", "welcome_video", "surelc_video", "document"].includes(
+      ["ica", "w9", "comp_agreement", "signing_document", "video", "welcome_video", "surelc_video", "document"].includes(
         row.contentType,
       )
     ) {
@@ -371,7 +372,8 @@ serve(async (req) => {
         payload: {
           ...todo,
           slug: previous?.slug ?? todo.slug,
-          href: validateStepLink(todo.href),
+          href: row.contentType === "direct_deposit" ? "/portal/direct-deposit" : validateStepLink(todo.href),
+          external: row.contentType === "direct_deposit" ? false : todo.external,
           completionType:
             previous?.completion_type ??
             (row.contentType.includes("video") ? "agent" : todo.completionType),
