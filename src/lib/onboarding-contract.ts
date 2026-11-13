@@ -53,7 +53,10 @@ export interface DebitCheckInitials {
   e: string;
 }
 
+import type { SignatureAdoption } from "../../supabase/functions/_shared/signatureAdoption";
+
 export interface SubmitOnboardingContractInput {
+  signatureAdoption?: SignatureAdoption;
   referralInviteId?: string;
   templateAssetId?: string | null;
   fieldValues?: Record<string, string | boolean>;

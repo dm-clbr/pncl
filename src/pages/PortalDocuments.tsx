@@ -1,3 +1,6 @@
+import SignatureAdoptionDialog from "@/components/SignatureAdoptionDialog";
+import "@/styles/signature-adoption.css";
+import type { AdoptedSignature } from "../../supabase/functions/_shared/signatureAdoption";
 import SigningDocumentReview from "@/components/SigningDocumentReview";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -24,7 +27,9 @@ export default function PortalDocuments() {
   const [fieldValues, setFieldValues] = useState<Record<string, string | boolean>>({});
   const [reviewed, setReviewed] = useState(false);
   const [signature, setSignature] = useState("");
+  const [adoptedSignature, setAdoptedSignature] = useState<AdoptedSignature | null>(null);
   const [accepted, setAccepted] = useState(false);
+  const [signatureEditorOpen, setSignatureEditorOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [success, setSuccess] = useState("");
   const requestedId = params.get("request");
@@ -39,7 +44,7 @@ export default function PortalDocuments() {
   }, [token]);
   useEffect(() => { document.title = "Document requests — PNCL Portal"; void reload(); }, [reload]);
   useEffect(() => {
-    setSignature(""); setAccepted(false); setReviewed(false); setFieldValues({}); setUrl(""); setUrlError("");
+    setSignature(""); setSignatureEditorOpen(false); setAdoptedSignature(null); setAccepted(false); setReviewed(false); setFieldValues({}); setUrl(""); setUrlError("");
     if (!activeId || !token) return;
     let cancelled = false; setUrlLoading(true);
     void agentDocumentUrl(token, activeId).then(value => { if (!cancelled) setUrl(value); })
@@ -49,12 +54,12 @@ export default function PortalDocuments() {
   }, [token, activeId, activeSignedAt, urlRevision]);
   const sign = async (event: FormEvent) => {
     event.preventDefault();
-    if (!active || !url || busy || !reviewed) return;
+    if (!active || !url || busy || !reviewed || !adoptedSignature) return;
     setError(""); setSuccess("");
     try {
       const name = validateDocumentSignature(signature, accepted);
       setBusy(true);
-      await signAgentDocument(token, active.id, name, accepted, active.documentHash, fieldValues);
+      await signAgentDocument(token, active.id, name, accepted, active.documentHash, fieldValues, adoptedSignature);
       setParams({ request: active.id }, { replace: true });
       setSuccess("Document signed. Your signed copy is available below.");
       await reload();
@@ -82,12 +87,14 @@ export default function PortalDocuments() {
             <a className="ptools-cta" href={url} target="_blank" rel="noopener noreferrer">{active.signedAt ? "Open or download signed PDF" : "Open full PDF"}<ArrowUpRight size={16} /></a>
             <button className="ptools-cta" type="button" disabled={busy} onClick={() => setUrlRevision(value => value + 1)}>Refresh document link</button>
             </div>
-            {active.signedAt ? <iframe title={`${active.title} signed copy`} className="portal-comp-signing-pdf document-agent-pdf" src={url} /> : <SigningDocumentReview key={active.id} url={url} title={active.title} onReviewed={setReviewed} values={fieldValues} onValuesChange={setFieldValues} signingName={signature} />}
+            {active.signedAt ? <iframe title={`${active.title} signed copy`} className="portal-comp-signing-pdf document-agent-pdf" src={url} /> : <SigningDocumentReview key={active.id} url={url} title={active.title} onReviewed={setReviewed} values={fieldValues} onValuesChange={setFieldValues} signingName={signature} signatureImage={adoptedSignature?.imageDataUrl} onSignatureClick={busy ? undefined : () => setSignatureEditorOpen(true)} />}
           </>}
           {!active.signedAt && <form className="pcomp-form" onSubmit={event => void sign(event)}>
-            <Field id="document-signature" label="Full legal first and last name" hint="Use your full name, not initials or a line signature." value={signature} maxLength={120} autoComplete="name" required disabled={busy || !url} onChange={e => setSignature(e.target.value)} />
+            <Field id="document-signature" label="Full legal first and last name" hint="Use your full name, not initials or a line signature." value={signature} maxLength={120} autoComplete="name" required disabled={busy || !url} onChange={e => { setSignature(e.target.value); setAdoptedSignature(null); }} />
+            <div className="adopted-signature-summary">{adoptedSignature && <img src={adoptedSignature.imageDataUrl} alt="Adopted signature" />}<button type="button" className="ptools-cta" disabled={busy || !url} onClick={() => setSignatureEditorOpen(true)}>{adoptedSignature ? "Change signature" : "Create signature"}</button></div>
+            {signatureEditorOpen && <SignatureAdoptionDialog name={signature} onNameChange={name => { setSignature(name); setAdoptedSignature(null); }} onAdopt={value => { setAdoptedSignature(value); setSignatureEditorOpen(false); }} onClose={() => setSignatureEditorOpen(false)} />}
             <label className="pcomp-agree"><input type="checkbox" checked={accepted} required disabled={busy || !url} onChange={e => setAccepted(e.target.checked)} /><span>{DOCUMENT_CONSENT}</span></label>
-            <button className="ptools-cta" type="submit" disabled={busy || !url || !reviewed || !accepted || !signature.trim()}><FileSignature size={17} />{busy ? "Signing…" : "Sign document"}</button>
+            <button className="ptools-cta" type="submit" disabled={busy || !url || !reviewed || !accepted || !adoptedSignature || !signature.trim()}><FileSignature size={17} />{busy ? "Signing…" : "Sign document"}</button>
           </form>}
         </Pane>}
       </>}

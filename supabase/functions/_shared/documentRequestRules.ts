@@ -20,7 +20,7 @@ export interface DocumentFilters {
 export const EMPTY_DOCUMENT_FILTERS: DocumentFilters = {
   designation: "all", search: "", state: "", ica: "all", joinedBefore: "", joinedAfter: "",
 };
-export const DOCUMENT_CONSENT = "I have reviewed this document and agree to its terms. Typing my full legal first and last name constitutes my electronic signature.";
+export const DOCUMENT_CONSENT = "I have reviewed this document and agree to its terms. I consent to sign electronically using the signature I adopted.";
 export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 export function documentAudience(value: unknown): DocumentAudience {
   if (value !== "all" && value !== "loa" && value !== "ibo") throw new Error("Choose all agents, LOA, or IBO.");

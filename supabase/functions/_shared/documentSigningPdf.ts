@@ -1,3 +1,4 @@
+import { SIGNATURE_ADOPTION_CONSENT, signaturePngBytes, type SignatureAdoption } from "./signatureAdoption.ts";
 import { fillPdfInputFields } from "./pdfFieldValues.ts";
 import { flattenSigningForm } from "./onboardingSigningPdf.ts";
 import { PDFDocument, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
@@ -19,11 +20,12 @@ export async function sha256(bytes: Uint8Array): Promise<string> {
 }
 // Fill only authored form fields, then append the signature certificate.
 export async function signDocumentPdf(bytes: Uint8Array, input: {
+  signatureAdoption?: SignatureAdoption; signatureImageBase64?: string;
   fieldValues?: Record<string, string | boolean>;
   title: string; name: string; signedAt: string; requestId: string; hash: string; userId: string;
 }): Promise<Uint8Array> {
   const pdf = await PDFDocument.load(bytes);
-  await fillPdfInputFields(pdf, input.fieldValues, input.name, new Date(input.signedAt));
+  await fillPdfInputFields(pdf, input.fieldValues, input.name, new Date(input.signedAt), false, input.signatureImageBase64);
   if (pdf.getForm().getFields().length) flattenSigningForm(pdf);
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
@@ -56,7 +58,17 @@ export async function signDocumentPdf(bytes: Uint8Array, input: {
   line(`Agent: ${input.userId}`);
   line(`Original document SHA-256: ${input.hash}`);
   line(DOCUMENT_CONSENT);
-  await pdf.attach(Uint8Array.from(new TextEncoder().encode(JSON.stringify({ ...input, consent: DOCUMENT_CONSENT }, null, 2))), "signature-record.json", {
+  if (input.signatureAdoption && input.signatureImageBase64) {
+    line(SIGNATURE_ADOPTION_CONSENT);
+    line(`Adopted ${input.signatureAdoption.method} signature | Consent version: ${input.signatureAdoption.version}`);
+    if (y < 190) { page = pdf.addPage([612, 792]); y = 735; }
+    const signature = await pdf.embedPng(signaturePngBytes(input.signatureImageBase64));
+    const dimensions = signature.scaleToFit(468, 100);
+    page.drawImage(signature, { x: 54, y: y - dimensions.height, ...dimensions });
+  }
+  const { signatureImageBase64, ...record } = input;
+  const imageSha256 = signatureImageBase64 ? await sha256(signaturePngBytes(signatureImageBase64)) : undefined;
+  await pdf.attach(Uint8Array.from(new TextEncoder().encode(JSON.stringify({ ...record, imageSha256, consent: DOCUMENT_CONSENT, adoptionConsent: input.signatureAdoption ? SIGNATURE_ADOPTION_CONSENT : undefined }, null, 2))), "signature-record.json", {
     mimeType: "application/json", description: "Electronic signature record, including the exact legal name in UTF-8",
   });
   return pdf.save();

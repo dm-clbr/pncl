@@ -8,6 +8,7 @@ import { generateSignedIcaPdf, validateSubmitOnboardingContractPayload } from ".
 
 const signature = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==";
 const payload = {
+  signatureAdoption: { method: "drawn", accepted: true, version: "2026-11-13", name: "Sample Agent" },
   legalName: "Sample Agent", personalEmail: "sample@example.invalid", signatureName: "Sample Agent",
   signatureImageBase64: signature, agreementAccepted: true, counselAcknowledged: true,
   debitCheckInitials: { a: "SA", b: "SA", c: "SA", d: "SA", e: "SA" },

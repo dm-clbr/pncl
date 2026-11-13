@@ -8,6 +8,7 @@ vi.mock("../../supabase/functions/_shared/adminAuth.ts", () => ({ requirePortalU
 vi.mock("../../supabase/functions/_shared/onboarding.ts", () => ({ getEmailDomain: () => "thepncl.com" }));
 import "../../supabase/functions/portal-document-requests/index";
 import { sha256 } from "../../supabase/functions/_shared/documentSigningPdf";
+const adopted = { signatureAdoption: { method: "typed", accepted: true, version: "2026-11-13", name: "Alex Agent" }, signatureImageBase64: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==" };
 const id = "b0000000-0000-0000-0000-000000000001";
 const userId = "a0000000-0000-0000-0000-000000000002";
 const query = { select: () => query, eq: state.eq, not: state.not, is: state.is, maybeSingle: state.single, update: state.update };
@@ -37,15 +38,21 @@ describe("portal document endpoint", () => {
     expect(state.upload).not.toHaveBeenCalled();
   });
   it("requires consent and the exact source version before signing", async () => {
-    expect((await state.handler(request({ action: "sign", id, signatureName: "Alex Agent", accepted: false, documentHash: hash }))).status).toBe(400);
-    expect((await state.handler(request({ action: "sign", id, signatureName: "Alex Agent", accepted: true, documentHash: "stale" }))).status).toBe(400);
+    expect((await state.handler(request({ ...adopted, action: "sign", id, signatureName: "Alex Agent", accepted: false, documentHash: hash }))).status).toBe(400);
+    expect((await state.handler(request({ ...adopted, action: "sign", id, signatureName: "Alex Agent", accepted: true, documentHash: "stale" }))).status).toBe(400);
     expect(state.upload).not.toHaveBeenCalled();
   });
   it("saves a signed PDF and atomically claims only an unsigned request", async () => {
-    expect((await state.handler(request({ action: "sign", id, signatureName: "Alex Agent", accepted: true, documentHash: hash }))).status).toBe(200);
+    expect((await state.handler(request({ ...adopted, action: "sign", id, signatureName: "Alex Agent", accepted: true, documentHash: hash }))).status).toBe(200);
     expect(state.upload).toHaveBeenCalledWith(expect.stringMatching(/^signatures\//), expect.any(Uint8Array), { contentType: "application/pdf", upsert: false });
     expect(state.is).toHaveBeenCalledWith("signed_at", null);
     expect(state.update).toHaveBeenCalledWith(expect.objectContaining({ signature_name: "Alex Agent", consent_text: expect.stringContaining("electronic signature") }));
+  });
+  it("rejects absent adoption, changed names and invalid signature images before storing anything", async () => {
+    for (const patch of [{ signatureAdoption: null }, { signatureAdoption: { ...adopted.signatureAdoption, accepted: false } }, { signatureAdoption: { ...adopted.signatureAdoption, name: "Different Agent" } }, { signatureImageBase64: "not-an-image" }]) {
+      expect((await state.handler(request({ ...adopted, action: "sign", id, signatureName: "Alex Agent", accepted: true, documentHash: hash, ...patch }))).status).toBe(400);
+    }
+    expect(state.upload).not.toHaveBeenCalled();
   });
   it("does not overwrite an existing signature on retry", async () => {
     state.single.mockResolvedValue({ data: { ...row, signed_at: "2026-11-03T18:00:00Z" }, error: null });

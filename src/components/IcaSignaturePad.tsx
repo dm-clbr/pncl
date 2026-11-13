@@ -22,6 +22,7 @@ function getPoint(
 
 export default function IcaSignaturePad({ className, initialImage = null, onChange }: IcaSignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const activePointer = useRef<number | null>(null);
   const isDrawingRef = useRef(false);
   const hasInkRef = useRef(false);
   const [hasInk, setHasInk] = useState(false);
@@ -129,6 +130,7 @@ export default function IcaSignaturePad({ className, initialImage = null, onChan
 
   const endStroke = useCallback(() => {
     isDrawingRef.current = false;
+    activePointer.current = null;
   }, []);
 
   return (
@@ -138,13 +140,15 @@ export default function IcaSignaturePad({ className, initialImage = null, onChan
         className="ica-signature-pad-canvas"
         aria-label="Draw your full first and last name"
         onPointerDown={(event) => {
+          if (activePointer.current !== null || (event.pointerType === "mouse" && event.button !== 0)) return;
+          activePointer.current = event.pointerId;
           event.currentTarget.setPointerCapture(event.pointerId);
           startStroke(event.clientX, event.clientY);
         }}
-        onPointerMove={(event) => continueStroke(event.clientX, event.clientY)}
-        onPointerUp={endStroke}
-        onPointerCancel={endStroke}
-        onPointerLeave={endStroke}
+        onPointerMove={(event) => { if (activePointer.current === event.pointerId) continueStroke(event.clientX, event.clientY); }}
+        onPointerUp={event => { if (activePointer.current === event.pointerId) endStroke(); }}
+        onPointerCancel={event => { if (activePointer.current === event.pointerId) endStroke(); }}
+        onLostPointerCapture={endStroke}
       />
       <div className="ica-signature-pad-actions">
         <button type="button" className="ica-signature-pad-clear" onClick={clear} disabled={!hasInk}>

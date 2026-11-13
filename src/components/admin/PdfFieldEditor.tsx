@@ -1,3 +1,5 @@
+import SignatureAdoption from "@/components/SignatureAdoption";
+import type { AdoptedSignature } from "../../../supabase/functions/_shared/signatureAdoption";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import { getDocument, type PDFDocumentProxy } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { X, Plus, Trash2, Undo2, Eye, Move, Check, Grip } from "lucide-react";
@@ -16,6 +18,8 @@ export default function PdfFieldEditor({ url, filename, kind, onSave, onClose }:
   const [history, setHistory] = useState<PdfPlacedField[][]>([]), [selectedId, setSelectedId] = useState("");
   const [page, setPage] = useState(1), [zoom, setZoom] = useState(100), [preview, setPreview] = useState(false);
   const [dimensions, setDimensions] = useState({ width: 612, height: 792 }), [rendering, setRendering] = useState(true);
+  const [previewName, setPreviewName] = useState("Sample Agent");
+  const [previewSignature, setPreviewSignature] = useState<AdoptedSignature | null>(null);
   const [error, setError] = useState(""), [saving, setSaving] = useState(false);
   const drag = useRef<{ id: string; startX: number; startY: number; field: PdfPlacedField; resize: boolean } | null>(null);
   const selected = fields.find(field => field.id === selectedId);
@@ -89,6 +93,7 @@ export default function PdfFieldEditor({ url, filename, kind, onSave, onClose }:
     <div className="pdf-editor-body">
       <aside className="pdf-editor-sidebar"><label>Page<select aria-label="PDF page" value={page} onChange={event => { setPage(Number(event.target.value)); setSelectedId(""); }}>{Array.from({ length: pdf?.numPages ?? 1 }, (_, i) => <option key={i} value={i + 1}>Page {i + 1} · {fields.filter(field => field.page === i + 1).length} fields</option>)}</select></label>
         <p>{preview ? "Try the fields as an agent. Preview entries are never saved." : "Add a field, drag it into place, and resize from its corner. Use arrow keys for fine adjustments."}</p>
+        {preview && <><label>Preview legal name<input value={previewName} onChange={event => setPreviewName(event.target.value)} /></label><SignatureAdoption name={previewName} onChange={setPreviewSignature} /></>}
         <div className="pdf-editor-field-list" aria-label="Fields on this page">{fields.filter(field => field.page === page).map(field => <button key={field.id} type="button" aria-pressed={selectedId === field.id} onClick={() => setSelectedId(field.id)}><span>{field.label}</span><small>{labels[field.type]}</small></button>)}</div>
         {selected && !preview ? <section className="pdf-editor-properties" aria-label="Selected field settings"><h3>Field settings</h3><label>Label<input value={selected.label} maxLength={80} disabled={selected.locked} onChange={event => change(selected.id, { label: event.target.value })}/></label>
           <label className="pdf-editor-check"><input type="checkbox" checked={selected.required} disabled={selected.locked} onChange={event => change(selected.id, { required: event.target.checked })}/>Required</label>
@@ -102,7 +107,7 @@ export default function PdfFieldEditor({ url, filename, kind, onSave, onClose }:
         {(!pdf || rendering) && <p role="status">Loading PDF page…</p>}
         <div className="pdf-editor-sheet" ref={surface} style={{width:`${zoom}%`, maxWidth: 760*zoom/100, aspectRatio:`${dimensions.width}/${dimensions.height}`, visibility:pdf&&!rendering?'visible':'hidden'}}>
           <canvas ref={canvas}/>{fields.filter(field=>field.page===page).map(field=><div key={field.id} className={`pdf-placed-field type-${field.type}${selectedId===field.id?' selected':''}${preview?' preview':''}`} style={{left:`${field.x*100}%`,top:`${field.y*100}%`,width:`${field.width*100}%`,height:`${field.height*100}%`}}>
-            {preview ? field.type==='checkbox'?<input type="checkbox" aria-label={field.label}/>:<input aria-label={field.label} placeholder={field.type==='signature'?'Agent’s signature':field.type==='date'?'Signing date':field.label} readOnly={field.type==='signature'||field.type==='date'}/>:
+            {preview ? field.type==='signature' && previewSignature ? <img className="signature-preview-image" src={previewSignature.imageDataUrl} alt={`${field.label}: adopted sample signature`} /> : field.type==='checkbox'?<input type="checkbox" aria-label={field.label}/>:<input aria-label={field.label} placeholder={field.type==='signature'?'Adopt sample signature':field.type==='date'?'Signing date':field.label} readOnly={field.type==='signature'||field.type==='date'}/>:
               <><div role="button" tabIndex={0} aria-label={`Move ${field.label}`} onPointerDown={event=>beginDrag(event,field)} onPointerMove={moveDrag} onPointerUp={()=>{drag.current=null;}} onPointerCancel={()=>{drag.current=null;}} onKeyDown={event=>{ const delta=event.shiftKey ? .01 : .002; const shifts:Record<string,[number,number]>={ArrowLeft:[-delta,0],ArrowRight:[delta,0],ArrowUp:[0,-delta],ArrowDown:[0,delta]};const shift=shifts[event.key];if(shift){event.preventDefault();change(field.id,{x:field.x+shift[0],y:field.y+shift[1]});}if(event.key==='Enter')setSelectedId(field.id); }}><Move size={12}/><span>{field.label}{field.required?' *':''}</span></div>
                 {!field.locked && <button type="button" className="pdf-field-delete" aria-label={`Delete ${field.label}`} title={`Delete ${field.label}`} disabled={saving} onPointerDown={event => event.stopPropagation()} onClick={() => remove(field)}><Trash2 size={14}/></button>}
                 <button type="button" className="pdf-field-resize" aria-label={`Resize ${field.label}`} onPointerDown={event=>beginDrag(event,field,true)} onPointerMove={moveDrag} onPointerUp={()=>{drag.current=null;}} onPointerCancel={()=>{drag.current=null;}}><Grip size={12}/></button></>}

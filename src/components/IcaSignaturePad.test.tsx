@@ -28,3 +28,25 @@ describe("ICA signature canvas", () => {
     expect(drawImage).not.toHaveBeenCalled();
   });
 });
+
+describe("mouse and touchscreen signing", () => {
+  it.each(["mouse", "touch", "pen"])("captures %s ink, ignores a second pointer, and stops after release", pointerType => {
+    const onChange = vi.fn();
+    render(<IcaSignaturePad onChange={onChange} />);
+    const canvas = screen.getByLabelText("Draw your full first and last name");
+    const capture = vi.fn(); Object.assign(canvas, { setPointerCapture: capture });
+    const pointer = (type: string, pointerId: number, clientX: number) => {
+      const event = new Event(type, { bubbles: true });
+      Object.assign(event, { pointerId, pointerType, button: 0, clientX, clientY: 50 });
+      fireEvent(canvas, event);
+    };
+    pointer("pointerdown", 1, 20); pointer("pointermove", 1, 60);
+    expect(capture).toHaveBeenCalledWith(1);
+    expect(onChange).toHaveBeenLastCalledWith("data:image/png;base64,drawn");
+    onChange.mockClear();
+    pointer("pointerdown", 2, 80); pointer("pointermove", 2, 100);
+    expect(onChange).not.toHaveBeenCalled();
+    pointer("pointerup", 1, 60); pointer("pointermove", 1, 100);
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});

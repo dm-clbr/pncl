@@ -1,10 +1,11 @@
 import { PDFDocument, PDFTextField, PDFCheckBox, PDFName, PDFString, PDFHexString, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
+import { signaturePngBytes } from "./signatureAdoption.ts";
 import { customPdfFieldType, type PdfFieldValues } from "./pdfFieldRules.ts";
 import { icaInitialsError, normalizeIcaInitials } from "./icaSigningRules.ts";
 
 /** Values are accepted only for fields actually embedded in the reviewed PDF.
  * Signature/date fields are derived from the signing event, never the request. */
-export async function fillPdfInputFields(pdf: PDFDocument, input: unknown, signer: string, signedAt: Date, extraOnly = false): Promise<PdfFieldValues> {
+export async function fillPdfInputFields(pdf: PDFDocument, input: unknown, signer: string, signedAt: Date, extraOnly = false, signatureImageBase64?: string): Promise<PdfFieldValues> {
   if (input !== undefined && (!input || typeof input !== "object" || Array.isArray(input))) throw new Error("Invalid PDF field values.");
   const values = (input ?? {}) as PdfFieldValues, saved: PdfFieldValues = {};
   const controls = pdf.getForm().getFields().filter(field => {
@@ -15,6 +16,7 @@ export async function fillPdfInputFields(pdf: PDFDocument, input: unknown, signe
   const allowed = new Set(controls.map(field => field.getName()));
   if (Object.keys(values).some(name => !allowed.has(name))) throw new Error("A submitted field does not belong to this PDF. Reload the document.");
   const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const signatureImage = signatureImageBase64 ? await pdf.embedPng(signaturePngBytes(signatureImageBase64)) : null;
   for (const control of controls) {
     const name = control.getName(), type = customPdfFieldType(name);
     const alias = control.acroField.dict.get(PDFName.of("TU"));
@@ -36,10 +38,11 @@ export async function fillPdfInputFields(pdf: PDFDocument, input: unknown, signe
       if (control.isRequired() && !value) throw new Error(`${label} is required.`);
       if (type === "initials" && value) { const error = icaInitialsError(value, signer, label); if (error) throw new Error(error); value = normalizeIcaInitials(value); }
       control.setText(value);
-      if (type && value) {
+      if (type && value && !(type === "signature" && signatureImage)) {
         const rect = control.acroField.getWidgets()[0]?.getRectangle();
         if (rect) control.setFontSize(Math.max(4, Math.min(11, rect.height * .65, (rect.width - 6) / Math.max(1, font.widthOfTextAtSize(value, 1)))));
       }
+      if (type === "signature" && signatureImage) control.setImage(signatureImage);
       saved[name] = value;
     }
   }

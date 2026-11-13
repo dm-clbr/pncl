@@ -1,3 +1,4 @@
+import { SIGNATURE_ADOPTION_CONSENT, SIGNATURE_ADOPTION_VERSION } from "../../supabase/functions/_shared/signatureAdoption";
 import { readCustomPdfInputValues } from "@/lib/pdf-input-values";
 import { ICA_TOTAL_PAGES, type DebitCheckInitials } from "@/lib/onboarding-contract";
 import {
@@ -15,7 +16,10 @@ import Sheet from "@/components/portal/Sheet";
 // onboarding flow and the admin preview render it outside the portal pages.
 import "@/styles/portal-forms.css";
 
+import type { SignatureAdoption } from "../../supabase/functions/_shared/signatureAdoption";
+
 export interface IcaSigningSubmitPayload {
+  signatureAdoption?: SignatureAdoption;
   fieldValues?: Record<string, string | boolean>;
   legalName: string;
   personalEmail: string;
@@ -55,6 +59,7 @@ export default function IcaSigningStep({
   const viewerRef = useRef<IcaFillablePdfViewerHandle>(null);
   const [counselAcknowledged, setCounselAcknowledged] = useState(false);
   const [agreementAccepted, setAgreementAccepted] = useState(false);
+  const [signatureAdopted, setSignatureAdopted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [signOpen, setSignOpen] = useState(false);
   const [reachedEnd, setReachedEnd] = useState(false);
@@ -66,8 +71,8 @@ export default function IcaSigningStep({
   }, []);
 
   const handleFinishSigning = async () => {
-    if (!counselAcknowledged || !agreementAccepted) {
-      toast.error("Please confirm both acknowledgments in the signing panel.");
+    if (!counselAcknowledged || !agreementAccepted || !signatureAdopted) {
+      toast.error("Please confirm the acknowledgments and adopt your signature in the signing panel.");
       return;
     }
 
@@ -111,6 +116,7 @@ export default function IcaSigningStep({
         personalEmail: extracted.personalEmail.trim(),
         signatureName: extracted.signatureName.trim(),
         signatureImageBase64: viewerRef.current?.getSignatureImage() ?? "",
+        signatureAdoption: { method: "drawn", accepted: true, version: SIGNATURE_ADOPTION_VERSION, name: extracted.legalName.trim().replace(/\s+/g, " ") },
         debitCheckInitials: extracted.debitCheckInitials,
         agreementAccepted,
         counselAcknowledged,
@@ -155,7 +161,7 @@ export default function IcaSigningStep({
               <button
                 type="button"
                 className="pforms-action"
-                onClick={() => setSignOpen(true)}
+                onClick={() => { setSignatureAdopted(false); setSignOpen(true); }}
                 disabled={submitting}
               >
                 {submitting ? "Signing\u2026" : "Sign"}
@@ -168,6 +174,8 @@ export default function IcaSigningStep({
       <Sheet open={signOpen} onClose={() => setSignOpen(false)} title="Sign your agreement">
         <p className="ica-signature-rule">Before finishing, check that your drawn signature includes your full first and last name, and every Debit-Check box contains your actual initials.</p>
         <div className="pforms-acks">
+          {viewerRef.current?.getSignatureImage() && <img src={viewerRef.current.getSignatureImage()!} alt="Signature to adopt" style={{ width: "100%", maxHeight: 130, objectFit: "contain", background: "white" }} />}
+          <label className="pforms-ack"><input type="checkbox" checked={signatureAdopted} onChange={event => setSignatureAdopted(event.target.checked)} /><span>{SIGNATURE_ADOPTION_CONSENT}</span></label>
           <label className="pforms-ack">
             <input
               type="checkbox"

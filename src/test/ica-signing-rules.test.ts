@@ -6,8 +6,9 @@ import { validateSubmitOnboardingContractPayload } from "../../supabase/function
 import { validateExtractedIcaFormValues } from "@/lib/ica-acroform";
 
 const payload = {
+  signatureAdoption: { method: "drawn", accepted: true, version: "2026-11-13", name: "Alex Morgan" },
   legalName: "Alex Morgan", personalEmail: "alex@example.invalid", signatureName: "Alex Morgan",
-  signatureImageBase64: "data:image/png;base64,dGVzdA==", agreementAccepted: true, counselAcknowledged: true,
+  signatureImageBase64: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==", agreementAccepted: true, counselAcknowledged: true,
   debitCheckInitials: { a: "AM", b: "AM", c: "AM", d: "AM", e: "AM" },
 };
 describe("ICA full-name and actual-initials requirements", () => {

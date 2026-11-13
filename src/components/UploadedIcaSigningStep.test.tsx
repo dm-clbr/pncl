@@ -17,6 +17,7 @@ vi.mock("./IcaSignaturePad", () => ({ default: ({ onChange }: { onChange: (value
 const asset = { id: "ibo-ica-id", filename: "ibo.pdf", url: "https://example.invalid/ibo.pdf", size_bytes: 100, created_at: "2026-10-22" };
 beforeEach(() => {
   pdf.fail = false;
+  HTMLDialogElement.prototype.showModal = vi.fn(function(this: HTMLDialogElement) { this.setAttribute("open", ""); });
   vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({} as never);
 });
@@ -27,13 +28,16 @@ describe("uploaded ICA review", () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     await act(async () => { render(<UploadedIcaSigningStep asset={asset} prefillLegalName="Sample Agent" prefillEmail="sample@example.invalid" onSubmit={onSubmit} />); });
     const sign = screen.getByRole("button", { name: "Sign agreement" });
+    fireEvent.click(screen.getByRole("button", { name: "Create signature" }));
+    fireEvent.click(screen.getByRole("button", { name: "Draw signature", exact: true }));
     fireEvent.click(screen.getByRole("button", { name: "Draw test signature" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /I adopt the signature/ }));
     for (const checkbox of screen.getAllByRole("checkbox")) fireEvent.click(checkbox);
     expect(sign).toBeDisabled();
     fireEvent.click(screen.getByRole("button", { name: "Next page" }));
     await waitFor(() => expect(sign).toBeEnabled());
     fireEvent.click(sign);
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ templateAssetId: "ibo-ica-id", agreementAccepted: true, counselAcknowledged: true })));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ signatureAdoption: expect.objectContaining({ method: "drawn", accepted: true }), templateAssetId: "ibo-ica-id", agreementAccepted: true, counselAcknowledged: true })));
   });
   it("does not allow signing an unavailable document", async () => {
     pdf.fail = true;

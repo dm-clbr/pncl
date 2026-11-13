@@ -1,3 +1,4 @@
+import { validateSignatureAdoption, signaturePngBytes, SIGNATURE_ADOPTION_CONSENT } from "../_shared/signatureAdoption.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requirePortalUser } from "../_shared/adminAuth.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
@@ -28,18 +29,20 @@ serve(async req => {
     if (body.action !== "sign") return errorResponse("Unknown document action", 400);
     if (row.signed_at) return jsonResponse({ ok: true });
     const name = validateDocumentSignature(body.signatureName, body.accepted);
+    const signatureAdoption = validateSignatureAdoption(body.signatureAdoption, name);
+    signaturePngBytes(body.signatureImageBase64);
     if (body.documentHash !== row.campaign.pdf_sha256) throw new Error("Reload and review the current document before signing.");
     const { data: file, error: downloadError } = await client.storage.from(row.campaign.source_bucket ?? DOCUMENT_BUCKET).download(row.campaign.pdf_path);
     if (downloadError || !file) throw new Error("Unable to load the document. Please retry.");
     const bytes = new Uint8Array(await file.arrayBuffer());
     if (await sha256(bytes) !== row.campaign.pdf_sha256) throw new Error("The document has changed. Contact PNCL support.");
     const signedAt = new Date().toISOString();
-    const signed = await signDocumentPdf(bytes, { fieldValues: body.fieldValues, title: row.campaign.title, name, signedAt, requestId: row.id, userId: user.id, hash: row.campaign.pdf_sha256 });
+    const signed = await signDocumentPdf(bytes, { signatureAdoption, signatureImageBase64: body.signatureImageBase64, fieldValues: body.fieldValues, title: row.campaign.title, name, signedAt, requestId: row.id, userId: user.id, hash: row.campaign.pdf_sha256 });
     const path = `signatures/${user.id}/${row.id}/${crypto.randomUUID()}.pdf`;
     const { error: uploadError } = await client.storage.from(DOCUMENT_BUCKET).upload(path, signed, { upsert: false, contentType: "application/pdf" });
     if (uploadError) throw uploadError;
     const { data: saved, error: saveError } = await client.from("portal_document_requests").update({
-      signed_at: signedAt, signature_name: name, signed_pdf_path: path, consent_text: DOCUMENT_CONSENT,
+      signed_at: signedAt, signature_name: name, signed_pdf_path: path, consent_text: `${DOCUMENT_CONSENT} ${SIGNATURE_ADOPTION_CONSENT} Method: ${signatureAdoption.method}; version: ${signatureAdoption.version}.`,
       ip_address: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim().slice(0, 100) ?? null,
       user_agent: req.headers.get("user-agent")?.slice(0, 1000) ?? null,
     }).eq("id", row.id).eq("user_id", user.id).is("signed_at", null).select("id").maybeSingle();

@@ -97,8 +97,10 @@ export async function listAgentDocumentRequests(token: string) {
 export async function agentDocumentUrl(token: string, id: string) {
   return (await call<{ url: string }>(token, "portal-document-requests", { action: "url", id })).url;
 }
-export async function signAgentDocument(token: string, id: string, signatureName: string, accepted: boolean, documentHash: string, fieldValues?: Record<string, string | boolean>) {
-  return call(token, "portal-document-requests", { action: "sign", id, signatureName, accepted, documentHash, fieldValues });
+import type { AdoptedSignature } from "../../supabase/functions/_shared/signatureAdoption";
+export async function signAgentDocument(token: string, id: string, signatureName: string, accepted: boolean, documentHash: string, fieldValues?: Record<string, string | boolean>, signature?: AdoptedSignature) {
+  const { imageDataUrl, ...signatureAdoption } = signature ?? {};
+  return call(token, "portal-document-requests", { action: "sign", id, signatureName, accepted, documentHash, fieldValues, signatureAdoption, signatureImageBase64: imageDataUrl });
 }
 export function readDocumentFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {

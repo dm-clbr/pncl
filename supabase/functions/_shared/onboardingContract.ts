@@ -1,3 +1,4 @@
+import { validateSignatureAdoption, signaturePngBytes, SIGNATURE_ADOPTION_CONSENT, type SignatureAdoption } from "./signatureAdoption.ts";
 import { fillPdfInputFields } from "./pdfFieldValues.ts";
 import { normalizeIcaLegalName, validateIcaLegalName, icaInitialsError } from "./icaSigningRules.ts";
 import { PDFDocument, StandardFonts, rgb, type PDFForm } from "https://esm.sh/pdf-lib@1.17.1";
@@ -20,6 +21,7 @@ export interface DebitCheckInitials {
 }
 
 export interface SubmitOnboardingContractPayload {
+  signatureAdoption?: SignatureAdoption;
   fieldValues?: Record<string, string | boolean>;
   legalName: string;
   personalEmail: string;
@@ -177,7 +179,10 @@ export function validateSubmitOnboardingContractPayload(body: unknown, customTem
     throw new Error("You must confirm that you have read the agreement");
   }
 
+  const signatureAdoption = validateSignatureAdoption(data.signatureAdoption, legalName);
+  signaturePngBytes(signatureImageBase64);
   return {
+    signatureAdoption,
     legalName,
     personalEmail,
     signatureName,
@@ -307,12 +312,8 @@ async function drawSignatureImage(
       throw new Error("Unable to place signature on agreement PDF");
     }
 
-    page.drawImage(image, {
-      x: rect.x,
-      y: rect.y,
-      width: rect.width,
-      height: rect.height,
-    });
+    const dimensions = image.scaleToFit(rect.width, rect.height);
+    page.drawImage(image, { x: rect.x, y: rect.y + (rect.height - dimensions.height) / 2, ...dimensions });
   }
 }
 
@@ -330,7 +331,7 @@ export async function generateSignedIcaPdf(
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
   const mapped = hasMappedIcaFields(pdfDoc);
-  await fillPdfInputFields(pdfDoc, payload.fieldValues, payload.signatureName, signedAt, mapped);
+  await fillPdfInputFields(pdfDoc, payload.fieldValues, payload.signatureName, signedAt, mapped, payload.signatureImageBase64);
   if (!mapped && pdfDoc.getForm().getFields().length) flattenSigningForm(pdfDoc);
   if (mapped) {
     const rects = signatureFieldRects(pdfDoc, [ICA_FORM_FIELDS.executionSignature, ICA_FORM_FIELDS.signature]);
@@ -360,7 +361,7 @@ export async function generateSignedIcaPdf(
   y = drawLabelValue(certPage, font, boldFont, "Agreement version", customTemplate?.version ?? ICA_VERSION, 72, y);
   y = drawLabelValue(certPage, font, boldFont, "Contractor legal name", payload.legalName, 72, y);
   y = drawLabelValue(certPage, font, boldFont, "Contractor email", payload.personalEmail, 72, y);
-  y = drawLabelValue(certPage, font, boldFont, "Signature", "Drawn electronic signature", 72, y);
+  y = drawLabelValue(certPage, font, boldFont, "Signature", payload.signatureAdoption?.method === "typed" ? "Adopted typed signature" : "Adopted drawn signature", 72, y);
   y = drawLabelValue(certPage, font, boldFont, "Signed at (UTC)", signedAt.toISOString(), 72, y);
   y = drawLabelValue(certPage, font, boldFont, "Source document SHA-256", customTemplate.sha256, 72, y);
   if (mapped) {
@@ -387,9 +388,11 @@ export async function generateSignedIcaPdf(
     y = drawLabelValue(certPage, font, boldFont, "User agent", truncated, 72, y);
   }
 
+  if (payload.signatureAdoption) y = drawLabelValue(certPage, font, boldFont, "Signature adoption", `${payload.signatureAdoption.method}; consent ${payload.signatureAdoption.version}; accepted`, 72, y);
+
   certPage.drawText(
     customTemplate
-      ? "The contractor confirmed they read the preceding agreement, had the opportunity to consult independent legal counsel, agreed to the Independent Contractor Agreement, and consented to sign electronically. This signature record applies to the source document identified above."
+      ? "The contractor confirmed they read the preceding agreement, had the opportunity to consult independent legal counsel, agreed to the Independent Contractor Agreement, and consented to sign electronically. This signature record applies to the source document identified above. " + (payload.signatureAdoption ? SIGNATURE_ADOPTION_CONSENT : "")
       : "The contractor confirmed they read the agreement, had the opportunity to consult independent legal counsel, and agreed to the ICA and Debit-Check Authorization.",
     {
       x: 72,
@@ -405,9 +408,15 @@ export async function generateSignedIcaPdf(
   if (!mapped) {
     const signature = await pdfDoc.embedPng(decodeBase64ToBytes(payload.signatureImageBase64));
     certPage.drawText("Contractor electronic signature", { x: 72, y: y - 78, size: 10, font: boldFont });
-    certPage.drawImage(signature, { x: 72, y: y - 173, width: 250, height: 85 });
+    certPage.drawImage(signature, { x: 72, y: y - 173, ...signature.scaleToFit(468, 85) });
   }
 
+  if (payload.signatureAdoption) {
+    const digest = await crypto.subtle.digest("SHA-256", Uint8Array.from(signaturePngBytes(payload.signatureImageBase64)));
+    const imageSha256 = Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+    const record = { ...payload.signatureAdoption, consent: SIGNATURE_ADOPTION_CONSENT, signedAt: signedAt.toISOString(), sourceSha256: customTemplate.sha256, imageSha256, ...metadata };
+    await pdfDoc.attach(Uint8Array.from(new TextEncoder().encode(JSON.stringify(record, null, 2))), "signature-adoption.json", { mimeType: "application/json", description: "Adopted signature and consent evidence" });
+  }
   return await pdfDoc.save();
 }
 

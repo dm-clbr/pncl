@@ -22,7 +22,10 @@ export interface PortalIcaStatus {
   ica: PortalIcaSummary | null;
 }
 
+import type { SignatureAdoption } from "../../supabase/functions/_shared/signatureAdoption";
+
 export interface SubmitPortalIcaInput {
+  signatureAdoption?: SignatureAdoption;
   templateAssetId?: string | null;
   legalName: string;
   personalEmail: string;

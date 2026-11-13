@@ -1,3 +1,4 @@
+vi.mock("@/components/SignatureAdoptionDialog", () => ({ default: ({ name, onAdopt }: { name: string; onAdopt: (value: unknown) => void }) => <button onClick={() => onAdopt({ name, method: "typed", accepted: true, version: "2026-11-13", imageDataUrl: "data:image/png;base64,test" })}>Adopt test signature</button> }));
 vi.mock("@/components/SigningDocumentReview", () => ({ default: ({ onReviewed }: { onReviewed: (value: boolean) => void }) => <button type="button" onClick={() => onReviewed(true)}>Review all pages</button> }));
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
@@ -24,9 +25,12 @@ describe("agent document signing", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Review all pages" }));
     fireEvent.change(name, { target: { value: "Alex Agent" } });
     fireEvent.click(screen.getByRole("checkbox"));
+    expect(screen.getByRole("button", { name: "Sign document" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Create signature" }));
+    fireEvent.click(screen.getByRole("button", { name: "Adopt test signature" }));
     vi.mocked(api.listAgentDocumentRequests).mockResolvedValue([{ ...doc, signedAt: "2026-11-03T18:00:00Z", signatureName: "Alex Agent" }]);
     fireEvent.click(screen.getByRole("button", { name: "Sign document" }));
-    await waitFor(() => expect(api.signAgentDocument).toHaveBeenCalledWith("agent-token", doc.id, "Alex Agent", true, "source-hash", {}));
+    await waitFor(() => expect(api.signAgentDocument).toHaveBeenCalledWith("agent-token", doc.id, "Alex Agent", true, "source-hash", {}, expect.objectContaining({ method: "typed", accepted: true, name: "Alex Agent" })));
     expect(await screen.findByRole("link", { name: "Open or download signed PDF" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Sign document" })).not.toBeInTheDocument();
   });

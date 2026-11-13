@@ -47,3 +47,14 @@ describe("placed fields during document review", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Sign" })).toBeDisabled());
   });
 });
+
+it("opens the signature overlay from the document and shows the exact adopted image", async () => {
+  const open = vi.fn(); const changed = vi.fn(); const reviewed = vi.fn();
+  const props = { url: "/sample.pdf", title: "Sample", onReviewed: reviewed, onValuesChange: changed, onSignatureClick: open };
+  const page = render(<SigningDocumentReview {...props} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Create signature: Signature" }));
+  expect(open).toHaveBeenCalledOnce();
+  page.rerender(<SigningDocumentReview {...props} signatureImage="data:image/png;base64,adopted" />);
+  expect(await screen.findByRole("button", { name: "Change signature: Signature" })).toBeInTheDocument();
+  expect(screen.getByAltText("Adopted signature")).toHaveAttribute("src", "data:image/png;base64,adopted");
+});
