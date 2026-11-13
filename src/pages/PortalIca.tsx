@@ -1,5 +1,6 @@
 import { useIcaDocumentRequests } from "@/hooks/useIcaDocumentRequests";
 import IcaDocumentRequests from "@/components/portal/IcaDocumentRequests";
+import AgreementPdfPreview from "@/components/portal/AgreementPdfPreview";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileCheck2 } from "lucide-react";
@@ -181,7 +182,7 @@ export default function PortalIca() {
                   }}
                 />
               )}
-              {pdfUrl && <details className="ica-agreement-preview"><summary>View agreement on file</summary><iframe title="Previous signed ICA" className="document-agent-pdf" src={pdfUrl} /></details>}
+              {pdfUrl && <AgreementPdfPreview title="Previous signed ICA" url={pdfUrl} collapsible />}
               {hasPendingIca && <p className="portal-panel-note">Your new ICA is ready to review and sign below.</p>}
             </Pane>
           )}

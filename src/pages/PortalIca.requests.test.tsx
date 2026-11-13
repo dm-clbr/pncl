@@ -21,7 +21,7 @@ vi.mock("@/lib/document-requests", async original => ({ ...await original<typeof
 vi.mock("@/components/UploadedIcaSigningStep", () => ({ default: () => <p>First-time ICA form</p> }));
 vi.mock("@/components/UploadedIcaSigningStep.legacy", () => ({ default: () => <p>First-time ICA form</p> }));
 vi.mock("@/components/portal/PortalBackground", () => ({ default: () => null }));
-vi.mock("@/components/SigningDocumentReview", () => ({ default: ({ url, onReviewed }: { url: string; onReviewed: (value: boolean) => void }) => <button data-source={url} onClick={() => onReviewed(true)}>Review assigned ICA</button> }));
+vi.mock("@/components/SigningDocumentReview", () => ({ default: ({ url, title, onReviewed }: { url: string; title: string; onReviewed: (value: boolean) => void }) => <button title={title} data-source={url} onClick={() => onReviewed(true)}>Review assigned ICA</button> }));
 vi.mock("@/components/SignatureAdoptionDialog", () => ({ default: ({ name, onAdopt }: { name: string; onAdopt: (value: unknown) => void }) => <button onClick={() => onAdopt({ name, method: "typed", accepted: true, version: "2026-11-13", imageDataUrl: "data:image/png;base64,test" })}>Adopt test signature</button> }));
 const assigned: documents.AgentDocumentRequest = { id: "ica-request", title: "LOA ICA", description: "", assignedAt: "2026-11-13", signedAt: null, signatureName: null, documentHash: "assigned-source-hash", stepSlug: "ica_setup", templateAssetId: "new-asset" };
 
@@ -41,7 +41,7 @@ for (const [variant, Page] of [["uploaded flow", PortalIca], ["compatibility flo
       await openPage();
       expect(screen.getByRole("heading", { name: "Previous agreement on file" })).toBeInTheDocument();
       expect(screen.getByRole("link", { name: /Download signed PDF/ })).toHaveAttribute("href", "https://files.example/old-signed-ica.pdf");
-      expect(screen.getByTitle("Previous signed ICA").closest("details")).not.toHaveAttribute("open");
+      expect(screen.getByText("View agreement on file").closest("details")).not.toHaveAttribute("open");
       expect(screen.getByRole("heading", { name: "New ICA — review and sign" })).toBeInTheDocument();
       expect(await screen.findByRole("button", { name: "Review assigned ICA" })).toHaveAttribute("data-source", "https://files.example/assigned-ica.pdf");
       expect(documents.agentDocumentUrl).toHaveBeenCalledWith("agent-token", assigned.id);
@@ -83,7 +83,7 @@ for (const [variant, Page] of [["uploaded flow", PortalIca], ["compatibility flo
       state.user.app_metadata.role = "admin";
       vi.mocked(documents.listAgentDocumentRequests).mockResolvedValue([]);
       await openPage();
-      expect(screen.getByTitle("New ICA preview")).toHaveAttribute("src", "/new-ica.pdf");
+      expect(screen.getByTitle("New ICA preview")).toHaveAttribute("data-source", "/new-ica.pdf");
       expect(screen.queryByRole("button", { name: "Sign document" })).not.toBeInTheDocument();
       expect(documents.signAgentDocument).not.toHaveBeenCalled();
     });

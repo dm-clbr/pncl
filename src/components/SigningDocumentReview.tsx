@@ -8,7 +8,7 @@ type PageInput = InputAnnotation & { left: number; top: number; width: number; h
 const EMPTY_VALUES: PdfFieldValues = {};
 
 /** Signing is enabled only after every page of this exact upload renders. */
-export default function SigningDocumentReview({ url, title, onReviewed, values = EMPTY_VALUES, onValuesChange, signingName = "", signatureImage, onSignatureClick }: { url: string; title: string; onReviewed: (ready: boolean) => void; values?: PdfFieldValues; onValuesChange?: (values: PdfFieldValues) => void; signingName?: string; signatureImage?: string; onSignatureClick?: () => void }) {
+export default function SigningDocumentReview({ url, title, onReviewed, values = EMPTY_VALUES, onValuesChange, signingName = "", signatureImage, onSignatureClick, readOnly = false }: { readOnly?: boolean; url: string; title: string; onReviewed: (ready: boolean) => void; values?: PdfFieldValues; onValuesChange?: (values: PdfFieldValues) => void; signingName?: string; signatureImage?: string; onSignatureClick?: () => void }) {
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
   const [page, setPage] = useState(1);
   const [visited, setVisited] = useState<Set<number>>(new Set());
@@ -63,7 +63,7 @@ export default function SigningDocumentReview({ url, title, onReviewed, values =
   });
   useEffect(() => { onReviewed(Boolean(pdf && visited.size === pdf.numPages && !error && (!onValuesChange || requiredComplete))); }, [pdf, visited, error, onReviewed, onValuesChange, requiredComplete]);
   return <section className="signing-document-review" aria-label={`${title} document`}>
-    <a href={url} target="_blank" rel="noopener noreferrer">Open uploaded PDF</a>
+    <a href={url} target="_blank" rel="noopener noreferrer">{readOnly ? "Open PDF" : "Open uploaded PDF"}</a>
     <div ref={holder} className="signing-document-canvas"><canvas ref={canvas} aria-label={`${title}, page ${page}`} />{onValuesChange && !busy && inputs.map((field,index) => {
       const type = customPdfFieldType(field.fieldName), automatic = type === "signature" || type === "date";
       const value = automatic ? type === "date" ? new Date().toISOString().slice(0,10) : onSignatureClick && !signatureImage ? "" : signingName : values[field.fieldName] ?? field.fieldValue ?? "";
@@ -75,7 +75,7 @@ export default function SigningDocumentReview({ url, title, onReviewed, values =
     {onValuesChange && Object.values(allInputs).some(fields=>fields.length) && <p>Complete the highlighted fields. {onSignatureClick ? "Click a signature box to type or draw and adopt your signature. The final sign button saves the document." : "Signature and signing date fields are filled when you sign."}{!requiredComplete && " Some required fields are still empty."}</p>}
     {error ? <p role="alert">{error} <button type="button" onClick={() => setAttempt(value => value + 1)}>Retry document</button></p> : !pdf ? <p role="status">Loading document…</p> : <>
       <div className="signing-document-pager"><button type="button" disabled={busy || page === 1} onClick={() => setPage(value => value - 1)}>Previous page</button><span>Page {page} of {pdf.numPages}</span><button type="button" disabled={busy || page === pdf.numPages} onClick={() => setPage(value => value + 1)}>Next page</button></div>
-      <p>{visited.size === pdf.numPages ? "All pages viewed. You can complete and sign below." : "View every page before signing."}</p>
+      {!readOnly && <p>{visited.size === pdf.numPages ? "All pages viewed. You can complete and sign below." : "View every page before signing."}</p>}
     </>}
   </section>;
 }

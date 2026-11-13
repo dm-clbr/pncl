@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FileCheck2 } from "lucide-react";
 import Pane from "./Pane";
+import AgreementPdfPreview from "./AgreementPdfPreview";
 import ListRow from "./ListRow";
 import DocumentRequestSigningPanel from "@/components/DocumentRequestSigningPanel";
 import { agentDocumentUrl, type AgentDocumentRequest } from "@/lib/document-requests";
@@ -48,7 +49,7 @@ export default function IcaDocumentRequests({ token, rows, loading, error, reloa
     </Pane>}
     {!loading && !error && !active && previewAsset && !rows.some(row => row.templateAssetId === previewAsset.id) && <Pane title="New ICA — admin preview">
       <p className="portal-panel-note">This is the current uploaded agreement. Your admin account has no signature request for this edition. Agents with a request can review and sign it here.</p>
-      <iframe className="document-agent-pdf" title="New ICA preview" src={previewAsset.url} />
+      <AgreementPdfPreview title="New ICA preview" url={previewAsset.url} />
       <ListRow label="Open new ICA PDF" href={previewAsset.url} />
     </Pane>}
   </div>;
