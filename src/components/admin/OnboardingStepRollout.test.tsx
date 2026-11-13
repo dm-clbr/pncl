@@ -20,24 +20,32 @@ async function replacePdf() {
   await screen.findByText("new.pdf");
 }
 describe("replacing a step's signing PDF", () => {
-  it("saves an ordinary replacement without requesting anyone's signature", async () => {
+  it("makes a published replacement required for every applicable existing agent", async () => {
     await replacePdf();
-    expect(screen.getByLabelText("Request new signatures from existing agents")).not.toBeChecked();
-    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    expect(screen.getByLabelText("Review a staged rollout before requiring signatures")).toBeChecked();
+    fireEvent.click(screen.getByLabelText("Review a staged rollout before requiring signatures"));
+    fireEvent.click(screen.getByRole("button", { name: "Save & require signatures" }));
     await waitFor(() => expect(saveEditorStep).toHaveBeenCalledWith("admin", expect.objectContaining({ flowContent: { loa: expect.objectContaining({ assetId: "new-pdf" }) } })));
     expect(navigate).not.toHaveBeenCalled();
   });
   it("retains the old PDF until the reviewed rollout releases the onboarding stage", async () => {
     await replacePdf();
-    fireEvent.click(screen.getByLabelText("Request new signatures from existing agents"));
     fireEvent.click(screen.getByRole("button", { name: "Save & review rollout" }));
     await waitFor(() => expect(saveEditorStep).toHaveBeenCalledWith("admin", expect.objectContaining({ flowContent: row.flowContent })));
     expect(navigate).toHaveBeenCalledWith(expect.stringContaining("asset=new-pdf"));
     expect(saved).toHaveBeenCalledOnce();
   });
+  it("keeps an uploaded draft out of the required-signature path", async () => {
+    await replacePdf();
+    fireEvent.change(screen.getByLabelText("Status"), { target: { value: "draft" } });
+    expect(screen.queryByRole("button", { name: "Save & require signatures" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(saveEditorStep).toHaveBeenCalledWith("admin", expect.objectContaining({ published: false, flowContent: { loa: expect.objectContaining({ assetId: "new-pdf" }) } })));
+    expect(navigate).not.toHaveBeenCalled();
+  });
   it("does not navigate or lose the new PDF when saving fails", async () => {
     vi.mocked(saveEditorStep).mockRejectedValue(new Error("This step changed. Reload before saving."));
-    await replacePdf(); fireEvent.click(screen.getByLabelText("Request new signatures from existing agents"));
+    await replacePdf();
     fireEvent.click(screen.getByRole("button", { name: "Save & review rollout" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("step changed");
     expect(navigate).not.toHaveBeenCalled(); expect(saved).not.toHaveBeenCalled();

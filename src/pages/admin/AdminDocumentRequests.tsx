@@ -11,7 +11,6 @@ import {
   setDocumentOnboarding, releaseDocumentCurrentAgents, type DocumentAudience, type DocumentCampaign,
   type DocumentFilters, type DocumentDelivery, type DocumentRolloutOrder, type DocumentRecipient, type DocumentRecipientStatus, type OnboardingDocumentSource,
 } from "@/lib/document-requests";
-import { US_STATE_CODES } from "@/lib/us-states";
 import "@/styles/document-requests.css";
 import "@/styles/admin-onboarding-steps.css";
 
@@ -22,8 +21,8 @@ function AudienceOptions() { return <><option value="all">All agents (LOA + IBO)
 function message(error: unknown) { return error instanceof Error ? error.message : "Unable to save. Please retry."; }
 
 export function ComposeDocument({ token, source, onCancel, onPublished }: { token: string; source: OnboardingDocumentSource; onCancel: () => void; onPublished: (id: string, notify: boolean) => Promise<void> }) {
-  const [filters, setFilters] = useState<DocumentFilters>({ ...EMPTY_DOCUMENT_FILTERS, designation: source.flow });
-  const [delivery, setDelivery] = useState<DocumentDelivery>("both");
+  const [filters] = useState<DocumentFilters>({ ...EMPTY_DOCUMENT_FILTERS, designation: source.flow });
+  const [delivery, setDelivery] = useState<DocumentDelivery>("portal");
   const [rolloutOrder, setRolloutOrder] = useState<DocumentRolloutOrder>("current_first");
   const replacing = source.assetId !== source.currentAssetId;
   const effectiveOrder = replacing ? rolloutOrder : "together";
@@ -36,7 +35,6 @@ export function ComposeDocument({ token, source, onCancel, onPublished }: { toke
   const id = useRef(crypto.randomUUID());
   const attempted = useRef(false);
   const locked = busy || attempted.current;
-  const changeFilters = (patch: Partial<DocumentFilters>) => { setFilters(prev => ({ ...prev, ...patch })); setRecipients(null); setReviewing(false); };
   const review = async () => {
     setError("");
     if (!source.published || !source.visible) { setError("Publish and enable this step before requesting signatures."); return; }
@@ -73,19 +71,12 @@ export function ComposeDocument({ token, source, onCancel, onPublished }: { toke
       </section>
       <section className="document-step"><h3><span>2</span> Existing agents</h3>
         <>
-          <p>Start with all agents or narrow the audience below. You can select individual agents in the review. Admin accounts and disabled portal accounts are excluded.</p>
-          <div className="document-filter-grid">
-            <label className="admin-field"><span>Agent type</span><select value={source.flow} disabled><option value={source.flow}>{source.flow.toUpperCase()} agents</option></select></label>
-            <label className="admin-field"><span>ICA status</span><select value={filters.ica} onChange={e => changeFilters({ ica: e.target.value as DocumentFilters["ica"] })}><option value="all">Any ICA status</option><option value="signed">Signed ICA on file</option><option value="unsigned">No signed ICA on file</option></select></label>
-            <label className="admin-field"><span>State of residence</span><select value={filters.state} onChange={e => changeFilters({ state: e.target.value })}><option value="">All states</option>{US_STATE_CODES.map(state => <option key={state} value={state}>{state}</option>)}</select></label>
-            <label className="admin-field"><span>Name or email</span><input value={filters.search} maxLength={100} onChange={e => changeFilters({ search: e.target.value })} placeholder="Find specific agents" /></label>
-            <label className="admin-field"><span>Joined on or after</span><input type="date" value={filters.joinedAfter} onChange={e => changeFilters({ joinedAfter: e.target.value })} /></label>
-            <label className="admin-field"><span>Joined on or before</span><input type="date" value={filters.joinedBefore} onChange={e => changeFilters({ joinedBefore: e.target.value })} /></label>
-          </div>
+          <p>This required edition includes every active {source.flow.toUpperCase()} agent, regardless of older signatures. Admin and disabled accounts are excluded. Signatures already collected for this exact edition remain valid.</p>
+          <label className="admin-field"><span>Agent type</span><select value={source.flow} disabled><option value={source.flow}>{source.flow.toUpperCase()} agents</option></select></label>
         </>
       </section>
       <section className="document-step"><h3><span>3</span> Linked onboarding step</h3>
-        <p>Future {source.flow.toUpperCase()} agents use this document through “{source.title}”. Existing-agent filters do not change who sees that onboarding step.</p>
+        <p>Future {source.flow.toUpperCase()} agents use this document through “{source.title}”. The rollout always includes its full applicable existing-agent audience.</p>
         <p>The global uploaded-signing activation in Onboarding steps still controls when agents move to uploaded PDFs.</p>
       </section>
       <section className="document-step"><h3><span>4</span> Rollout & delivery</h3>
@@ -111,12 +102,12 @@ export function ComposeDocument({ token, source, onCancel, onPublished }: { toke
       <p>Onboarding step: {source.title} · {source.flow.toUpperCase()}</p>
       {replacing && selected.size > 0 && <p><strong>Order:</strong> {orderLabel[effectiveOrder]}. {effectiveOrder !== "together" && "You choose when to start the second stage."}</p>}
       {recipients && recipients.length > 0 && <>
-        <div className="document-section-heading"><span>{recipients.length} matching agents</span><button className="admin-secondary-btn" disabled={locked} onClick={() => setSelected(selected.size === recipients.length ? new Set() : new Set(recipients.map(row => row.id)))}>{selected.size === recipients.length ? "Clear selection" : "Select all matches"}</button></div>
+        <p>{recipients.length} applicable agents · all included</p>
         <div className="admin-table-wrap document-recipient-table"><table className="admin-table"><thead><tr><th>Select</th><th>Agent</th><th>Type</th><th>State</th><th>ICA</th></tr></thead><tbody>
-          {recipients.map(row => <tr key={row.id}><td><input type="checkbox" aria-label={`Select ${row.name}`} checked={selected.has(row.id)} disabled={locked} onChange={() => setSelected(prev => { const next = new Set(prev); if (next.has(row.id)) next.delete(row.id); else next.add(row.id); return next; })} /></td><td>{row.name}<small>{row.email}</small></td><td>{row.designation.toUpperCase()}</td><td>{row.state || "—"}</td><td>{row.ica_signed ? "Signed" : "Not signed"}</td></tr>)}
+          {recipients.map(row => <tr key={row.id}><td><input type="checkbox" aria-label={`Select ${row.name}`} checked={selected.has(row.id)} disabled /></td><td>{row.name}<small>{row.email}</small></td><td>{row.designation.toUpperCase()}</td><td>{row.state || "—"}</td><td>{row.ica_signed ? "Signed" : "Not signed"}</td></tr>)}
         </tbody></table></div>
       </>}
-      {recipients?.length === 0 && <p role="status">No agents match these filters. Change the filters before sending.</p>}
+      {recipients?.length === 0 && <p role="status">No active agents are currently eligible for this flow.</p>}
       <p>This rollout keeps this exact PDF edition. Later PDF changes are made in its onboarding step and do not alter signed copies.</p>
       <button className="admin-primary-btn" disabled={isLocalEditor() || busy || !!publishedId || !selected.size} onClick={() => void publish()}><Send size={17} />{busy ? "Publishing…" : attempted.current ? "Retry publication" : replacing ? "Start rollout" : `Send to ${selected.size} agent${selected.size === 1 ? "" : "s"}`}</button>
     </section>}

@@ -30,24 +30,24 @@ function compose(value = source) {
   render(<MemoryRouter><ComposeDocument source={value} token="admin-token" onCancel={() => {}} onPublished={published} /></MemoryRouter>);
 }
 describe("linked document rollout", () => {
-  it("uses the saved PDF without an upload and sends only the reviewed selection", async () => {
+  it("requires the full flow audience and defaults to portal-only delivery", async () => {
     compose();
     expect(screen.queryByLabelText(/PDF document/)).not.toBeInTheDocument();
     expect(screen.getByLabelText("Agent type")).toBeDisabled();
     expect(screen.getByText("new-ica.pdf")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Review request" }));
-    fireEvent.click(await screen.findByLabelText("Select Bailey Agent"));
+    expect(await screen.findByLabelText("Select Bailey Agent")).toBeDisabled();
     expect(api.publishLinkedDocumentRollout).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Start rollout" }));
     await waitFor(() => expect(api.publishLinkedDocumentRollout).toHaveBeenCalledWith("admin-token", expect.objectContaining({
-      stepId: "step", flow: "loa", assetId: "new-pdf", expectedAssetId: "old-pdf", recipientIds: ["one"], filters: expect.objectContaining({ designation: "loa" }), deliveryMode: "both", rolloutOrder: "current_first",
+      stepId: "step", flow: "loa", assetId: "new-pdf", expectedAssetId: "old-pdf", recipientIds: ["one", "two"], filters: expect.objectContaining({ designation: "loa" }), deliveryMode: "portal", rolloutOrder: "current_first",
     })));
-    expect(published).toHaveBeenCalledWith("published", true);
+    expect(published).toHaveBeenCalledWith("published", false);
   });
-  it("invalidates recipient review when filters change", async () => {
+  it("invalidates recipient review when delivery changes", async () => {
     compose(); fireEvent.click(screen.getByRole("button", { name: "Review request" }));
     await screen.findByRole("button", { name: "Start rollout" });
-    fireEvent.change(screen.getByLabelText("State of residence"), { target: { value: "UT" } });
+    fireEvent.change(screen.getByLabelText("Delivery method"), { target: { value: "both" } });
     expect(screen.queryByRole("button", { name: "Start rollout" })).not.toBeInTheDocument();
   });
   it("keeps a stable idempotency ID on an ambiguous publication failure", async () => {

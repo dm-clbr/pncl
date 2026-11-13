@@ -38,9 +38,10 @@ export default function OnboardingStepModal({
   const [busy, setBusy] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [requestSignatures, setRequestSignatures] = useState(false);
+  const [requestSignatures, setRequestSignatures] = useState(true);
   const changedFlows = changedSigningFlows(row, draft);
   const canStageRollout = changedFlows.length === 1 && !!row.flowContent[changedFlows[0]]?.assetId && draft.published && (changedFlows[0] === "loa" ? draft.showLoa : draft.showIbo);
+  const willRequireSignatures = isSigningDocumentKind(draft.contentType) && draft.published && ((changedFlows.includes("loa") || !row.published || !row.showLoa) && draft.showLoa || (changedFlows.includes("ibo") || !row.published || !row.showIbo) && draft.showIbo);
   useEffect(() => {
     const active = document.activeElement as HTMLElement | null;
     dialog.current?.showModal();
@@ -102,7 +103,7 @@ export default function OnboardingStepModal({
             `Add ${designation.toUpperCase()} content before publishing.`,
           );
       }
-      if (requestSignatures && changedFlows.length) {
+      if (requestSignatures && canStageRollout) {
         if (!canStageRollout) throw new Error("Save the initial PDFs first, or replace one existing flow's PDF at a time to review a staged rollout.");
         if (changedFlows.length !== 1) throw new Error("Prepare one flow's new PDF at a time for a staged rollout. Each flow can have its own recipients and schedule.");
         const flow = changedFlows[0];
@@ -342,12 +343,12 @@ export default function OnboardingStepModal({
                   : "Uploaded files are applied when you save. Cancel keeps the current content."}
               </p>
             )}
-            {changedFlows.length > 0 && row.id && row.published && <section className="document-step" aria-label="New signing PDF">
+            {willRequireSignatures && <section className="document-step" aria-label="New signing PDF">
               <h3>New signing PDF · {changedFlows.map(flow => flow.toUpperCase()).join(" + ")}</h3>
-              <p>Do existing agents need to sign this new edition? Their previous signed copies stay on file.</p>
-              <label className="document-check"><input type="checkbox" checked={requestSignatures} disabled={!canStageRollout} onChange={event => setRequestSignatures(event.target.checked)} />Request new signatures from existing agents</label>
-              {!canStageRollout && <p>For initial setup, save the PDFs, then choose Request signatures in Documents & fields. For a staged replacement, prepare one existing flow's PDF at a time.</p>}
-              <p>{requestSignatures ? "Next, review recipients, rollout order, and delivery. Nothing is sent by this save. The new PDF is selected for onboarding only when that rollout stage starts." : "Save updates the PDF used by this step. It does not notify previous signers or ask them to sign again. Uploaded signing must be activated before agents use it."}</p>
+              <p>Publishing this edition requires every applicable existing agent to sign it. Older signed copies stay on file; signatures of this exact edition remain valid.</p>
+              <label className="document-check"><input type="checkbox" checked={requestSignatures && canStageRollout} disabled={!canStageRollout} onChange={event => setRequestSignatures(event.target.checked)} />Review a staged rollout before requiring signatures</label>
+              {!canStageRollout && <p>Save as Draft to keep preparing. Publishing assigns this edition in the portal. To stage a replacement, prepare one existing flow at a time.</p>}
+              <p>{requestSignatures && canStageRollout ? "Next, review the full audience, rollout order, and delivery. This save retains the current PDF until you start the rollout." : "Saving publishes the PDF and creates in-app signing requirements for all applicable existing agents. No email is sent. Draft uploads create no requests."}</p>
             </section>}
             {error && (
               <p role="alert" className="admin-error">
@@ -378,7 +379,7 @@ export default function OnboardingStepModal({
               disabled={preparing || saving}
               type="submit"
             >
-              {saving ? "Saving…" : requestSignatures && changedFlows.length ? "Save & review rollout" : "Save changes"}
+              {saving ? "Saving…" : requestSignatures && canStageRollout ? "Save & review rollout" : willRequireSignatures ? "Save & require signatures" : "Save changes"}
             </button>
           </div>
         </footer>
