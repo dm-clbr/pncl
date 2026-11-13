@@ -1,0 +1,25 @@
+.admin-signing-preview-main {
+  position: relative;
+  width: min(1120px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 36px 0 72px;
+  color: var(--portal-text, #f1eee8);
+}
+.admin-signing-preview-main > h1 {
+  font-size: clamp(24px, 3vw, 36px);
+  font-weight: 600;
+  margin: 0 0 28px;
+}
+.admin-signing-preview-deposit { max-width: 720px; }
+.admin-signing-preview .admin-onboarding-preview-actions select {
+  background: #211a16;
+  color: #f1eee8;
+  border: 1px solid #655247;
+  border-radius: 8px;
+  padding: 8px;
+}
+.admin-signing-preview .home2-page.onboarding-page { min-height: 0; }
+@media (max-width: 600px) {
+  .admin-signing-preview-main { width: calc(100% - 32px); padding-top: 24px; }
+  .admin-signing-preview .admin-onboarding-preview-bar { position: relative; }
+}

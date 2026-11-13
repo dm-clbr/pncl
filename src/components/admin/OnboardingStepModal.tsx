@@ -237,7 +237,7 @@ export default function OnboardingStepModal({
                 ? "This step has built-in behavior, so its content type is fixed. You can edit its content, stage, and visibility."
                 : "You can change this step’s content type. Saving a new type replaces its current content selection."}
             </p>
-            {draft.contentType === "direct_deposit" && <section className="onboarding-modal-section"><h3>Built-in direct deposit form</h3><p>Agents enter their name, address, bank, account and routing numbers, then sign the authorization. A completed PDF is generated and saved to their profile. No template upload is needed.</p><a className="admin-secondary-link" href="/portal/direct-deposit" target="_blank" rel="noreferrer">Open direct deposit form</a></section>}
+            {draft.contentType === "direct_deposit" && <section className="onboarding-modal-section"><h3>Built-in direct deposit form</h3><p>Agents enter their name, address, bank, account and routing numbers, then sign the authorization. A completed PDF is generated and saved to their profile. No template upload is needed.</p><a className="admin-secondary-link" href="/portal/admin/signing-preview/direct-deposit" target="_blank" rel="noreferrer">Preview as a new agent</a></section>}
             {!fileType && (
               <div className="onboarding-link-fields">
                 <label className="admin-field">

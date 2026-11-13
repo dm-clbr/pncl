@@ -2,6 +2,8 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import PortalDirectDeposit from "@/pages/PortalDirectDeposit";
+import { submitPortalDirectDeposit } from "@/lib/portal-direct-deposit";
+import { refreshPortalUser } from "@/lib/portal-messages";
 
 const ddState = vi.hoisted(() => ({
   directDeposit: null as { legalName: string; signedAt: string; pdfPath: string } | null,
@@ -121,6 +123,19 @@ describe("PortalDirectDeposit", () => {
     const account = screen.getByLabelText(/account number/);
     expect(account).toHaveAttribute("inputmode", "numeric");
     expect(account).toHaveAttribute("autocomplete", "off");
+  });
+
+  it("still sends live agent submissions to the PDF-generating endpoint", async () => {
+    ddState.loading = false;
+    vi.mocked(submitPortalDirectDeposit).mockResolvedValue({ legalName: "Test Agent", pdfPath: "new-signed.pdf" } as Awaited<ReturnType<typeof submitPortalDirectDeposit>>);
+    await renderPage();
+    for (const [id, value] of Object.entries({ "dd-address": "123 Test St", "dd-city": "Provo", "dd-state": "UT", "dd-zip": "84601", "dd-bank": "Test Bank", "dd-account": "123456789", "dd-routing": "021000021", "dd-signature": "Test Agent" })) {
+      fireEvent.change(document.getElementById(id)!, { target: { value } });
+    }
+    fireEvent.click(screen.getByLabelText("I authorize direct deposit as described above."));
+    submitForm();
+    await waitFor(() => expect(submitPortalDirectDeposit).toHaveBeenCalledWith("token-1", expect.objectContaining({ legalName: "Test Agent", authorizationAccepted: true, accountNumber: "123456789" })));
+    await waitFor(() => expect(refreshPortalUser).toHaveBeenCalled());
   });
 
   it("puts a validation error next to its own field and focuses it", async () => {

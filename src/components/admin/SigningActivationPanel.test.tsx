@@ -19,9 +19,13 @@ describe("admin signing activation", () => {
     show({ ...rollout, missing: ["ICA (IBO)"] }); fireEvent.click(screen.getByRole("checkbox"));
     expect(screen.getByText(/ICA \(IBO\)/)).toBeInTheDocument(); expect(screen.getByRole("button", { name: "Activate uploaded signing" })).toBeDisabled();
   });
-  it("previews only the current account without globally activating", async () => {
-    show(); fireEvent.click(screen.getByRole("button", { name: "Preview new signing on my account" }));
-    await waitFor(() => expect(state.preview).toHaveBeenCalledWith("test", true)); expect(state.activate).not.toHaveBeenCalled();
+  it.each([false, true])("offers fresh previews without changing any rollout setting (enabled=%s)", enabled => {
+    show({ ...rollout, enabled });
+    for (const [name, kind] of [["Test ICA", "ica"], ["Test W-9", "w9"], ["Test direct deposit", "direct-deposit"], ["Test compensation", "compensation"]]) {
+      expect(screen.getByRole("link", { name })).toHaveAttribute("href", `/portal/admin/signing-preview/${kind}`);
+    }
+    expect(state.preview).not.toHaveBeenCalled();
+    expect(state.activate).not.toHaveBeenCalled();
   });
   it("offers a separately confirmed return to the previous process", async () => {
     show({ ...rollout, enabled: true }); fireEvent.click(screen.getByRole("checkbox")); fireEvent.click(screen.getByRole("button", { name: "Return to previous signing" }));

@@ -27,7 +27,7 @@ export default function OnboardingStepPreview({
   const video = row.contentType.includes("video");
   // Missing content for one flow must never use the other flow's uploaded file.
   const source =
-    media?.url ||
+    (coded ? "/portal/admin/signing-preview/direct-deposit" : media?.url) ||
     (!isSigningDocumentKind(row.contentType) && !video && row.contentType !== "document" ? row.href : "");
   const embed = video ? getBunnyVideoEmbedUrl(source) : null;
   const pdf =
@@ -155,7 +155,9 @@ export default function OnboardingStepPreview({
                 rel="noopener noreferrer"
               >
                 <ExternalLink size={16} />
-                {video
+                {coded
+                  ? "Preview as a new agent"
+                  : video
                   ? "Open video"
                   : pdf || row.contentType === "document"
                     ? "Open document"

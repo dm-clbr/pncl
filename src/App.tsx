@@ -71,6 +71,7 @@ import AdminOnboardingSteps from "./pages/admin/AdminOnboardingSteps.tsx";
 import AdminTodos from "./pages/admin/AdminTodos.tsx";
 import AdminOnboardingPreview from "./pages/admin/AdminOnboardingPreview.tsx";
 import AdminW9Preview from "./pages/admin/AdminW9Preview.tsx";
+import AdminSigningPreview from "./pages/admin/AdminSigningPreview.tsx";
 import AdminLeadSpplyIntegration from "./pages/admin/AdminLeadSpplyIntegration.tsx";
 import PortalTabLayout from "./components/portal/PortalTabLayout.tsx";
 import ProtectedRoute from "./components/ProtectedRoute.tsx";
@@ -279,6 +280,10 @@ const App = () => (
                 </AdminRoute>
               </ProtectedRoute>
             }
+          />
+          <Route
+            path="/portal/admin/signing-preview/:kind"
+            element={<ProtectedRoute><AdminRoute><AdminSigningPreview /></AdminRoute></ProtectedRoute>}
           />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
