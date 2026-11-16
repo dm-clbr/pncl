@@ -1,0 +1,3 @@
+# This function authenticates the server-to-server integration key itself.
+[functions.pncl-team-stats]
+verify_jwt = false

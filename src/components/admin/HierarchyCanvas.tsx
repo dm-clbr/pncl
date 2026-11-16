@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronRight, Minus, Plus, RotateCcw } from "lucide-react";
 import type { AssistHierarchyNode, HierarchyNode } from "@/lib/admin-api";
 import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
@@ -37,47 +37,60 @@ function formatEffectiveDate(value: string | null): string | null {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
-function getTileWidth(node: HierarchyNode | AssistHierarchyNode): number {
-  return node.isPartnerGroup ? PARTNER_TILE_WIDTH : TILE_WIDTH;
+function getTileWidth(node: HierarchyNode | AssistHierarchyNode, tileWidth: number, partnerTileWidth: number): number {
+  return node.isPartnerGroup ? partnerTileWidth : tileWidth;
 }
 
 function layoutHierarchyTree(
   roots: ReadonlyArray<HierarchyNode | AssistHierarchyNode>,
   tileHeight: number,
+  tileWidth: number,
+  partnerTileWidth: number,
+  spacingScale: number,
 ): {
   positioned: PositionedNode[];
   width: number;
   height: number;
 } {
+  const padding = CANVAS_PADDING * spacingScale;
+  const horizontalGap = H_GAP * spacingScale;
+  const verticalGap = V_GAP * spacingScale;
+  const rootGap = ROOT_GAP * spacingScale;
   const positioned: PositionedNode[] = [];
-  let nextLeafX = CANVAS_PADDING;
+  const subtreeWidths = new Map<string, number>();
+  let nextRootX = padding;
   let maxDepth = 0;
 
-  function assignNode(node: HierarchyNode | AssistHierarchyNode, depth: number): number {
+  function measure(node: HierarchyNode | AssistHierarchyNode): number {
+    const childrenWidth = node.children.reduce((sum, child) => sum + measure(child), 0)
+      + Math.max(0, node.children.length - 1) * horizontalGap;
+    const width = Math.max(getTileWidth(node, tileWidth, partnerTileWidth), childrenWidth);
+    subtreeWidths.set(node.id, width);
+    return width;
+  }
+
+  function position(node: HierarchyNode | AssistHierarchyNode, left: number, depth: number) {
     maxDepth = Math.max(maxDepth, depth);
-    const y = CANVAS_PADDING + depth * (tileHeight + V_GAP);
-    const tileWidth = getTileWidth(node);
-
-    if (node.children.length === 0) {
-      const x = nextLeafX + tileWidth / 2;
-      nextLeafX += tileWidth + H_GAP;
-      positioned.push({ node, x, y, width: tileWidth });
-      return x;
+    const x = left + subtreeWidths.get(node.id)! / 2;
+    const width = getTileWidth(node, tileWidth, partnerTileWidth);
+    const childrenWidth = node.children.reduce((sum, child) => sum + subtreeWidths.get(child.id)!, 0)
+      + Math.max(0, node.children.length - 1) * horizontalGap;
+    let childLeft = x - childrenWidth / 2;
+    for (const child of node.children) {
+      position(child, childLeft, depth + 1);
+      childLeft += subtreeWidths.get(child.id)! + horizontalGap;
     }
-
-    const childCenters = node.children.map((child) => assignNode(child, depth + 1));
-    const x = (childCenters[0] + childCenters[childCenters.length - 1]) / 2;
-    positioned.push({ node, x, y, width: tileWidth });
-    return x;
+    positioned.push({ node, x, y: padding + depth * (tileHeight + verticalGap), width });
   }
 
   for (const root of roots) {
-    assignNode(root, 0);
-    nextLeafX += ROOT_GAP;
+    const width = measure(root);
+    position(root, nextRootX, 0);
+    nextRootX += width + rootGap;
   }
 
-  const width = Math.max(nextLeafX + CANVAS_PADDING - ROOT_GAP, TILE_WIDTH + CANVAS_PADDING * 2);
-  const height = CANVAS_PADDING * 2 + (maxDepth + 1) * tileHeight + maxDepth * V_GAP;
+  const width = Math.max(nextRootX + padding - rootGap, tileWidth + padding * 2);
+  const height = padding * 2 + (maxDepth + 1) * tileHeight + maxDepth * verticalGap;
 
   return { positioned, width, height };
 }
@@ -125,11 +138,13 @@ function HierarchyTile({
   node,
   selected,
   assistView,
+  renderMetrics,
   onSelect,
 }: {
   node: HierarchyNode | AssistHierarchyNode;
   selected: boolean;
   assistView?: boolean;
+  renderMetrics?: (node: HierarchyNode | AssistHierarchyNode) => ReactNode;
   onSelect: (nodeId: string) => void;
 }) {
   const partnerClass = node.isPartnerGroup ? " admin-hierarchy-tile-partner" : "";
@@ -171,7 +186,7 @@ function HierarchyTile({
         </p>
         <div className="admin-hierarchy-tile-foot">
           {assistNode.children.length > 0 && (
-            <span className="admin-hierarchy-tile-meta">{assistNode.children.length} direct</span>
+            <span className="admin-hierarchy-tile-meta">{assistNode.children.reduce((n, child) => n + (child.members?.length ?? 1), 0)} direct</span>
           )}
         </div>
       </button>
@@ -222,11 +237,17 @@ function HierarchyTile({
           )}
         </>
       )}
+      {fullNode.isPartnerGroup && (
+        <p className="admin-hierarchy-tile-npn">
+          {(fullNode.members ?? []).map((member) => member.compLevel != null ? `${member.compLevel}%` : "Not set").join(" · ")}
+        </p>
+      )}
+      {renderMetrics?.(node)}
       <div className="admin-hierarchy-tile-foot">
         {fullNode.isPartnerGroup && <span className="admin-badge assist">Partners</span>}
         {!fullNode.isPartnerGroup && fullNode.role === "admin" && <span className="admin-badge">Admin</span>}
         {fullNode.children.length > 0 && (
-          <span className="admin-hierarchy-tile-meta">{fullNode.children.length} direct</span>
+          <span className="admin-hierarchy-tile-meta">{fullNode.children.reduce((n, child) => n + (child.members?.length ?? 1), 0)} direct</span>
         )}
       </div>
     </button>
@@ -237,13 +258,19 @@ interface HierarchyCanvasProps {
   tree: HierarchyNode[] | AssistHierarchyNode[];
   selectedNodeId: string | null;
   assistView?: boolean;
+  initialView?: "fit" | "root";
+  cardSize?: "compact" | "large";
+  cardScale?: number;
+  renderMetrics?: (node: HierarchyNode | AssistHierarchyNode) => ReactNode;
   onSelectNode: (nodeId: string) => void;
 }
 
-export function HierarchyCanvas({ tree, selectedNodeId, assistView = false, onSelectNode }: HierarchyCanvasProps) {
+export function HierarchyCanvas({ tree, selectedNodeId, assistView = false, initialView, cardSize = "compact", cardScale = 1, renderMetrics, onSelectNode }: HierarchyCanvasProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
-  const tileHeight = assistView ? ASSIST_TILE_HEIGHT : TILE_HEIGHT;
-  const layout = useMemo(() => layoutHierarchyTree(tree, tileHeight), [tree, tileHeight]);
+  const tileWidth = (cardSize === "large" ? 280 : TILE_WIDTH) * cardScale;
+  const partnerTileWidth = (cardSize === "large" ? 340 : PARTNER_TILE_WIDTH) * cardScale;
+  const tileHeight = (assistView ? ASSIST_TILE_HEIGHT : cardSize === "large" ? 320 : TILE_HEIGHT + (renderMetrics ? 72 : 0)) * cardScale;
+  const layout = useMemo(() => layoutHierarchyTree(tree, tileHeight, tileWidth, partnerTileWidth, cardScale), [tree, tileHeight, tileWidth, partnerTileWidth, cardScale]);
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
@@ -277,6 +304,26 @@ export function HierarchyCanvas({ tree, selectedNodeId, assistView = false, onSe
     });
   }, [layout.height, layout.width]);
 
+  const centerRoot = useCallback(() => {
+    const viewport = viewportRef.current;
+    const root = tree[0] && positionedById.get(tree[0].id);
+    if (!viewport || !root) return;
+    // Start with readable text; users can choose Fit for a whole-team overview.
+    setScale(1);
+    setPan({ x: viewport.clientWidth / 2 - root.x, y: 16 - root.y });
+  }, [positionedById, tree]);
+
+  useEffect(() => {
+    if (!initialView) return;
+    const positionView = initialView === "root" ? centerRoot : fitToView;
+    positionView();
+    const viewport = viewportRef.current;
+    if (!viewport || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(positionView);
+    observer.observe(viewport);
+    return () => observer.disconnect();
+  }, [initialView, centerRoot, fitToView]);
+
   const handleWheel = useCallback((event: React.WheelEvent<HTMLDivElement>) => {
     event.preventDefault();
     const viewport = viewportRef.current;
@@ -303,6 +350,8 @@ export function HierarchyCanvas({ tree, selectedNodeId, assistView = false, onSe
     const target = event.target as HTMLElement;
     if (target.closest(".admin-hierarchy-tile")) return;
 
+    // Panning must not start the browser's text-selection gesture.
+    event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     setIsPanning(true);
     panStartRef.current = {
@@ -357,6 +406,7 @@ export function HierarchyCanvas({ tree, selectedNodeId, assistView = false, onSe
           type="button"
           className="admin-hierarchy-zoom-btn admin-hierarchy-zoom-btn-text"
           onClick={() => {
+            if (initialView === "root") { centerRoot(); return; }
             setScale(1);
             setPan({ x: 0, y: 0 });
           }}
@@ -381,6 +431,7 @@ export function HierarchyCanvas({ tree, selectedNodeId, assistView = false, onSe
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
+        onDragStart={(event) => event.preventDefault()}
       >
         <div
           className="admin-hierarchy-transform"
@@ -406,6 +457,7 @@ export function HierarchyCanvas({ tree, selectedNodeId, assistView = false, onSe
                   key={index}
                   d={connectorPath(connection.from, connection.to)}
                   className="admin-hierarchy-line"
+                  style={{ strokeWidth: 1.5 * cardScale }}
                 />
               ))}
             </svg>
@@ -421,12 +473,20 @@ export function HierarchyCanvas({ tree, selectedNodeId, assistView = false, onSe
                   height: tileHeight,
                 }}
               >
-                <HierarchyTile
-                  node={node}
-                  selected={selectedNodeId === node.id}
-                  assistView={assistView}
-                  onSelect={onSelectNode}
-                />
+                <div style={{
+                  width: width / cardScale,
+                  height: tileHeight / cardScale,
+                  transform: `scale(${cardScale})`,
+                  transformOrigin: "0 0",
+                }}>
+                  <HierarchyTile
+                    node={node}
+                    selected={selectedNodeId === node.id}
+                    assistView={assistView}
+                    renderMetrics={renderMetrics}
+                    onSelect={onSelectNode}
+                  />
+                </div>
               </div>
             ))}
           </div>

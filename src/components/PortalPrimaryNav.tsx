@@ -1,10 +1,11 @@
-import { CalendarDays, LayoutDashboard, Link2, MapPinned, Wallet } from "lucide-react";
+import { CalendarDays, LayoutDashboard, Link2, MapPinned, Network, Wallet } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { PORTAL_LEADSPPLY_OPEN } from "@/lib/portal-leadspply-sso";
 import { PORTAL_PAY_PATH } from "@/lib/portal-pay";
 
 const PORTAL_NAV_ITEMS = [
   { to: "/portal", label: "Dashboard", icon: LayoutDashboard, end: true, newTab: false },
+  { to: "/portal/team", label: "My Team", icon: Network, end: false, newTab: false },
   { to: "/portal/calendar", label: "Calendar", icon: CalendarDays, end: false, newTab: false },
   { to: "/portal/state-map", label: "State Map", icon: MapPinned, end: false, newTab: false },
   { to: PORTAL_LEADSPPLY_OPEN, label: "LeadSpply", icon: Link2, end: false, newTab: true },

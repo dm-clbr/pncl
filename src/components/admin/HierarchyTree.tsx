@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { AssistHierarchyNode, HierarchyNode } from "@/lib/admin-api";
 import { AdminUserAvatar } from "@/components/admin/AdminUserAvatar";
@@ -30,6 +30,7 @@ function HierarchyTreeNode({
   expandedIds,
   selectedNodeId,
   assistView,
+  renderMetrics,
   onToggle,
   onSelect,
 }: {
@@ -38,6 +39,7 @@ function HierarchyTreeNode({
   expandedIds: Set<string>;
   selectedNodeId: string | null;
   assistView?: boolean;
+  renderMetrics?: (node: HierarchyNode | AssistHierarchyNode) => ReactNode;
   onToggle: (nodeId: string) => void;
   onSelect: (nodeId: string) => void;
 }) {
@@ -107,7 +109,7 @@ function HierarchyTreeNode({
               </>
             )}
             {hasChildren && (
-              <span className="admin-tree-count">{node.children.length} direct</span>
+              <span className="admin-tree-count">{node.children.reduce((n, child) => n + (child.members?.length ?? 1), 0)} direct</span>
             )}
           </button>
         ) : (
@@ -141,9 +143,10 @@ function HierarchyTreeNode({
               {(node as HierarchyNode).role === "admin" && <span className="admin-badge">Admin</span>}
             </>
           )}
+          {renderMetrics?.(node)}
           {hasChildren && (
             <span className="admin-tree-count">
-              {node.children.length} direct
+              {node.children.reduce((n, child) => n + (child.members?.length ?? 1), 0)} direct
             </span>
           )}
           </button>
@@ -160,6 +163,7 @@ function HierarchyTreeNode({
               expandedIds={expandedIds}
               selectedNodeId={selectedNodeId}
               assistView={assistView}
+            renderMetrics={renderMetrics}
               onToggle={onToggle}
               onSelect={onSelect}
             />
@@ -174,10 +178,11 @@ interface HierarchyTreeProps {
   tree: HierarchyNode[] | AssistHierarchyNode[];
   selectedNodeId: string | null;
   assistView?: boolean;
+  renderMetrics?: (node: HierarchyNode | AssistHierarchyNode) => ReactNode;
   onSelectNode: (nodeId: string) => void;
 }
 
-export function HierarchyTree({ tree, selectedNodeId, assistView = false, onSelectNode }: HierarchyTreeProps) {
+export function HierarchyTree({ tree, selectedNodeId, assistView = false, renderMetrics, onSelectNode }: HierarchyTreeProps) {
   const defaultExpanded = useMemo(() => collectExpandableIds(tree), [tree]);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set(defaultExpanded));
 
@@ -204,6 +209,7 @@ export function HierarchyTree({ tree, selectedNodeId, assistView = false, onSele
             expandedIds={expandedIds}
             selectedNodeId={selectedNodeId}
             assistView={assistView}
+            renderMetrics={renderMetrics}
             onToggle={handleToggle}
             onSelect={onSelectNode}
           />

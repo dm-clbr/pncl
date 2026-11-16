@@ -32,6 +32,7 @@ import PortalCalendar from "./pages/PortalCalendar.tsx";
 import PortalCarrierSheet from "./pages/PortalCarrierSheet.tsx";
 import PortalBrandAssets from "./pages/PortalBrandAssets.tsx";
 import PortalProfile from "./pages/PortalProfile.tsx";
+import PortalTeam from "./pages/PortalTeam";
 import PortalW9 from "./pages/PortalW9.tsx";
 import PortalIca from "./pages/PortalIca.tsx";
 import PortalDirectDeposit from "./pages/PortalDirectDeposit.tsx";
@@ -130,6 +131,7 @@ const App = () => (
             <Route path="/portal/calendar" element={<PortalCalendar />} />
             <Route path="/portal/state-map" element={<PortalStateMap />} />
             <Route path="/portal/profile" element={<PortalProfile />} />
+            <Route path="/portal/team" element={<PortalTeam />} />
           </Route>
           <Route path="/portal/leadspply" element={<ProtectedRoute><PortalLeadSpply /></ProtectedRoute>} />
           <Route path="/portal/leadspply/open" element={<ProtectedRoute><PortalLeadSpplyOpen /></ProtectedRoute>} />

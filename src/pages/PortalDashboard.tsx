@@ -401,7 +401,7 @@ export default function PortalDashboard() {
         reveal={
           <div className="ptile-reveal-body">
             <PortalReferralPanel embedded />
-            <Link className="ptile-link" to="/portal/profile?tab=team">
+            <Link className="ptile-link" to="/portal/team">
               Open team dashboard
             </Link>
           </div>

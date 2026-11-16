@@ -386,3 +386,9 @@ verify_jwt = true
 # Authentication is validated inside the function.
 [functions.portal-leadspply-sso]
 verify_jwt = false
+
+[functions.get-portal-hierarchy]
+verify_jwt = true
+
+[functions.get-portal-team-stats]
+verify_jwt = true

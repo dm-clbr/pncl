@@ -2557,6 +2557,8 @@
   overflow: hidden;
   cursor: grab;
   touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .admin-dash .admin-hierarchy-viewport-panning {
