@@ -57,7 +57,7 @@ describe("Hub team hierarchy", () => {
     expect(within(totals).getByText('$6,000')).toBeInTheDocument();
     expect(screen.getByText('Your team, including you · 4/5 accounts with stats')).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText('Stats period'), { target: { value: 'week' } });
-    expect(usePortalTeamStats).toHaveBeenLastCalledWith('week', true);
+    expect(usePortalTeamStats).toHaveBeenLastCalledWith('week');
     fireEvent.click(screen.getByRole('button', { name: /Jamie Ellis & Sam Ellis/ }));
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getByText('$3,000')).toBeInTheDocument();
@@ -92,6 +92,7 @@ describe("Hub team hierarchy", () => {
     vi.mocked(usePortalHierarchy).mockReturnValue({ data: null, loading: true, error: null, reload });
     const view = renderPanel();
     expect(screen.getByLabelText("Loading team hierarchy")).toBeInTheDocument();
+    expect(usePortalTeamStats).toHaveBeenLastCalledWith("month");
     vi.mocked(usePortalHierarchy).mockReturnValue({ data: null, loading: false, error: "failed", reload });
     view.rerender(<MemoryRouter><PortalHierarchyPanel /></MemoryRouter>);
     expect(screen.getByRole("alert")).toBeInTheDocument();

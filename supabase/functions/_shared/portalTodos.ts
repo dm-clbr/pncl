@@ -505,12 +505,17 @@ export async function computePortalTodoProgressByUserId(
 
   const todos = (data ?? []) as PortalTodoRecord[];
   const userIds = users.map((user) => user.id);
-  const designations = await loadAgentDesignations(adminClient, userIds);
-  const rollout = await loadSigningRollout(adminClient);
-  const { data: previewRows, error: previewError } = await adminClient.from("onboarding_signing_preview_users").select("user_id").in("user_id", userIds);
+  const [designations, rollout, previewResult, compResult, documentResult] = await Promise.all([
+    loadAgentDesignations(adminClient, userIds),
+    loadSigningRollout(adminClient),
+    adminClient.from("onboarding_signing_preview_users").select("user_id").in("user_id", userIds),
+    adminClient.from("portal_comp_attachments").select("user_id").in("user_id", userIds),
+    adminClient.rpc("onboarding_document_progress", { p_users: userIds }),
+  ]);
+  const { data: previewRows, error: previewError } = previewResult;
   if (previewError) throw new Error(previewError.message);
   const previewUsers = new Set((previewRows ?? []).map(row => row.user_id));
-  const { data: compRows, error: compError } = await adminClient.from("portal_comp_attachments").select("user_id").in("user_id", userIds);
+  const { data: compRows, error: compError } = compResult;
   if (compError) throw new Error(compError.message);
   const compUsers = new Set((compRows ?? []).map(row => row.user_id));
   const oldTodos = legacySigningRows(todos, rollout).filter(row => row.published);
@@ -520,7 +525,7 @@ export async function computePortalTodoProgressByUserId(
       .map((row) => row.auto_key as string),
   );
   const autoSets = await computeAutoCompletionSets(adminClient, autoKeys, userIds);
-  const { data: documentRows, error: documentError } = await adminClient.rpc("onboarding_document_progress", { p_users: userIds });
+  const { data: documentRows, error: documentError } = documentResult;
   if (documentError) throw new Error(documentError.message);
   const documents = (documentRows ?? []) as Array<{ user_id: string; phase: PortalTodoPhase; signed_at: string | null }>;
 

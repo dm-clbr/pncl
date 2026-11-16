@@ -20,7 +20,7 @@ import "@/styles/portal-hierarchy.css";
 export default function PortalHierarchyPanel() {
   const { data, loading, error, reload } = usePortalHierarchy();
   const [period, setPeriod] = useState<TeamStatsPeriod>('month');
-  const stats = usePortalTeamStats(period, Boolean(data?.tree.length));
+  const stats = usePortalTeamStats(period);
   const [view, setView] = useState<"chart" | "list">("chart");
   const [rootId, setRootId] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);

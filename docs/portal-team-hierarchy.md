@@ -6,7 +6,7 @@ The page provides Chart/List, 2/3/all levels, branch focus and reset, zoom/fit, 
 
 ## Authorization
 
-`get-portal-hierarchy` validates the existing portal session and fixes the root to the verified user ID. Client-selected root/user/view parameters never expand access. The server uses the same referral and partner relationships as the admin hierarchy and serializes only names, NPNs, in-branch relationships, and the explicitly allowed comp/onboarding/photo fields. Focus options and counts are scoped to the returned branch. Emails, contact details, documents, credentials, and financial account data are excluded. Responses are not cached. The page provides no editing actions and does not grant admin-console access.
+`get-portal-hierarchy` validates the existing portal session and fixes the root to the verified user ID. Client-selected root/user/view parameters never expand access. The server uses the same referral and partner relationships as the admin hierarchy and serializes only names, NPNs, in-branch relationships, and the explicitly allowed comp/onboarding/photo fields. Focus options and counts are scoped to the returned branch. Emails, contact details, documents, credentials, and financial account data are excluded. HTTP responses remain `no-store`. Successful browser results are held only in memory for 60 seconds, scoped to the current access token and period; sign-out clears them. Manual refresh bypasses the cache. The page provides no editing actions and does not grant admin-console access.
 
 ## Release
 
@@ -34,3 +34,11 @@ Final local validation: 50 focused tests passed across hierarchy, stats, account
 Card readability: Hub chart cards use a uniform 90% size factor: 252 px wide (306 px for partners) and 288 px tall. Text, avatars, padding, borders, and branch spacing scale together by 10%, preserving the established card proportions. The chart opens centered on its root at 100% zoom; Fit still offers a full-tree overview. Branch layout reserves the widest card in each subtree to keep partner branches from overlapping.
 
 Canvas navigation disables browser text selection and native image dragging while retaining card clicks and keyboard access.
+
+## Load performance
+
+The hierarchy and LeadSpply stats start together after authentication. Both endpoints resolve membership from a minimal referral/partner roster rather than rebuilding the administrative agent summary. Stats stop at verified member IDs; the hierarchy loads comp, photo and NPN fields only for that branch and computes onboarding phases only for those users. Independent onboarding queries run concurrently. Authentication and server-owned scope checks still run on every network request; no server-side authorization cache was added.
+
+A recent return visit and period changes reuse successful in-memory results for up to 60 seconds. Errors are not cached. Account/token changes, sign-out, unmount cancellation, period races, expiry and manual refresh are covered by tests.
+
+Performance release validation: 93 tests pass across 14 files, with TypeScript, focused lint and production build checks. On Node with experimental web storage enabled, run Vitest with `NODE_OPTIONS=--no-experimental-webstorage` so jsdom supplies its browser storage implementation.

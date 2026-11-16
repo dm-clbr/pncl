@@ -4,6 +4,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AUTH_STARTUP_TIMEOUT_MS, AuthProvider, useAuth } from "./AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { createPortalTeamCache } from "@/lib/portal-team-cache";
 
 const { getSession, signOut, signInWithOAuth, onAuthStateChange } = vi.hoisted(() => ({
   getSession: vi.fn(), signOut: vi.fn(), signInWithOAuth: vi.fn(), onAuthStateChange: vi.fn(),
@@ -44,6 +45,17 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 describe("pending enrollment sessions across tabs", () => {
+  it("clears team data on sign-out even when the team page is unmounted", async () => {
+    window.history.replaceState({}, "", "/portal/profile");
+    getSession.mockResolvedValue({ data: { session: pendingSession }, error: null });
+    render(<AuthProvider><SessionStatus /></AuthProvider>);
+    await screen.findByText("agent@thepncl.com");
+    const cache = createPortalTeamCache<string>();
+    cache.write(pendingSession.access_token, "month", "team data");
+    await act(() => listener("SIGNED_OUT", null));
+    expect(cache.read(pendingSession.access_token, "month")).toBeUndefined();
+    expect(screen.getByText("Signed out")).toBeInTheDocument();
+  });
   it.each(["/onboarding", "/onboarding/success/enrollment-id", "/contact", "/portal/profile"])(
     "preserves a Google sign-in broadcast received by an existing tab on %s", async (path) => {
       window.history.replaceState({}, "", path);

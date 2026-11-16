@@ -19,6 +19,8 @@ import {
   storePortalOAuthReturn,
 } from "@/lib/portal-auth";
 
+import { clearPortalTeamCaches } from "@/lib/portal-team-cache";
+
 const ALLOWED_EMAIL_DOMAIN = "thepncl.com";
 export const AUTH_STARTUP_TIMEOUT_MS = 12_000;
 const AUTH_UNAVAILABLE = "PNCL Hub is taking too long to connect. Please try again shortly.";
@@ -82,6 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const timer = setTimeout(fail, AUTH_STARTUP_TIMEOUT_MS);
     const applySession = (nextSession: Session | null) => {
       const allowed = !nextSession?.user || isAllowedEmail(nextSession.user.email);
+      if (!nextSession || !allowed) clearPortalTeamCaches();
       setSession(allowed ? nextSession : null);
       setUser(allowed ? nextSession?.user ?? null : null);
       if (!allowed) {
@@ -155,6 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const supabase = getSupabaseClient();
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    clearPortalTeamCaches();
     setSession(null);
     setUser(null);
   }, []);

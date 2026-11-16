@@ -1,13 +1,45 @@
+import { clearPortalTeamCaches } from '@/lib/portal-team-cache';
 import { act, renderHook, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { usePortalHierarchy } from './usePortalHierarchy';
 import { getPortalHierarchy } from '@/lib/portal-hierarchy';
 import { portalHierarchyFixture } from '@/test/fixtures/portal-hierarchy';
 let token: string | undefined;
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ session: token ? {access_token:token} : null, loading:false }) }));
 vi.mock('@/lib/portal-hierarchy', async (original) => ({ ...await original<typeof import('@/lib/portal-hierarchy')>(), getPortalHierarchy:vi.fn() }));
-beforeEach(() => { token = 'first-account'; vi.mocked(getPortalHierarchy).mockReset(); });
+beforeEach(() => { clearPortalTeamCaches(); token = 'first-account'; vi.mocked(getPortalHierarchy).mockReset(); });
+afterEach(() => { vi.restoreAllMocks(); });
 describe('team hierarchy request lifecycle', () => {
+  it('reuses a recent hierarchy on return but refresh and expiry fetch current data', async () => {
+    let now = 1_000;
+    vi.spyOn(Date, 'now').mockImplementation(() => now);
+    vi.mocked(getPortalHierarchy).mockResolvedValue(portalHierarchyFixture());
+    const first = renderHook(() => usePortalHierarchy());
+    await waitFor(() => expect(first.result.current.data?.totalAgents).toBe(5));
+    first.unmount();
+    const second = renderHook(() => usePortalHierarchy());
+    expect(second.result.current.loading).toBe(false);
+    expect(second.result.current.data?.totalAgents).toBe(5);
+    expect(getPortalHierarchy).toHaveBeenCalledTimes(1);
+    await act(() => second.result.current.reload());
+    expect(getPortalHierarchy).toHaveBeenCalledTimes(2);
+    second.unmount();
+    now += 60_001;
+    const third = renderHook(() => usePortalHierarchy());
+    await waitFor(() => expect(getPortalHierarchy).toHaveBeenCalledTimes(3));
+    third.unmount();
+  });
+  it('never reuses cached data after sign-out or for a different account', async () => {
+    vi.mocked(getPortalHierarchy).mockResolvedValue(portalHierarchyFixture());
+    const view = renderHook(() => usePortalHierarchy());
+    await waitFor(() => expect(view.result.current.data).not.toBeNull());
+    token = undefined; view.rerender();
+    expect(view.result.current.data).toBeNull();
+    token = 'first-account'; view.rerender();
+    await waitFor(() => expect(getPortalHierarchy).toHaveBeenCalledTimes(2));
+    token = 'other-account'; view.rerender();
+    await waitFor(() => expect(getPortalHierarchy).toHaveBeenCalledTimes(3));
+  });
   it('discards in-flight results after an account change and clears data on sign-out', async () => {
     let finishFirst!: (value: ReturnType<typeof portalHierarchyFixture>) => void;
     vi.mocked(getPortalHierarchy).mockImplementationOnce(() => new Promise(resolve => {finishFirst = resolve;}));

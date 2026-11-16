@@ -1,8 +1,6 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { AdminAuthError, requirePortalUser } from '../_shared/adminAuth.ts';
-import { buildAgentSummaries } from '../_shared/adminAgents.ts';
-import { loadHierarchyPartnerLinks } from '../_shared/hierarchyPartners.ts';
-import { buildPortalHierarchyResponse } from '../_shared/portalHierarchy.ts';
+import { loadPortalTeamScope } from '../_shared/portalHierarchyData.ts';
 import { sanitizePortalTeamStats, type PortalTeamStats, type TeamStatsPeriod } from '../_shared/portalTeamStats.ts';
 import { corsHeaders, handleCors } from '../_shared/cors.ts';
 
@@ -19,9 +17,8 @@ serve(async (req) => {
     || !['week', 'month', 'last30'].includes(period)) return json(400, { message: 'Invalid stats request' });
   try {
     const { user, adminClient } = await requirePortalUser(req);
-    const [agents, partners] = await Promise.all([buildAgentSummaries(adminClient), loadHierarchyPartnerLinks(adminClient)]);
     // Browser input NEVER supplies a member list or viewer identity. Hub owns the hierarchy.
-    const ids = buildPortalHierarchyResponse(agents, user.id, partners).people.map(person => person.id);
+    const { ids } = await loadPortalTeamScope(adminClient, user.id);
     if (!ids.length) return json(200, { state: 'no_hierarchy' });
     const key = Deno.env.get('PNCL_INTEGRATION_KEY');
     const snapshotUrl = Deno.env.get('LEADSPPLY_SNAPSHOT_URL');

@@ -1,8 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requirePortalUser } from "../_shared/adminAuth.ts";
-import { buildAgentSummaries } from "../_shared/adminAgents.ts";
-import { loadHierarchyPartnerLinks } from "../_shared/hierarchyPartners.ts";
-import { buildPortalHierarchyResponse } from "../_shared/portalHierarchy.ts";
+import { loadPortalHierarchy } from "../_shared/portalHierarchyData.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
 
@@ -13,12 +11,8 @@ serve(async (req) => {
 
   try {
     const { user, adminClient } = await requirePortalUser(req);
-    const [agents, partnerLinks] = await Promise.all([
-      buildAgentSummaries(adminClient),
-      loadHierarchyPartnerLinks(adminClient),
-    ]);
     // Query parameters cannot expand this scope, even for an administrator.
-    const response = jsonResponse(buildPortalHierarchyResponse(agents, user.id, partnerLinks));
+    const response = jsonResponse(await loadPortalHierarchy(adminClient, user.id));
     response.headers.set("Cache-Control", "no-store");
     response.headers.set("Vary", "Authorization, Origin");
     return response;

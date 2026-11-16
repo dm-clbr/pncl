@@ -1,3 +1,4 @@
+import { clearPortalTeamCaches } from '@/lib/portal-team-cache';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { usePortalTeamStats } from './usePortalTeamStats';
@@ -6,8 +7,20 @@ import { teamStatsFixture } from '@/test/fixtures/portal-team-stats';
 let token: string | undefined;
 vi.mock('@/contexts/AuthContext', () => ({ useAuth: () => ({ session: token ? {access_token:token} : null, loading:false }) }));
 vi.mock('@/lib/portal-team-stats', async (original) => ({ ...await original<typeof import('@/lib/portal-team-stats')>(), getPortalTeamStats:vi.fn() }));
-beforeEach(() => { token = 'first-account'; vi.mocked(getPortalTeamStats).mockReset(); });
+beforeEach(() => { clearPortalTeamCaches(); token = 'first-account'; vi.mocked(getPortalTeamStats).mockReset(); });
 describe('team stats request lifecycle', () => {
+  it('caches each period separately and manual refresh bypasses it', async () => {
+    vi.mocked(getPortalTeamStats).mockImplementation(async (_token, period) => ({ ...teamStatsFixture(), period: { ...teamStatsFixture().period, key: period } }));
+    const view = renderHook(({ period }: { period: 'week' | 'month' }) => usePortalTeamStats(period), { initialProps: { period: 'month' } });
+    await waitFor(() => expect(view.result.current.data?.period.key).toBe('month'));
+    view.rerender({ period: 'week' });
+    await waitFor(() => expect(view.result.current.data?.period.key).toBe('week'));
+    view.rerender({ period: 'month' });
+    expect(view.result.current.data?.period.key).toBe('month');
+    expect(getPortalTeamStats).toHaveBeenCalledTimes(2);
+    await act(() => view.result.current.reload());
+    expect(getPortalTeamStats).toHaveBeenCalledTimes(3);
+  });
   it('discards in-flight results after an account change and clears data on sign-out', async () => {
     let finishFirst!: (value: ReturnType<typeof teamStatsFixture>) => void;
     vi.mocked(getPortalTeamStats).mockImplementationOnce(() => new Promise(resolve => {finishFirst = resolve;}));

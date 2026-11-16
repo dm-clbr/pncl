@@ -22,7 +22,7 @@ function setup({ deny = false, unavailable = false } = {}) {
       if (deny) throw new AuthError("Unauthorized");
       return { user: { id: "leader", app_metadata: { role: "agent" } }, adminClient: {} };
     },
-    buildAgentSummaries: load,
+    loadPortalHierarchy: async (_client: unknown, userId: string) => buildPortalHierarchyResponse(await load(), userId, []),
     loadHierarchyPartnerLinks: async () => [],
     buildPortalHierarchyResponse,
     handleCors: () => null,

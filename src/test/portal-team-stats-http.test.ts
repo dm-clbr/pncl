@@ -21,7 +21,7 @@ function hub({deny=false, upstreamOk=true, endpoint='https://lhxvbtiepsuohunfmnk
   loadHandler('supabase/functions/get-portal-team-stats/index.ts', {
     serve:(handler:typeof route)=>{route=handler;}, AdminAuthError:AuthError,
     requirePortalUser:async()=>{if(deny)throw new AuthError('Unauthorized');return {user:{id:'leader'},adminClient:{}};},
-    buildAgentSummaries:roster,loadHierarchyPartnerLinks:async()=>[], buildPortalHierarchyResponse,sanitizePortalTeamStats,
+    loadPortalTeamScope:async (_client:unknown, userId:string)=>({ids:buildPortalHierarchyResponse(await roster(),userId,[]).people.map(person=>person.id)}),sanitizePortalTeamStats,
     corsHeaders:{},handleCors:()=>null,AbortSignal:{timeout:()=>new AbortController().signal},Deno:{env:{get:(key:string)=>key==='PNCL_INTEGRATION_KEY'?'server-only-secret':endpoint}},fetch,
   });
   return {fetch,roster,request:(query='',method='GET')=>route(new Request(`https://hub.test/stats${query}`,{method}))};
