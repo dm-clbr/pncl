@@ -17,7 +17,8 @@ export default function PortalLogin() {
   const configured = isSupabaseAuthConfigured();
 
   const [redirectTarget] = useState(() => {
-    const stateFrom = (location.state as { from?: { pathname: string } } | null)?.from?.pathname;
+    const from = (location.state as { from?: { pathname: string; search?: string } } | null)?.from;
+    const stateFrom = from ? from.pathname + (from.search ?? '') : undefined;
     return stateFrom ?? consumePortalOAuthReturn() ?? "/portal";
   });
 

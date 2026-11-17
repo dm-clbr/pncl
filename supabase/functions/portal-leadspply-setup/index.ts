@@ -1,7 +1,8 @@
 import { AdminAuthError, requirePortalUser } from "../_shared/adminAuth.ts";
 import { requireHubWorkEmail } from "../_shared/hubWorkEmail.ts";
 import { corsHeaders } from "../_shared/cors.ts";
-import { SetupError, setupRequest } from "../_shared/pnclSetupContract.ts";
+import { SetupError } from "../_shared/pnclSetupContract.ts";
+import { assertPaySourceAccount, hubSetupRequest } from "../_shared/pnclPayLaunch.ts";
 import {
   sanitizeSetupStatus,
   setupMessages,
@@ -53,7 +54,7 @@ Deno.serve(async (req) => {
     ) throw new SetupError("invalid_request", 400);
     const raw = await req.text();
     if (raw.length > 16384) throw new SetupError("invalid_request", 400);
-    const body = setupRequest(JSON.parse(raw));
+    const { body, expectedAccountId } = hubSetupRequest(JSON.parse(raw));
     auditActor = user.id;
     payRequest = body.action === "pay";
     if (body.expectedEmail !== undefined && body.expectedEmail !== email) {
@@ -107,6 +108,7 @@ Deno.serve(async (req) => {
     }
     const status = sanitizeSetupStatus(payload, email);
     if (body.action === "pay") {
+      assertPaySourceAccount(expectedAccountId, status.account);
       if (!status.ready) throw new SetupError("setup_incomplete");
       // Re-read Auth and onboarding after the cross-project call; stale JWT claims never choose the SSO email.
       const fresh = await adminClient.auth.admin.getUserById(user.id);

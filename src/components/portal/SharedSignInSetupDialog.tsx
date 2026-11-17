@@ -3,8 +3,9 @@ import PortalWorkflowDialog from "@/components/PortalWorkflowDialog";
 import type { SetupStatus } from "@/lib/hub-account-setup";
 import { sharedSignInSetupHref, type SignInProduct } from "@/lib/shared-sign-in";
 
-export default function SharedSignInSetupDialog({ product, email, status, onClose, onRefresh }: {
+export default function SharedSignInSetupDialog({ product, email, status, expectedAccountId, onClose, onRefresh }: {
   product: SignInProduct; email: string; status: SetupStatus | null;
+  expectedAccountId?: string | null;
   onClose: () => void; onRefresh: () => void;
 }) {
   // A null status here means Pay itself reported that the account is missing.
@@ -50,7 +51,7 @@ export default function SharedSignInSetupDialog({ product, email, status, onClos
       <button type="button" onClick={onRefresh}>Refresh connection</button>
       {confirmation && <a href="https://leadspply.com/login" target="_blank" rel="noopener noreferrer">Open LeadSpply login</a>}
       {mismatch || unlinked
-        ? <Link className="portal-workflow-primary" to={sharedSignInSetupHref(product, status)}>{mismatch ? "Update LeadSpply email" : "Start account setup"}</Link>
+        ? <Link className="portal-workflow-primary" to={sharedSignInSetupHref(product, status, expectedAccountId)}>{mismatch ? "Update LeadSpply email" : "Start account setup"}</Link>
         : <Link className="portal-workflow-primary" to="/portal/support">Contact support</Link>}
     </footer>
   </PortalWorkflowDialog>;

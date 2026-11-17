@@ -11,6 +11,12 @@ export default function PortalLeadSpply() {
   const [params] = useSearchParams();
   const [status, setStatus] = useState<SetupStatus | null>(null);
   const target = params.get("continue") === "pay" ? "PNCL Pay" : params.get("continue") === "leadspply" ? "LeadSpply" : null;
+  // Preserve even malformed/duplicate constraints so Pay rejects them rather
+  // than silently turning a constrained launch into an ordinary Hub launch.
+  const sourceParams = new URLSearchParams();
+  params.getAll("leadspplyUserId").forEach(id => sourceParams.append("leadspplyUserId", id));
+  const sourceSearch = sourceParams.toString();
+  const payHref = "/portal/pay" + (sourceSearch ? "?" + sourceSearch : "");
   const email = user?.email?.trim().toLowerCase() ?? "";
   return (
     <PortalToolLayout title="Set up LeadSpply and PNCL Pay">
@@ -20,7 +26,7 @@ export default function PortalLeadSpply() {
       </p>
       {target && status?.email === email && status.ready && (target !== "PNCL Pay" || status.payEnabled) && <Pane title="Your shared sign-in is ready">
         <p>Your verified company emails match. Continue with your existing account.</p>
-        <Link className="ptools-cta is-primary" to={target === "PNCL Pay" ? "/portal/pay" : "/portal/leadspply/open"}>Continue to {target}</Link>
+        <Link className="ptools-cta is-primary" to={target === "PNCL Pay" ? payHref : "/portal/leadspply/open"}>Continue to {target}</Link>
       </Pane>}
       {!user?.email_confirmed_at || !/^[^\s@]+@thepncl\.com$/.test(email)
         ? (
@@ -46,6 +52,7 @@ export default function PortalLeadSpply() {
             email={email}
             token={session?.user.id === user.id ? session.access_token : ""}
             initialStep={params.get("step") === "email" ? "email" : undefined}
+            payHref={payHref}
             onStatusChange={setStatus}
           />
         )}

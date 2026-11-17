@@ -1,12 +1,13 @@
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import PortalLogin from "@/pages/PortalLogin";
 
 let configured = true;
+const signIn = vi.hoisted(() => vi.fn());
 
 vi.mock("@/contexts/AuthContext", () => ({
-  useAuth: () => ({ user: null, loading: false, signInWithGoogle: vi.fn() }),
+  useAuth: () => ({ user: null, loading: false, signInWithGoogle: signIn }),
   isEmailConfirmed: () => false,
 }));
 vi.mock("@/lib/supabase", () => ({ isSupabaseAuthConfigured: () => configured }));
@@ -32,6 +33,14 @@ function renderLogin() {
 describe("PortalLogin", () => {
   beforeEach(() => {
     configured = true;
+    signIn.mockClear();
+  });
+
+  it('preserves the originating LeadSpply account through the Google sign-in round trip', async () => {
+    const search = '?leadspplyUserId=22222222-2222-4222-8222-222222222222';
+    render(<MemoryRouter initialEntries={[{ pathname: '/portal/login', state: { from: { pathname: '/portal/pay', search } } }]}><PortalLogin /></MemoryRouter>);
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Sign in with Google' })));
+    expect(signIn).toHaveBeenCalledWith('/portal/pay' + search);
   });
 
   it("offers Google sign-in when auth is configured", () => {

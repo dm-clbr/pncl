@@ -43,6 +43,8 @@ export const setupMessages: Record<string, string> = {
     "Your PNCL Pay account needs to be set up. Contact support.",
   pay_validation_failed:
     "PNCL Pay needs configuration review. Contact support.",
+  pay_account_mismatch:
+    "Hub is not connected to the LeadSpply account you opened Pay from. Sign in to Hub with the same PNCL work account.",
 };
 export function sanitizeSetupStatus(
   value: unknown,

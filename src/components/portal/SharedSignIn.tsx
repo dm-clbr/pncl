@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import Pane from "./Pane";
 import { useAuth } from "@/contexts/AuthContext";
 import { explainSignInFailure, setupSignInError, sharedSignInError, sharedSignInSetupHref, type SignInFailure, type SignInProduct } from "@/lib/shared-sign-in";
 import { hubAccountSetup, type SetupStatus } from "@/lib/hub-account-setup";
 import SharedSignInSetupDialog from "./SharedSignInSetupDialog";
+import { assertPaySourceAccount } from "../../../supabase/functions/_shared/pnclPayLaunch";
 
 export function SignInStatus({ product, email, message, failure, retry, cooldown = 0, slow = false, setupHref = "/portal/leadspply", showSetup }: {
   product: SignInProduct; email?: string; message?: string; failure?: SignInFailure | null;
@@ -12,11 +13,12 @@ export function SignInStatus({ product, email, message, failure, retry, cooldown
   setupHref?: string; showSetup?: () => void;
 }) {
   const { signInWithGoogle } = useAuth();
+  const location = useLocation();
   const [signInFailed, setSignInFailed] = useState(false);
   const [signingIn, setSigningIn] = useState(false);
   async function signIn() {
     setSigningIn(true); setSignInFailed(false);
-    try { await signInWithGoogle(product === "LeadSpply" ? "/portal/leadspply/open" : "/portal/pay"); }
+    try { await signInWithGoogle(product === "LeadSpply" ? "/portal/leadspply/open" : "/portal/pay" + location.search); }
     catch { setSignInFailed(true); }
     finally { setSigningIn(false); }
   }
@@ -57,8 +59,9 @@ export function SignInGate({ product, email, confirmed, token, children }: {
   return failure || !token ? <SignInStatus product={product} email={email} failure={failure} message="Checking your Hub session…" /> : children;
 }
 
-export function SharedSignIn({ product, email, token, launch, timeout = 60000 }: {
+export function SharedSignIn({ product, email, token, launch, timeout = 60000, expectedAccountId = null }: {
   product: SignInProduct; email: string; token: string; timeout?: number;
+  expectedAccountId?: string | null;
   launch: (token: string, signal: AbortSignal, progress: (message: string) => void) => Promise<void>;
 }) {
   // Refreshes do not issue duplicate links; a deliberate retry uses the latest token.
@@ -96,6 +99,7 @@ export function SharedSignIn({ product, email, token, launch, timeout = 60000 }:
         if (!status || status.email !== email || !["connected", "not_linked", "account_unavailable"].includes(status.state)) {
           throw { code: "integration_unavailable" };
         }
+        if (product === "PNCL Pay") assertPaySourceAccount(expectedAccountId, status.account);
         if (!status.ready || product === "PNCL Pay" && !status.payEnabled) {
           setSetup({ status }); setSetupOpen(true);
           setFailure(setupSignInError(status) ?? sharedSignInError({ code: status.ready ? "pay_unavailable" : "setup_incomplete", status: 503 }, product));
@@ -120,11 +124,11 @@ export function SharedSignIn({ product, email, token, launch, timeout = 60000 }:
       }
     });
     return () => { active = false; clearTimeout(deadline); clearTimeout(slowTimer); controller.abort(); };
-  }, [attempt, launch, product, email, timeout]);
+  }, [attempt, launch, product, email, timeout, expectedAccountId]);
   const retry = () => setAttempt(value => ({ token, version: value.version + 1 }));
   return <>
     <SignInStatus product={product} email={email} message={message} failure={failure} slow={slow} cooldown={cooldown} retry={retry}
-      setupHref={sharedSignInSetupHref(product, setup?.status)} showSetup={setup ? () => setSetupOpen(true) : undefined} />
-    {setup && setupOpen && <SharedSignInSetupDialog product={product} email={email} status={setup.status} onClose={() => setSetupOpen(false)} onRefresh={retry} />}
+      setupHref={sharedSignInSetupHref(product, setup?.status, expectedAccountId)} showSetup={setup ? () => setSetupOpen(true) : undefined} />
+    {setup && setupOpen && <SharedSignInSetupDialog product={product} email={email} status={setup.status} expectedAccountId={expectedAccountId} onClose={() => setSetupOpen(false)} onRefresh={retry} />}
   </>;
 }

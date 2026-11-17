@@ -1,6 +1,19 @@
 import { sharedSignInError } from "./shared-sign-in";
 export const PORTAL_PAY_PATH = "/portal/pay";
 
+/** Only a matching-account constraint crosses from LeadSpply; never a token. */
+export function paySourceAccountId(search: string): string | null {
+  if (!search) return null;
+  const params = new URLSearchParams(search);
+  const id = params.get('leadspplyUserId');
+  if ([...params.keys()].some(key => key !== 'leadspplyUserId')
+    || params.getAll('leadspplyUserId').length !== 1 || !id
+    || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    throw Object.assign(new Error('invalid_request'), { code: 'invalid_request' });
+  }
+  return id.toLowerCase();
+}
+
 /** Existing CMS shortcuts must enter through Hub to use its authenticated session. */
 export function portalPayHref(href: string): string {
   try {
