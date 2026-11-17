@@ -10,6 +10,7 @@ import {
 } from "./onboardingContract.ts";
 import { createPortalIcaSignedUrl, type PortalIcaRecord } from "./portalIca.ts";
 import { PORTAL_PROFILE_DOCUMENTS_BUCKET } from "./portalProfileSetup.ts";
+import { DOCUMENT_BUCKET, documentUrl } from "./documentRequests.ts";
 
 export interface AdminUserDocument {
   id: string;
@@ -218,13 +219,14 @@ export async function loadAdminUserDocumentsWithContract(
   w9Record: PortalW9Record | null,
   directDepositRecord: DirectDepositRecord | null,
 ): Promise<AdminUserDocument[]> {
-  const [documents, manualDocuments] = await Promise.all([
+  const [documents, manualDocuments, requestedDocuments] = await Promise.all([
     loadAdminUserDocuments(adminClient, userId, w9Record, directDepositRecord),
     loadManualProfileDocuments(adminClient, userId),
+    loadSignedRequestDocuments(adminClient, userId),
   ]);
   const withoutIcaDuplicates = [...documents, ...manualDocuments].filter(
     (document) => document.fileName.toLowerCase() !== "ica-signed.pdf",
-  );
+  ).concat(requestedDocuments);
 
   const portalIcaDocument = await loadPortalIcaDocument(adminClient, userId);
   if (portalIcaDocument) {
@@ -241,6 +243,39 @@ export async function loadAdminUserDocumentsWithContract(
   }
 
   return [contractDocument, ...withoutIcaDuplicates].sort((a, b) => a.label.localeCompare(b.label));
+}
+
+/** Signed copies from documents assigned through the onboarding step setup. */
+export async function loadSignedRequestDocuments(
+  adminClient: SupabaseClient,
+  userId: string,
+): Promise<AdminUserDocument[]> {
+  const documents: AdminUserDocument[] = [];
+  for (let offset = 0; ; offset += 100) {
+    const { data, error } = await adminClient.from("portal_document_requests")
+      .select("id, signed_at, signed_pdf_path, campaign:portal_document_campaigns(title)")
+      .eq("user_id", userId)
+      .not("released_at", "is", null)
+      .not("signed_at", "is", null)
+      .not("signed_pdf_path", "is", null)
+      .order("signed_at", { ascending: false }).order("id")
+      .range(offset, offset + 99);
+    if (error) throw new Error("Unable to load signed document requests. Please retry.");
+    const rows = (data ?? []) as unknown as Array<{
+      id: string; signed_at: string; signed_pdf_path: string; campaign: { title: string };
+    }>;
+    for (const row of rows) {
+      documents.push({
+        id: `document-request:${row.id}`,
+        label: row.campaign.title,
+        fileName: row.signed_pdf_path.split("/").pop() ?? "signed-document.pdf",
+        signedAt: row.signed_at,
+        downloadUrl: await documentUrl(adminClient, row.signed_pdf_path, DOCUMENT_BUCKET),
+      });
+    }
+    if (rows.length < 100) break;
+  }
+  return documents;
 }
 
 export function validateAdminUserProfileQuery(url: URL): { userId: string } {

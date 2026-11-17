@@ -102,7 +102,7 @@ export async function agentDocumentUrl(token: string, id: string) {
 import type { AdoptedSignature } from "../../supabase/functions/_shared/signatureAdoption";
 export async function signAgentDocument(token: string, id: string, signatureName: string, accepted: boolean, documentHash: string, fieldValues?: Record<string, string | boolean>, signature?: AdoptedSignature) {
   const { imageDataUrl, ...signatureAdoption } = signature ?? {};
-  return call(token, "portal-document-requests", { action: "sign", id, signatureName, accepted, documentHash, fieldValues, signatureAdoption, signatureImageBase64: imageDataUrl });
+  return call<{ ok: boolean; warnings?: string[] }>(token, "portal-document-requests", { action: "sign", id, signatureName, accepted, documentHash, fieldValues, signatureAdoption, signatureImageBase64: imageDataUrl });
 }
 export function readDocumentFile(file: File): Promise<string> {
   return new Promise((resolve, reject) => {

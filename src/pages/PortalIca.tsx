@@ -33,10 +33,16 @@ export default function PortalIca() {
   const navigate = useNavigate();
   const { user, session } = useAuth();
   const { content, error: contentError, retry: retryContent } = useOnboardingContent({ accessToken: session?.access_token, portal: true });
-  const { ica, submitted, loading, setIca } = usePortalIca();
+  const { ica, submitted, loading, setIca, requiresResign, error: icaError, reload: reloadIca } = usePortalIca();
   const requests = useIcaDocumentRequests(session?.access_token);
   const hasIcaRequests = requests.rows.length > 0;
   const hasPendingIca = requests.rows.some(row => !row.signedAt);
+  const [signedRequest, setSignedRequest] = useState(false);
+  // A reset can remove the native ICA while earlier rollout signatures remain
+  // on file. Those historical copies must not block the requested new signature.
+  const needsFreshIca = !submitted && !signedRequest && !hasPendingIca &&
+    (!hasIcaRequests || requiresResign);
+  const showFreshIca = !loading && !icaError && !requests.loading && !requests.error && needsFreshIca;
   const [prefill, setPrefill] = useState({ legalName: "", email: "" });
   const [prefillReady, setPrefillReady] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
@@ -183,15 +189,18 @@ export default function PortalIca() {
             </Pane>
           )}
 
-          {!loading && <IcaDocumentRequests token={session?.access_token ?? ""} {...requests}
-            initialName={ica?.legalName ?? displayName}
-            previewAsset={submitted && user?.app_metadata?.role === "admin" && content?.signingEnabled !== false && content?.ica && !ica?.icaVersion?.endsWith(content.ica.id) ? content.ica : null} />}
-
-          {!loading && !submitted && !requests.loading && !requests.error && !hasIcaRequests && !content && <Pane><p role={contentError ? "alert" : "status"}>{contentError || "Loading your agreement…"}</p>{contentError && <button className="btn btn-ghost" onClick={retryContent}>Retry agreement</button>}</Pane>}
-          {!loading && !submitted && !requests.loading && !requests.error && !hasIcaRequests && prefillReady && content?.ica && <UploadedIcaSigningStep key={content.ica.id} asset={content.ica} prefillLegalName={prefill.legalName} prefillEmail={prefill.email} onSubmit={handleSubmit} finishLabel="Sign and save to profile" />}
-          {!loading && !submitted && !requests.loading && !requests.error && !hasIcaRequests && prefillReady && content && !content.ica && (
+          {!loading && icaError && <Pane><p role="alert">{icaError}</p><button className="btn btn-ghost" onClick={() => void reloadIca()}>Retry agreement status</button></Pane>}
+          {showFreshIca && hasIcaRequests && <Pane><p className="portal-panel-note">PNCL has requested a new signature. Review and sign the agreement below. Your earlier signed copies are still available farther down this page.</p></Pane>}
+          {showFreshIca && !content && <Pane><p role={contentError ? "alert" : "status"}>{contentError || "Loading your agreement…"}</p>{contentError && <button className="btn btn-ghost" onClick={retryContent}>Retry agreement</button>}</Pane>}
+          {showFreshIca && prefillReady && content?.ica && <UploadedIcaSigningStep key={content.ica.id} asset={content.ica} prefillLegalName={prefill.legalName} prefillEmail={prefill.email} onSubmit={handleSubmit} finishLabel="Sign and save to profile" />}
+          {showFreshIca && prefillReady && content && !content.ica && (
             <Pane><p role="alert">PNCL needs to upload the ICA for your onboarding flow. Please contact PNCL support before signing.</p></Pane>
           )}
+
+          {!loading && <IcaDocumentRequests token={session?.access_token ?? ""} {...requests}
+            initialName={ica?.legalName ?? displayName}
+            onSigned={() => setSignedRequest(true)}
+            previewAsset={submitted && user?.app_metadata?.role === "admin" && content?.signingEnabled !== false && content?.ica && !ica?.icaVersion?.endsWith(content.ica.id) ? content.ica : null} />}
         </div>
       </main>
 

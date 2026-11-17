@@ -6,15 +6,17 @@ import * as documents from "@/lib/document-requests";
 import { submitPortalIca } from "@/lib/portal-ica";
 
 const state = vi.hoisted(() => ({
-  user: { id: "agent-1", email: "agent@example.com", user_metadata: { full_name: "Test Agent" }, app_metadata: { role: "agent" } },
+  user: { id: "agent-1", email: "agent@example.com", user_metadata: { full_name: "Test Agent", ica_resign_required: false }, app_metadata: { role: "agent" } },
   submitted: true,
+  requiresResign: false,
+  statusError: null as string | null,
 }));
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: state.user, session: { access_token: "agent-token" } }) }));
 vi.mock("@/hooks/useOnboardingContent", () => ({ useOnboardingContent: () => ({ content: { signingEnabled: true, designation: "loa", ica: { id: "new-asset", url: "/new-ica.pdf" } } }) }));
-vi.mock("@/hooks/usePortalIca", () => ({ usePortalIca: () => ({ submitted: state.submitted, loading: false, setIca: vi.fn(), ica: state.submitted ? { legalName: "Test Agent", signedAt: "2026-07-07T12:00:00Z", icaVersion: "legacy" } : null }) }));
+vi.mock("@/hooks/usePortalIca", () => ({ usePortalIca: () => ({ submitted: state.submitted, requiresResign: state.requiresResign, error: state.statusError, reload: vi.fn(), loading: false, setIca: vi.fn(), ica: state.submitted ? { legalName: "Test Agent", signedAt: "2026-07-07T12:00:00Z", icaVersion: "legacy" } : null }) }));
 vi.mock("@/lib/portal-profile", async (importOriginal) => ({ ...await importOriginal<typeof import("@/lib/portal-profile")>(), fetchPortalProfile: vi.fn().mockResolvedValue(null) }));
 vi.mock("@/lib/portal-ica", () => ({ fetchPortalIcaDocument: vi.fn().mockResolvedValue({ downloadUrl: "https://files.example/old-signed-ica.pdf" }), getDefaultIcaPrefill: () => ({ legalName: "Test Agent", email: "agent@example.com" }), submitPortalIca: vi.fn() }));
-vi.mock("@/lib/portal-messages", () => ({ refreshPortalUser: vi.fn() }));
+vi.mock("@/lib/portal-messages", async original => ({ ...await original<typeof import("@/lib/portal-messages")>(), refreshPortalUser: vi.fn() }));
 vi.mock("@/lib/analytics", () => ({ trackPageView: vi.fn() }));
 vi.mock("@/lib/document-requests", async original => ({ ...await original<typeof import("@/lib/document-requests")>(), listAgentDocumentRequests: vi.fn(), agentDocumentUrl: vi.fn(), signAgentDocument: vi.fn() }));
 vi.mock("@/components/UploadedIcaSigningStep", () => ({ default: () => <p>First-time ICA form</p> }));
@@ -26,6 +28,9 @@ const assigned: documents.AgentDocumentRequest = { id: "ica-request", title: "LO
 beforeEach(() => {
   vi.clearAllMocks();
   state.user.app_metadata.role = "agent";
+  state.user.user_metadata.ica_resign_required = false;
+  state.requiresResign = false;
+  state.statusError = null;
   state.submitted = true;
   vi.mocked(documents.listAgentDocumentRequests).mockResolvedValue([assigned]);
   vi.mocked(documents.agentDocumentUrl).mockResolvedValue("https://files.example/assigned-ica.pdf");
@@ -91,6 +96,47 @@ for (const [variant, Page] of [["uploaded flow", PortalIca]] as const) {
       vi.mocked(documents.listAgentDocumentRequests).mockResolvedValue([]);
       await openPage();
       expect(screen.getByText("First-time ICA form")).toBeInTheDocument();
+    });
+    it("opens a fresh configured form after a reset while retaining earlier signed requests", async () => {
+      state.submitted = false;
+      state.requiresResign = true; // Fresh server status, even if the session metadata predates the reset.
+      vi.mocked(documents.listAgentDocumentRequests).mockResolvedValue([{ ...assigned, signedAt: "2026-11-16T17:33:40Z", signatureName: "Test Agent" }]);
+      await openPage();
+      const form = screen.getByText("First-time ICA form");
+      const history = screen.getByRole("heading", { name: "Signed ICA editions" });
+      expect(form).toBeInTheDocument();
+      expect(form.compareDocumentPosition(history) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(screen.getByText(/Your earlier signed copies/)).toBeInTheDocument();
+      expect(submitPortalIca).not.toHaveBeenCalled();
+    });
+    it("does not request another signature for a signed rollout without an explicit reset", async () => {
+      state.submitted = false;
+      vi.mocked(documents.listAgentDocumentRequests).mockResolvedValue([{ ...assigned, signedAt: "2026-11-16T17:33:40Z" }]);
+      await openPage();
+      expect(screen.getByRole("heading", { name: "Signed ICA editions" })).toBeInTheDocument();
+      expect(screen.queryByText("First-time ICA form")).not.toBeInTheDocument();
+    });
+    it("uses a pending assigned ICA for a reset and does not offer a second form after signing", async () => {
+      state.submitted = false;
+      state.requiresResign = true;
+      await openPage();
+      expect(screen.queryByText("First-time ICA form")).not.toBeInTheDocument();
+      fireEvent.click(await screen.findByRole("button", { name: "Review assigned ICA" }));
+      fireEvent.click(screen.getByRole("checkbox"));
+      fireEvent.click(screen.getByRole("button", { name: "Create signature" }));
+      fireEvent.click(screen.getByRole("button", { name: "Adopt test signature" }));
+      vi.mocked(documents.listAgentDocumentRequests).mockResolvedValue([{ ...assigned, signedAt: "2026-11-17T22:33:40Z" }]);
+      fireEvent.click(screen.getByRole("button", { name: "Sign document" }));
+      expect(await screen.findByRole("heading", { name: "Signed ICA editions" })).toBeInTheDocument();
+      expect(screen.queryByText("First-time ICA form")).not.toBeInTheDocument();
+    });
+    it("does not offer a fresh signature when the existing agreement status cannot be verified", async () => {
+      state.submitted = false;
+      state.statusError = "Unable to load agreement";
+      vi.mocked(documents.listAgentDocumentRequests).mockResolvedValue([]);
+      await openPage();
+      expect(screen.getByRole("button", { name: "Retry agreement status" })).toBeInTheDocument();
+      expect(screen.queryByText("First-time ICA form")).not.toBeInTheDocument();
     });
   });
 }

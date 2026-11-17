@@ -18,6 +18,7 @@ export type IcaSignatureSource = "portal" | "onboarding";
 
 export interface PortalIcaStatus {
   signed: boolean;
+  requiresResign?: boolean;
   source: IcaSignatureSource | null;
   ica: PortalIcaSummary | null;
 }

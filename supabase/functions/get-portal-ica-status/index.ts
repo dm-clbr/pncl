@@ -16,7 +16,7 @@ serve(async (req) => {
     const { user, adminClient } = await requirePortalUser(req);
     const status = await resolveUserIcaStatus(adminClient, user.id);
 
-    return jsonResponse(status);
+    return jsonResponse({ ...status, requiresResign: user.user_metadata?.ica_resign_required === true });
   } catch (error) {
     if (error instanceof AdminAuthError) {
       return errorResponse(error.message, error.status, error.code);

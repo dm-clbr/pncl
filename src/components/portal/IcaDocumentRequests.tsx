@@ -9,9 +9,10 @@ import type { OnboardingAsset } from "@/lib/onboarding-content";
 import { toast } from "sonner";
 import "@/styles/portal-tools.css";
 
-export default function IcaDocumentRequests({ token, rows, loading, error, reload, initialName, previewAsset }: {
+export default function IcaDocumentRequests({ token, rows, loading, error, reload, initialName, previewAsset, onSigned }: {
   token: string; rows: AgentDocumentRequest[]; loading: boolean; error: string;
   reload: () => Promise<unknown>; initialName: string; previewAsset?: OnboardingAsset | null;
+  onSigned?: () => void;
 }) {
   const [selectedId, setSelectedId] = useState<string>();
   const [busy, setBusy] = useState(false);
@@ -40,7 +41,7 @@ export default function IcaDocumentRequests({ token, rows, loading, error, reloa
       {pending.length > 1 && <label className="onboarding-field">Agreement to sign<select value={active.id} disabled={busy} onChange={event => setSelectedId(event.target.value)}>{pending.map(row => <option key={row.id} value={row.id}>{row.title} · requested {new Date(row.assignedAt).toLocaleDateString()}</option>)}</select></label>}
       <DocumentRequestSigningPanel key={active.id} request={active} token={token} initialName={initialName}
         heading="New ICA — review and sign" intro="Your previous signed agreement stays on file. Review the new agreement below and adopt your signature to sign this edition."
-        onBusyChange={setBusy} onSigned={async () => { setSigned(true); await reload(); }} />
+        onBusyChange={setBusy} onSigned={async () => { setSigned(true); onSigned?.(); await reload(); }} />
     </>}
     {!loading && !error && signedCopies.length > 0 && <Pane title="Signed ICA editions">
       {signedCopies.map(row => <ListRow key={row.id} label={openingId === row.id ? "Opening signed ICA…" : row.title}

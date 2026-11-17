@@ -22,7 +22,7 @@ serve(async req => {
         templateAssetId: row.campaign.onboarding_asset_id ?? null,
       })) });
     }
-    const { data, error } = await client.from("portal_document_requests").select("*, campaign:portal_document_campaigns(*)")
+    const { data, error } = await client.from("portal_document_requests").select("*, campaign:portal_document_campaigns(*, onboarding_step:portal_todos(slug))")
       .eq("id", documentId(body.id)).eq("user_id", user.id).not("released_at", "is", null).maybeSingle();
     if (error) throw error;
     if (!data) return errorResponse("Document request not found", 404);
@@ -50,7 +50,21 @@ serve(async req => {
     }).eq("id", row.id).eq("user_id", user.id).is("signed_at", null).select("id").maybeSingle();
     if (saveError) throw saveError;
     if (!saved) await client.storage.from(DOCUMENT_BUCKET).remove([path]); // Another successful signature won the race.
-    return jsonResponse({ ok: true });
+    const warnings: string[] = [];
+    // Only a newly committed ICA signature satisfies the re-sign notice. An
+    // idempotent retry of an older signature must never clear a later reset.
+    if (saved && row.campaign.onboarding_step?.slug === "ica_setup") {
+      try {
+        const { error: metadataError } = await client.auth.admin.updateUserById(user.id, {
+          user_metadata: { ica_resign_required: false },
+        });
+        if (metadataError) throw metadataError;
+      } catch (error) {
+        console.error("Signed ICA notice update failed", { userId: user.id, error: error instanceof Error ? error.message : "Metadata update failed" });
+        warnings.push("Your agreement is saved. The re-sign notice may take longer to clear; contact PNCL support if it remains after refreshing.");
+      }
+    }
+    return jsonResponse({ ok: true, warnings });
   } catch (err) {
     if (err instanceof AdminAuthError) return errorResponse(err.message, err.status, err.code);
     return errorResponse(err instanceof Error ? err.message : "Unable to complete the document request. Please retry.", 400);

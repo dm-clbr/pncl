@@ -335,7 +335,7 @@ export default function PortalDashboard() {
   const resignNotices = [
     showIcaResignNotice && {
       title: "Re-sign your Independent Contractor Agreement",
-      body: "The ICA was updated, so your previous signature is no longer on file.",
+      body: "PNCL has requested a new signature on your Independent Contractor Agreement.",
       href: "/portal/ica",
       cta: "Re-sign agreement",
     },

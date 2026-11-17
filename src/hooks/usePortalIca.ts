@@ -12,12 +12,14 @@ export function usePortalIca() {
   const [icaSource, setIcaSource] = useState<PortalIcaStatus["source"]>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [requiresResign, setRequiresResign] = useState(false);
 
   const reload = useCallback(async () => {
     const token = session?.access_token;
     if (!user?.id || !token) {
       setIca(null);
       setIcaSource(null);
+      setRequiresResign(false);
       setLoading(false);
       return;
     }
@@ -28,10 +30,12 @@ export function usePortalIca() {
       const status = await fetchPortalIcaStatus(token);
       setIca(status.ica);
       setIcaSource(status.source);
+      setRequiresResign(status.requiresResign === true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load agreement");
       setIca(null);
       setIcaSource(null);
+      setRequiresResign(false);
     } finally {
       setLoading(false);
     }
@@ -51,6 +55,7 @@ export function usePortalIca() {
     signed,
     loading: loading || authLoading,
     error,
+    requiresResign,
     reload,
     setIca,
   };

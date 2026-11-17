@@ -3,6 +3,7 @@ import SigningDocumentReview from "@/components/SigningDocumentReview";
 import { useEffect, useState, type FormEvent } from "react";
 import { FileSignature, ArrowUpRight } from "lucide-react";
 import Pane from "@/components/portal/Pane";
+import { toast } from "sonner";
 import { DOCUMENT_CONSENT, agentDocumentUrl, signAgentDocument, validateDocumentSignature, type AgentDocumentRequest } from "@/lib/document-requests";
 import type { AdoptedSignature } from "../../supabase/functions/_shared/signatureAdoption";
 import "@/styles/signature-adoption.css";
@@ -45,7 +46,8 @@ export default function DocumentRequestSigningPanel({ request: active, token, on
       const name = validateDocumentSignature(signature, accepted);
       setBusy(true);
       onBusyChange?.(true);
-      await signAgentDocument(token, active.id, name, accepted, active.documentHash, fieldValues, adoptedSignature);
+      const saved = await signAgentDocument(token, active.id, name, accepted, active.documentHash, fieldValues, adoptedSignature);
+      saved.warnings?.forEach(message => toast.warning(message, { duration: 12000 }));
       await onSigned();
     } catch (err) { setError(err instanceof Error ? err.message : "Unable to sign. Please retry."); }
     finally { setBusy(false); onBusyChange?.(false); }

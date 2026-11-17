@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { webcrypto } from "node:crypto";
 import { PDFDocument } from "pdf-lib";
-const state = vi.hoisted(() => ({ handler: null as unknown as (req: Request) => Promise<Response>, auth: vi.fn(), single: vi.fn(), eq: vi.fn(), not: vi.fn(), upload: vi.fn(), download: vi.fn(), update: vi.fn(), is: vi.fn(), remove: vi.fn(), url: vi.fn(), list: vi.fn() }));
+const state = vi.hoisted(() => ({ handler: null as unknown as (req: Request) => Promise<Response>, auth: vi.fn(), single: vi.fn(), eq: vi.fn(), not: vi.fn(), upload: vi.fn(), download: vi.fn(), update: vi.fn(), is: vi.fn(), remove: vi.fn(), url: vi.fn(), list: vi.fn(), updateUser: vi.fn() }));
 vi.mock("https://deno.land/std@0.177.0/http/server.ts", () => ({ serve: (handler: typeof state.handler) => { state.handler = handler; } }));
 vi.mock("https://esm.sh/pdf-lib@1.17.1", async () => import("pdf-lib"));
 vi.mock("../../supabase/functions/_shared/adminAuth.ts", () => ({ requirePortalUser: state.auth, AdminAuthError: class extends Error { status = 401; code = "unauthorized"; } }));
@@ -13,7 +13,7 @@ const adopted = { signatureAdoption: { method: "typed", accepted: true, version:
 const id = "b0000000-0000-0000-0000-000000000001";
 const userId = "a0000000-0000-0000-0000-000000000002";
 const query = { select: () => query, eq: state.eq, not: state.not, is: state.is, maybeSingle: state.single, update: state.update };
-const client = { from: () => query, storage: { from: () => ({ upload: state.upload, download: state.download, remove: state.remove, createSignedUrl: state.url }) } };
+const client = { from: () => query, auth: { admin: { updateUserById: state.updateUser } }, storage: { from: () => ({ upload: state.upload, download: state.download, remove: state.remove, createSignedUrl: state.url }) } };
 const request = (body: unknown) => new Request("https://example.invalid", { method: "POST", body: JSON.stringify(body) });
 let hash: string;
 let row: Record<string, unknown>;
@@ -26,6 +26,7 @@ beforeEach(async () => {
   state.single.mockResolvedValue({ data: row, error: null });
   state.download.mockResolvedValue({ data: { arrayBuffer: async () => bytes.buffer }, error: null });
   state.upload.mockResolvedValue({ error: null });
+  state.updateUser.mockResolvedValue({ error: null });
 });
 afterEach(() => vi.unstubAllGlobals());
 describe("portal document endpoint", () => {
@@ -55,6 +56,7 @@ describe("portal document endpoint", () => {
     expect(state.upload).toHaveBeenCalledWith(expect.stringMatching(/^signatures\//), expect.any(Uint8Array), { contentType: "application/pdf", upsert: false });
     expect(state.is).toHaveBeenCalledWith("signed_at", null);
     expect(state.update).toHaveBeenCalledWith(expect.objectContaining({ signature_name: "Alex Agent", consent_text: expect.stringContaining("electronic signature") }));
+    expect(state.updateUser).not.toHaveBeenCalled();
   });
   it("rejects absent adoption, changed names and invalid signature images before storing anything", async () => {
     for (const patch of [{ signatureAdoption: null }, { signatureAdoption: { ...adopted.signatureAdoption, accepted: false } }, { signatureAdoption: { ...adopted.signatureAdoption, name: "Different Agent" } }, { signatureImageBase64: "not-an-image" }]) {
@@ -66,5 +68,34 @@ describe("portal document endpoint", () => {
     state.single.mockResolvedValue({ data: { ...row, signed_at: "2026-11-03T18:00:00Z" }, error: null });
     expect((await state.handler(request({ action: "sign", id }))).status).toBe(200);
     expect(state.upload).not.toHaveBeenCalled(); expect(state.update).not.toHaveBeenCalled();
+    expect(state.updateUser).not.toHaveBeenCalled();
+  });
+  it("clears the re-sign notice only after saving a new ICA linked to the onboarding step", async () => {
+    row.campaign = { ...(row.campaign as object), onboarding_step: { slug: "ica_setup" } };
+    const response = await state.handler(request({ ...adopted, action: "sign", id, signatureName: "Alex Agent", accepted: true, documentHash: hash }));
+    expect(response.status).toBe(200);
+    expect(state.updateUser).toHaveBeenCalledWith(userId, { user_metadata: { ica_resign_required: false } });
+    expect(state.update.mock.invocationCallOrder[0]).toBeLessThan(state.updateUser.mock.invocationCallOrder[0]);
+  });
+  it("keeps a committed ICA successful if the notice update fails", async () => {
+    row.campaign = { ...(row.campaign as object), onboarding_step: { slug: "ica_setup" } };
+    state.updateUser.mockResolvedValue({ error: new Error("Metadata unavailable") });
+    const response = await state.handler(request({ ...adopted, action: "sign", id, signatureName: "Alex Agent", accepted: true, documentHash: hash }));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true, warnings: [expect.stringContaining("Your agreement is saved")] });
+    expect(state.remove).not.toHaveBeenCalled();
+  });
+  it("does not clear a later re-sign notice when replaying an already signed ICA", async () => {
+    row.campaign = { ...(row.campaign as object), onboarding_step: { slug: "ica_setup" } };
+    row.signed_at = "2026-11-16T17:33:40Z";
+    expect((await state.handler(request({ action: "sign", id }))).status).toBe(200);
+    expect(state.updateUser).not.toHaveBeenCalled();
+  });
+  it("does not change the notice if another signature won the atomic update", async () => {
+    row.campaign = { ...(row.campaign as object), onboarding_step: { slug: "ica_setup" } };
+    state.single.mockResolvedValueOnce({ data: row, error: null }).mockResolvedValueOnce({ data: null, error: null });
+    expect((await state.handler(request({ ...adopted, action: "sign", id, signatureName: "Alex Agent", accepted: true, documentHash: hash }))).status).toBe(200);
+    expect(state.remove).toHaveBeenCalledOnce();
+    expect(state.updateUser).not.toHaveBeenCalled();
   });
 });
