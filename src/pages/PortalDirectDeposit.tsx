@@ -1,3 +1,4 @@
+import { usePortalProfile } from "@/hooks/usePortalProfile";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileCheck2 } from "lucide-react";
@@ -100,14 +101,7 @@ export default function PortalDirectDeposit() {
     navigate("/portal", { replace: true });
   };
 
-  const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Agent";
-  // Presentation only: the masthead avatar falls back to initials, since the
-  // page holds no photo and adding a profile hook here would be a data change.
-  const initials = displayName
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join("");
+  const { displayName, initials } = usePortalProfile(user);
 
   return (
     <div className="home2-page">

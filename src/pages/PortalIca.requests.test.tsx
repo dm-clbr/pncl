@@ -2,7 +2,6 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import PortalIca from "./PortalIca";
-import LegacyPortalIca from "./PortalIca.legacy";
 import * as documents from "@/lib/document-requests";
 import { submitPortalIca } from "@/lib/portal-ica";
 
@@ -13,16 +12,15 @@ const state = vi.hoisted(() => ({
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ user: state.user, session: { access_token: "agent-token" } }) }));
 vi.mock("@/hooks/useOnboardingContent", () => ({ useOnboardingContent: () => ({ content: { signingEnabled: true, designation: "loa", ica: { id: "new-asset", url: "/new-ica.pdf" } } }) }));
 vi.mock("@/hooks/usePortalIca", () => ({ usePortalIca: () => ({ submitted: state.submitted, loading: false, setIca: vi.fn(), ica: state.submitted ? { legalName: "Test Agent", signedAt: "2026-07-07T12:00:00Z", icaVersion: "legacy" } : null }) }));
-vi.mock("@/lib/portal-profile", () => ({ fetchPortalProfile: vi.fn().mockResolvedValue(null) }));
+vi.mock("@/lib/portal-profile", async (importOriginal) => ({ ...await importOriginal<typeof import("@/lib/portal-profile")>(), fetchPortalProfile: vi.fn().mockResolvedValue(null) }));
 vi.mock("@/lib/portal-ica", () => ({ fetchPortalIcaDocument: vi.fn().mockResolvedValue({ downloadUrl: "https://files.example/old-signed-ica.pdf" }), getDefaultIcaPrefill: () => ({ legalName: "Test Agent", email: "agent@example.com" }), submitPortalIca: vi.fn() }));
 vi.mock("@/lib/portal-messages", () => ({ refreshPortalUser: vi.fn() }));
 vi.mock("@/lib/analytics", () => ({ trackPageView: vi.fn() }));
 vi.mock("@/lib/document-requests", async original => ({ ...await original<typeof import("@/lib/document-requests")>(), listAgentDocumentRequests: vi.fn(), agentDocumentUrl: vi.fn(), signAgentDocument: vi.fn() }));
 vi.mock("@/components/UploadedIcaSigningStep", () => ({ default: () => <p>First-time ICA form</p> }));
-vi.mock("@/components/UploadedIcaSigningStep.legacy", () => ({ default: () => <p>First-time ICA form</p> }));
 vi.mock("@/components/portal/PortalBackground", () => ({ default: () => null }));
-vi.mock("@/components/SigningDocumentReview", () => ({ default: ({ url, title, onReviewed }: { url: string; title: string; onReviewed: (value: boolean) => void }) => <button title={title} data-source={url} onClick={() => onReviewed(true)}>Review assigned ICA</button> }));
-vi.mock("@/components/SignatureAdoptionDialog", () => ({ default: ({ name, onAdopt }: { name: string; onAdopt: (value: unknown) => void }) => <button onClick={() => onAdopt({ name, method: "typed", accepted: true, version: "2026-11-13", imageDataUrl: "data:image/png;base64,test" })}>Adopt test signature</button> }));
+vi.mock("@/components/SigningDocumentReview", () => ({ default: ({ url, title, onReviewed, onSignatureClick }: { url: string; title: string; onReviewed: (value: boolean) => void; onSignatureClick: () => void }) => <><button title={title} data-source={url} onClick={() => onReviewed(true)}>Review assigned ICA</button><button onClick={onSignatureClick}>Create signature</button></> }));
+vi.mock("@/components/SignatureAdoptionDialog", () => ({ default: ({ name, onNameChange, onAdopt }: { name: string; onNameChange: (value: string) => void; onAdopt: (value: unknown) => void }) => <><label>Full legal first and last name<input value={name} onChange={event => onNameChange(event.target.value)} /></label><button onClick={() => onAdopt({ name, method: "typed", accepted: true, version: "2026-11-13", imageDataUrl: "data:image/png;base64,test" })}>Adopt test signature</button></> }));
 const assigned: documents.AgentDocumentRequest = { id: "ica-request", title: "LOA ICA", description: "", assignedAt: "2026-11-13", signedAt: null, signatureName: null, documentHash: "assigned-source-hash", stepSlug: "ica_setup", templateAssetId: "new-asset" };
 
 beforeEach(() => {
@@ -34,7 +32,7 @@ beforeEach(() => {
   vi.mocked(documents.signAgentDocument).mockResolvedValue({ ok: true });
 });
 
-for (const [variant, Page] of [["uploaded flow", PortalIca], ["compatibility flow", LegacyPortalIca]] as const) {
+for (const [variant, Page] of [["uploaded flow", PortalIca]] as const) {
   describe(`ICA requests in ${variant}`, () => {
     async function openPage() { await act(async () => { render(<MemoryRouter><Page /></MemoryRouter>); }); }
     it("keeps the old signed PDF and automatically opens the exact assigned edition", async () => {
@@ -51,10 +49,11 @@ for (const [variant, Page] of [["uploaded flow", PortalIca], ["compatibility flo
     it("signs the request with explicit adoption and consent, preserving the previous PDF", async () => {
       await openPage();
       fireEvent.click(await screen.findByRole("button", { name: "Review assigned ICA" }));
-      expect(screen.getByLabelText(/Full legal first and last name/)).toHaveValue("Test Agent");
       fireEvent.click(screen.getByRole("checkbox"));
       expect(screen.getByRole("button", { name: "Sign document" })).toBeDisabled();
+      expect(screen.queryByLabelText(/Full legal first and last name/)).not.toBeInTheDocument();
       fireEvent.click(screen.getByRole("button", { name: "Create signature" }));
+      expect(screen.getByLabelText(/Full legal first and last name/)).toHaveValue("Test Agent");
       fireEvent.click(screen.getByRole("button", { name: "Adopt test signature" }));
       vi.mocked(documents.listAgentDocumentRequests).mockResolvedValue([{ ...assigned, signedAt: "2026-11-13T18:00:00Z", signatureName: "Test Agent" }]);
       fireEvent.click(screen.getByRole("button", { name: "Sign document" }));

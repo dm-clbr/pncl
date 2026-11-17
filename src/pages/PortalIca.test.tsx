@@ -27,7 +27,8 @@ vi.mock("@/hooks/usePortalIca", () => ({
   usePortalIca: () => ({ ...icaState, setIca: vi.fn() }),
 }));
 
-vi.mock("@/lib/portal-profile", () => ({
+vi.mock("@/lib/portal-profile", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/lib/portal-profile")>(),
   fetchPortalProfile: vi.fn().mockResolvedValue({ first_name: "Test", last_name: "Agent" }),
 }));
 

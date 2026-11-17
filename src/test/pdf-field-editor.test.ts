@@ -44,7 +44,7 @@ describe("PDF field placement", () => {
     for (const key of ["x","y","width","height"] as const) expect(result[key]).toBeCloseTo(original[key]);
   });
   it("keeps the standard W-9 data fields while allowing position changes", async () => {
-    const bytes = Uint8Array.from(await readFile("public/documents/pncl-w9-standard.pdf"));
+    const bytes = Uint8Array.from(await readFile("src/test/fixtures/pdf/pncl-w9-standard.pdf"));
     const fields = await readPlacedPdfFields(bytes,"w9");
     expect(fields.every(field=>field.locked)).toBe(true);
     await expect(writePlacedPdfFields(bytes, fields.slice(1),"w9")).rejects.toThrow("existing required form fields");

@@ -11,7 +11,7 @@ import { generateSignedW9Pdf } from "../../supabase/functions/_shared/portalW9Pd
 import { generateDirectDepositPdf } from "../../supabase/functions/_shared/portalDirectDeposit";
 import { loadOnboardingContent, loadPortalSigningSource, downloadIcaAsset } from "../../supabase/functions/_shared/onboardingContent";
 
-const fixture = async (name: string) => Uint8Array.from(await readFile(`public/documents/pncl-${name}-standard.pdf`));
+const fixture = async (name: string) => Uint8Array.from(await readFile(`src/test/fixtures/pdf/pncl-${name}-standard.pdf`));
 const hash = (bytes: Uint8Array) => createHash("sha256").update(bytes).digest("hex");
 const singlePage = async () => { const pdf = await PDFDocument.create(); pdf.addPage([420, 610]); return pdf.save(); };
 

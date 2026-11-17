@@ -4,7 +4,7 @@ import UploadedIcaSigningStep from "./UploadedIcaSigningStep";
 
 const pdf = vi.hoisted(() => ({ fail: false }));
 vi.mock("pdfjs-dist/legacy/build/pdf.mjs", () => ({
-  GlobalWorkerOptions: {},
+  GlobalWorkerOptions: {}, version: "4.10.38",
   getDocument: () => ({
     destroy: vi.fn(),
     promise: pdf.fail ? Promise.reject(new Error("Missing PDF")) : Promise.resolve({
@@ -28,7 +28,11 @@ describe("uploaded ICA review", () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     await act(async () => { render(<UploadedIcaSigningStep asset={asset} prefillLegalName="Sample Agent" prefillEmail="sample@example.invalid" onSubmit={onSubmit} />); });
     const sign = screen.getByRole("button", { name: "Sign agreement" });
+    expect(screen.queryByLabelText("Full legal first and last name")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Personal email")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Create signature" }));
+    expect(screen.getByLabelText("Full legal first and last name")).toHaveValue("Sample Agent");
+    expect(screen.getByLabelText("Personal email")).toHaveValue("sample@example.invalid");
     fireEvent.click(screen.getByRole("button", { name: "Draw signature", exact: true }));
     fireEvent.click(screen.getByRole("button", { name: "Draw test signature" }));
     fireEvent.click(screen.getByRole("checkbox", { name: /I adopt the signature/ }));

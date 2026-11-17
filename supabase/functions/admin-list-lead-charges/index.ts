@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requireAdmin } from "../_shared/adminAuth.ts";
-import { listPortalUsers, resolveDisplayName } from "../_shared/adminAgents.ts";
+import { listPortalUsers, loadAgentProfileFields, resolveDisplayName } from "../_shared/adminAgents.ts";
 import type { LeadChargeRecord } from "../_shared/leadCharges.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
@@ -42,7 +42,7 @@ serve(async (req) => {
 
     const charges = (chargeRows ?? []) as LeadChargeRecord[];
 
-    const users = await listPortalUsers(adminClient);
+    const [users, profiles] = await Promise.all([listPortalUsers(adminClient), loadAgentProfileFields(adminClient)]);
     const usersById = new Map(users.map((user) => [user.id, user]));
 
     const mapped = charges.map((charge) => {
@@ -51,7 +51,7 @@ serve(async (req) => {
         id: charge.id,
         weekOf: charge.week_of,
         userId: charge.user_id,
-        portalName: user ? resolveDisplayName(user, null) : null,
+        portalName: user ? resolveDisplayName(user, null, profiles.get(user.id)) : null,
         portalEmail: user?.email ?? null,
         agentEmail: charge.agent_email,
         agentName: charge.agent_name,

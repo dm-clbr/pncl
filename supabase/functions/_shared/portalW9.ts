@@ -85,6 +85,7 @@ export interface PortalW9Summary {
 
 export interface PortalW9Record {
   template_asset_id?: string | null;
+  template_sha256?: string | null;
   user_id: string;
   legal_name: string;
   business_name: string | null;

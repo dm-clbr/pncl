@@ -17,7 +17,7 @@ export default function DocumentLibrary({ onHistory }: { onHistory: (stepId?: st
     <div className="document-section-heading"><div><h2>Onboarding documents</h2><p>Each document belongs to an onboarding step. Edit its fields here or open the step to replace the PDF.</p></div>
       <button className="admin-primary-btn" disabled={!data} onClick={() => setEditing({ row: { ...blankEditorRow(), contentType: "signing_document" } })}><Plus size={17} />Add signing step</button>
     </div>
-    {data?.signingRollout && !data.signingRollout.enabled && <p className="document-notice">Preparation mode: agents still use the previous signing process. Configure and test PDFs, then activate uploaded signing at the top of Onboarding steps. A signature rollout to existing agents is a separate, explicit send.</p>}
+    {data?.signingRollout && !data.signingRollout.enabled && <p className="document-notice">Preparation mode: new PDF-template signing is paused. Configure and test PDFs, then activate uploaded signing at the top of Onboarding steps. A signature rollout to existing agents is a separate, explicit send.</p>}
     <div className="document-filter-grid"><label className="admin-field"><span>Find a document</span><input value={search} onChange={event => setSearch(event.target.value)} placeholder="Step or filename" /></label>
       <label className="admin-field"><span>Document flow</span><select value={flow} onChange={event => setFlow(event.target.value)}><option value="all">LOA + IBO</option><option value="loa">LOA</option><option value="ibo">IBO</option></select></label></div>
     {error && <p role="alert" className="admin-error">{error}</p>}

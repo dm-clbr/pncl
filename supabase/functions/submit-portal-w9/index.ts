@@ -1,5 +1,4 @@
-import legacyHandler from "./legacy.ts";
-import { uploadedSigningEnabled } from "../_shared/signingRollout.ts";
+import { requireUploadedSigning } from "../_shared/signingRollout.ts";
 import { loadPortalSigningSource } from "../_shared/onboardingContent.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requirePortalUser } from "../_shared/adminAuth.ts";
@@ -40,7 +39,7 @@ serve(async (req) => {
 
   try {
     const { user, adminClient } = await requirePortalUser(req);
-    if (!await uploadedSigningEnabled(adminClient, user.id)) return legacyHandler(req);
+    await requireUploadedSigning(adminClient, user.id);
     const body = await req.json();
     const source = await loadPortalSigningSource(adminClient, user.id, "w9", body.templateAssetId ?? null);
     const payload = validateSubmitPortalW9Payload(body);

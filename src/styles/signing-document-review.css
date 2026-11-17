@@ -1,5 +1,13 @@
 .signing-document-review { display: grid; gap: 14px; margin-block: 20px; min-width: 0; }
 .signing-document-review > a { color: var(--gold, #b5945a); text-decoration: underline; }
+.signing-document-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.signing-document-toolbar a { color:var(--gold,#b5945a); text-decoration:underline; }
+.signing-document-field-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.signing-document-field-actions button { font:inherit; font-weight:600; padding:10px 16px; border:1px solid #b8a691; border-radius:8px; background:#e8dbc5; color:#252017; cursor:pointer; }
+.signing-document-field-actions button + button { background:transparent; color:inherit; }
+.signing-document-field-actions button:disabled { opacity:.5; cursor:default; }
+.signing-document-navigation-note { margin:0; font-size:14px; line-height:1.5; }
+.signing-document-canvas [data-signing-field]:focus-visible { outline:3px solid #826027; outline-offset:2px; z-index:2; }
 .signing-document-canvas { position: relative; width: 100%; overflow: hidden; background: #fff; border-radius: 8px; }
 .signing-document-canvas .signing-pdf-input { position:absolute; border:1px solid #3a8bb8; border-radius:2px; background:#d9edf9d9; color:#111; padding:1px 3px; font:clamp(8px,1.2vw,12px) sans-serif; min-width:0; min-height:0; margin:0; box-sizing:border-box; }
 .signing-document-canvas .signing-pdf-input:read-only { background:#e7e1f4d9; }

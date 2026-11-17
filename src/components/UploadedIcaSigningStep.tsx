@@ -36,21 +36,17 @@ function SignatureRecordIcaStep({ asset, prefillLegalName = "", prefillEmail = "
   };
   return <div className={`onboarding-step uploaded-ica ${className}`}>
     <span className="eyebrow">Independent Contractor Agreement</span><h2 className="h3">Review and sign your agreement</h2>
-    <p className="lead">Read every page, then sign below. Your signature record will be attached to this document and a signed copy saved to your profile.</p>
+    <p className="lead">Review the agreement and click its signature box to type or draw your signature. A signed copy will be saved to your profile.</p>
     <IcaSigningGuidance legalName={legalName} includeInitials={false} />
-    <SigningDocumentReview url={asset.url} title="Agreement" onReviewed={setReadAll} values={fieldValues} onValuesChange={setFieldValues} signingName={legalName} signatureImage={signature?.imageDataUrl} onSignatureClick={busy ? undefined : () => setSignatureEditorOpen(true)} />
+    <SigningDocumentReview url={asset.url} sourceId={asset.id} title="Agreement" onReviewed={setReadAll} values={fieldValues} onValuesChange={setFieldValues} signingName={legalName} signatureImage={signature?.imageDataUrl} onSignatureClick={busy ? undefined : () => setSignatureEditorOpen(true)} signer={{ name: legalName, email, onNameChange: name => { setLegalName(name); setSignature(null); }, onEmailChange: setEmail }} />
     <form onSubmit={(event) => void sign(event)} className="uploaded-ica-form">
-      <label className="onboarding-field">Full legal first and last name<input required maxLength={200} value={legalName} onChange={(event) => { setLegalName(event.target.value); setSignature(null); }} autoComplete="name" /></label>
-      <label className="onboarding-field">Personal email<input type="email" required maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" /></label>
-      <p className="onboarding-help-text">Use a personal email you will keep access to, not your PNCL email.</p>
-      <div className="adopted-signature-summary">{signature && <img src={signature.imageDataUrl} alt="Adopted signature" />}<button type="button" className="btn btn-ghost" disabled={busy} onClick={() => setSignatureEditorOpen(true)}>{signature ? "Change signature" : "Create signature"}</button></div>
-      {signatureEditorOpen && <SignatureAdoptionDialog name={legalName} onNameChange={name => { setLegalName(name); setSignature(null); }} onAdopt={value => { setSignature(value); setSignatureEditorOpen(false); }} onClose={() => setSignatureEditorOpen(false)} />}
       <label className="uploaded-ica-ack"><input type="checkbox" checked={counsel} onChange={(event) => setCounsel(event.target.checked)} />I have read this agreement and had the opportunity to consult independent legal counsel.</label>
       <label className="uploaded-ica-ack"><input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} />I agree to this Independent Contractor Agreement and consent to sign electronically.</label>
       {!readAll && <p className="onboarding-help-text">View all pages to enable signing.</p>}
       <div className="onboarding-actions">{onBack && <button type="button" className="btn btn-ghost" disabled={busy} onClick={onBack}>Back</button>}
         <button className="btn btn-accent" type="submit" disabled={busy || !readAll || !signature || !accepted || !counsel || !legalName.trim() || !email.trim()}>{busy ? "Signing…" : finishLabel}</button></div>
     </form>
+    {signatureEditorOpen && <SignatureAdoptionDialog name={legalName} onNameChange={name => { setLegalName(name); setSignature(null); }} personalEmail={email} onPersonalEmailChange={setEmail} onAdopt={value => { setSignature(value); setSignatureEditorOpen(false); }} onClose={() => setSignatureEditorOpen(false)} />}
   </div>;
 }
 

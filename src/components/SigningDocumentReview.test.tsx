@@ -2,10 +2,13 @@ import { useState } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import SigningDocumentReview from "./SigningDocumentReview";
+import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
+const state = vi.hoisted(() => ({ failLoad: false, failRenderPage: 0 }));
 
 vi.mock("@/lib/pdfjs-setup", () => ({}));
 vi.mock("pdfjs-dist/legacy/build/pdf.mjs", () => ({
-  getDocument: () => ({ destroy: vi.fn(), promise: Promise.resolve({
+  version: "4.10.38",
+  getDocument: vi.fn(() => ({ destroy: vi.fn(), promise: state.failLoad ? Promise.reject(new TypeError("Failed to fetch https://private.example/pdf?token=secret")) : Promise.resolve({
     numPages: 2,
     getPage: async (page: number) => ({
       getViewport: () => ({ width: 600, height: 800, convertToViewportRectangle: (rect: number[]) => rect }),
@@ -13,11 +16,12 @@ vi.mock("pdfjs-dist/legacy/build/pdf.mjs", () => ({
         { fieldName: "pncl_text_office", alternativeText: "Agent office", fieldType: "Tx", required: true, rect: [60,100,300,130] },
         { fieldName: "pncl_signature_name", alternativeText: "Signature", fieldType: "Tx", required: true, readOnly: true, rect: [60,150,300,180] },
       ] : [{ fieldName: "pncl_checkbox_confirm", alternativeText: "Confirm details", checkBox: true, required: true, rect: [60,100,80,120] }],
-      render: () => ({ promise: Promise.resolve(), cancel: vi.fn() }),
+      render: () => ({ promise: page === state.failRenderPage ? Promise.reject(new Error("Canvas unavailable")) : Promise.resolve(), cancel: vi.fn() }),
     }),
-  }) }),
+  }) })),
 }));
 beforeEach(() => {
+  state.failLoad = false; state.failRenderPage = 0; vi.clearAllMocks();
   vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({} as never);
 });
@@ -57,4 +61,37 @@ it("opens the signature overlay from the document and shows the exact adopted im
   page.rerender(<SigningDocumentReview {...props} signatureImage="data:image/png;base64,adopted" />);
   expect(await screen.findByRole("button", { name: "Change signature: Signature" })).toBeInTheDocument();
   expect(screen.getByAltText("Adopted signature")).toHaveAttribute("src", "data:image/png;base64,adopted");
+});
+
+describe("document loading recovery", () => {
+  it("reports safe details, retries with a complete download, and requires page review again", async () => {
+    state.failLoad = true;
+    const reviewed = vi.fn();
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    render(<SigningDocumentReview url="https://private.example/pdf?token=secret" sourceId="17996bca-9d4b-4c5d-bbca-884faa95ca0a" title="Agreement" onReviewed={reviewed} />);
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("network_failed");
+    expect(alert).toHaveTextContent("17996bca-9d4b-4c5d-bbca-884faa95ca0a");
+    expect(alert.textContent).not.toContain("secret");
+    expect(JSON.stringify(vi.mocked(console.error).mock.calls)).not.toContain("private.example");
+    expect(reviewed).toHaveBeenLastCalledWith(false);
+    state.failLoad = false;
+    fireEvent.click(screen.getByRole("button", { name: "Retry document" }));
+    expect(await screen.findAllByText("Page 1 of 2")).toHaveLength(2);
+    expect(getDocument).toHaveBeenLastCalledWith(expect.objectContaining({ disableRange: true, disableStream: true }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Next page" })).toBeEnabled());
+    expect(reviewed).toHaveBeenLastCalledWith(false);
+    fireEvent.click(screen.getByRole("button", { name: "Next page" }));
+    await waitFor(() => expect(reviewed).toHaveBeenLastCalledWith(true));
+  });
+  it("blocks signing when a later page fails to render", async () => {
+    state.failRenderPage = 2;
+    const reviewed = vi.fn();
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    render(<SigningDocumentReview url="/sample.pdf" title="Agreement" onReviewed={reviewed} />);
+    await waitFor(() => expect(screen.getByRole("button", { name: "Next page" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "Next page" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("canvas_unavailable");
+    expect(reviewed).toHaveBeenLastCalledWith(false);
+  });
 });

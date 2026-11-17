@@ -1,5 +1,4 @@
-import legacyHandler from "./legacy.ts";
-import { uploadedSigningEnabled } from "../_shared/signingRollout.ts";
+import { requireUploadedSigning } from "../_shared/signingRollout.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requirePortalUser } from "../_shared/adminAuth.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
@@ -13,13 +12,8 @@ serve(async req => {
   if (req.method !== "POST") return errorResponse("Method not allowed", 405);
   try {
     const { user, adminClient } = await requirePortalUser(req);
-    if (!await uploadedSigningEnabled(adminClient, user.id)) return legacyHandler(req);
+    await requireUploadedSigning(adminClient, user.id);
     const body = await req.clone().json();
-    if (typeof body.attachmentId === "string") {
-      const { data: legacy, error: legacyError } = await adminClient.from("portal_comp_attachments").select("id").eq("id", body.attachmentId).eq("user_id", user.id).is("template_asset_id", null).eq("status", "pending").maybeSingle();
-      if (legacyError) throw new Error(legacyError.message);
-      if (legacy) return legacyHandler(req);
-    }
     const name = typeof body.signatureName === "string" ? normalizeIcaLegalName(body.signatureName) : "";
     const error = validateIcaLegalName(name); if (error) throw new Error(error);
     if (body.agreementAccepted !== true) throw new Error("Confirm you reviewed and accept the uploaded compensation agreement.");

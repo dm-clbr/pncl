@@ -1,3 +1,5 @@
+import { resolveDisplayName } from "./profileDisplayName.ts";
+export { resolveDisplayName } from "./profileDisplayName.ts";
 export { buildAssistHierarchyTree } from "./assistHierarchy.ts";
 import { resolveAgentDesignation } from "./agentDesignation.ts";
 import { loadAgentDesignations } from "./portalAgentDesignations.ts";
@@ -184,21 +186,6 @@ interface OnboardingRow {
   onboarding_completed_at: string | null;
 }
 
-export function resolveDisplayName(user: User, onboardingName?: string | null): string {
-  if (onboardingName?.trim()) return onboardingName.trim();
-
-  const fullName = user.user_metadata?.full_name;
-  if (typeof fullName === "string" && fullName.trim()) return fullName.trim();
-
-  const firstName = user.user_metadata?.first_name;
-  const lastName = user.user_metadata?.last_name;
-  if (typeof firstName === "string" && firstName.trim()) {
-    const last = typeof lastName === "string" ? lastName.trim() : "";
-    return [firstName.trim(), last].filter(Boolean).join(" ");
-  }
-
-  return user.email?.split("@")[0] ?? "Agent";
-}
 
 export async function listPortalUsers(adminClient: SupabaseClient): Promise<User[]> {
   const emailDomain = getEmailDomain();
@@ -353,19 +340,20 @@ function resolveReferrerName(
   referrerId: string | null,
   usersById: Map<string, User>,
   onboardingByUserId: Map<string, OnboardingRow>,
+  profiles: Map<string, AgentProfileFieldsRow>,
 ): string | null {
   if (!referrerId) return null;
 
   const onboarding = onboardingByUserId.get(referrerId);
-  if (onboarding?.legal_name) return onboarding.legal_name;
-
   const user = usersById.get(referrerId);
   if (!user) return null;
-  return resolveDisplayName(user, onboarding?.legal_name);
+  return resolveDisplayName(user, onboarding?.legal_name, profiles.get(user.id));
 }
 
 interface AgentProfileFieldsRow {
   user_id: string;
+  first_name: string | null;
+  last_name: string | null;
   npn: string | null;
   agent_number: number | null;
 }
@@ -394,12 +382,12 @@ async function loadCurrentCompLevelEffectiveDates(
   return result;
 }
 
-async function loadAgentProfileFields(
+export async function loadAgentProfileFields(
   adminClient: SupabaseClient,
 ): Promise<Map<string, AgentProfileFieldsRow>> {
   const { data, error } = await adminClient
     .from("portal_profiles")
-    .select("user_id, npn, agent_number");
+    .select("user_id, first_name, last_name, npn, agent_number");
 
   if (error) throw new Error(error.message);
 
@@ -498,7 +486,7 @@ export async function buildAgentSummaries(
     return {
       id: user.id,
       email: user.email ?? "",
-      name: resolveDisplayName(user, onboarding?.legal_name),
+      name: resolveDisplayName(user, onboarding?.legal_name, profile),
       role: getUserRole(user),
       compLevel: compLevelsByUserId.get(user.id) ?? null,
       compLevelEffectiveAt: compLevelEffectiveDates.get(user.id) ?? null,
@@ -507,7 +495,7 @@ export async function buildAgentSummaries(
       agentDesignation: resolveAgentDesignation(designations.get(user.id)),
       phase: phasesByUserId.get(user.id) ?? null,
       referrerId,
-      referrerName: resolveReferrerName(referrerId, usersById, onboardingMaps.byUserId),
+      referrerName: resolveReferrerName(referrerId, usersById, onboardingMaps.byUserId, profileFields),
       uplineNetwork: onboarding?.upline_network ?? null,
       status: onboarding?.status ?? null,
       emailConfirmed: Boolean(user.email_confirmed_at),
@@ -550,12 +538,13 @@ export async function buildAgentSummaryForUser(
   const emailDomain = getEmailDomain();
   if (!user.email?.toLowerCase().endsWith(`@${emailDomain}`)) return null;
 
-  const [onboardingMaps, compLevelsByUserId, compLevelEffectiveDates, users, designations] = await Promise.all([
+  const [onboardingMaps, compLevelsByUserId, compLevelEffectiveDates, users, designations, profileFields] = await Promise.all([
     loadOnboardingMaps(adminClient),
     loadCompLevelsByUserId(adminClient),
     loadCurrentCompLevelEffectiveDates(adminClient),
     listPortalUsers(adminClient),
     loadAgentDesignations(adminClient, [user.id]),
+    loadAgentProfileFields(adminClient),
   ]);
 
   const usersById = new Map(users.map((entry) => [entry.id, entry]));
@@ -578,7 +567,7 @@ export async function buildAgentSummaryForUser(
 
   const { data: profileRow } = await adminClient
     .from("portal_profiles")
-    .select("user_id, npn, agent_number, profile_photo_path, updated_at")
+    .select("user_id, first_name, last_name, npn, agent_number, profile_photo_path, updated_at")
     .eq("user_id", user.id)
     .maybeSingle<AgentProfileFieldsRow & PortalProfilePhotoRow>();
 
@@ -593,7 +582,7 @@ export async function buildAgentSummaryForUser(
   return {
     id: user.id,
     email: user.email ?? "",
-    name: resolveDisplayName(user, onboarding?.legal_name),
+    name: resolveDisplayName(user, onboarding?.legal_name, profileRow),
     role: getUserRole(user),
     compLevel: compLevelsByUserId.get(user.id) ?? null,
     compLevelEffectiveAt: compLevelEffectiveDates.get(user.id) ?? null,
@@ -602,7 +591,7 @@ export async function buildAgentSummaryForUser(
     agentDesignation: resolveAgentDesignation(designations.get(user.id)),
     phase,
     referrerId,
-    referrerName: resolveReferrerName(referrerId, usersById, onboardingMaps.byUserId),
+    referrerName: resolveReferrerName(referrerId, usersById, onboardingMaps.byUserId, profileFields),
     uplineNetwork: onboarding?.upline_network ?? null,
     status: onboarding?.status ?? null,
     emailConfirmed: Boolean(user.email_confirmed_at),

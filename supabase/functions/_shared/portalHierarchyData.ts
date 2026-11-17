@@ -1,3 +1,4 @@
+import { profileDisplayName } from "./profileDisplayName.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { computeAgentPhases, listPortalUsers, resolveDisplayName } from "./adminAgents.ts";
 import { buildAssistHierarchyTree } from "./assistHierarchy.ts";
@@ -60,7 +61,7 @@ export async function loadPortalHierarchy(adminClient: SupabaseClient, userId: s
   if (!scope.ids.length) return buildPortalHierarchyResponse([], userId, []);
   const [profiles, history, phases] = await Promise.all([
     adminClient.from("portal_profiles")
-      .select("user_id, comp_level, npn, profile_photo_path, updated_at").in("user_id", scope.ids),
+      .select("user_id, first_name, last_name, comp_level, npn, profile_photo_path, updated_at").in("user_id", scope.ids),
     adminClient.from("portal_profile_comp_level_history").select("user_id, effective_at")
       .in("user_id", scope.ids).order("effective_at", { ascending: false }),
     computeAgentPhases(adminClient, scope.users).catch(error => {
@@ -76,7 +77,7 @@ export async function loadPortalHierarchy(adminClient: SupabaseClient, userId: s
   const agents = scope.agents.map(agent => {
     const profile = profileById.get(agent.id);
     return {
-      ...agent, npn: profile?.npn?.trim() || agent.npn,
+      ...agent, name: profileDisplayName(profile) || agent.name, npn: profile?.npn?.trim() || agent.npn,
       compLevel: typeof profile?.comp_level === "number" && isValidCompLevel(profile.comp_level) ? profile.comp_level : null,
       compLevelEffectiveAt: effectiveById.get(agent.id) ?? null,
       phase: phases.get(agent.id) ?? null,

@@ -21,7 +21,6 @@ enabled = true
 verify_jwt = false
 
 [functions.submit-onboarding-contract]
-static_files = ["./functions/submit-onboarding-contract/assets/*.pdf"]
 verify_jwt = false
 
 [functions.get-onboarding-status]
@@ -241,18 +240,15 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.submit-portal-w9]
-static_files = ["./functions/submit-portal-w9/assets/*.pdf"]
 verify_jwt = true
 
 [functions.get-portal-w9-document]
-static_files = ["./functions/get-portal-w9-document/assets/*.pdf"]
 verify_jwt = true
 
 [functions.submit-portal-direct-deposit]
 verify_jwt = true
 
 [functions.submit-portal-ica]
-static_files = ["./functions/submit-portal-ica/assets/*.pdf"]
 verify_jwt = true
 
 [functions.get-portal-ica-document]
@@ -262,7 +258,6 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.admin-get-user-profile]
-static_files = ["./functions/admin-get-user-profile/assets/*.pdf"]
 verify_jwt = true
 
 [functions.admin-get-portal-todo-completion]

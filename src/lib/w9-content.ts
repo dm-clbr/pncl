@@ -1,6 +1,5 @@
 /** Static copy aligned with IRS Form W-9 (Rev. March 2024). */
 
-export const IRS_W9_PDF_URL = "https://www.irs.gov/pub/irs-pdf/fw9.pdf";
 export const IRS_W9_INSTRUCTIONS_URL = "https://www.irs.gov/FormW9";
 
 export const W9_FORM_REVISION = "Rev. March 2024";

@@ -54,7 +54,7 @@ describe("Onboarding Steps signing uploads", () => {
     expect(state.upload).not.toHaveBeenCalled();
   });
   it("accepts an uploaded fillable W-9 and records its signing mode", async () => {
-    const response = await upload(Uint8Array.from(await readFile("public/documents/pncl-w9-standard.pdf")), "w9");
+    const response = await upload(Uint8Array.from(await readFile("src/test/fixtures/pdf/pncl-w9-standard.pdf")), "w9");
     expect(response.status).toBe(200);
     expect(state.insert).toHaveBeenCalledWith(expect.objectContaining({ kind: "w9", signing_mode: "w9_fields" }));
   });

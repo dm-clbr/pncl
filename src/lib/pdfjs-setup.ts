@@ -1,6 +1,6 @@
 import { GlobalWorkerOptions } from "pdfjs-dist/legacy/build/pdf.mjs";
+import workerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
 
-// The legacy worker includes the same compatibility polyfills as the main PDF.js
-// bundle. It is copied to public/ on postinstall so it stays same-origin in dev
-// and production.
-GlobalWorkerOptions.workerSrc = `${import.meta.env.BASE_URL}pdf.worker.min.mjs`;
+// Vite gives this compatible worker a content hash. An older open tab keeps
+// its matching worker instead of fetching a different version after a release.
+GlobalWorkerOptions.workerSrc = workerUrl;

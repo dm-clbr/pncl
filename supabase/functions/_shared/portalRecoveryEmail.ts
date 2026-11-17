@@ -66,9 +66,10 @@ export async function syncPortalRecoveryEmailForUser(
       recovery_email_last_synced_at: null,
       recovery_email_last_sync_error: null,
     };
-  const { error: pendingError } = await adminClient
-    .from("portal_profiles")
-    .upsert(pendingPayload, { onConflict: "user_id" });
+  const profiles = adminClient.from("portal_profiles");
+  const { error: pendingError } = existingProfile
+    ? await profiles.update(pendingPayload).eq("user_id", user.id)
+    : await profiles.upsert(pendingPayload, { onConflict: "user_id" });
   if (pendingError) throw new Error(pendingError.message);
 
   if (record?.id) {

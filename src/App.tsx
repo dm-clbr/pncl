@@ -1,6 +1,3 @@
-import LegacyPortalCompAgreement from "./pages/PortalCompAgreement.legacy";
-import LegacyPortalW9 from "./pages/PortalW9.legacy";
-import LegacyPortalIca from "./pages/PortalIca.legacy";
 import SigningFlowGate from "./components/SigningFlowGate";
 import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -158,7 +155,7 @@ const App = () => (
             path="/portal/w9"
             element={
               <ProtectedRoute>
-                <SigningFlowGate legacy={<LegacyPortalW9 />}><PortalW9 /></SigningFlowGate>
+                <SigningFlowGate><PortalW9 /></SigningFlowGate>
               </ProtectedRoute>
             }
           />
@@ -166,7 +163,7 @@ const App = () => (
             path="/portal/ica"
             element={
               <ProtectedRoute>
-                <SigningFlowGate legacy={<LegacyPortalIca />}><PortalIca /></SigningFlowGate>
+                <SigningFlowGate><PortalIca /></SigningFlowGate>
               </ProtectedRoute>
             }
           />
@@ -182,7 +179,7 @@ const App = () => (
             path="/portal/comp-agreement"
             element={
               <ProtectedRoute>
-                <SigningFlowGate legacy={<LegacyPortalCompAgreement />}><PortalCompAgreement /></SigningFlowGate>
+                <SigningFlowGate><PortalCompAgreement /></SigningFlowGate>
               </ProtectedRoute>
             }
           />

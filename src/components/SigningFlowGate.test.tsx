@@ -5,9 +5,10 @@ const state = vi.hoisted(() => ({ result: { content: null as { signingEnabled: b
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({ session: { access_token: "test" } }) }));
 vi.mock("@/hooks/useOnboardingContent", () => ({ useOnboardingContent: () => state.result }));
 beforeEach(() => { state.result = { content: null, error: null, retry: vi.fn() }; });
-const show = () => render(<SigningFlowGate legacy={<p>Existing signing</p>}><p>Uploaded signing</p></SigningFlowGate>);
+const show = () => render(<SigningFlowGate><p>Uploaded signing</p></SigningFlowGate>);
 describe("signing page activation", () => {
   it("waits for the server before showing either signing form", () => { show(); expect(screen.getByRole("status")).toBeInTheDocument(); expect(screen.queryByText("Uploaded signing")).not.toBeInTheDocument(); });
-  it.each([false, true])("uses the server's active mode: %s", enabled => { state.result.content = { signingEnabled: enabled }; show(); expect(screen.getByText(enabled ? "Uploaded signing" : "Existing signing")).toBeInTheDocument(); expect(screen.queryByText(enabled ? "Existing signing" : "Uploaded signing")).not.toBeInTheDocument(); });
+  it("blocks signing instead of showing a bundled form when inactive", () => { state.result.content = { signingEnabled: false }; show(); expect(screen.getByRole("alert")).toHaveTextContent("signing is not active"); expect(screen.queryByText("Uploaded signing")).not.toBeInTheDocument(); });
+  it("shows the uploaded form after activation", () => { state.result.content = { signingEnabled: true }; show(); expect(screen.getByText("Uploaded signing")).toBeInTheDocument(); });
   it("blocks guessing after a configuration error and offers retry", () => { state.result.error = "Unavailable"; show(); expect(screen.getByRole("alert")).toBeInTheDocument(); screen.getByRole("button", { name: "Retry" }).click(); expect(state.result.retry).toHaveBeenCalledOnce(); });
 });

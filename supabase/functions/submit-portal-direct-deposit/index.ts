@@ -9,7 +9,7 @@ import {
   mapDirectDepositSummary,
   type DirectDepositRecord,
   validateSubmitDirectDepositPayload,
-} from "../_shared/legacySigning/portalDirectDeposit.ts";
+} from "../_shared/directDepositReceipt.ts";
 import { encryptTemporaryPassword } from "../_shared/security.ts";
 
 function getCompletedTodos(metadata: Record<string, unknown> | undefined): Record<string, boolean> {

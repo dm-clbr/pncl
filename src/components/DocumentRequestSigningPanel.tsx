@@ -3,7 +3,6 @@ import SigningDocumentReview from "@/components/SigningDocumentReview";
 import { useEffect, useState, type FormEvent } from "react";
 import { FileSignature, ArrowUpRight } from "lucide-react";
 import Pane from "@/components/portal/Pane";
-import Field from "@/components/portal/Field";
 import { DOCUMENT_CONSENT, agentDocumentUrl, signAgentDocument, validateDocumentSignature, type AgentDocumentRequest } from "@/lib/document-requests";
 import type { AdoptedSignature } from "../../supabase/functions/_shared/signatureAdoption";
 import "@/styles/signature-adoption.css";
@@ -63,14 +62,12 @@ export default function DocumentRequestSigningPanel({ request: active, token, on
             <a className="ptools-cta" href={url} target="_blank" rel="noopener noreferrer">{active.signedAt ? "Open or download signed PDF" : "Open full PDF"}<ArrowUpRight size={16} /></a>
             <button className="ptools-cta" type="button" disabled={busy} onClick={() => setUrlRevision(value => value + 1)}>Refresh document link</button>
             </div>
-            {active.signedAt ? <iframe title={`${active.title} signed copy`} className="portal-comp-signing-pdf document-agent-pdf" src={url} /> : <SigningDocumentReview key={active.id} url={url} title={active.title} onReviewed={setReviewed} values={fieldValues} onValuesChange={setFieldValues} signingName={signature} signatureImage={adoptedSignature?.imageDataUrl} onSignatureClick={busy ? undefined : () => setSignatureEditorOpen(true)} />}
+            {active.signedAt ? <iframe title={`${active.title} signed copy`} className="portal-comp-signing-pdf document-agent-pdf" src={url} /> : <SigningDocumentReview key={active.id} url={url} sourceId={active.id} title={active.title} onReviewed={setReviewed} values={fieldValues} onValuesChange={setFieldValues} signingName={signature} signatureImage={adoptedSignature?.imageDataUrl} onSignatureClick={busy ? undefined : () => setSignatureEditorOpen(true)} signer={{ name: signature, onNameChange: name => { setSignature(name); setAdoptedSignature(null); } }} />}
           </>}
           {!active.signedAt && <form className="pcomp-form" onSubmit={event => void sign(event)}>
-            <Field id="document-signature" label="Full legal first and last name" hint="Use your full name, not initials or a line signature." value={signature} maxLength={120} autoComplete="name" required disabled={busy || !url} onChange={e => { setSignature(e.target.value); setAdoptedSignature(null); }} />
-            <div className="adopted-signature-summary">{adoptedSignature && <img src={adoptedSignature.imageDataUrl} alt="Adopted signature" />}<button type="button" className="ptools-cta" disabled={busy || !url} onClick={() => setSignatureEditorOpen(true)}>{adoptedSignature ? "Change signature" : "Create signature"}</button></div>
-            {signatureEditorOpen && <SignatureAdoptionDialog name={signature} onNameChange={name => { setSignature(name); setAdoptedSignature(null); }} onAdopt={value => { setAdoptedSignature(value); setSignatureEditorOpen(false); }} onClose={() => setSignatureEditorOpen(false)} />}
             <label className="pcomp-agree"><input type="checkbox" checked={accepted} required disabled={busy || !url} onChange={e => setAccepted(e.target.checked)} /><span>{DOCUMENT_CONSENT}</span></label>
             <button className="ptools-cta" type="submit" disabled={busy || !url || !reviewed || !accepted || !adoptedSignature || !signature.trim()}><FileSignature size={17} />{busy ? "Signing…" : "Sign document"}</button>
           </form>}
+          {signatureEditorOpen && <SignatureAdoptionDialog name={signature} onNameChange={name => { setSignature(name); setAdoptedSignature(null); }} onAdopt={value => { setAdoptedSignature(value); setSignatureEditorOpen(false); }} onClose={() => setSignatureEditorOpen(false)} />}
         </Pane>;
 }

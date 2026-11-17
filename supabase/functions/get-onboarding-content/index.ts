@@ -6,7 +6,6 @@ import { loadOnboardingContent, resolveOnboardingDesignation } from "../_shared/
 import { loadAgentDesignations } from "../_shared/portalAgentDesignations.ts";
 import { validateAgentDesignation } from "../_shared/agentDesignation.ts";
 import { uploadedSigningEnabled } from "../_shared/signingRollout.ts";
-import { loadOnboardingContent as loadLegacyContent } from "../_shared/legacySigning/onboardingContent.ts";
 
 serve(async (req) => {
   const cors = handleCors(req); if (cors) return cors;
@@ -26,7 +25,7 @@ serve(async (req) => {
       designation = await resolveOnboardingDesignation(client, params.get("ref"));
     }
     const signingEnabled = params.has("previewDesignation") || await uploadedSigningEnabled(client, userId);
-    const content = signingEnabled ? await loadOnboardingContent(client, designation) : await loadLegacyContent(client, designation);
+    const content = await loadOnboardingContent(client, designation);
     return jsonResponse({ ...content, signingEnabled });
   } catch (error) {
     if (error instanceof AdminAuthError) return errorResponse(error.message, error.status, error.code);

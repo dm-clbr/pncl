@@ -19,6 +19,12 @@ export async function uploadedSigningEnabled(client: SupabaseClient, userId?: st
   if (error) throw new Error("Unable to verify signing preview access.");
   return Boolean(data);
 }
+/** Inactive signing must never fall back to an old or bundled form. */
+export async function requireUploadedSigning(client: SupabaseClient, userId?: string): Promise<void> {
+  if (!await uploadedSigningEnabled(client, userId)) {
+    throw new Error("Document signing is not active. Please contact PNCL support.");
+  }
+}
 /** Admin preparation does not alter the signing requirements agents currently see. */
 export async function signingRowsForUser<T extends { slug: string }>(client: SupabaseClient, rows: T[], userId?: string): Promise<{ rows: T[]; enabled: boolean }> {
   const rollout = await loadSigningRollout(client);

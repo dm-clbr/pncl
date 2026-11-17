@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { AdminAuthError, requireGenesisAdminOrAdmin } from "../_shared/adminAuth.ts";
-import { listPortalUsers, resolveDisplayName } from "../_shared/adminAgents.ts";
+import { listPortalUsers, loadAgentProfileFields, resolveDisplayName } from "../_shared/adminAgents.ts";
 import { mapTicketRecord, type PortalTicketRecord } from "../_shared/portalTickets.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import { logOnboarding } from "../_shared/logger.ts";
@@ -17,12 +17,13 @@ serve(async (req) => {
   try {
     const { adminClient } = await requireGenesisAdminOrAdmin(req);
 
-    const [{ data, error }, users] = await Promise.all([
+    const [{ data, error }, users, profiles] = await Promise.all([
       adminClient
         .from("portal_tickets")
         .select("*")
         .order("created_at", { ascending: false }),
       listPortalUsers(adminClient),
+      loadAgentProfileFields(adminClient),
     ]);
 
     if (error) {
@@ -36,9 +37,9 @@ serve(async (req) => {
       const assignee = row.assigned_to ? usersById.get(row.assigned_to) : undefined;
       return {
         ...mapTicketRecord(row),
-        agentName: agent ? resolveDisplayName(agent, null) : "Unknown agent",
+        agentName: agent ? resolveDisplayName(agent, null, profiles.get(agent.id)) : "Unknown agent",
         agentEmail: agent?.email ?? null,
-        assignedToName: assignee ? resolveDisplayName(assignee, null) : null,
+        assignedToName: assignee ? resolveDisplayName(assignee, null, profiles.get(assignee.id)) : null,
       };
     });
 
@@ -47,7 +48,7 @@ serve(async (req) => {
         const role = getUserRole(user);
         return role === "admin" || role === "genesis_admin";
       })
-      .map((user) => ({ id: user.id, name: resolveDisplayName(user, null), email: user.email ?? "" }))
+      .map((user) => ({ id: user.id, name: resolveDisplayName(user, null, profiles.get(user.id)), email: user.email ?? "" }))
       .sort((a, b) => a.name.localeCompare(b.name));
 
     return jsonResponse({ tickets, admins });

@@ -1,3 +1,4 @@
+import { usePortalProfile } from "@/hooks/usePortalProfile";
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import {
@@ -122,7 +123,7 @@ export default function AdminLayout() {
   const sidebarRef = useRef<HTMLElement>(null);
   const mainRef = useRef<HTMLElement>(null);
   const isMobile = useIsMobileAdminViewport();
-  const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Admin";
+  const { displayName } = usePortalProfile(user);
   const adminAssistOnly = isAdminAssist(user);
   const genesisAdminOnly = isGenesisAdmin(user);
   const navItems = adminAssistOnly

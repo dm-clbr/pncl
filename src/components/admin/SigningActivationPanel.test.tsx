@@ -27,8 +27,8 @@ describe("admin signing activation", () => {
     expect(state.preview).not.toHaveBeenCalled();
     expect(state.activate).not.toHaveBeenCalled();
   });
-  it("offers a separately confirmed return to the previous process", async () => {
-    show({ ...rollout, enabled: true }); fireEvent.click(screen.getByRole("checkbox")); fireEvent.click(screen.getByRole("button", { name: "Return to previous signing" }));
+  it("can pause signing without offering an older form", async () => {
+    show({ ...rollout, enabled: true }); fireEvent.click(screen.getByRole("checkbox")); fireEvent.click(screen.getByRole("button", { name: "Pause signing" }));
     await waitFor(() => expect(state.activate).toHaveBeenCalledWith("test", false, 3));
   });
 });

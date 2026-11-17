@@ -1,5 +1,5 @@
-vi.mock("@/components/SignatureAdoptionDialog", () => ({ default: ({ name, onAdopt }: { name: string; onAdopt: (value: unknown) => void }) => <button onClick={() => onAdopt({ name, method: "typed", accepted: true, version: "2026-11-13", imageDataUrl: "data:image/png;base64,test" })}>Adopt test signature</button> }));
-vi.mock("@/components/SigningDocumentReview", () => ({ default: ({ onReviewed }: { onReviewed: (value: boolean) => void }) => <button type="button" onClick={() => onReviewed(true)}>Review all pages</button> }));
+vi.mock("@/components/SignatureAdoptionDialog", () => ({ default: ({ name, onNameChange, onAdopt }: { name: string; onNameChange: (value: string) => void; onAdopt: (value: unknown) => void }) => <><label>Full legal first and last name<input value={name} onChange={event => onNameChange(event.target.value)} /></label><button onClick={() => onAdopt({ name, method: "typed", accepted: true, version: "2026-11-13", imageDataUrl: "data:image/png;base64,test" })}>Adopt test signature</button></> }));
+vi.mock("@/components/SigningDocumentReview", () => ({ default: ({ onReviewed, onSignatureClick }: { onReviewed: (value: boolean) => void; onSignatureClick: () => void }) => <><button type="button" onClick={() => onReviewed(true)}>Review all pages</button><button onClick={onSignatureClick}>Create signature</button></> }));
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -19,14 +19,14 @@ afterEach(cleanup);
 describe("agent document signing", () => {
   it("requires the document, full name, and consent; then reloads the signed copy", async () => {
     render(<MemoryRouter><PortalDocuments /></MemoryRouter>);
-    const name = await screen.findByLabelText(/Full legal first and last name/);
     await screen.findByRole("link", { name: "Open full PDF" });
     expect(screen.getByRole("button", { name: "Sign document" })).toBeDisabled();
     fireEvent.click(await screen.findByRole("button", { name: "Review all pages" }));
-    fireEvent.change(name, { target: { value: "Alex Agent" } });
     fireEvent.click(screen.getByRole("checkbox"));
     expect(screen.getByRole("button", { name: "Sign document" })).toBeDisabled();
+    expect(screen.queryByLabelText(/Full legal first and last name/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Create signature" }));
+    fireEvent.change(screen.getByLabelText(/Full legal first and last name/), { target: { value: "Alex Agent" } });
     fireEvent.click(screen.getByRole("button", { name: "Adopt test signature" }));
     vi.mocked(api.listAgentDocumentRequests).mockResolvedValue([{ ...doc, signedAt: "2026-11-03T18:00:00Z", signatureName: "Alex Agent" }]);
     fireEvent.click(screen.getByRole("button", { name: "Sign document" }));

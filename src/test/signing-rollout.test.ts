@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { legacySigningRows, loadSigningRollout, signingRowsForUser, uploadedSigningEnabled } from "../../supabase/functions/_shared/signingRollout";
+import { legacySigningRows, loadSigningRollout, requireUploadedSigning, signingRowsForUser, uploadedSigningEnabled } from "../../supabase/functions/_shared/signingRollout";
 import { isTodoCompleteForUser } from "../../supabase/functions/_shared/todoCompletion";
 import { filterAgentTodos } from "../../supabase/functions/_shared/agentDesignation";
 
@@ -12,6 +12,11 @@ function client(enabled = false, preview = false, error: unknown = null) {
   } };
 }
 describe("staged signing activation", () => {
+  it("rejects new signatures when inactive instead of falling back to a bundled document", async () => {
+    await expect(requireUploadedSigning(client() as never, "agent")).rejects.toThrow("signing is not active");
+    await expect(requireUploadedSigning(client(true) as never, "agent")).resolves.toBeUndefined();
+    await expect(requireUploadedSigning(client(false, true) as never, "admin")).resolves.toBeUndefined();
+  });
   it("keeps public enrollment and ordinary agents on existing signing while inactive", async () => {
     expect(await uploadedSigningEnabled(client() as never)).toBe(false);
     expect(await uploadedSigningEnabled(client() as never, "agent")).toBe(false);

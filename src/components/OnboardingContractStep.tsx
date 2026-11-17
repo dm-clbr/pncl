@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import { type IcaSigningSubmitPayload } from "@/components/IcaSigningStep";
 import UploadedIcaSigningStep from "@/components/UploadedIcaSigningStep";
 import type { OnboardingFlowContent } from "@/lib/onboarding-content";
-import LegacyOnboardingContractStep from "./OnboardingContractStep.legacy";
 
 interface OnboardingContractStepProps {
   preview?: boolean;
@@ -25,7 +24,7 @@ export default function OnboardingContractStep({
   onSigned,
   onBack,
 }: OnboardingContractStepProps) {
-  if (content.signingEnabled === false) return <LegacyOnboardingContractStep preview={preview} content={content} referralInviteId={referralInviteId} onSigned={onSigned} onBack={onBack} />;
+  if (content.signingEnabled === false) return <div role="alert" className="onboarding-step"><h2>Agreement not ready</h2><p>Document signing is not active. Please contact PNCL support before continuing.</p><button type="button" className="btn btn-ghost" onClick={onBack}>Back</button></div>;
   const handleSubmit = async (payload: IcaSigningSubmitPayload) => {
     if (!content.ica) throw new Error("Your agreement has not been configured.");
     if (preview) {

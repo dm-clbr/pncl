@@ -63,7 +63,7 @@ export default function CompAgreementForm({
       <div className="portal-comp-signing-layout">
         <div className="portal-comp-signing-doc">
           {attachment.documentUrl ? (
-            <SigningDocumentReview key={attachment.templateAssetId} url={attachment.documentUrl} title={attachment.title} onReviewed={setReviewed} values={fieldValues} onValuesChange={setFieldValues} signingName={signatureName} />
+            <SigningDocumentReview key={attachment.templateAssetId} url={attachment.documentUrl} sourceId={attachment.templateAssetId} title={attachment.title} onReviewed={setReviewed} values={fieldValues} onValuesChange={setFieldValues} signingName={signatureName} />
           ) : (
             <p className="ptools-error" role="alert">The document could not be loaded. Contact PNCL support.</p>
           )}

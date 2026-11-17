@@ -57,7 +57,7 @@ export default defineConfig(({ mode }) => ({
         // The zipcodes-us dataset (~6 MB, lazy-loaded) is fetched on demand, not precached.
         globIgnores: ["**/zip-county-data-*.js", "ffmpeg/**"],
         globPatterns: [
-          "**/*.{js,css,html,ico,svg,woff2}",
+          "**/*.{js,mjs,css,html,ico,svg,woff2}",
           "pwa-*.png",
           "apple-touch-icon.png",
           "favicon-32x32.png",

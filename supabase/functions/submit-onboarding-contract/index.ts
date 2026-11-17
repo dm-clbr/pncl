@@ -1,5 +1,4 @@
-import legacyHandler from "./legacy.ts";
-import { uploadedSigningEnabled } from "../_shared/signingRollout.ts";
+import { requireUploadedSigning } from "../_shared/signingRollout.ts";
 import { requireSigningAsset } from "../_shared/onboardingSigningRules.ts";
 import { inspectSigningPdf } from "../_shared/onboardingSigningPdf.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
@@ -37,7 +36,7 @@ serve(async (req) => {
   try {
     const body = await req.clone().json();
     const supabase = getServiceClient();
-    if (!await uploadedSigningEnabled(supabase)) return legacyHandler(req);
+    await requireUploadedSigning(supabase);
     const designation = await resolveOnboardingDesignation(supabase, body?.referralInviteId);
     const content = await loadOnboardingContent(supabase, designation);
     requireSigningAsset(content.ica, "ICA");

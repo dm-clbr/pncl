@@ -1,5 +1,4 @@
-import legacyHandler from "./legacy.ts";
-import { uploadedSigningEnabled } from "../_shared/signingRollout.ts";
+import { requireUploadedSigning } from "../_shared/signingRollout.ts";
 import { requireSigningAsset } from "../_shared/onboardingSigningRules.ts";
 import { inspectSigningPdf } from "../_shared/onboardingSigningPdf.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
@@ -49,7 +48,7 @@ serve(async (req) => {
 
   try {
     const { user, adminClient } = await requirePortalUser(req);
-    if (!await uploadedSigningEnabled(adminClient, user.id)) return legacyHandler(req);
+    await requireUploadedSigning(adminClient, user.id);
     const body = await req.json();
     const designation = (await loadAgentDesignations(adminClient, [user.id])).get(user.id) ?? "loa";
     const content = await loadOnboardingContent(adminClient, designation);
@@ -113,24 +112,35 @@ serve(async (req) => {
       [ICA_TODO_SLUG]: true,
     };
 
-    const { error: metadataError } = await adminClient.auth.admin.updateUserById(user.id, {
-      user_metadata: {
-        ...user.user_metadata,
-        completed_portal_todos: completedTodos,
-        // Clear the re-sign notice shown after an ICA template reset.
-        ica_resign_required: false,
-      },
-    });
+    // The signed PDF and signature record are committed. Follow-up failures must
+    // never ask the agent to sign again or overwrite that successful result.
+    const warnings: string[] = [];
+    try {
+      const { error: metadataError } = await adminClient.auth.admin.updateUserById(user.id, {
+        user_metadata: {
+          ...user.user_metadata,
+          completed_portal_todos: completedTodos,
+          // Clear the re-sign notice shown after an ICA template reset.
+          ica_resign_required: false,
+        },
+      });
 
-    if (metadataError) {
-      throw new Error(metadataError.message);
+      if (metadataError) throw new Error(metadataError.message);
+    } catch (error) {
+      logOnboarding("portal_ica_metadata_sync_failed", { userId: user.id, error: error instanceof Error ? error.message : "Metadata update failed" }, "error");
+      warnings.push("Your agreement is saved. Your checklist may take a moment to refresh.");
     }
 
-    const recoverySync = await syncPortalRecoveryEmailForUser(
-      adminClient,
-      user,
-      payload.personalEmail,
-    );
+    let recoverySync;
+    try {
+      recoverySync = await syncPortalRecoveryEmailForUser(adminClient, user, payload.personalEmail);
+    } catch (error) {
+      logOnboarding("portal_ica_recovery_sync_failed", { userId: user.id, error: error instanceof Error ? error.message : "Recovery sync failed" }, "error");
+      recoverySync = { recoveryEmail: payload.personalEmail, syncStatus: "error", syncedAt: null, error: "Google sync needs attention. Try again from your profile." };
+    }
+    if (recoverySync.syncStatus === "error") {
+      warnings.push("Your agreement is saved. Your personal recovery email still needs syncing; use Retry Google sync in your profile.");
+    }
 
     logOnboarding("portal_ica_submitted", { userId: user.id, recoverySyncStatus: recoverySync.syncStatus });
 
@@ -151,6 +161,7 @@ serve(async (req) => {
     return jsonResponse({
       ica: mapPortalIcaSummary(data as PortalIcaRecord),
       recoverySync,
+      warnings,
       message: "Independent Contractor Agreement signed successfully.",
     });
   } catch (error) {

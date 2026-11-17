@@ -95,7 +95,7 @@ export async function fetchPortalIca(userId: string): Promise<PortalIcaSummary |
 export async function submitPortalIca(
   accessToken: string,
   input: SubmitPortalIcaInput,
-): Promise<PortalIcaSummary> {
+): Promise<{ ica: PortalIcaSummary; warnings: string[] }> {
   if (!isSupabaseAuthConfigured()) {
     throw new Error("Portal authentication is not configured.");
   }
@@ -116,7 +116,7 @@ export async function submitPortalIca(
     throw new Error(data.message ?? "Unable to sign agreement");
   }
 
-  return data.ica as PortalIcaSummary;
+  return { ica: data.ica as PortalIcaSummary, warnings: Array.isArray(data.warnings) ? data.warnings.filter((value: unknown): value is string => typeof value === "string") : [] };
 }
 
 export async function getPortalIcaPdfUrl(pdfPath: string): Promise<string | null> {

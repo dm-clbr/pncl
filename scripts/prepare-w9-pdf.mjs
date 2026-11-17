@@ -1,5 +1,5 @@
 /**
- * Prepare pncl-w9-standard.pdf from the official IRS fw9.pdf:
+ * Prepare output/pncl-w9-upload.pdf for an explicit Onboarding Steps upload:
  * - Strip XFA (pdf-lib does this on save)
  * - Prefill requester block
  * - Add signature + date fields for Part II
@@ -12,8 +12,8 @@ import { PDFDocument } from "pdf-lib";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "..");
 
-const SOURCE = path.join(root, "public/documents/fw9.pdf");
-const OUTPUT = path.join(root, "public/documents/pncl-w9-standard.pdf");
+const SOURCE = path.join(root, "scripts/assets/fw9.pdf");
+const OUTPUT = path.join(root, "output/pncl-w9-upload.pdf");
 const W9_REQUESTER_TEXT = [
   "PNCL LLC",
   "8927 E Wethersfield Rd",
@@ -80,6 +80,7 @@ async function main() {
   dateField.setText("");
 
   const outputBytes = await doc.save();
+  fs.mkdirSync(path.dirname(OUTPUT), { recursive: true });
   fs.writeFileSync(OUTPUT, outputBytes);
 
   const verifyDoc = await PDFDocument.load(outputBytes);

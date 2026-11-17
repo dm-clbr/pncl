@@ -1,3 +1,4 @@
+import { usePortalProfile } from "@/hooks/usePortalProfile";
 import { useIcaDocumentRequests } from "@/hooks/useIcaDocumentRequests";
 import IcaDocumentRequests from "@/components/portal/IcaDocumentRequests";
 import AgreementPdfPreview from "@/components/portal/AgreementPdfPreview";
@@ -106,14 +107,7 @@ export default function PortalIca() {
     });
   }, [ica?.signedAt]);
 
-  const displayName = user?.user_metadata?.full_name ?? user?.email?.split("@")[0] ?? "Agent";
-  // Presentation only: the masthead avatar falls back to initials, since the
-  // page holds no photo and adding a profile hook here would be a data change.
-  const initials = displayName
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part.charAt(0).toUpperCase())
-    .join("");
+  const { displayName, initials } = usePortalProfile(user);
 
   const handleSubmit = async (payload: Parameters<typeof submitPortalIca>[1]) => {
     const token = session?.access_token;
@@ -123,9 +117,11 @@ export default function PortalIca() {
 
     if (!content) throw new Error("Wait for your agreement to load before signing.");
     const saved = await submitPortalIca(token, { ...payload, templateAssetId: content.ica?.id ?? null });
-    setIca(saved);
-    await refreshPortalUser();
+    setIca(saved.ica);
+    // A session refresh is a follow-up too: the agreement is already saved.
+    await refreshPortalUser().catch(() => undefined);
     toast.success("Agreement signed. A PDF copy was saved to your profile.");
+    saved.warnings.forEach(message => toast.warning(message, { duration: 12000 }));
     navigate("/portal", { replace: true });
   };
 

@@ -1,3 +1,4 @@
+import { usePortalProfile } from "@/hooks/usePortalProfile";
 import CompAgreementForm from "@/components/CompAgreementForm";
 import { useEffect, useState } from "react";
 import { ArrowUpRight } from "lucide-react";
@@ -65,8 +66,7 @@ export default function PortalCompAgreement() {
     };
   }, [session?.access_token]);
 
-  const defaultName =
-    typeof user?.user_metadata?.full_name === "string" ? user.user_metadata.full_name : "";
+  const { displayName: defaultName } = usePortalProfile(user);
 
   const handleSigned = (updated: PortalCompAttachment) => {
     setAttachments((prev) => prev.map((row) => (row.id === updated.id ? updated : row)));
