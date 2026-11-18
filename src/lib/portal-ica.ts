@@ -14,7 +14,7 @@ export interface PortalIcaSummary {
   pdfPath: string;
 }
 
-export type IcaSignatureSource = "portal" | "onboarding";
+export type IcaSignatureSource = "portal" | "onboarding" | "document_request";
 
 export interface PortalIcaStatus {
   signed: boolean;

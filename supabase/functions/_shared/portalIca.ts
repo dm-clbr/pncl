@@ -6,11 +6,13 @@ import {
 import { DIRECT_DEPOSIT_PDF_BUCKET } from "./portalDirectDeposit.ts";
 import { createPortalW9SignedUrl } from "./portalW9Documents.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { loadSignedIcaDocumentRequests } from "./icaDocumentRequests.ts";
+import { DOCUMENT_BUCKET, documentUrl } from "./documentStorage.ts";
 
 export const PORTAL_ICA_PDF_BUCKET = DIRECT_DEPOSIT_PDF_BUCKET;
 export const ICA_TODO_SLUG = "ica_setup";
 
-export type IcaSignatureSource = "portal" | "onboarding";
+export type IcaSignatureSource = "portal" | "onboarding" | "document_request";
 
 export interface PortalIcaRecord {
   user_id: string;
@@ -122,7 +124,7 @@ export async function resolveUserIcaStatus(
   }
 
   if (!onboardingRow?.id) {
-    return { signed: false, source: null, ica: null };
+    return resolveRequestedIcaStatus(adminClient, userId);
   }
 
   const { data: contractRow, error: contractError } = await adminClient
@@ -136,7 +138,7 @@ export async function resolveUserIcaStatus(
   }
 
   if (!contractRow) {
-    return { signed: false, source: null, ica: null };
+    return resolveRequestedIcaStatus(adminClient, userId);
   }
 
   const contract = contractRow as OnboardingContractRecord;
@@ -144,6 +146,24 @@ export async function resolveUserIcaStatus(
     signed: true,
     source: "onboarding",
     ica: mapOnboardingContractToPortalSummary(userId, contract),
+  };
+}
+
+async function resolveRequestedIcaStatus(client: SupabaseClient, userId: string): Promise<ResolvedIcaStatus> {
+  const request = (await loadSignedIcaDocumentRequests(client, [userId])).get(userId);
+  if (!request) return { signed: false, source: null, ica: null };
+  return {
+    signed: true,
+    source: "document_request",
+    ica: {
+      userId,
+      legalName: request.signature_name,
+      signatureName: request.signature_name,
+      personalEmail: "", // Assigned documents do not collect a recovery email.
+      icaVersion: `document-request:${request.campaign.onboarding_asset_id ?? request.id}`,
+      signedAt: request.signed_at,
+      pdfPath: request.signed_pdf_path,
+    },
   };
 }
 
@@ -159,10 +179,14 @@ export async function createIcaDownloadUrl(
     return createPortalIcaSignedUrl(adminClient, status.ica.pdfPath);
   }
 
+  if (status.source === "document_request") {
+    return documentUrl(adminClient, status.ica.pdfPath, DOCUMENT_BUCKET);
+  }
+
   return createOnboardingContractSignedUrl(adminClient, status.ica.pdfPath);
 }
 
-/** User IDs with a portal ICA or an onboarding-linked contract signature. */
+/** User IDs with a saved portal, onboarding, or assigned-document ICA signature. */
 export async function listIcaSignedUserIds(
   adminClient: SupabaseClient,
   userIds: string[],
@@ -204,6 +228,7 @@ export async function listIcaSignedUserIds(
     .filter((id): id is string => Boolean(id));
 
   if (onboardingIds.length === 0) {
+    for (const userId of (await loadSignedIcaDocumentRequests(adminClient, remaining)).keys()) signed.add(userId);
     return signed;
   }
 
@@ -227,6 +252,8 @@ export async function listIcaSignedUserIds(
     const userId = row.onboarding_id ? userByOnboardingId.get(row.onboarding_id) : undefined;
     if (userId) signed.add(userId);
   }
+
+  for (const userId of (await loadSignedIcaDocumentRequests(adminClient, remaining.filter(id => !signed.has(id)))).keys()) signed.add(userId);
 
   return signed;
 }

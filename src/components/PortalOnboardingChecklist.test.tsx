@@ -261,3 +261,50 @@ describe("Flow-specific supporting documents", () => {
     expect(screen.queryByRole("link", { name: "SureLC quick reference (PDF)" })).not.toBeInTheDocument();
   });
 });
+
+describe("reopening completed steps", () => {
+  it("keeps signed forms, assigned documents and ordinary links available after completion", () => {
+    const onComplete = vi.fn();
+    render(<MemoryRouter><PortalOnboardingChecklist todos={[
+      todo({ id: "ica_setup", title: "ICA", phase: "on_board", completionType: "auto", completed: true, href: "/portal/ica" }),
+      todo({ id: "document_request_addendum", title: "Book of Business", phase: "on_board", completionType: "auto", completed: true, href: "/portal/documents?request=addendum" }),
+      todo({ id: "training_files", title: "Training files", phase: "on_board", completed: true, href: "https://example.com/training", external: true, supportingFiles: [{ mode: "file", assetId: "guide", url: "https://example.com/guide.pdf", filename: "Agent guide.pdf" }] }),
+    ]} agentEmail="test@example.com" completingTodoId={null} onComplete={onComplete} /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: /On-Board/ }));
+    const signedLinks = screen.getAllByRole("link", { name: "View signed document" });
+    expect(signedLinks.map(link => link.getAttribute("href"))).toEqual(["/portal/ica", "/portal/documents?request=addendum"]);
+    expect(screen.getByRole("link", { name: "Open step" })).toHaveAttribute("href", "https://example.com/training");
+    expect(screen.getByRole("link", { name: "Open step" })).toHaveAttribute("rel", "noopener noreferrer");
+    expect(screen.getByRole("link", { name: "Agent guide.pdf" })).toHaveAttribute("href", "https://example.com/guide.pdf");
+    expect(screen.getByRole("button", { name: /Training files.*completed/ })).toBeDisabled();
+    fireEvent.click(signedLinks[0]);
+    expect(onComplete).not.toHaveBeenCalled();
+  });
+
+  it("allows reviewing completed work in a later stage while its unfinished steps stay locked", () => {
+    const onComplete = vi.fn();
+    render(<MemoryRouter><PortalOnboardingChecklist todos={[
+      todo({ id: "ica_setup", phase: "on_board", completionType: "auto", href: "/portal/ica" }),
+      todo({ id: "completed_training", title: "Completed training", completed: true, href: "/portal/training" }),
+      todo({ id: "unfinished_training", title: "Unfinished training", href: "/portal/unfinished" }),
+    ]} agentEmail="test@example.com" completingTodoId={null} onComplete={onComplete} /></MemoryRouter>);
+    const stage = screen.getByRole("button", { name: /Licensing/ });
+    expect(stage).toBeEnabled();
+    fireEvent.click(stage);
+    const completedCard = screen.getByText("Completed training").closest("li")!;
+    expect(within(completedCard).getByRole("link", { name: "Open step" })).toHaveAttribute("href", "/portal/training");
+    const unfinishedCard = screen.getByText("Unfinished training").closest("li")!;
+    expect(within(unfinishedCard).queryByRole("link")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Unfinished training.*mark complete/ })).toBeDisabled();
+    expect(onComplete).not.toHaveBeenCalled();
+  });
+
+  it("reopens completed embedded videos without submitting completion again", () => {
+    const onComplete = vi.fn();
+    render(<MemoryRouter><PortalOnboardingChecklist todos={[todo({ id: "recorded_training", title: "Recorded training", completed: true, href: "https://player.mediadelivery.net/play/687293/training", external: true })]} agentEmail="test@example.com" completingTodoId={null} onComplete={onComplete} /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: /Licensing/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Replay video" }));
+    expect(screen.getByRole("dialog", { name: "Recorded training" })).toBeInTheDocument();
+    expect(onComplete).not.toHaveBeenCalled();
+  });
+});

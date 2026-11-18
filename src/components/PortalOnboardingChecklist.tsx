@@ -239,12 +239,12 @@ function PortalTodoItem({
   const needsNewProducerConfirmation = todo.id === SUBMIT_NEW_PRODUCER_TODO_ID;
   const requiresVideoPlayback = isOnboardingVideoTodo(todo.id) || !!todo.contentType?.includes("video");
   const [confirmingNewProducer, setConfirmingNewProducer] = useState(false);
-  const keepCompletedLink = isSureLcAccountTodo(todo.id) && Boolean(todo.href);
+  const isSignedDocument = isRequiredForm || todo.id.startsWith("document_request_") || todo.id === "comp_agreement";
   const sureLcAccount = isSureLcAccountTodo(todo.id)
     ? resolveSureLcAccountLinks([todo]).find((account) => account.todoId === todo.id)
     : undefined;
 
-  const disabled = locked || gateLocked;
+  const disabled = !todo.completed && (locked || gateLocked);
   const urgent = isRequiredForm && !disabled && !todo.completed;
   // The whole title row is the mark-complete control. The new-producer step
   // checks itself off once its submission goes through, so its row is static.
@@ -287,7 +287,7 @@ function PortalTodoItem({
           aria-pressed={todo.completed}
         >
           {row}
-          <span className="portal-sr">, mark complete</span>
+          <span className="portal-sr">{todo.completed ? ", completed" : ", mark complete"}</span>
         </button>
       ) : (
         <div className="pcl-step-row">
@@ -297,18 +297,27 @@ function PortalTodoItem({
       )}
 
       {todo.completed ? (
-        requiresVideoPlayback ? (
-          <div className="pcl-step-body">
+        <div className="pcl-step-body">
+          <TodoDescription description={todo.description} />
+          {requiresVideoPlayback || videoEmbedUrl ? (
             <button type="button" className="pcl-step-link" onClick={() => setVideoOpen(true)}>
               <Play size={16} strokeWidth={2.5} aria-hidden="true" />
               {isSureLcTutorialTodo(todo.id) ? "Replay SureLC walkthrough" : "Replay video"}
             </button>
-          </div>
-        ) : keepCompletedLink && (
-          <div className="pcl-step-body">
-            {sureLcAccount && <PortalSureLcAccountLink account={sureLcAccount} />}
-          </div>
-        )
+          ) : sureLcAccount ? (
+            <PortalSureLcAccountLink account={sureLcAccount} />
+          ) : todo.href && (todo.external ? (
+            <a href={todo.href} target="_blank" rel="noopener noreferrer" className="pcl-step-link">
+              {isSignedDocument ? "View signed document" : "Open step"}
+              <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
+            </a>
+          ) : (
+            <Link to={todo.href} className="pcl-step-link">
+              {isSignedDocument ? "View signed document" : "Open step"}
+              <ArrowUpRight size={16} strokeWidth={2.5} aria-hidden="true" />
+            </Link>
+          ))}
+        </div>
       ) : (
         <div className="pcl-step-body">
           {urgent && <span className="pcl-step-tag is-urgent">Required: top priority</span>}
@@ -367,14 +376,6 @@ function PortalTodoItem({
               </Link>
             )
           )}
-          {videoOpen && videoEmbedUrl && !requiresVideoPlayback && (
-            <PortalVideoModal
-              title={todo.title}
-              embedUrl={videoEmbedUrl}
-              sourceUrl={todo.href}
-              onClose={() => setVideoOpen(false)}
-            />
-          )}
           {confirmingNewProducer && (
             <PortalNewProducerModal
               onClose={() => setConfirmingNewProducer(false)}
@@ -385,6 +386,9 @@ function PortalTodoItem({
             />
           )}
         </div>
+      )}
+      {videoOpen && videoEmbedUrl && !requiresVideoPlayback && (
+        <PortalVideoModal title={todo.title} embedUrl={videoEmbedUrl} sourceUrl={todo.href} onClose={() => setVideoOpen(false)} />
       )}
       {todo.supportingFiles !== undefined ? ((!disabled || todo.completed) && <div className="pcl-step-body">
         <OnboardingSupportingFiles files={todo.supportingFiles} className="pcl-step-link" />
@@ -440,14 +444,16 @@ export default function PortalOnboardingChecklist({
 
   // Kept as state rather than native <details>: its toggle event fires a task
   // after the click, so a re-render in between would re-apply the stale open
-  // prop, and locked stages must refuse to open at all.
+  // prop. Locked stages may reopen for review when they contain completed work.
   const [openPhases, setOpenPhases] = useState<Record<string, boolean>>({});
-  const isPhaseOpen = (phaseId: string, stageIndex: number) => {
-    if (!previewUnlocked && isStageLocked(todos, stageIndex)) return false;
+  const canOpenPhase = (phaseId: PortalTodo["phase"], stageIndex: number) => previewUnlocked ||
+    !isStageLocked(todos, stageIndex) || (todosByPhase.get(phaseId)?.some(todo => todo.completed) ?? false);
+  const isPhaseOpen = (phaseId: PortalTodo["phase"], stageIndex: number) => {
+    if (!canOpenPhase(phaseId, stageIndex)) return false;
     return openPhases[phaseId] ?? phaseId === currentPhaseId;
   };
-  const togglePhase = (phaseId: string, stageIndex: number) => {
-    if (!previewUnlocked && isStageLocked(todos, stageIndex)) return;
+  const togglePhase = (phaseId: PortalTodo["phase"], stageIndex: number) => {
+    if (!canOpenPhase(phaseId, stageIndex)) return;
     setOpenPhases((prev) => ({ ...prev, [phaseId]: !isPhaseOpen(phaseId, stageIndex) }));
   };
 
@@ -500,21 +506,22 @@ export default function PortalOnboardingChecklist({
         const doneCount = items.filter((todo) => todo.completed).length;
         const phaseComplete = doneCount === items.length;
         const locked = !previewUnlocked && isStageLocked(todos, phaseIndex);
+        const canOpen = canOpenPhase(phase.id, phaseIndex);
         const open = isPhaseOpen(phase.id, phaseIndex);
         const isCurrent = phaseIndex === currentStageIndex;
 
         return (
           <div
             key={phase.id}
-            className={`pcl-stage${open ? " is-open" : ""}${phaseComplete ? " is-complete" : ""}${locked ? " is-locked" : ""}${isCurrent ? " is-current" : ""}`}
+            className={`pcl-stage${open ? " is-open" : ""}${phaseComplete ? " is-complete" : ""}${!canOpen ? " is-locked" : ""}${isCurrent ? " is-current" : ""}`}
           >
             <button
               type="button"
               className="pcl-stage-head"
               onClick={() => togglePhase(phase.id, phaseIndex)}
               aria-expanded={open}
-              disabled={locked}
-              aria-disabled={locked}
+              disabled={!canOpen}
+              aria-disabled={!canOpen}
             >
               <span className="pcl-stage-title">
                 <span className="pcl-stage-num" aria-hidden="true">
@@ -529,8 +536,8 @@ export default function PortalOnboardingChecklist({
                 {phase.label}
               </span>
               <span className="pcl-stage-meta">
-                {locked ? "Locked" : `${doneCount}/${items.length}`}
-                {!locked && (
+                {!canOpen ? "Locked" : `${doneCount}/${items.length}`}
+                {canOpen && (
                   <ChevronDown size={16} className="pcl-stage-chevron" aria-hidden="true" />
                 )}
               </span>

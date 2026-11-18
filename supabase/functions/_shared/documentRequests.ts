@@ -2,7 +2,7 @@ import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1
 import { sendDocumentNotifications } from "./documentNotifications.ts";
 import { getEmailDomain } from "./onboarding.ts";
 
-export const DOCUMENT_BUCKET = "portal-signing-documents";
+export { DOCUMENT_BUCKET, documentUrl } from "./documentStorage.ts";
 export interface DocumentCampaign {
   id: string; title: string; description: string; pdf_path: string; pdf_sha256: string;
   created_by: string; created_at: string; onboarding_enabled: boolean;
@@ -15,11 +15,6 @@ export interface DocumentRequest {
   signed_at: string | null; signature_name: string | null; signed_pdf_path: string | null;
   notification_status: string; notification_sent_at: string | null; notification_error: string | null;
   campaign: DocumentCampaign;
-}
-export async function documentUrl(client: SupabaseClient, path: string, bucket = DOCUMENT_BUCKET): Promise<string> {
-  const { data, error } = await client.storage.from(bucket).createSignedUrl(path, 3600);
-  if (error || !data?.signedUrl) throw new Error("Unable to open the document. Please retry.");
-  return data.signedUrl;
 }
 export async function ensureOnboardingDocuments(client: SupabaseClient, userId: string) {
   const { error } = await client.rpc("ensure_onboarding_document_requests", { p_user: userId, p_domain: getEmailDomain() });
