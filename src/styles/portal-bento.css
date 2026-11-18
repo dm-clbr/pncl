@@ -1206,7 +1206,7 @@
 .pcl-stage-items {
   list-style: none;
   margin: 0;
-  padding: 0 0 8px;
+  padding: 0 0 8px 32px;
 }
 
 .pcl-step + .pcl-step {
