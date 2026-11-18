@@ -298,7 +298,6 @@ function PortalTodoItem({
 
       {todo.completed ? (
         <div className="pcl-step-body">
-          <TodoDescription description={todo.description} />
           {requiresVideoPlayback || videoEmbedUrl ? (
             <button type="button" className="pcl-step-link" onClick={() => setVideoOpen(true)}>
               <Play size={16} strokeWidth={2.5} aria-hidden="true" />
