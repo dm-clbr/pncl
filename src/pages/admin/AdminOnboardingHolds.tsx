@@ -25,6 +25,7 @@ function formatDateTime(value: string | null): string {
 }
 
 function formatStatus(value: string): string {
+  if (value === "waiting_google_capacity") return "Waiting for Google capacity — automatic retry every 5 minutes";
   return value.replace(/_/g, " ");
 }
 
@@ -257,7 +258,7 @@ export default function AdminOnboardingHolds() {
                     <td data-label="Progress"><StepList hold={hold} /></td>
                     <td data-label="Attention">
                       {hold.linkRepair && <p>{hold.linkRepair.message}</p>}
-                      {hold.needsAttention ? (
+                      {hold.enrollmentStatus === "waiting_google_capacity" ? <p>Progress saved. Automatic retry is active; check Google user limits, licenses, and Gmail activation.</p> : hold.needsAttention ? (
                         <>
                           <strong><AlertTriangle size={15} aria-hidden="true" /> {formatStatus(hold.failedStep ?? "unknown step")}</strong><br />
                           <span>{formatStatus(hold.failureCode ?? "needs review")}</span>

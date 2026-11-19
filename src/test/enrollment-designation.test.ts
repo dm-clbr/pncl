@@ -22,7 +22,7 @@ function clientFor(designation?: string) {
     select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: row }) }) }),
     update: (values: Record<string, unknown>) => {
       updates.push(values);
-      const query = { eq: () => query, or: () => query, select: () => query, maybeSingle: async () => ({ data: { id: row.id } }), then: (resolve: (value: unknown) => void) => resolve({ error: null }) };
+      const query = { eq: () => query, or: () => query, select: () => query, maybeSingle: async () => ({ data: { ...row } }), then: (resolve: (value: unknown) => void) => resolve({ error: null }) };
       return query;
     },
   }));

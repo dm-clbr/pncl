@@ -203,3 +203,24 @@ describe("resume link and connection recovery", () => {
     expect(screen.getByRole("button", { name: "Show My Temporary Gmail Password" })).toBeInTheDocument();
   });
 });
+
+
+describe("waiting for Workspace capacity", () => {
+  it("keeps the saved waiting screen past the normal polling deadline and recovers automatically", async () => {
+    vi.useFakeTimers();
+    vi.mocked(getOnboardingStatus).mockResolvedValue({ status: "waiting_capacity" });
+    renderHandoff();
+    await act(async () => {});
+    expect(screen.getByRole("heading", { name: "Waiting for Google Workspace capacity" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Retry saved enrollment" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("status", { name: "Loading" })).not.toBeInTheDocument();
+    await act(async () => { await vi.advanceTimersByTimeAsync(180000); });
+    expect(screen.getByRole("button", { name: "Check status" })).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(getOnboardingStatus).toHaveBeenCalledTimes(7);
+    vi.mocked(getOnboardingStatus).mockResolvedValue(status);
+    await act(async () => { await vi.advanceTimersByTimeAsync(30000); });
+    expect(screen.getByRole("button", { name: "Show My Temporary Gmail Password" })).toBeInTheDocument();
+    expect(retryOnboardingEnrollment).not.toHaveBeenCalled();
+  });
+});

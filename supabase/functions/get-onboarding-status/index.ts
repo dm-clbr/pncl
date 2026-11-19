@@ -1,3 +1,4 @@
+import { buildCapacityStatus } from "../_shared/googleCapacity.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
 import {
@@ -162,6 +163,11 @@ serve(async (req) => {
       logOnboarding("status_invalid_token", { onboardingId: id }, "warn");
       return errorResponse("Invalid sign-in handoff token.", 403, "invalid_token");
     }
+
+    // Expired handoffs may read only this non-sensitive waiting message.
+    // Credential disclosure still requires the ordinary unexpired token.
+    const capacityStatus = buildCapacityStatus(record);
+    if (capacityStatus) return jsonResponse(capacityStatus);
 
     if (isTokenExpired(record.handoff_token_expires_at)) {
       logOnboarding("status_token_expired", { onboardingId: id, status: record.status }, "warn");

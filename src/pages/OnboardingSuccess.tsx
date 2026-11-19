@@ -58,9 +58,10 @@ export default function OnboardingSuccess() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") ?? "";
   const isGmailPreview = import.meta.env.DEV && searchParams.get("preview") === "gmail";
+  const isCapacityPreview = import.meta.env.DEV && searchParams.get("preview") === "capacity";
 
   const [statusData, setStatusData] = useState<OnboardingStatusResponse | null>(
-    isGmailPreview ? PREVIEW_STATUS : null,
+    isGmailPreview ? PREVIEW_STATUS : isCapacityPreview ? { status: "waiting_capacity" } : null,
   );
   const [revealed, setRevealed] = useState<RevealCredentialsResponse | null>(null);
   const [revealing, setRevealing] = useState(false);
@@ -84,6 +85,7 @@ export default function OnboardingSuccess() {
   }, [revealed]);
 
   const refreshStatus = () => {
+    if (isGmailPreview || isCapacityPreview) return;
     setStatusData(null);
     setPollError(null);
     setPollAttempt((attempt) => attempt + 1);
@@ -103,13 +105,13 @@ export default function OnboardingSuccess() {
   }, [statusData, onboardingId]);
 
   useEffect(() => {
-    if (isGmailPreview || !onboardingId || !token) return;
+    if (isGmailPreview || isCapacityPreview || !onboardingId || !token) return;
 
     let cancelled = false;
     let pollTimer: number | undefined;
     let requestTimer: number | undefined;
     let controller: AbortController | undefined;
-    const startedAt = Date.now();
+    let progressStartedAt = Date.now();
     setStatusData(null);
     setRevealed(null);
     setPollError(null);
@@ -122,8 +124,11 @@ export default function OnboardingSuccess() {
         if (cancelled) return;
         setStatusData(data);
         setPollError(null);
-        if (!TERMINAL_STATUSES.has(data.status) && !data.credentialsViewed) {
-          if (Date.now() - startedAt >= POLL_TIMEOUT_MS) {
+        if (data.status === "waiting_capacity") {
+          progressStartedAt = Date.now();
+          pollTimer = window.setTimeout(poll, 30000);
+        } else if (!TERMINAL_STATUSES.has(data.status) && !data.credentialsViewed) {
+          if (Date.now() - progressStartedAt >= POLL_TIMEOUT_MS) {
             setPollError(new Error("Account setup is taking longer than expected. Your progress is saved."));
           } else {
             // Schedule only after the previous request finishes; never overlap requests.
@@ -147,7 +152,7 @@ export default function OnboardingSuccess() {
       window.clearTimeout(requestTimer);
       controller?.abort();
     };
-  }, [isGmailPreview, onboardingId, token, pollAttempt]);
+  }, [isGmailPreview, isCapacityPreview, onboardingId, token, pollAttempt]);
 
   const handleReveal = async () => {
     setRevealError(null);
@@ -269,6 +274,23 @@ export default function OnboardingSuccess() {
           <div className="pauth-loading" role="status" aria-busy="true" aria-label="Loading">
             <Skeleton variant="text" width="72%" />
             <Skeleton variant="row" />
+          </div>
+        </>
+      )}
+
+      {viewState === "waiting_capacity" && (
+        <>
+          <StatusBadge tone="pending">Progress saved</StatusBadge>
+          <h1 className="pauth-title">Waiting for Google Workspace capacity</h1>
+          <p className="pauth-lede">Your application and signed agreement are saved. Your PNCL Google account needs an available license or Gmail activation before setup can finish.</p>
+          <section className="pauth-note" aria-label="What happens next">
+            <h2 className="pauth-subtitle">We’ll take it from here.</h2>
+            <p className="pauth-note-text">Your admin will be notified. We’ll check again automatically every 5 minutes and continue your saved setup when Google is ready.</p>
+          </section>
+          <p className="onboarding-help-text">You can safely close this page. Your admin will receive an update when your account is ready and can share your sign-in link. You do not need to apply or sign again.</p>
+          <div className="pauth-actions">
+            <button type="button" className="pauth-btn is-primary" onClick={refreshStatus}>Check status</button>
+            <Link to="/contact" className="pauth-btn">Contact Support</Link>
           </div>
         </>
       )}

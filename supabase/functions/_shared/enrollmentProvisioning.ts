@@ -1,3 +1,4 @@
+import { capacityError, CAPACITY_RETRY_MS, isTransientGoogleError, CAPACITY_WAIT_MESSAGE, isCapacityQueued } from "./googleCapacity.ts";
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import {
   createWorkspaceUser,
@@ -27,7 +28,7 @@ import { isEnrollmentReady } from "./enrollmentState.ts";
 
 export interface EnrollmentProvisioningResult {
   onboardingId: string;
-  status: "ready" | "failed" | "creating_email";
+  status: "ready" | "failed" | "creating_email" | "waiting_capacity";
   enrollmentStatus: string;
   workspaceEmail: string;
   googleUserId: string | null;
@@ -39,6 +40,7 @@ export interface EnrollmentProvisioningResult {
 
 export interface EnrollmentProvisioningOptions {
   requestId?: string;
+  capacityRetry?: boolean;
   driversLicense?: OnboardingImagePayload;
   profilePhoto?: OnboardingImagePayload;
 }
@@ -64,6 +66,7 @@ interface EnrollmentRow {
   county: string | null;
   state_of_residence: string;
   enrollment_status: string;
+  failure_code?: string | null;
   referral_status: string;
   contract_status: string;
   application_status: string;
@@ -73,6 +76,11 @@ interface EnrollmentRow {
   ssn_hash: string;
   phone_number: string;
   released_at: string | null;
+  capacity_wait_started_at?: string | null;
+  capacity_recovered_at?: string | null;
+  capacity_next_retry_at?: string | null;
+  capacity_retry_attempts?: number;
+  provisioning_lock_token?: string | null;
 }
 
 function errorDetail(error: unknown): string {
@@ -84,9 +92,13 @@ async function updateRecord(
   supabase: SupabaseClient,
   onboardingId: string,
   values: Record<string, unknown>,
+  lockToken?: string | null,
 ): Promise<void> {
-  const { error } = await supabase.from("onboarding_records").update(values).eq("id", onboardingId);
+  let query = supabase.from("onboarding_records").update(values).eq("id", onboardingId);
+  if (lockToken) query = query.eq("provisioning_lock_token", lockToken);
+  const { data, error } = await query.select("id").maybeSingle();
   if (error) throw new Error(error.message);
+  if (!data) throw new Error("Enrollment changed while provisioning; retry safely from the saved record");
 }
 
 async function failStep(
@@ -130,8 +142,9 @@ async function failStep(
     released_at: googleUserId || supabaseUserId ? null : now,
     provisioning_lock_token: null,
     provisioning_lock_expires_at: null,
+    capacity_next_retry_at: null,
     ...stepUpdates,
-  });
+  }, row.provisioning_lock_token);
 
   return {
     onboardingId: row.id,
@@ -167,7 +180,10 @@ export async function provisionEnrollment(
     .maybeSingle();
   if (error || !data) throw new Error(error?.message ?? "Enrollment not found");
 
-  const row = data as EnrollmentRow;
+  let row = data as EnrollmentRow;
+  if (options.capacityRetry && !isCapacityQueued(row)) {
+    return { onboardingId, status: "creating_email", enrollmentStatus: row.enrollment_status, workspaceEmail: row.workspace_email, googleUserId: row.google_user_id, supabaseUserId: row.supabase_user_id };
+  }
   if (row.enrollment_status !== "awaiting_google_sign_in" && isEnrollmentReady(row) && row.google_user_id && row.supabase_user_id) {
     try {
       await markPortalEnrollmentReady(supabase, row.supabase_user_id, onboardingId);
@@ -206,7 +222,7 @@ export async function provisionEnrollment(
     .update({ provisioning_lock_token: lockToken, provisioning_lock_expires_at: lockExpiresAt })
     .eq("id", onboardingId)
     .or(`provisioning_lock_expires_at.is.null,provisioning_lock_expires_at.lt.${now}`)
-    .select("id")
+    .select("*")
     .maybeSingle();
   if (lockError) throw new Error(lockError.message);
   if (!locked) {
@@ -221,6 +237,14 @@ export async function provisionEnrollment(
     };
   }
 
+  row = locked as EnrollmentRow;
+  // Recheck after acquiring the lock: a release or manual retry may have won.
+  if (options.capacityRetry && !isCapacityQueued(row)) {
+    await updateRecord(supabase, onboardingId, { provisioning_lock_token: null, provisioning_lock_expires_at: null }, lockToken);
+    return { onboardingId, status: "creating_email", enrollmentStatus: row.enrollment_status, workspaceEmail: row.workspace_email, googleUserId: row.google_user_id, supabaseUserId: row.supabase_user_id };
+  }
+  row.provisioning_lock_token = lockToken;
+
   await updateRecord(supabase, onboardingId, {
     status: "creating_email",
     enrollment_status: "provisioning_google",
@@ -230,8 +254,8 @@ export async function provisionEnrollment(
     failure_detail: null,
     released_at: null,
     last_provisioning_attempt_at: now,
-    provisioning_attempts: (Number((data as { provisioning_attempts?: number }).provisioning_attempts) || 0) + 1,
-  });
+    provisioning_attempts: (Number((locked as { provisioning_attempts?: number }).provisioning_attempts) || 0) + 1,
+  }, lockToken);
 
   let encryptedPassword = row.temporary_password_encrypted;
   let temporaryPassword: string;
@@ -240,7 +264,7 @@ export async function provisionEnrollment(
   } else {
     temporaryPassword = generateTemporaryPassword();
     encryptedPassword = await encryptTemporaryPassword(temporaryPassword);
-    await updateRecord(supabase, onboardingId, { temporary_password_encrypted: encryptedPassword });
+    await updateRecord(supabase, onboardingId, { temporary_password_encrypted: encryptedPassword }, lockToken);
   }
 
   let googleUserId = row.google_user_id;
@@ -277,12 +301,28 @@ export async function provisionEnrollment(
       google_provisioned_at: new Date().toISOString(),
       google_creation_error: null,
       released_at: null,
-    });
+    }, lockToken);
     await waitForWorkspaceMailboxReady(row.workspace_email);
   } catch (error) {
     if (error instanceof GoogleWorkspaceAutoSuspendedError) {
       googleUserId = error.googleUserId;
       return await failStep(supabase, row, "google", "google_verification_required", error, { googleUserId });
+    }
+    const capacity = capacityError(error);
+    if (capacity || (isCapacityQueued(row) && isTransientGoogleError(error))) {
+      const waitingAt = row.capacity_wait_started_at ?? new Date().toISOString();
+      const nextRetryAt = new Date(Date.now() + CAPACITY_RETRY_MS).toISOString();
+      await updateRecord(supabase, onboardingId, {
+        status: "pending", enrollment_status: "waiting_google_capacity", google_account_status: "waiting_capacity",
+        failed_step: null, failure_code: capacity ? `google_capacity_${capacity.kind}` : row.failure_code, failure_detail: errorDetail(error),
+        google_creation_error: errorDetail(error), google_user_id: googleUserId,
+        released_at: null, capacity_wait_started_at: waitingAt, capacity_recovered_at: null,
+        capacity_next_retry_at: nextRetryAt, capacity_retry_attempts: (row.capacity_retry_attempts ?? 0) + 1,
+        provisioning_lock_token: null, provisioning_lock_expires_at: null,
+      }, lockToken);
+      logOnboarding("enrollment_waiting_google_capacity", { onboardingId, kind: capacity?.kind ?? "provider_retry", nextRetryAt });
+      return { onboardingId, status: "waiting_capacity", enrollmentStatus: "waiting_google_capacity", workspaceEmail: row.workspace_email,
+        googleUserId, supabaseUserId: row.supabase_user_id, userMessage: CAPACITY_WAIT_MESSAGE };
     }
     logOnboarding("enrollment_google_failed", {
       requestId: options.requestId ?? null,
@@ -295,7 +335,7 @@ export async function provisionEnrollment(
   await updateRecord(supabase, onboardingId, {
     enrollment_status: "provisioning_portal",
     portal_account_status: "provisioning",
-  });
+  }, lockToken);
 
   let supabaseUserId = row.supabase_user_id;
   try {
@@ -312,7 +352,7 @@ export async function provisionEnrollment(
       supabase_user_id: supabaseUserId,
       portal_account_status: "ready",
       portal_linked_at: new Date().toISOString(),
-    });
+    }, lockToken);
   } catch (error) {
     logOnboarding("enrollment_portal_failed", {
       requestId: options.requestId ?? null,
@@ -328,7 +368,7 @@ export async function provisionEnrollment(
   await updateRecord(supabase, onboardingId, {
     enrollment_status: "finalizing",
     finalization_status: "finalizing",
-  });
+  }, lockToken);
 
   try {
     if (supabaseUserId && row.invited_comp_level != null) {
@@ -386,7 +426,7 @@ export async function provisionEnrollment(
     if (!isEnrollmentReady(finalStepState)) {
       throw new Error("Enrollment prerequisites are incomplete");
     }
-    await updateRecord(supabase, onboardingId, finalStepState);
+    await updateRecord(supabase, onboardingId, finalStepState, lockToken);
     // The account is provisioned, but the recruit must still sign in to
     // Google and change the temporary password before Google OAuth can safely
     // unlock the PNCL portal.
@@ -398,10 +438,12 @@ export async function provisionEnrollment(
       failure_detail: null,
       onboarding_completed_at: completedAt,
       finalized_at: completedAt,
+      capacity_recovered_at: row.capacity_wait_started_at ? completedAt : null,
+      capacity_next_retry_at: null,
       released_at: null,
       provisioning_lock_token: null,
       provisioning_lock_expires_at: null,
-    });
+    }, lockToken);
     return {
       onboardingId,
       status: "creating_email",

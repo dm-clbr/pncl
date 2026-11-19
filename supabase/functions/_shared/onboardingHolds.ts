@@ -196,7 +196,8 @@ function toHold(
     failedStep: row.failed_step,
     failureCode: row.failure_code,
     failureDetail: row.failure_detail,
-    needsAttention: row.enrollment_status === "needs_attention"
+    needsAttention: row.enrollment_status === "waiting_google_capacity"
+      || row.enrollment_status === "needs_attention"
       || row.enrollment_status === "google_verification_required"
       || (row.enrollment_status === "ready" && !enrollmentReady),
     provisioningAttempts: row.provisioning_attempts,
@@ -300,12 +301,19 @@ export async function setOnboardingHoldReleased(
     );
   }
 
-  const { data: updated, error: updateError } = await adminClient
+  let releaseQuery = adminClient
     .from("onboarding_records")
     .update({ released_at: released ? new Date().toISOString() : null })
-    .eq("id", onboardingId)
-    .select(HOLD_COLUMNS)
-    .single();
+    .eq("id", onboardingId);
+  if (released) {
+    // A background retry may have started since the admin loaded the row.
+    releaseQuery = releaseQuery.is("google_user_id", null).is("supabase_user_id", null)
+      .or(`provisioning_lock_expires_at.is.null,provisioning_lock_expires_at.lt.${new Date().toISOString()}`);
+  }
+  const { data: updated, error: updateError } = await releaseQuery.select(HOLD_COLUMNS).maybeSingle();
+  if (!updateError && !updated) {
+    throw new OnboardingHoldError("Setup is currently running or an account was created. Refresh the enrollment before releasing it.", "provisioning_in_progress", 409);
+  }
 
   if (updateError || !updated) {
     throw new Error(updateError?.message ?? "Unable to update onboarding hold");

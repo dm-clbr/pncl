@@ -19,7 +19,7 @@ vi.mock("../../supabase/functions/_shared/logger.ts", () => ({
   logOnboarding: vi.fn(),
 }));
 
-type DirectoryUser = { id?: string; primaryEmail?: string; deletionTime?: string };
+type DirectoryUser = { id?: string; primaryEmail?: string; deletionTime?: string; isMailboxSetup?: boolean; suspended?: boolean };
 const fetchMock = vi.fn();
 const deletedAt = "2026-09-30T10:00:00Z";
 let workspace: typeof import("../../supabase/functions/_shared/googleWorkspace");
@@ -68,6 +68,17 @@ describe("Google Workspace email lookup", () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
+  it.each([false, undefined])("waits for an actual licensed mailbox (%s)", async isMailboxSetup => {
+    vi.stubGlobal("Deno", { env: { get: (key: string) => key === "PNCL_MAILBOX_READY_DELAY_MS" ? "0" : "test-config" } });
+    mockDirectory([{ id: "google-1", primaryEmail: "test@thepncl.com", isMailboxSetup }], [[]], 200);
+    await expect(workspace.waitForWorkspaceMailboxReady("test@thepncl.com")).rejects.toMatchObject({ kind: "mailbox_pending" });
+  });
+  it("continues only when Google confirms that the mailbox is ready", async () => {
+    vi.stubGlobal("Deno", { env: { get: (key: string) => key === "PNCL_MAILBOX_READY_DELAY_MS" ? "0" : "test-config" } });
+    mockDirectory([{ id: "google-1", primaryEmail: "test@thepncl.com", isMailboxSetup: true }], [[]], 200);
+    await expect(workspace.waitForWorkspaceMailboxReady("test@thepncl.com")).resolves.toBeUndefined();
+    expect(fetchMock.mock.calls.every(([, init]) => init.signal)).toBe(true);
+  });
   it("lists deleted users without a query and filters prefix/domain across all pages", async () => {
     mockDirectory([
       { primaryEmail: "JANE.SMITH@thepncl.com" },

@@ -3,6 +3,7 @@ export type EnrollmentStatus =
   | "saving_application"
   | "provisioning_google"
   | "google_verification_required"
+  | "waiting_google_capacity"
   | "provisioning_portal"
   | "finalizing"
   | "ready"
@@ -63,6 +64,7 @@ export function holdsEnrollmentReservation(
   if (row.portal_account_status === "ready") return true;
 
   const state = row.enrollment_status;
+  if (state === "waiting_google_capacity") return true;
   if (state === "ready" || row.status === "ready" || row.status === "credentials_viewed") return true;
   if (state === "needs_attention" || row.status === "failed" || row.status === "expired") return false;
 

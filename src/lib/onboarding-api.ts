@@ -48,7 +48,8 @@ export type OnboardingStatus =
   | "ready"
   | "credentials_viewed"
   | "failed"
-  | "expired";
+  | "expired"
+  | "waiting_capacity";
 
 export function buildSubmitOnboardingRequest(input: SubmitOnboardingInput) {
   return {
@@ -87,6 +88,7 @@ export interface OnboardingStatusResponse {
   enrollmentStatus?: string;
   failedStep?: string;
   retryable?: boolean;
+  nextRetryAt?: string;
   steps?: Record<string, string>;
 }
 

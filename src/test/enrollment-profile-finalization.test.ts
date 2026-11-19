@@ -1,6 +1,7 @@
+import { GoogleCapacityError } from "../../supabase/functions/_shared/googleCapacity";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { provisionEnrollment } from "../../supabase/functions/_shared/enrollmentProvisioning";
-import { createWorkspaceUser, getWorkspaceUser } from "../../supabase/functions/_shared/googleWorkspace";
+import { createWorkspaceUser, getWorkspaceUser, waitForWorkspaceMailboxReady } from "../../supabase/functions/_shared/googleWorkspace";
 import { provisionPortalAccount } from "../../supabase/functions/_shared/portalAuth";
 import { generateTemporaryPassword } from "../../supabase/functions/_shared/security";
 
@@ -50,7 +51,7 @@ function clientFor(existingAccounts = false) {
         }
         const query = {
           eq: () => query, or: () => query, select: () => query,
-          maybeSingle: async () => ({ data: { id: row.id }, error: null }),
+          maybeSingle: async () => ({ data: { ...row }, error: null }),
           then: (resolve: (value: unknown) => void) => resolve({ error: null }),
         };
         return query;
@@ -110,5 +111,58 @@ describe("enrollment profile finalization", () => {
     expect(retried.enrollmentStatus).toBe("awaiting_google_sign_in");
     expect(createWorkspaceUser).toHaveBeenCalledTimes(1);
     expect(client.row).toMatchObject({ status: "email_created", failure_code: null, failure_detail: null });
+  });
+});
+
+
+describe("capacity provisioning recovery", () => {
+  it("saves a quota failure without releasing the application and resumes the same record", async () => {
+    const client = clientFor();
+    vi.mocked(createWorkspaceUser).mockRejectedValueOnce(new Error("Google Workspace user creation failed: Domain user limit reached. Contact Support."));
+    const waiting = await provisionEnrollment(client as never, client.row.id);
+    expect(waiting).toMatchObject({ status: "waiting_capacity", enrollmentStatus: "waiting_google_capacity" });
+    expect(client.row).toMatchObject({ status: "pending", released_at: null, contract_signature_id: "contract-1", temporary_password_encrypted: "saved-password", google_account_status: "waiting_capacity", capacity_retry_attempts: 1 });
+    expect(provisionPortalAccount).not.toHaveBeenCalled();
+    expect(client.profileUpsert).not.toHaveBeenCalled();
+    const recovered = await provisionEnrollment(client as never, client.row.id, { capacityRetry: true });
+    expect(recovered.enrollmentStatus).toBe("awaiting_google_sign_in");
+    expect(client.row).toMatchObject({ status: "email_created", capacity_next_retry_at: null, failure_code: null });
+    expect(client.row).toHaveProperty("capacity_recovered_at", expect.any(String));
+    expect(generateTemporaryPassword).not.toHaveBeenCalled();
+  });
+
+  it("retains a partially created Google account while waiting for its license, then reuses it", async () => {
+    const client = clientFor();
+    vi.mocked(waitForWorkspaceMailboxReady).mockRejectedValueOnce(new GoogleCapacityError("mailbox_pending", "Gmail needs a license"));
+    expect(await provisionEnrollment(client as never, client.row.id)).toMatchObject({ status: "waiting_capacity", googleUserId: "google-1" });
+    expect(client.row.google_user_id).toBe("google-1");
+    vi.mocked(getWorkspaceUser).mockResolvedValue({ id: "google-1", suspended: false, isMailboxSetup: true } as never);
+    expect((await provisionEnrollment(client as never, client.row.id, { capacityRetry: true })).enrollmentStatus).toBe("awaiting_google_sign_in");
+    expect(createWorkspaceUser).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([new Error("Unable to load Google Workspace user (503)"), new DOMException("Timed out", "TimeoutError")])("keeps an existing capacity wait queued during a provider outage", async error => {
+    const client = clientFor();
+    Object.assign(client.row, { enrollment_status: "waiting_google_capacity", capacity_wait_started_at: "2026-11-19T00:00:00Z", failure_code: "google_capacity_user_limit" });
+    vi.mocked(getWorkspaceUser).mockRejectedValueOnce(error);
+    expect(await provisionEnrollment(client as never, client.row.id, { capacityRetry: true })).toMatchObject({ status: "waiting_capacity" });
+    expect(client.row).toMatchObject({ released_at: null, failure_code: "google_capacity_user_limit", capacity_next_retry_at: expect.any(String) });
+  });
+
+  it.each(["Insufficient permissions", "Rate Limit Exceeded", "Invalid recovery email"])("does not automatically retry a different failure: %s", async (message) => {
+    const client = clientFor();
+    vi.mocked(createWorkspaceUser).mockRejectedValueOnce(new Error(message));
+    expect(await provisionEnrollment(client as never, client.row.id)).toMatchObject({ status: "failed", failedStep: "google" });
+    expect(client.row.enrollment_status).toBe("needs_attention");
+    expect(client.row).not.toHaveProperty("capacity_wait_started_at");
+  });
+
+  it("does not process a released or already recovered enrollment from a stale queue selection", async () => {
+    const client = clientFor();
+    Object.assign(client.row, { enrollment_status: "waiting_google_capacity", capacity_wait_started_at: "2026-11-19T00:00:00Z", released_at: "2026-11-19T01:00:00Z" });
+    await provisionEnrollment(client as never, client.row.id, { capacityRetry: true });
+    expect(createWorkspaceUser).not.toHaveBeenCalled();
+    expect(getWorkspaceUser).not.toHaveBeenCalled();
+    expect(provisionPortalAccount).not.toHaveBeenCalled();
   });
 });

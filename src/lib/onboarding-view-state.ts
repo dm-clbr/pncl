@@ -4,6 +4,7 @@ import type {
 } from "./onboarding-api";
 
 export type OnboardingViewState =
+  | "waiting_capacity"
   | "loading"
   | "creating"
   | "ready"
@@ -19,6 +20,7 @@ export function resolveOnboardingViewState(
   if (revealed) return "revealed";
   if (!status) return "loading";
 
+  if (status.status === "waiting_capacity") return "waiting_capacity";
   if (status.status === "failed") return "failed";
   if (status.status === "expired") return "expired";
   if (status.status === "credentials_viewed" || status.credentialsViewed) return "viewed";

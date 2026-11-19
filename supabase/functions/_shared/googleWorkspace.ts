@@ -1,6 +1,11 @@
+import { GoogleCapacityError } from "./googleCapacity.ts";
 import { SignJWT, importPKCS8 } from "https://deno.land/x/jose@v5.2.0/index.ts";
 import { getEmailDomain } from "./onboarding.ts";
 import { logOnboarding } from "./logger.ts";
+
+async function googleFetch(input: string, init?: RequestInit): Promise<Response> {
+  return fetch(input, { ...init, signal: AbortSignal.timeout(20000) });
+}
 
 const DIRECTORY_USER_SCOPE = "https://www.googleapis.com/auth/admin.directory.user";
 
@@ -42,7 +47,7 @@ async function getAccessToken(): Promise<string> {
     .setExpirationTime(now + 3600)
     .sign(cryptoKey);
 
-  const response = await fetch("https://oauth2.googleapis.com/token", {
+  const response = await googleFetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
@@ -96,7 +101,7 @@ async function listWorkspaceUsers(
     url.searchParams.set("showDeleted", showDeleted ? "true" : "false");
     if (pageToken) url.searchParams.set("pageToken", pageToken);
 
-    const response = await fetch(url.toString(), {
+    const response = await googleFetch(url.toString(), {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -121,7 +126,7 @@ export async function getWorkspaceEmailAvailability(
   try {
     const token = await getAccessToken();
     const customerId = getRequiredEnv("GOOGLE_WORKSPACE_CUSTOMER_ID");
-    const response = await fetch(
+    const response = await googleFetch(
       `https://admin.googleapis.com/admin/directory/v1/users/${encodeURIComponent(email)}?customer=${customerId}`,
       { headers: { Authorization: `Bearer ${token}` } },
     );
@@ -267,7 +272,7 @@ export async function createWorkspaceUser(input: CreateWorkspaceUserInput): Prom
   const token = await getAccessToken();
   const customerId = getRequiredEnv("GOOGLE_WORKSPACE_CUSTOMER_ID");
 
-  const response = await fetch(
+  const response = await googleFetch(
     `https://admin.googleapis.com/admin/directory/v1/users?customer=${customerId}`,
     {
       method: "POST",
@@ -404,7 +409,7 @@ export async function listWorkspaceUsersByEmail(): Promise<Map<string, Workspace
     url.searchParams.set("maxResults", "500");
     if (pageToken) url.searchParams.set("pageToken", pageToken);
 
-    const response = await fetch(url.toString(), {
+    const response = await googleFetch(url.toString(), {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -455,14 +460,18 @@ function getMailboxReadyDelayMs(): number {
 /** Pause after Workspace user creation so inbound mail routing is live before Resend delivers. */
 export async function waitForWorkspaceMailboxReady(email: string): Promise<void> {
   const delayMs = getMailboxReadyDelayMs();
-  if (delayMs === 0) return;
-
   logOnboarding("google_mailbox_ready_wait_started", { email, delayMs });
-  await new Promise((resolve) => setTimeout(resolve, delayMs));
+  if (delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs));
+  const user = await getWorkspaceUser(email);
+  if (user?.suspended) throw new GoogleWorkspaceAutoSuspendedError(user.id, user.suspensionReason ?? "unknown");
+  if (!user?.isMailboxSetup) {
+    throw new GoogleCapacityError("mailbox_pending", "Google account exists but its Gmail mailbox is not ready. Check available licenses, license assignment, and Gmail service activation.");
+  }
   logOnboarding("google_mailbox_ready_wait_completed", { email, delayMs });
 }
 
 export interface WorkspaceUserDetails {
+  isMailboxSetup?: boolean;
   id: string;
   primaryEmail: string;
   suspended: boolean;
@@ -498,6 +507,7 @@ function parsePrimaryMobilePhone(user: Record<string, unknown>): string | null {
 
 function mapWorkspaceUserDetails(user: Record<string, unknown>): WorkspaceUserDetails {
   return {
+    isMailboxSetup: user.isMailboxSetup === true,
     id: user.id as string,
     primaryEmail: user.primaryEmail as string,
     suspended: Boolean(user.suspended),
@@ -512,7 +522,7 @@ function mapWorkspaceUserDetails(user: Record<string, unknown>): WorkspaceUserDe
 export async function getWorkspaceUser(userKey: string): Promise<WorkspaceUserDetails | null> {
   const token = await getAccessToken();
   const customerId = getRequiredEnv("GOOGLE_WORKSPACE_CUSTOMER_ID");
-  const response = await fetch(
+  const response = await googleFetch(
     `https://admin.googleapis.com/admin/directory/v1/users/${encodeURIComponent(userKey)}?customer=${customerId}`,
     { headers: { Authorization: `Bearer ${token}` } },
   );
@@ -598,7 +608,7 @@ export async function updateWorkspaceUserRecovery(
   }
 
   const token = await getAccessToken();
-  const response = await fetch(
+  const response = await googleFetch(
     `https://admin.googleapis.com/admin/directory/v1/users/${encodeURIComponent(input.userKey)}`,
     {
       method: "PATCH",
@@ -635,7 +645,7 @@ export async function resetWorkspaceUserTemporaryPassword(
   temporaryPassword: string,
 ): Promise<void> {
   const token = await getAccessToken();
-  const response = await fetch(
+  const response = await googleFetch(
     `https://admin.googleapis.com/admin/directory/v1/users/${encodeURIComponent(userKey)}`,
     {
       method: "PATCH",
@@ -666,7 +676,7 @@ export async function resetWorkspaceUserTemporaryPassword(
 
 export async function unsuspendWorkspaceUser(userKey: string): Promise<void> {
   const token = await getAccessToken();
-  const response = await fetch(
+  const response = await googleFetch(
     `https://admin.googleapis.com/admin/directory/v1/users/${encodeURIComponent(userKey)}`,
     {
       method: "PATCH",

@@ -17,19 +17,22 @@ export function getResendApiKey(): string {
 }
 
 export async function sendEmail(input: {
-  to: string;
+  to: string | string[];
   subject: string;
   html: string;
+  idempotencyKey?: string;
 }): Promise<void> {
   const response = await fetch(RESEND_API_URL, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${getResendApiKey()}`,
       "Content-Type": "application/json",
+      ...(input.idempotencyKey ? { "Idempotency-Key": input.idempotencyKey } : {}),
     },
+    signal: AbortSignal.timeout(15000),
     body: JSON.stringify({
       from: getFromAddress(),
-      to: [input.to],
+      to: Array.isArray(input.to) ? input.to : [input.to],
       subject: input.subject,
       html: input.html,
     }),

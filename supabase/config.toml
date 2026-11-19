@@ -387,3 +387,7 @@ verify_jwt = true
 
 [functions.get-portal-team-stats]
 verify_jwt = true
+
+# Authenticated with a short-lived, one-use database cron wake token.
+[functions.onboarding-capacity-worker]
+verify_jwt = false
