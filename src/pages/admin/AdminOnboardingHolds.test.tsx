@@ -46,3 +46,12 @@ it("does not offer resume links for released duplicates", async () => {
   await screen.findByText("Example Agent");
   expect(screen.queryByRole("button", { name: "Copy resume" })).not.toBeInTheDocument();
 });
+
+
+it("does not block enrollment actions while clipboard permission remains pending", async () => {
+  writeText.mockReturnValue(new Promise(() => {}));
+  render(<MemoryRouter><AdminOnboardingHolds /></MemoryRouter>);
+  fireEvent.click(await screen.findByRole("button", { name: "Copy resume" }));
+  expect(await screen.findByRole("textbox", { name: "Resume link" })).toHaveValue(resumeUrl);
+  await waitFor(() => expect(screen.getByRole("button", { name: "Copy resume" })).toBeEnabled());
+});

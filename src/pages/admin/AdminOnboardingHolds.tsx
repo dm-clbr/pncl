@@ -136,8 +136,12 @@ export default function AdminOnboardingHolds() {
     const response = await createEnrollmentResumeLink(token, hold.onboardingId);
     setResumeLink({ name: hold.legalName, url: response.resumeUrl, expiresAt: response.expiresAt });
     try {
-      await navigator.clipboard.writeText(response.resumeUrl);
-      toast.success(`Resume link copied for ${hold.legalName}`);
+      // Clipboard permission can remain pending in a background tab. The link is
+      // already visible, so it must not keep the enrollment actions disabled.
+      void navigator.clipboard.writeText(response.resumeUrl).then(
+        () => toast.success(`Resume link copied for ${hold.legalName}`),
+        () => toast.info("Your browser blocked clipboard access. Select and copy the resume link below."),
+      );
     } catch {
       toast.info("Your browser blocked clipboard access. Select and copy the resume link below.");
     }
