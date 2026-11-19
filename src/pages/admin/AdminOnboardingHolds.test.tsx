@@ -34,6 +34,10 @@ it("keeps the correct named link available when clipboard access is denied", asy
   fireEvent.click(screen.getByRole("button", { name: "Copy resume" }));
   await waitFor(() => expect(writeText).toHaveBeenCalledTimes(2));
   expect(screen.getByRole("textbox", { name: "Resume link" })).toHaveValue(resumeUrl);
+  await waitFor(() => expect(screen.getByRole("button", { name: "Search", exact: true })).toBeEnabled());
+  fireEvent.change(screen.getByRole("searchbox", { name: "Search enrollments" }), { target: { value: "Another agent" } });
+  fireEvent.click(screen.getByRole("button", { name: "Search", exact: true }));
+  expect(screen.queryByRole("textbox", { name: "Resume link" })).not.toBeInTheDocument();
 });
 
 it("does not offer resume links for released duplicates", async () => {

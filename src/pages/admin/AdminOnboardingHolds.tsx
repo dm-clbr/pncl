@@ -106,6 +106,7 @@ export default function AdminOnboardingHolds() {
 
   const handleSearch = (event: FormEvent) => {
     event.preventDefault();
+    setResumeLink(null);
     setAppliedQuery(query);
   };
 
@@ -129,6 +130,7 @@ export default function AdminOnboardingHolds() {
   });
 
   const handleResume = (hold: OnboardingHold) => runAction(hold, async () => {
+    setResumeLink(null);
     const token = session?.access_token;
     if (!token) return;
     const response = await createEnrollmentResumeLink(token, hold.onboardingId);
