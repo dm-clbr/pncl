@@ -1,3 +1,4 @@
+import { getOrCreateEnrollmentHandoff } from "../_shared/enrollmentHandoff.ts";
 import { resolveAgentDesignation, type AgentDesignation } from "../_shared/agentDesignation.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { errorResponse, handleCors, jsonResponse } from "../_shared/cors.ts";
@@ -29,6 +30,7 @@ import {
 } from "../_shared/portalReferralInvites.ts";
 import {
   encryptTemporaryPassword,
+  encryptSecret,
   generateHandoffToken,
   generateTemporaryPassword,
   hashHandoffToken,
@@ -151,12 +153,10 @@ serve(async (req) => {
         );
       }
 
-      const resumedToken = generateHandoffToken();
+      const { token: resumedToken } = await getOrCreateEnrollmentHandoff(supabase, existing.id);
       const { error: tokenError } = await supabase
         .from("onboarding_records")
         .update({
-          handoff_token_hash: await hashHandoffToken(resumedToken),
-          handoff_token_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
           has_other_imo: payload.hasOtherImo,
           other_imo_name: payload.otherImoName,
           other_imo_carriers: payload.otherImoCarriers,
@@ -318,6 +318,7 @@ serve(async (req) => {
         contract_signed_at: contract.signed_at,
         application_saved_at: null,
         handoff_token_hash: handoffTokenHash,
+        handoff_token_encrypted: await encryptSecret(handoffToken),
         handoff_token_expires_at: handoffTokenExpiresAt,
         temporary_password_encrypted: temporaryPasswordEncrypted,
       })

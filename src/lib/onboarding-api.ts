@@ -214,6 +214,7 @@ export async function submitOnboardingContract(
 export async function getOnboardingStatus(
   id: string,
   token: string,
+  signal?: AbortSignal,
 ): Promise<OnboardingStatusResponse> {
   const url = new URL(getFunctionUrl("get-onboarding-status"));
   url.searchParams.set("id", id);
@@ -222,13 +223,14 @@ export async function getOnboardingStatus(
   const response = await fetch(url.toString(), {
     method: "GET",
     headers: getHeaders(),
+    signal,
   });
 
   const data = await response.json();
   if (!response.ok) {
     const message = data.message ?? "Unable to fetch onboarding status";
     logOnboardingStatusError(id, message);
-    throw new Error(message);
+    throw Object.assign(new Error(message), { code: data.error, status: response.status });
   }
 
   logOnboardingStatusPoll(id, data.status, {

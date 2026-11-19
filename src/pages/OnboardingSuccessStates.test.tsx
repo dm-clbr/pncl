@@ -39,7 +39,7 @@ describe("OnboardingSuccess", () => {
       screen.getByRole("heading", { name: "This onboarding link is incomplete." }),
     ).toBeInTheDocument();
     expect(screen.getByText("Invalid Link")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Back to Onboarding" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Contact Support" })).toBeInTheDocument();
   });
 
   it("renders the failed state with the retry action", async () => {

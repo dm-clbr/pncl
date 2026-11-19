@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import OnboardingSuccess from "./OnboardingSuccess";
@@ -42,7 +42,7 @@ beforeEach(() => {
   writeText.mockResolvedValue(undefined);
   Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
 });
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.useRealTimers(); });
 
 describe("Gmail onboarding password handoff", () => {
   it("acknowledges the created email when finalization fails and resumes the saved enrollment", async () => {
@@ -119,5 +119,87 @@ describe("Gmail onboarding password handoff", () => {
     await waitFor(() => expect(writeText).toHaveBeenCalled());
     expect(copy).toHaveTextContent("Copy Temporary Password");
     expect(screen.getByRole("status")).toHaveTextContent("Copy this password");
+  });
+});
+
+
+describe("resume link and connection recovery", () => {
+  it.each(["invalid_token", "not_found", "invalid_request"])("stops polling and replaces loading for %s", async (code) => {
+    vi.useFakeTimers();
+    vi.mocked(getOnboardingStatus).mockRejectedValue(Object.assign(new Error("Rejected link"), { code }));
+    renderHandoff();
+    await act(async () => {});
+    expect(screen.getByRole("heading", { name: "This resume link is no longer valid." })).toBeInTheDocument();
+    expect(screen.queryByRole("status", { name: "Loading" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Contact Support" })).toHaveAttribute("href", "/contact");
+    expect(screen.getByRole("link", { name: "Sign in to PNCL Portal" })).toHaveAttribute("href", "/portal/login");
+    await act(async () => { await vi.advanceTimersByTimeAsync(30000); });
+    expect(getOnboardingStatus).toHaveBeenCalledTimes(1);
+    expect(revealOnboardingCredentials).not.toHaveBeenCalled();
+    expect(retryOnboardingEnrollment).not.toHaveBeenCalled();
+  });
+
+  it("recovers from a network error without restarting enrollment", async () => {
+    vi.mocked(getOnboardingStatus).mockRejectedValueOnce(new Error("Failed to fetch"));
+    renderHandoff();
+    fireEvent.click(await screen.findByRole("button", { name: "Try again" }));
+    expect(await screen.findByRole("button", { name: "Show My Temporary Gmail Password" })).toBeInTheDocument();
+    expect(getOnboardingStatus).toHaveBeenCalledTimes(2);
+    expect(retryOnboardingEnrollment).not.toHaveBeenCalled();
+  });
+
+  it("aborts a stalled request and offers a working retry", async () => {
+    vi.useFakeTimers();
+    vi.mocked(getOnboardingStatus).mockImplementationOnce((_id, _token, signal) => new Promise((_resolve, reject) => {
+      signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")));
+    }));
+    renderHandoff();
+    await act(async () => { await vi.advanceTimersByTimeAsync(15000); });
+    expect(screen.getByRole("alert")).toHaveTextContent("connection timed out");
+    expect(screen.queryByRole("status", { name: "Loading" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    await act(async () => {});
+    expect(screen.getByRole("button", { name: "Show My Temporary Gmail Password" })).toBeInTheDocument();
+  });
+
+  it("does not overlap requests and ignores responses after unmount", async () => {
+    vi.useFakeTimers();
+    let resolve!: (value: typeof status) => void;
+    vi.mocked(getOnboardingStatus).mockImplementationOnce(() => new Promise((done) => { resolve = done; }));
+    const { unmount } = renderHandoff();
+    await act(async () => { await vi.advanceTimersByTimeAsync(10000); });
+    expect(getOnboardingStatus).toHaveBeenCalledTimes(1);
+    const signal = vi.mocked(getOnboardingStatus).mock.calls[0][2];
+    unmount();
+    expect(signal?.aborted).toBe(true);
+    await act(async () => { resolve(status); });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("bounds polling when provisioning never completes", async () => {
+    vi.useFakeTimers();
+    vi.mocked(getOnboardingStatus).mockResolvedValue({ status: "creating_email" });
+    renderHandoff();
+    await act(async () => { await vi.advanceTimersByTimeAsync(125000); });
+    expect(screen.getByRole("alert")).toHaveTextContent("taking longer than expected");
+    expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+    const calls = vi.mocked(getOnboardingStatus).mock.calls.length;
+    await act(async () => { await vi.advanceTimersByTimeAsync(30000); });
+    expect(getOnboardingStatus).toHaveBeenCalledTimes(calls);
+  });
+
+  it("resumes polling after retrying a failed provisioning step", async () => {
+    vi.useFakeTimers();
+    vi.mocked(getOnboardingStatus)
+      .mockResolvedValueOnce({ status: "failed", retryable: true })
+      .mockResolvedValueOnce({ status: "creating_email" });
+    vi.mocked(retryOnboardingEnrollment).mockResolvedValue({ status: "creating_email", enrollmentStatus: "creating_google" });
+    renderHandoff();
+    await act(async () => {});
+    fireEvent.click(screen.getByRole("button", { name: "Retry saved enrollment" }));
+    await act(async () => {});
+    expect(screen.getByRole("heading", { name: "Creating your PNCL email…" })).toBeInTheDocument();
+    await act(async () => { await vi.advanceTimersByTimeAsync(2500); });
+    expect(screen.getByRole("button", { name: "Show My Temporary Gmail Password" })).toBeInTheDocument();
   });
 });

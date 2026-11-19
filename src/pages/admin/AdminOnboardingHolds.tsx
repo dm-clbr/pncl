@@ -75,6 +75,7 @@ export default function AdminOnboardingHolds() {
   const [appliedQuery, setAppliedQuery] = useState("");
   const [attentionOnly, setAttentionOnly] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [resumeLink, setResumeLink] = useState<{ name: string; url: string; expiresAt: string } | null>(null);
 
   const visibleHolds = useMemo(
     () => attentionOnly ? holds.filter((hold) => hold.needsAttention) : holds,
@@ -131,8 +132,13 @@ export default function AdminOnboardingHolds() {
     const token = session?.access_token;
     if (!token) return;
     const response = await createEnrollmentResumeLink(token, hold.onboardingId);
-    await navigator.clipboard.writeText(response.resumeUrl);
-    toast.success("24-hour resume link copied");
+    setResumeLink({ name: hold.legalName, url: response.resumeUrl, expiresAt: response.expiresAt });
+    try {
+      await navigator.clipboard.writeText(response.resumeUrl);
+      toast.success(`Resume link copied for ${hold.legalName}`);
+    } catch {
+      toast.info("Your browser blocked clipboard access. Select and copy the resume link below.");
+    }
   });
 
   const handleRepairLink = (hold: OnboardingHold) => runAction(hold, async () => {
@@ -166,11 +172,23 @@ export default function AdminOnboardingHolds() {
           <h1>Agent enrollments</h1>
           <p>
             Follow every enrollment from referral validation through readiness. Failed steps are safe
-            to retry; resume links last 24 hours. Sensitive SSNs, password material, and identity hashes
+            to retry. Copy resume reuses the active link until it expires; new links last 24 hours. Sensitive SSNs, password material, and identity hashes
             are never shown here.
           </p>
         </div>
       </div>
+
+      {resumeLink && (
+        <section className="admin-panel" aria-label={`Resume link for ${resumeLink.name}`}>
+          <h2>Resume enrollment — {resumeLink.name}</h2>
+          <p>Expires {formatDateTime(resumeLink.expiresAt)}. Share this private link only with {resumeLink.name}.</p>
+          <label className="admin-field">
+            <span>Resume link</span>
+            <input readOnly value={resumeLink.url} onFocus={(event) => event.currentTarget.select()} />
+          </label>
+          <button type="button" className="admin-secondary-btn" onClick={() => setResumeLink(null)}>Close link</button>
+        </section>
+      )}
 
       <form className="admin-toolbar" onSubmit={handleSearch}>
         <label className="admin-field admin-field-grow">
@@ -256,7 +274,7 @@ export default function AdminOnboardingHolds() {
                             <RotateCcw size={14} aria-hidden="true" /> Retry step
                           </button>
                         )}
-                        {hold.enrollmentStatus !== "ready" && (
+                        {hold.enrollmentStatus !== "ready" && !hold.releasedAt && (
                           <button type="button" className="admin-secondary-btn" disabled={isUpdating} onClick={() => void handleResume(hold)}>
                             <ClipboardCopy size={14} aria-hidden="true" /> Copy resume
                           </button>

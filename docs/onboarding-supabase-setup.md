@@ -309,3 +309,31 @@ Each send updates Google recovery info from onboarding + ICA data, emails the ag
 - [ ] `supabase db push` completed
 - [ ] Edge Functions deployed
 - [ ] Test submission creates `@thepncl.com` user in Google Admin → Users
+
+### Resume link recovery (2026-11-19)
+
+Apply `20261119222431_reusable_onboarding_resume_links.sql` before deploying
+`admin-create-enrollment-resume` and `submit-onboarding`. The server stores an
+AES-GCM encrypted copy of the active token; authorization still checks its hash
+and expiry. The table remains protected by RLS with no client policies. Never
+return the encrypted token in status or admin list payloads.
+
+Copy resume reuses the same unexpired link across admins and repeated clicks.
+Conditional updates ensure simultaneous copies return the same winning token.
+New submissions also save the encrypted token, so their original handoff survives
+an admin copy or a resubmission. Expired links get a fresh 24-hour window; repeated
+copies do not extend expiry. A deliberate hash rotation invalidates the cache.
+Legacy enrollments without an encrypted token need one fresh link after this
+release. Released duplicate enrollments cannot issue resume links.
+
+In Agent enrollments, use the active row and Copy resume. The named link and its
+expiry remain visible if clipboard access is blocked. Share each link only with
+its agent. The agent opens it, shows/copies the temporary Gmail password, signs
+in to Gmail and changes the password, then returns to the portal and chooses
+Sign in with Google. Do not restart enrollment or use an older released row.
+
+Invalid links now stop polling and show recovery instructions. Network requests
+have a 15-second timeout with a manual retry; provisioning checks stop after two
+minutes and can be resumed. Tests cover invalid/expired links, request timeouts,
+retry and cancellation, repeated/concurrent copies, hash rotation, released rows,
+and clipboard denial. No test needs to reveal a real agent’s password.

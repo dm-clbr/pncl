@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import PortalAuthLayout from "@/components/portal/PortalAuthLayout";
@@ -19,6 +19,8 @@ import { trackPageView } from "@/lib/analytics";
 import { resolveOnboardingViewState } from "@/lib/onboarding-view-state";
 
 const POLL_INTERVAL_MS = 2500;
+const REQUEST_TIMEOUT_MS = 15000;
+const POLL_TIMEOUT_MS = 120000;
 const PREVIEW_STATUS: OnboardingStatusResponse = {
   status: "email_created",
   email: "new.agent@thepncl.com",
@@ -67,8 +69,8 @@ export default function OnboardingSuccess() {
   const passwordCardRef = useRef<HTMLElement | null>(null);
   const [resendingInvite, setResendingInvite] = useState(false);
   const [retrying, setRetrying] = useState(false);
-  const [pollError, setPollError] = useState<string | null>(null);
-  const pollingRef = useRef<number | null>(null);
+  const [pollError, setPollError] = useState<(Error & { code?: string; status?: number }) | null>(null);
+  const [pollAttempt, setPollAttempt] = useState(0);
 
   const viewState = resolveOnboardingViewState(statusData, revealed);
   const email = revealed?.email ?? statusData?.email ?? "";
@@ -81,23 +83,11 @@ export default function OnboardingSuccess() {
     if (revealed) passwordCardRef.current?.focus();
   }, [revealed]);
 
-  const fetchStatus = useCallback(async () => {
-    if (isGmailPreview) return PREVIEW_STATUS;
-    if (!onboardingId || !token) {
-      setPollError("Missing onboarding handoff details.");
-      return null;
-    }
-
-    try {
-      const data = await getOnboardingStatus(onboardingId, token);
-      setStatusData(data);
-      setPollError(null);
-      return data;
-    } catch (error) {
-      setPollError(error instanceof Error ? error.message : "Unable to load onboarding status.");
-      return null;
-    }
-  }, [isGmailPreview, onboardingId, token]);
+  const refreshStatus = () => {
+    setStatusData(null);
+    setPollError(null);
+    setPollAttempt((attempt) => attempt + 1);
+  };
 
   useEffect(() => {
     document.title = "PNCL Email Setup";
@@ -113,34 +103,51 @@ export default function OnboardingSuccess() {
   }, [statusData, onboardingId]);
 
   useEffect(() => {
-    if (isGmailPreview) return;
-    if (!onboardingId || !token) return;
+    if (isGmailPreview || !onboardingId || !token) return;
 
     let cancelled = false;
+    let pollTimer: number | undefined;
+    let requestTimer: number | undefined;
+    let controller: AbortController | undefined;
+    const startedAt = Date.now();
+    setStatusData(null);
+    setRevealed(null);
+    setPollError(null);
 
     const poll = async () => {
-      const data = await fetchStatus();
-      if (cancelled || !data) return;
-
-      if (TERMINAL_STATUSES.has(data.status) || data.credentialsViewed) {
-        if (pollingRef.current) {
-          window.clearInterval(pollingRef.current);
-          pollingRef.current = null;
+      controller = new AbortController();
+      requestTimer = window.setTimeout(() => controller?.abort(), REQUEST_TIMEOUT_MS);
+      try {
+        const data = await getOnboardingStatus(onboardingId, token, controller.signal);
+        if (cancelled) return;
+        setStatusData(data);
+        setPollError(null);
+        if (!TERMINAL_STATUSES.has(data.status) && !data.credentialsViewed) {
+          if (Date.now() - startedAt >= POLL_TIMEOUT_MS) {
+            setPollError(new Error("Account setup is taking longer than expected. Your progress is saved."));
+          } else {
+            // Schedule only after the previous request finishes; never overlap requests.
+            pollTimer = window.setTimeout(poll, POLL_INTERVAL_MS);
+          }
         }
+      } catch (error) {
+        if (cancelled) return;
+        setPollError(controller.signal.aborted
+          ? new Error("The connection timed out. Your progress is saved. Please try again.")
+          : error instanceof Error ? error : new Error("Unable to load onboarding status."));
+      } finally {
+        window.clearTimeout(requestTimer);
       }
     };
 
-    poll();
-    pollingRef.current = window.setInterval(poll, POLL_INTERVAL_MS);
-
+    void poll();
     return () => {
       cancelled = true;
-      if (pollingRef.current) {
-        window.clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
+      window.clearTimeout(pollTimer);
+      window.clearTimeout(requestTimer);
+      controller?.abort();
     };
-  }, [fetchStatus, isGmailPreview, onboardingId, token]);
+  }, [isGmailPreview, onboardingId, token, pollAttempt]);
 
   const handleReveal = async () => {
     setRevealError(null);
@@ -165,10 +172,6 @@ export default function OnboardingSuccess() {
           ? { ...prev, status: "credentials_viewed", credentialsViewed: true }
           : { status: "credentials_viewed", credentialsViewed: true, email: data.email, gmailUrl: data.gmailUrl },
       );
-      if (pollingRef.current) {
-        window.clearInterval(pollingRef.current);
-        pollingRef.current = null;
-      }
     } catch (error) {
       const err = error as Error & { code?: string };
       if (err.code === "credentials_already_viewed") {
@@ -210,8 +213,7 @@ export default function OnboardingSuccess() {
     try {
       await retryOnboardingEnrollment(onboardingId, token);
       toast.success("Your saved enrollment is being resumed.");
-      setStatusData(null);
-      await fetchStatus();
+      refreshStatus();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to retry account setup.");
     } finally {
@@ -224,12 +226,35 @@ export default function OnboardingSuccess() {
       <PortalAuthLayout>
         <StatusBadge tone="error">Invalid Link</StatusBadge>
         <h1 className="pauth-title">This onboarding link is incomplete.</h1>
-        <p className="pauth-lede">Please return to the onboarding form or contact PNCL support.</p>
+        <p className="pauth-lede">Ask your PNCL admin for a resume link to your saved enrollment. You do not need to start over.</p>
         <div className="pauth-actions">
-          <Link to="/onboarding" className="pauth-btn is-primary">
-            Back to Onboarding
+          <Link to="/contact" className="pauth-btn is-primary">
+            Contact Support
           </Link>
         </div>
+      </PortalAuthLayout>
+    );
+  }
+
+  if (pollError) {
+    const invalidLink = ["invalid_token", "invalid_request", "not_found"].includes(pollError.code ?? "")
+      || [400, 401, 403, 404].includes(pollError.status ?? 0)
+      || pollError.message === "Invalid sign-in handoff token.";
+    return (
+      <PortalAuthLayout>
+        <StatusBadge tone="error">{invalidLink ? "Link Needs Updating" : "Connection Interrupted"}</StatusBadge>
+        <h1 className="pauth-title">{invalidLink ? "This resume link is no longer valid." : "We couldn’t check your account setup."}</h1>
+        <p className="pauth-lede" role="alert">
+          {invalidLink
+            ? "Open the most recent resume link from your PNCL admin, or ask them to copy a new one from your active enrollment. Your saved enrollment does not need to be started again."
+            : pollError.message}
+        </p>
+        <div className="pauth-actions">
+          {!invalidLink && <button type="button" className="pauth-btn is-primary" onClick={refreshStatus}>Try again</button>}
+          <Link to="/contact" className="pauth-btn">Contact Support</Link>
+          <Link to="/portal/login" className="pauth-btn">Sign in to PNCL Portal</Link>
+        </div>
+        <p className="onboarding-help-text">If you already set your Google password, sign in to the portal with your PNCL Google account.</p>
       </PortalAuthLayout>
     );
   }
@@ -425,7 +450,7 @@ export default function OnboardingSuccess() {
           <StatusBadge tone="error">Link Expired</StatusBadge>
           <h1 className="pauth-title">This sign-in link has expired.</h1>
           <p className="pauth-lede">
-            Please contact PNCL support or an admin to get a new temporary password.
+            Ask your PNCL admin for a new resume link to your saved enrollment. You do not need to start over.
           </p>
           <div className="pauth-actions">
             <Link to="/contact" className="pauth-btn is-primary">
@@ -435,9 +460,6 @@ export default function OnboardingSuccess() {
         </>
       )}
 
-      {pollError && viewState !== "failed" && viewState !== "expired" && (
-        <p className="pauth-banner" role="alert">{pollError}</p>
-      )}
     </PortalAuthLayout>
   );
 }
