@@ -8,7 +8,7 @@ vi.mock("pdfjs-dist/legacy/build/pdf.mjs", () => ({
   getDocument: () => ({
     destroy: vi.fn(),
     promise: pdf.fail ? Promise.reject(new Error("Missing PDF")) : Promise.resolve({
-      numPages: 2,
+      numPages: 10,
       getPage: async () => ({ getViewport: () => ({ width: 600, height: 800 }), render: () => ({ promise: Promise.resolve(), cancel: vi.fn() }) }),
     }),
   }),
@@ -24,10 +24,11 @@ beforeEach(() => {
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("uploaded ICA review", () => {
-  it("requires every page, a signature and both consents before submitting the reviewed asset ID", async () => {
+  it("submits from the first page once signature adoption and both consents are complete", async () => {
     const onSubmit = vi.fn().mockResolvedValue(undefined);
     await act(async () => { render(<UploadedIcaSigningStep asset={asset} prefillLegalName="Sample Agent" prefillEmail="sample@example.invalid" onSubmit={onSubmit} />); });
     const sign = screen.getByRole("button", { name: "Sign agreement" });
+    expect(sign).toBeDisabled();
     expect(screen.queryByLabelText("Full legal first and last name")).not.toBeInTheDocument();
     expect(screen.queryByLabelText("Personal email")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Create signature" }));
@@ -37,10 +38,14 @@ describe("uploaded ICA review", () => {
     fireEvent.click(screen.getByRole("button", { name: "Draw test signature" }));
     fireEvent.click(screen.getByRole("checkbox", { name: /I adopt the signature/ }));
     fireEvent.click(screen.getByRole("button", { name: "Save and use signature" }));
-    for (const checkbox of screen.getAllByRole("checkbox")) fireEvent.click(checkbox);
     expect(sign).toBeDisabled();
-    fireEvent.click(screen.getByRole("button", { name: "Next page" }));
+    const [counsel, accepted] = screen.getAllByRole("checkbox");
+    fireEvent.click(counsel);
+    expect(sign).toBeDisabled();
+    fireEvent.click(accepted);
     await waitFor(() => expect(sign).toBeEnabled());
+    expect(screen.getAllByText("Page 1 of 10")).toHaveLength(2);
+    expect(screen.queryByText(/View all pages|View every page/)).not.toBeInTheDocument();
     fireEvent.click(sign);
     await waitFor(() => expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ signatureAdoption: expect.objectContaining({ method: "drawn", accepted: true }), templateAssetId: "ibo-ica-id", agreementAccepted: true, counselAcknowledged: true })));
   });

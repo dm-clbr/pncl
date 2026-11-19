@@ -44,10 +44,8 @@ export default function W9SigningStep({
   const [signOpen, setSignOpen] = useState(false);
   const [reachedFormPage, setReachedFormPage] = useState(false);
 
-  // Same gate as the ICA, on the W-9's last *field* page rather than its last
-  // page: pages 2 to 6 are IRS instructions and every field is on page 1, so
-  // gating on page 6 would put five Next taps between the agent and the only
-  // submit. Unlocks once and stays unlocked.
+  // Show Sign once the form page is ready. The instruction pages remain
+  // optional to navigate, and returning to an earlier page keeps Sign available.
   const handlePageChange = useCallback((page: number) => {
     if (page >= W9_PDF_PAGES.form) setReachedFormPage(true);
   }, []);

@@ -16,24 +16,23 @@ type ReviewProps = {
   signatureImage?: string; onSignatureClick?: () => void; signer?: Signer;
 };
 
-/** Signing is enabled only after every page of this exact upload renders. */
+/** Signing requires a loaded document and completed fields, without tracking page visits. */
 export default function SigningDocumentReview({ url, sourceId, title, onReviewed, values = EMPTY_VALUES, onValuesChange, signingName = "", signatureImage, onSignatureClick, readOnly = false, signer }: ReviewProps) {
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
   const [page, setPage] = useState(1);
-  const [visited, setVisited] = useState<Set<number>>(new Set());
   const [error, setError] = useState("");
   const [diagnostic, setDiagnostic] = useState<ReturnType<typeof signingDocumentError> | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [busy, setBusy] = useState(true);
   const [width, setWidth] = useState(600);
   const [inputs, setInputs] = useState<PageInput[]>([]);
-  const [allInputs, setAllInputs] = useState<Record<number, PageInput[]>>({});
   const [fieldLocations, setFieldLocations] = useState<FieldLocation[]>([]);
+  const [fieldsReady, setFieldsReady] = useState(false);
   const [indexingFields, setIndexingFields] = useState(false);
   const [jumpTarget, setJumpTarget] = useState<FieldLocation | null>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const holder = useRef<HTMLDivElement>(null);
-  const hasSignatureAction = Boolean(onSignatureClick);
+  const needsFieldIndex = !readOnly && Boolean(onValuesChange || onSignatureClick);
   const signerName = signer?.name;
   const signerEmail = signer?.email;
   useEffect(() => {
@@ -43,7 +42,7 @@ export default function SigningDocumentReview({ url, sourceId, title, onReviewed
   }, []);
   useEffect(() => {
     let active = true;
-    setPdf(null); setPage(1); setVisited(new Set()); setError(""); setDiagnostic(null); setBusy(true); setInputs([]); setAllInputs({}); setFieldLocations([]); setJumpTarget(null);
+    setPdf(null); setPage(1); setError(""); setDiagnostic(null); setBusy(true); setInputs([]); setFieldLocations([]); setFieldsReady(false); setJumpTarget(null);
     // Retry using a complete download if streaming/range requests failed.
     const task = getDocument({ url, verbosity: 0, disableRange: attempt > 0, disableStream: attempt > 0 });
     task.promise.then(doc => { if (active) setPdf(doc); }).catch(error => {
@@ -56,20 +55,29 @@ export default function SigningDocumentReview({ url, sourceId, title, onReviewed
     return () => { active = false; void task.destroy(); };
   }, [url, sourceId, attempt]);
   useEffect(() => {
-    if (!pdf || readOnly || !hasSignatureAction) return;
+    if (!pdf || !needsFieldIndex) return;
     let active = true;
     setIndexingFields(true);
+    setFieldsReady(false);
+    // Required fields are checked across the document without rendering or
+    // requiring the signer to visit each page.
     void Promise.all(Array.from({ length: pdf.numPages }, async (_, index) => {
       const source = await pdf.getPage(index + 1);
       const annotations: InputAnnotation[] = source.getAnnotations ? await source.getAnnotations() : [];
       return annotations.filter(field => field.fieldName && (field.fieldType === "Tx" || field.checkBox))
         .map(field => ({ ...field, page: index + 1 }));
-    })).then(pages => { if (active) setFieldLocations(pages.flat()); })
-      .catch(() => { /* Page rendering reports annotation errors with retry details. */ })
+    })).then(pages => { if (active) { setFieldLocations(pages.flat()); setFieldsReady(true); } })
+      .catch(error => {
+        if (!active) return;
+        const detail = signingDocumentError(error, "load", sourceId);
+        console.error("[Signing document]", detail);
+        setDiagnostic(detail);
+        setError("Unable to load the signing document fields. Retry before signing. If this continues, share the support details with PNCL.");
+      })
       .finally(() => { if (active) setIndexingFields(false); });
     return () => { active = false; };
     // Callback identity can change while typing; index only when the PDF changes.
-  }, [pdf, readOnly, hasSignatureAction]);
+  }, [pdf, needsFieldIndex, sourceId]);
   useEffect(() => {
     if (!pdf) return;
     let active = true;
@@ -89,7 +97,7 @@ export default function SigningDocumentReview({ url, sourceId, title, onReviewed
       });
       task = source.render({ canvasContext: context, viewport, annotationMode: onValuesChange ? 0 : 1 });
       await task.promise;
-      if (active) { setInputs(pageInputs); setAllInputs(value => ({ ...value, [page]: pageInputs })); setVisited(value => new Set([...value, page])); setBusy(false); }
+      if (active) { setInputs(pageInputs); setBusy(false); }
     }).catch(error => {
       if (!active || error?.name === "RenderingCancelledException") return;
       const detail = signingDocumentError(error, "render", sourceId, page);
@@ -113,14 +121,14 @@ export default function SigningDocumentReview({ url, sourceId, title, onReviewed
     const signerValues = { name: signerName, email: signerEmail };
     const next = { ...values };
     let changed = false;
-    for (const field of Object.values(allInputs).flat()) {
+    for (const field of fieldLocations) {
       const role = signerFieldRole(field);
       if (role && signerValues[role] !== undefined && next[field.fieldName] !== signerValues[role]) {
         next[field.fieldName] = signerValues[role]!; changed = true;
       }
     }
     if (changed) onValuesChange(next);
-  }, [allInputs, signerName, signerEmail, onValuesChange, values]);
+  }, [fieldLocations, signerName, signerEmail, onValuesChange, values]);
   const fieldValue = (field: InputAnnotation) => {
     const role = signerFieldRole(field);
     return role && signer?.[role] !== undefined ? signer[role] : values[field.fieldName] ?? field.fieldValue;
@@ -138,13 +146,13 @@ export default function SigningDocumentReview({ url, sourceId, title, onReviewed
     const value = fieldValue(field);
     return field.checkBox ? value !== true && value !== "Yes" && value !== "On" : typeof value !== "string" || !value.trim();
   });
-  const requiredComplete = Object.values(allInputs).flat().every(field => {
+  const requiredComplete = fieldsReady && fieldLocations.every(field => {
     const type = customPdfFieldType(field.fieldName);
     if (!field.required || field.readOnly || type === "signature" || type === "date") return true;
     const value = fieldValue(field);
     return field.checkBox ? value === true || value === "Yes" || value === "On" : typeof value === "string" && Boolean(value.trim());
   });
-  useEffect(() => { onReviewed(Boolean(pdf && !busy && visited.size === pdf.numPages && !error && (!onValuesChange || requiredComplete))); }, [pdf, busy, visited, error, onReviewed, onValuesChange, requiredComplete]);
+  useEffect(() => { onReviewed(Boolean(pdf && !busy && !error && (readOnly || !onValuesChange || requiredComplete))); }, [pdf, busy, error, readOnly, onReviewed, onValuesChange, requiredComplete]);
   const pager = (position: "top" | "bottom") => <nav className="signing-document-pager" aria-label={`Document pages (${position})`}>
     <button type="button" aria-label={position === "top" ? "Previous page (top)" : undefined} disabled={busy || page === 1} onClick={() => setPage(value => value - 1)}>Previous page</button>
     <span>Page {page} of {pdf?.numPages}</span>
@@ -158,7 +166,7 @@ export default function SigningDocumentReview({ url, sourceId, title, onReviewed
         {signatureField && nextRequiredField && <button type="button" disabled={busy || Boolean(error)} onClick={() => jumpTo(nextRequiredField)}>Next required field</button>}
       </div>}
     </div>
-    {!readOnly && onSignatureClick && <p className="signing-document-navigation-note">Select a signature box to type or draw your signature. Review every page before submitting.</p>}
+    {!readOnly && onSignatureClick && <p className="signing-document-navigation-note">Select a signature box to type or draw your signature. Complete the required fields before submitting.</p>}
     {pdf && !error && pager("top")}
     <div ref={holder} className="signing-document-canvas"><canvas ref={canvas} aria-label={`${title}, page ${page}`} />{onValuesChange && !busy && inputs.map((field,index) => {
       const type = customPdfFieldType(field.fieldName), automatic = type === "signature" || type === "date";
@@ -174,10 +182,9 @@ export default function SigningDocumentReview({ url, sourceId, title, onReviewed
         onValuesChange({...values,[field.fieldName]:nextValue});
       }} />;
     })}</div>
-    {onValuesChange && Object.values(allInputs).some(fields=>fields.length) && <p>Complete the highlighted fields. {onSignatureClick ? "Click a signature box to type or draw and adopt your signature. The final sign button saves the document." : "Signature and signing date fields are filled when you sign."}{!requiredComplete && " Some required fields are still empty."}</p>}
+    {onValuesChange && fieldLocations.length > 0 && <p>Complete the highlighted fields. {onSignatureClick ? "Click a signature box to type or draw and adopt your signature. The final sign button saves the document." : "Signature and signing date fields are filled when you sign."}{!requiredComplete && " Some required fields are still empty."}</p>}
     {error ? <div role="alert"><p>{error} <button type="button" onClick={() => setAttempt(value => value + 1)}>Retry document</button></p>{diagnostic && <details><summary>Support details</summary><pre>{JSON.stringify(diagnostic, null, 2)}</pre></details>}</div> : !pdf ? <p role="status">Loading document…</p> : <>
       {pager("bottom")}
-      {!readOnly && <p>{visited.size === pdf.numPages ? "All pages viewed. You can complete and sign below." : "View every page before signing."}</p>}
     </>}
   </section>;
 }

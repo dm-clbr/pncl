@@ -9,13 +9,13 @@ vi.mock("@/lib/pdfjs-setup", () => ({}));
 vi.mock("pdfjs-dist/legacy/build/pdf.mjs", () => ({
   version: "4.10.38",
   getDocument: vi.fn(() => ({ destroy: vi.fn(), promise: state.failLoad ? Promise.reject(new TypeError("Failed to fetch https://private.example/pdf?token=secret")) : Promise.resolve({
-    numPages: 2,
+    numPages: 3,
     getPage: async (page: number) => ({
       getViewport: () => ({ width: 600, height: 800, convertToViewportRectangle: (rect: number[]) => rect }),
       getAnnotations: async () => page === 1 ? [
         { fieldName: "pncl_text_office", alternativeText: "Agent office", fieldType: "Tx", required: true, rect: [60,100,300,130] },
         { fieldName: "pncl_signature_name", alternativeText: "Signature", fieldType: "Tx", required: true, readOnly: true, rect: [60,150,300,180] },
-      ] : [{ fieldName: "pncl_checkbox_confirm", alternativeText: "Confirm details", checkBox: true, required: true, rect: [60,100,80,120] }],
+      ] : page === 2 ? [{ fieldName: "pncl_checkbox_confirm", alternativeText: "Confirm details", checkBox: true, required: true, rect: [60,100,80,120] }] : [],
       render: () => ({ promise: page === state.failRenderPage ? Promise.reject(new Error("Canvas unavailable")) : Promise.resolve(), cancel: vi.fn() }),
     }),
   }) })),
@@ -28,7 +28,7 @@ beforeEach(() => {
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("placed fields during document review", () => {
-  it("requires all pages and required fields, and preserves entries between pages", async () => {
+  it("validates fields on unvisited pages and allows signing without visiting text-only pages", async () => {
     function Harness() {
       const [values, setValues] = useState<Record<string, string | boolean>>({});
       const [ready, setReady] = useState(false);
@@ -45,10 +45,19 @@ describe("placed fields during document review", () => {
     expect(screen.getByRole("button", { name: "Sign" })).toBeDisabled();
     fireEvent.click(confirmation);
     await waitFor(() => expect(screen.getByRole("button", { name: "Sign" })).toBeEnabled());
+    expect(screen.getAllByText("Page 2 of 3")).toHaveLength(2);
+    expect(screen.queryByText(/View every page before signing/)).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Previous page" }));
     expect(await screen.findByRole("textbox", { name: "Agent office" })).toHaveValue("Sample office");
     fireEvent.change(screen.getByRole("textbox", { name: "Agent office" }), { target: { value: "" } });
     await waitFor(() => expect(screen.getByRole("button", { name: "Sign" })).toBeDisabled());
+  });
+
+  it("accepts completed fields on unvisited pages", async () => {
+    const reviewed = vi.fn();
+    render(<SigningDocumentReview url="/sample.pdf" title="Sample" values={{ pncl_text_office: "Sample office", pncl_checkbox_confirm: true }} onValuesChange={vi.fn()} onReviewed={reviewed} />);
+    await waitFor(() => expect(reviewed).toHaveBeenLastCalledWith(true));
+    expect(screen.getAllByText("Page 1 of 3")).toHaveLength(2);
   });
 });
 
@@ -64,7 +73,7 @@ it("opens the signature overlay from the document and shows the exact adopted im
 });
 
 describe("document loading recovery", () => {
-  it("reports safe details, retries with a complete download, and requires page review again", async () => {
+  it("reports safe details and enables signing after retry without requiring page visits", async () => {
     state.failLoad = true;
     const reviewed = vi.fn();
     vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -77,11 +86,9 @@ describe("document loading recovery", () => {
     expect(reviewed).toHaveBeenLastCalledWith(false);
     state.failLoad = false;
     fireEvent.click(screen.getByRole("button", { name: "Retry document" }));
-    expect(await screen.findAllByText("Page 1 of 2")).toHaveLength(2);
+    expect(await screen.findAllByText("Page 1 of 3")).toHaveLength(2);
     expect(getDocument).toHaveBeenLastCalledWith(expect.objectContaining({ disableRange: true, disableStream: true }));
     await waitFor(() => expect(screen.getByRole("button", { name: "Next page" })).toBeEnabled());
-    expect(reviewed).toHaveBeenLastCalledWith(false);
-    fireEvent.click(screen.getByRole("button", { name: "Next page" }));
     await waitFor(() => expect(reviewed).toHaveBeenLastCalledWith(true));
   });
   it("blocks signing when a later page fails to render", async () => {

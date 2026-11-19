@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { forwardRef, type ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -42,16 +42,12 @@ vi.mock("@/lib/portal-messages", () => ({ refreshPortalUser: vi.fn() }));
 vi.mock("@/lib/analytics", () => ({ trackPageView: vi.fn() }));
 
 /** pdf.js never runs in jsdom: it fetches a real PDF and builds its own canvas
-    stack. The stub keeps the chrome contract, so the pager slot and the page
-    callback stay covered. */
+    stack. The stub keeps the pager action slot without reporting page visits. */
 vi.mock("@/components/IcaFillablePdfViewer", () => ({
-  default: forwardRef<unknown, { actions?: ReactNode; onPageChange?: (page: number) => void }>(
-    function IcaFillablePdfViewerStub({ actions, onPageChange }, _ref) {
+  default: forwardRef<unknown, { actions?: ReactNode }>(
+    function IcaFillablePdfViewerStub({ actions }, _ref) {
       return (
         <div data-testid="ica-viewer">
-          <button type="button" onClick={() => onPageChange?.(14)}>
-            stub: reach page 14
-          </button>
           <div data-testid="ica-viewer-actions">{actions}</div>
         </div>
       );
@@ -117,9 +113,8 @@ describe("PortalIca", () => {
     );
   });
 
-  /* The email AcroForm field is on page 12 and the signing sheet only unlocks on
-     page 14, so a warning that lives in the sheet is unreachable while the field
-     is being filled. That address becomes the account recovery email and the
+  /* The email AcroForm field is on page 12, so its warning needs to be visible
+     while the field is being filled. That address becomes the account recovery email and the
      1099 delivery address, so it has to be readable on the page itself. */
   it("shows the recovery-email warning on the page, not inside the signing sheet", async () => {
     icaState.loading = false;
@@ -130,16 +125,12 @@ describe("PortalIca", () => {
     expect(note.closest("dialog")).toBeNull();
   });
 
-  it("holds the Sign button back until the last page has been reached", async () => {
+  it("makes Sign available without requiring a visit to the last page", async () => {
     icaState.loading = false;
 
     await renderPage();
 
     await screen.findByTestId("ica-viewer");
-    expect(screen.queryByRole("button", { name: "Sign" })).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "stub: reach page 14" }));
-
-    expect(screen.getByRole("button", { name: "Sign" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Sign" })).toBeEnabled();
   });
 });

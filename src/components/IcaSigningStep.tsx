@@ -1,12 +1,12 @@
 import { SIGNATURE_ADOPTION_CONSENT, SIGNATURE_ADOPTION_VERSION } from "../../supabase/functions/_shared/signatureAdoption";
 import { readCustomPdfInputValues } from "@/lib/pdf-input-values";
-import { ICA_TOTAL_PAGES, type DebitCheckInitials } from "@/lib/onboarding-contract";
+import { type DebitCheckInitials } from "@/lib/onboarding-contract";
 import {
   extractIcaFormValues,
   validateExtractedIcaFormValues,
 } from "@/lib/ica-acroform";
 import { toast } from "sonner";
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import IcaFillablePdfViewer, {
   type IcaFillablePdfViewerHandle,
 } from "@/components/IcaFillablePdfViewer";
@@ -62,13 +62,6 @@ export default function IcaSigningStep({
   const [signatureAdopted, setSignatureAdopted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [signOpen, setSignOpen] = useState(false);
-  const [reachedEnd, setReachedEnd] = useState(false);
-
-  // The signing sheet unlocks once the last page has been read, and stays
-  // unlocked: paging back to re-read a clause must not take it away again.
-  const handlePageChange = useCallback((page: number) => {
-    if (page >= ICA_TOTAL_PAGES) setReachedEnd(true);
-  }, []);
 
   const handleFinishSigning = async () => {
     if (!counselAcknowledged || !agreementAccepted || !signatureAdopted) {
@@ -149,7 +142,6 @@ export default function IcaSigningStep({
         ref={viewerRef}
         prefillLegalName={prefillLegalName}
         prefillEmail={prefillEmail}
-        onPageChange={handlePageChange}
         actions={
           <>
             {onBack && (
@@ -157,16 +149,14 @@ export default function IcaSigningStep({
                 Back
               </button>
             )}
-            {reachedEnd && (
-              <button
-                type="button"
-                className="pforms-action"
-                onClick={() => { setSignatureAdopted(false); setSignOpen(true); }}
-                disabled={submitting}
-              >
-                {submitting ? "Signing\u2026" : "Sign"}
-              </button>
-            )}
+            <button
+              type="button"
+              className="pforms-action"
+              onClick={() => { setSignatureAdopted(false); setSignOpen(true); }}
+              disabled={submitting}
+            >
+              {submitting ? "Signing\u2026" : "Sign"}
+            </button>
           </>
         }
       />
