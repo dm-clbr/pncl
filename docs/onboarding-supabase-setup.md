@@ -91,7 +91,7 @@ Optional env `PNCL_GOOGLE_FIRST_SIGNIN_NOTIFY_EMAILS` (comma-separated) adds mor
 - **Duplicate phone numbers are rejected** at onboarding submit (`duplicate_phone` 409) — each agent needs their own mobile number, and reuse across accounts triggers Google's *already been used too many times* error
 - **Recovery sync is idempotent** — it reads the current Google values first and only PATCHes fields that changed, so repeated syncs don't re-assert the same phone
 - `PNCL_GOOGLE_RECOVERY_EMAIL` / `GOOGLE_WORKSPACE_ADMIN_EMAIL` are **fallback only** if personal email is missing (should not happen in normal onboarding)
-- New users use your Google Workspace **default org unit** (no org unit is set via API)
+- New reps are created in the Google Workspace **Sales Reps** org unit (`/Sales Reps`), including accounts created by enrollment retries. This org unit must exist before provisioning. Existing accounts keep their current org unit; license assignment is managed separately in Google Admin.
 - Agents should click **Try another way** → verify via personal email instead of phone when Google offers that option (often it does not for first sign-in)
 
 **Testing onboarding:** Use a fresh phone number per test account, or always disable login challenges in Google Admin before clicking **Open Gmail**. Reusing the same phone across many test sign-ins triggers Google's *already been used too many times* error — and duplicate phones are now blocked at submit anyway.

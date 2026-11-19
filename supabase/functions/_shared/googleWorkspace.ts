@@ -277,6 +277,7 @@ export async function createWorkspaceUser(input: CreateWorkspaceUserInput): Prom
       },
       body: JSON.stringify({
         primaryEmail: input.email,
+        orgUnitPath: "/Sales Reps",
         name: {
           givenName: input.firstName,
           familyName: input.lastName,
