@@ -8,6 +8,7 @@ vi.mock("../../supabase/functions/_shared/enrollmentHandoff", () => ({ getOrCrea
 vi.mock("../../supabase/functions/_shared/googleCapacityNotifications", () => ({ capacityAdminRecipients: vi.fn(() => ["admin@thepncl.com"]), sendCapacityAdminNotification: vi.fn() }));
 vi.mock("../../supabase/functions/_shared/resend", () => ({ getResendApiKey: vi.fn(() => "test-key") }));
 vi.mock("../../supabase/functions/_shared/logger", () => ({ logOnboarding: vi.fn() }));
+vi.mock("../../supabase/functions/_shared/googleSeatAlerts", () => ({ processGoogleSeatAlerts: vi.fn(async () => null) }));
 type Row = Record<string, unknown>;
 function clientFor({ due = [], pending = [], record = {} }: { due?: Row[]; pending?: Row[]; record?: Row } = {}) {
   const writes: { table: string; values: Row; filters: unknown[] }[] = [];

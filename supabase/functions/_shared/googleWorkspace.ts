@@ -701,3 +701,36 @@ export async function unsuspendWorkspaceUser(userKey: string): Promise<void> {
 
   logOnboarding("google_user_unsuspend_succeeded", { userKey });
 }
+
+/** Count every non-deleted Directory account, including unlicensed and suspended users. */
+export async function countWorkspaceUsers(): Promise<number> {
+  const token = await getAccessToken();
+  const customerId = getRequiredEnv("GOOGLE_WORKSPACE_CUSTOMER_ID");
+  const ids = new Set<string>();
+  const pages = new Set<string>();
+  let pageToken: string | undefined;
+  do {
+    const url = new URL("https://admin.googleapis.com/admin/directory/v1/users");
+    url.searchParams.set("customer", customerId);
+    url.searchParams.set("maxResults", "500");
+    url.searchParams.set("showDeleted", "false");
+    url.searchParams.set("fields", "kind,nextPageToken,users(id)");
+    if (pageToken) url.searchParams.set("pageToken", pageToken);
+    const response = await googleFetch(url.toString(), { headers: { Authorization: `Bearer ${token}` } });
+    if (!response.ok) throw new Error(`Unable to count Google Workspace users (${response.status})`);
+    const payload = await response.json();
+    if (!Array.isArray(payload.users) && !(payload.users === undefined && payload.kind === "admin#directory#users")) {
+      throw new Error("Google returned an invalid user-count response");
+    }
+    for (const user of payload.users ?? []) {
+      if (typeof user.id !== "string" || !user.id) throw new Error("Google returned a user without an ID");
+      ids.add(user.id);
+    }
+    pageToken = payload.nextPageToken;
+    if (pageToken) {
+      if (typeof pageToken !== "string" || pages.has(pageToken) || pages.size >= 100) throw new Error("Invalid Google user-count pagination");
+      pages.add(pageToken);
+    }
+  } while (pageToken);
+  return ids.size;
+}

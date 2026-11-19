@@ -4,6 +4,7 @@ import { getOrCreateEnrollmentHandoff } from "./enrollmentHandoff.ts";
 import { capacityAdminRecipients, sendCapacityAdminNotification } from "./googleCapacityNotifications.ts";
 import { getResendApiKey } from "./resend.ts";
 import { CAPACITY_RETRY_MS } from "./googleCapacity.ts";
+import { processGoogleSeatAlerts } from "./googleSeatAlerts.ts";
 import { logOnboarding } from "./logger.ts";
 
 export async function processCapacityQueue(db: SupabaseClient, leaseToken: string) {
@@ -15,6 +16,8 @@ export async function processCapacityQueue(db: SupabaseClient, leaseToken: strin
     // Check required configuration even on an empty health-check run.
     capacityAdminRecipients();
     getResendApiKey();
+    try { lastError = await processGoogleSeatAlerts(db, leaseToken); }
+    catch { lastError = "Low-capacity monitor failed"; }
     // The caller holds a global lease; per-enrollment locks also protect manual retries.
     const { data: due, error } = await db.from("onboarding_records")
       .select("id").not("capacity_wait_started_at", "is", null).is("capacity_recovered_at", null).is("released_at", null)

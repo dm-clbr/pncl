@@ -79,6 +79,27 @@ describe("Google Workspace email lookup", () => {
     await expect(workspace.waitForWorkspaceMailboxReady("test@thepncl.com")).resolves.toBeUndefined();
     expect(fetchMock.mock.calls.every(([, init]) => init.signal)).toBe(true);
   });
+  it("counts all Directory accounts across pages without double counting", async () => {
+    fetchMock.mockImplementation(async (input: string) => {
+      const url = new URL(input);
+      if (url.hostname === "oauth2.googleapis.com") return new Response(JSON.stringify({ access_token: "test-token" }));
+      expect(url.searchParams.get("showDeleted")).toBe("false");
+      expect(url.searchParams.has("query")).toBe(false);
+      expect(url.searchParams.get("fields")).toBe("kind,nextPageToken,users(id)");
+      return new Response(JSON.stringify(url.searchParams.has("pageToken") ? { users: [{ id: "suspended" }, { id: "unlicensed" }] } : { users: [{ id: "active" }, { id: "suspended" }], nextPageToken: "page-2" }));
+    });
+    expect(await workspace.countWorkspaceUsers()).toBe(3);
+  });
+  it.each([403, 429, 500])("never treats a provider error (%s) as a zero account count", async status => {
+    fetchMock.mockImplementation(async (input: string) => new Response(JSON.stringify(input.includes("oauth2.googleapis.com") ? { access_token: "test-token" } : { error: "provider error" }), { status: input.includes("oauth2.googleapis.com") ? 200 : status }));
+    await expect(workspace.countWorkspaceUsers()).rejects.toThrow(`(${status})`);
+  });
+  it("rejects malformed counts and repeating page tokens", async () => {
+    mockDirectory([{}]);
+    await expect(workspace.countWorkspaceUsers()).rejects.toThrow("without an ID");
+    fetchMock.mockImplementation(async () => new Response(JSON.stringify({ users: [{ id: "user-1" }], nextPageToken: "again" })));
+    await expect(workspace.countWorkspaceUsers()).rejects.toThrow("Invalid Google user-count pagination");
+  });
   it("lists deleted users without a query and filters prefix/domain across all pages", async () => {
     mockDirectory([
       { primaryEmail: "JANE.SMITH@thepncl.com" },

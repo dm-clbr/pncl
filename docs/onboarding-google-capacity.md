@@ -13,3 +13,11 @@ The worker is initially disabled by the migration. Enable `onboarding_capacity_w
 Matching expired resume links can show only the non-sensitive waiting status. Credentials still require an unexpired link. After recovery, the admin receives a usable link and can copy a fresh one later. Existing valid links are reused rather than invalidated on each copy.
 
 Tests cover Google capacity classification, license activation, transient outages, account reuse, saved contracts/passwords, long browser waits and recovery, notification retries, resume-link security, row locks, token replay/expiry, and released enrollment exclusion. Run `supabase/tests/onboarding_google_capacity.sql` only against an isolated test database; it creates a minimal schema and mocks outbound HTTP.
+
+## Low account-capacity alerts
+
+The worker also counts non-deleted Google Directory accounts every five minutes, including suspended and unlicensed users. `google_capacity_monitor.account_limit` holds the confirmed Google account cap (400 as of November 19, 2026). This is separate from available paid Gmail licenses: Enterprise Standard currently uses a flexible plan. The cap is configured explicitly because Directory's user list does not report the purchased subscription limit.
+
+At 10 or fewer remaining accounts, a warning is queued for the same capacity-admin email recipients. At 5 or fewer, an urgent alert is queued. Repeated checks do not send duplicates. If a check jumps directly from more than 10 to 5 or fewer, only the urgent alert is sent. Both thresholds rearm after capacity recovers above 10. Email failures retry from a durable outbox with an idempotency key; failed Google API reads retain the last successful count rather than assuming zero users.
+
+When Google changes the account cap, update `google_capacity_monitor.account_limit` to the newly confirmed limit. Its trigger resets the old counts, cancels stale pending alerts, and schedules a fresh check. Monitor `last_checked_at`, `next_check_at`, and `last_error`. The `google_capacity_alerts` table records warnings and delivery state. These tables and the count-recording RPC are service-only. Disable `google_capacity_monitor.enabled` to pause low-capacity monitoring without disabling enrollment recovery.
