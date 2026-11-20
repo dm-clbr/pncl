@@ -6,11 +6,12 @@ import PortalWorkflowDialog from "@/components/PortalWorkflowDialog";
 import HubRegistration from "@/components/leadspply/HubRegistration";
 import { hubAccountSetup, type SetupStatus } from "@/lib/hub-account-setup";
 export default function HubAccountSetup(
-  { email, token, compact = false, initialStep, onChanged, onStatusChange }: {
+  { email, token, compact = false, initialStep, payHref = "/portal/pay", onChanged, onStatusChange }: {
     email: string;
     token: string;
     compact?: boolean;
     initialStep?: "email";
+    payHref?: string;
     onChanged?: () => void;
     onStatusChange?: (status: SetupStatus | null) => void;
   },
@@ -630,7 +631,7 @@ export default function HubAccountSetup(
             type="button"
             disabled={busy || cooldown > 0 || !status.ready ||
               !status.payEnabled}
-            onClick={() => navigate("/portal/pay")}
+            onClick={() => navigate(payHref)}
           >
             Open PNCL Pay
           </button>

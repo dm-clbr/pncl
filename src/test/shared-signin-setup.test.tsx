@@ -22,7 +22,7 @@ const ready: SetupStatus = { state: "connected", email: "agent@thepncl.com", acc
 const unlinked: SetupStatus = { ...ready, state: "not_linked", account: null, ownershipVerified: false, emailMatches: false, approved: false, ready: false };
 const mismatch: SetupStatus = { ...ready, account: { id: "ls-1", email: "old@example.com" }, emailMatches: false, ownershipVerified: false, ready: false };
 const payLink = () => ({ url: "https://www.pnclpay.com/api/auth/partner/redeem?token=test", expiresAt: new Date(Date.now() + 120000).toISOString() });
-const view = (product = "LeadSpply", challenge = false) => render(<StrictMode><MemoryRouter initialEntries={[product === "PNCL Pay" ? "/portal/pay" : "/portal/leadspply/open" + (challenge ? "?challenge=" + "a".repeat(64) : "")]}><Routes>
+const view = (product = "LeadSpply", challenge = false, source = "") => render(<StrictMode><MemoryRouter initialEntries={[product === "PNCL Pay" ? "/portal/pay" + source : "/portal/leadspply/open" + (challenge ? "?challenge=" + "a".repeat(64) : "")]}><Routes>
   <Route path="/portal/leadspply/open" element={<PortalLeadSpplyOpen />} />
   <Route path="/portal/leadspply" element={<PortalLeadSpply />} />
   <Route path="/portal/pay" element={<PortalPay />} />
@@ -32,6 +32,21 @@ beforeEach(() => {
   api.mockResolvedValue(unlinked);
 });
 afterEach(() => { vi.resetAllMocks(); vi.unstubAllEnvs(); });
+
+it.each(['Continue to PNCL Pay', 'Open PNCL Pay'])('retains the originating account through setup and %s', async label => {
+  const id = '22222222-2222-4222-8222-222222222222';
+  const source = '?leadspplyUserId=' + id;
+  api.mockResolvedValue({ ...ready, account: { ...ready.account!, id: '33333333-3333-4333-8333-333333333333' } });
+  view('PNCL Pay', false, source);
+  const setup = await screen.findByRole('link', { name: 'Account setup' });
+  expect(setup).toHaveAttribute('href', '/portal/leadspply?continue=pay&leadspplyUserId=' + id);
+  fireEvent.click(setup);
+  const next = await screen.findByRole(label.startsWith('Continue') ? 'link' : 'button', { name: label });
+  fireEvent.click(next);
+  await screen.findByText(/Hub is not connected to the LeadSpply account/);
+  expect(api.mock.calls.every(c => c[1].action === 'status')).toBe(true);
+  expect(redirect).not.toHaveBeenCalled();
+});
 
 it.each(["LeadSpply", "PNCL Pay"])("checks setup and shows steps before opening %s", async product => {
   view(product);

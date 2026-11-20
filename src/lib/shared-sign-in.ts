@@ -1,9 +1,9 @@
 import { hubAccountSetup, type SetupStatus } from "./hub-account-setup";
 
 export type SignInProduct = "LeadSpply" | "PNCL Pay";
-export function sharedSignInSetupHref(product: SignInProduct, status?: SetupStatus | null) {
+export function sharedSignInSetupHref(product: SignInProduct, status?: SetupStatus | null, expectedAccountId?: string | null) {
   const target = product === "PNCL Pay" ? "pay" : "leadspply";
-  return `/portal/leadspply?continue=${target}${status?.state === "connected" && !status.emailMatches ? "&step=email" : ""}`;
+  return `/portal/leadspply?continue=${target}${status?.state === "connected" && !status.emailMatches ? "&step=email" : ""}${product === "PNCL Pay" && expectedAccountId ? "&leadspplyUserId=" + encodeURIComponent(expectedAccountId) : ""}`;
 }
 export type SignInFailure = {
   message: string;
@@ -25,6 +25,7 @@ export function sharedSignInError(error: unknown, product: SignInProduct): SignI
     case "ownership_required": return fail("Ownership of your LeadSpply account has not been verified. Open Account setup and verify your existing LeadSpply login.", "setup");
     case "account_unavailable": return fail("Your linked LeadSpply account is unavailable for shared sign-in. Contact support to review account access.");
     case "pay_user_not_found": return fail("Your PNCL Pay account needs to be created by Bill before you can sign in. Contact PNCL support to arrange setup.");
+    case "pay_account_mismatch": return fail("Hub is not connected to the LeadSpply account you opened Pay from. Sign in to Hub with the same PNCL work account. If that account is already selected, contact support to review the link.", "signin");
     case "pay_validation_failed": return fail("PNCL Pay could not validate the account connection. Contact support to review Pay setup.");
     case "sso_not_enabled": return fail("Shared sign-in to LeadSpply is not enabled for your account yet. Contact support or use your normal LeadSpply login.");
     case "pay_unavailable":

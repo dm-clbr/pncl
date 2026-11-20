@@ -8,10 +8,12 @@ import { payRedirectUrl, portalPayHref } from "@/lib/portal-pay";
 const api = vi.hoisted(() => vi.fn());
 const statusApi = vi.hoisted(() => vi.fn());
 const redirect = vi.hoisted(() => vi.fn());
+const googleSignIn = vi.hoisted(() => vi.fn());
 const auth = vi.hoisted(() => ({ id: "hub-1", email: "agent@thepncl.com", confirmed: true, sessionId: "hub-1", token: "hub-token" }));
 vi.mock("@/contexts/AuthContext", () => ({ useAuth: () => ({
   user: { id: auth.id, email: auth.email, email_confirmed_at: auth.confirmed ? "2026-10-27" : null },
   session: { access_token: auth.token, user: { id: auth.sessionId } },
+  signInWithGoogle: googleSignIn,
 }) }));
 vi.mock("@/lib/hub-account-setup", () => ({ hubAccountSetup: (token: string, body: { action: string }, signal: AbortSignal) => (body.action === "status" ? statusApi : api)(token, body, signal) }));
 vi.mock("@/lib/portal-pay", async original => ({ ...await original<typeof import("@/lib/portal-pay")>(), redirectToPay: redirect }));
@@ -19,10 +21,34 @@ vi.mock("@/components/portal/PortalToolLayout", () => ({ default: ({ children }:
 const link = () => ({ url: "https://www.pnclpay.com/api/auth/partner/redeem?token=synthetic-test-token", expiresAt: new Date(Date.now() + 120000).toISOString() });
 const view = () => render(<StrictMode><MemoryRouter><PortalPay /></MemoryRouter></StrictMode>);
 const ready = { state: "connected", email: "agent@thepncl.com", account: { id: "ls-1", email: "agent@thepncl.com" }, ownershipVerified: true, proofExpiresAt: null, emailMatches: true, approved: true, ready: true, payEnabled: true };
+const sourceId = '22222222-2222-4222-8222-222222222222';
+const sourcePath = '/portal/pay?leadspplyUserId=' + sourceId;
+const sourceView = (path = sourcePath) => render(<StrictMode><MemoryRouter initialEntries={[path]}><PortalPay /></MemoryRouter></StrictMode>);
 beforeEach(() => { statusApi.mockImplementation(async () => ({ ...ready, email: auth.email })); api.mockImplementation(async () => link()); });
 afterEach(() => {
   vi.resetAllMocks(); vi.useRealTimers();
   Object.assign(auth, { id: "hub-1", email: "agent@thepncl.com", confirmed: true, sessionId: "hub-1", token: "hub-token" });
+});
+
+it('carries the matching LeadSpply account constraint through the authenticated Pay request', async () => {
+  statusApi.mockResolvedValue({ ...ready, account: { ...ready.account, id: sourceId } });
+  sourceView();
+  await waitFor(() => expect(redirect).toHaveBeenCalledOnce());
+  expect(api).toHaveBeenCalledExactlyOnceWith('hub-token', { action: 'pay', expectedAccountId: sourceId }, expect.any(AbortSignal));
+});
+
+it('blocks a different Hub-linked account and retains the constraint when switching Google accounts', async () => {
+  sourceView();
+  await screen.findByText(/Hub is not connected to the LeadSpply account/);
+  expect(api).not.toHaveBeenCalled(); expect(redirect).not.toHaveBeenCalled();
+  await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Sign in to Hub again' })));
+  expect(googleSignIn).toHaveBeenCalledWith(sourcePath);
+});
+
+it('fails closed on an invalid source URL without checking or issuing account links', async () => {
+  sourceView('/portal/pay?leadspplyUserId=invalid');
+  await screen.findByText(/invalid or has expired/);
+  expect(statusApi).not.toHaveBeenCalled(); expect(api).not.toHaveBeenCalled();
 });
 
 it("turns the existing Pay shortcut into a single automatic handoff under StrictMode", async () => {
